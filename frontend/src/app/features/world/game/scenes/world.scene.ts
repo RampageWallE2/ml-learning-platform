@@ -5,9 +5,6 @@ export class WorldScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private readonly direction = new Phaser.Math.Vector2();         
-
-    private readonly WORLD_WIDTH = 3000;
-    private readonly WORLD_HEIGHT = 2000;
     private lastDirection: 'down' | 'up' | 'left' | 'right' = 'down';   
 
     constructor() {
@@ -16,22 +13,174 @@ export class WorldScene extends Phaser.Scene {
 
     preload(): void {
         this.load.spritesheet('player', 'assets/game/characters/character2.png', {frameWidth: 32, frameHeight:32})
+        this.load.image('trees', 'assets/game/tilesets/trees.png');
+        this.load.image('shrub', 'assets/game/tilesets/shrub.png');
+        this.load.image('path', 'assets/game/tilesets/path.png');
+        this.load.image('water', 'assets/game/tilesets/water.png');
+        this.load.image('wood', 'assets/game/tilesets/wood.png');
+        this.load.image('ruins', 'assets/game/tilesets/ruins.png');
+        this.load.image('mushrooms', 'assets/game/tilesets/mushrooms.png')
+        this.load.image('rocks', 'assets/game/tilesets/rocks.png')
+        this.load.tilemapTiledJSON('world', 'assets/game/maps/world.tmj')
+
+    }
+
+
+    private createMapCollisions(
+        map: Phaser.Tilemaps.Tilemap
+    ): Phaser.GameObjects.Zone[] {
+        const collisionLayer = map.getObjectLayer('Collision');
+        
+        if (!collisionLayer) {
+            throw new Error('No se encontro la capa Collision')
+        }
+        const zones : Phaser.GameObjects.Zone[] = [];
+
+        collisionLayer.objects.forEach(object => {
+            const width = object.width ?? 0;
+            const height = object.height ?? 0;
+
+            if (
+                object.x === undefined ||
+                object.y === undefined ||
+                width <= 0 ||
+                height <= 0
+            ) {
+                return;
+            };
+
+            const zone = this.add.zone(
+                object.x + width / 2,
+                object.y + height / 2,
+                width,
+                height
+            )
+
+            this.physics.add.existing(zone, true);
+            zones.push(zone)
+        })
+
+        return zones
+
 
     }
 
     create(): void {
 
-        this.add.rectangle(300, 360, 100, 100, 0xff0000)
-        this.add.rectangle(1000, 360, 100, 100, 0x00ff00)
-        this.add.rectangle(1500, 700, 100, 100, 0x0000ff)
+        const map = this.make.tilemap({
+            key: 'world'
+        })
 
+        const spawnLayer = map.getObjectLayer('SpawnPoints');
+
+        const playerSpawn = spawnLayer?.objects.find(
+            object => object.name === 'player-start'
+        )
+
+        if (!playerSpawn) {
+            throw new Error('No se encontro player-start')
+        }
+        
+
+
+        const mushroomsTileset = map.addTilesetImage(
+            'mushrooms',
+            'mushrooms'
+        )
+
+        const ruinsTileset = map. addTilesetImage(
+            'ruins',
+            'ruins'
+        )
+        const waterTileset = map.addTilesetImage(
+            'water',
+            'water'
+        )
+
+        const treesTileset = map.addTilesetImage(
+            'trees',
+            'trees'
+        );
+
+        const shrubTileset = map.addTilesetImage(
+            'shrub',
+            'shrub'
+        );
+
+        const pathTileset = map.addTilesetImage(
+            'path',
+            'path'
+        );
+
+        const rocksTileset = map.addTilesetImage(
+            'rocks',
+            'rocks'
+        )
+
+        const woodTileset = map.addTilesetImage(
+            'wood',
+            'wood'
+        )
+
+        console.log(
+        'Tilesets encontrados en el mapa:',
+        map.tilesets.map(tileset => tileset.name)
+        );
+
+        console.log({
+        treesTileset,
+        shrubTileset,
+        pathTileset,
+        waterTileset
+        });
+        
+        if (!treesTileset || !shrubTileset || !pathTileset || !waterTileset || !woodTileset || !ruinsTileset || !waterTileset || !mushroomsTileset || !rocksTileset) {
+            throw new Error('No se pudo crear la capa water');
+        }
+        
+        map.createLayer(
+            'Ground',
+            [ treesTileset, shrubTileset, pathTileset,], 0, 0
+        );
+        
+        const waterLayer = map.createLayer(
+            'Water', [ waterTileset ], 0, 0
+        );
+
+        
+        map.createLayer(
+            'Ornamental_plants', [mushroomsTileset, treesTileset], 0, 0
+        )
+        
+        map.createLayer(
+            'Aquatic_plants',[ waterTileset ],0,0
+        )
+
+        map.createLayer(
+            'Path',[ pathTileset, woodTileset ], 0, 0
+        )  
+
+        map.createLayer( 
+            'Rocks', [ rocksTileset, pathTileset], 0, 0
+        )
+        map.createLayer( 
+            'Buildings', [ ruinsTileset ], 0, 0
+        )
+
+
+        this.player = this.physics.add.sprite(playerSpawn.x!, playerSpawn.y!, 'player', 0)
+
+        const treeLayer = map.createLayer(
+            'Trees', [ treesTileset, woodTileset ], 0, 0
+        )
+        
         this.anims.create({
             key: 'still',
             frames: this.anims.generateFrameNumbers('player', {
                 start: 0,
                 end: 1
             }),
-            frameRate: 6,
+            frameRate: 5,
             repeat: -1
         });
 
@@ -41,7 +190,7 @@ export class WorldScene extends Phaser.Scene {
                 start: 24,
                 end: 25
             }),
-            frameRate: 6,
+            frameRate: 5,
             repeat: -1
         });
 
@@ -51,7 +200,7 @@ export class WorldScene extends Phaser.Scene {
                 start: 12,
                 end: 13
             }),
-            frameRate: 6,
+            frameRate: 5,
             repeat: -1
         });
 
@@ -84,28 +233,47 @@ export class WorldScene extends Phaser.Scene {
             frameRate: 6,
             repeat: -1
         })
-        this.physics.world.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT);
+        this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-        this.player = this.physics.add.sprite(640, 360, 'player', 0);
+
+        // treeLayer.setCollisionByExclusion([-1]);
+        // this.physics.add.collider(
+        //     this.player,
+        //     treeLayer
+        // )
+
+
+
+        //Colisiones con el Agua
+        const collisionZones =  this.createMapCollisions(map);
+
+        waterLayer.setCollisionByExclusion([-1]);
+        this.physics.add.collider(
+            this.player,
+            // waterLayer,
+             collisionZones
+        )
+
+
+
+        
 
 
         this.player.setCollideWorldBounds(true);
 
+        this.player.setBodySize(16,10);
+        this.player.setOffset(8,20)
+
         //KEYBOARD
         this.cursors = this.input.keyboard!.createCursorKeys();
 
-        this.cameras.main.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT
-
-        )
+        this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels)
         //SEGUIMIENTO DE LA CAMARA AL JUGADOR
         this.cameras.main.startFollow(this.player);
-
-        this.add.text(2000, 1000, 'Zona futura de Machine Learning', {fontSize: '32px', color: '#ffffff'});
-
     }
 
     override update(): void {
-        const speed = 400;
+        const speed = 225;
 
         let x = 0;
         let y = 0;
