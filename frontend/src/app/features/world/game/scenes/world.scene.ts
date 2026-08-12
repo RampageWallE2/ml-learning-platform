@@ -4,6 +4,7 @@ export class WorldScene extends Phaser.Scene {
 
     private player!: Phaser.Physics.Arcade.Sprite;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+    private readonly direction = new Phaser.Math.Vector2();         
 
     private readonly WORLD_WIDTH = 3000;
     private readonly WORLD_HEIGHT = 2000;
@@ -102,72 +103,93 @@ export class WorldScene extends Phaser.Scene {
         this.add.text(2000, 1000, 'Zona futura de Machine Learning', {fontSize: '32px', color: '#ffffff'});
 
     }
+
     override update(): void {
-        const speed = 200;
+        const speed = 400;
 
-        let velocityX = 0;
-        let velocityY = 0;
+        let x = 0;
+        let y = 0;
 
+        // MOVIMIENTO
         if (this.cursors.left.isDown) {
-            velocityX = -speed;
-            this.lastDirection = 'left';
-            this.player.setFlipX(true);
+            x = -1;
         }
 
         if (this.cursors.right.isDown) {
-            velocityX = speed;
-            this.lastDirection = 'right';
-            this.player.setFlipX(false);
+            x = 1;
         }
 
         if (this.cursors.up.isDown) {
-            velocityY = -speed;
-            this.lastDirection = 'up';
+            y = -1;
         }
 
         if (this.cursors.down.isDown) {
-            velocityY = speed;
-            this.lastDirection = 'down';
+            y = 1;
         }
 
-        this.player.setVelocity(velocityX, velocityY);
+        // DIRECCIÓN NORMALIZADA
+        this.direction.set(x, y);
 
-        // Normaliza la velocidad diagonal
-        //   this.player.body.velocity.normalize().scale(speed);
+        if (this.direction.lengthSq() > 0) {
+            this.direction.normalize().scale(speed);
 
-        if (velocityX !== 0 || velocityY !== 0) {
-            if (velocityY < 0) {
+            this.player.setVelocity(
+            this.direction.x,
+            this.direction.y
+            );
+
+            // ANIMACIONES
+            if (y < 0) {
+            this.player.setFlipX(false);
             this.player.anims.play('walk-up', true);
+            this.lastDirection = 'up';
+
+            } else if (y > 0) {
             this.player.setFlipX(false);
-            } else if (velocityY > 0) {
             this.player.anims.play('walk-down', true);
-            this.player.setFlipX(false);
-            } else if (velocityX !== 0) {
+            this.lastDirection = 'down';
+
+            } else if (x < 0) {
+            this.player.setFlipX(true);
             this.player.anims.play('walk-side', true);
+            this.lastDirection = 'left';
+
+            } else if (x > 0) {
+            this.player.setFlipX(false);
+            this.player.anims.play('walk-side', true);
+            this.lastDirection = 'right';
             }
+
         } else {
-            switch (this.lastDirection) {
-            case 'down':
-                this.player.setFlipX(false);
-                this.player.anims.play('still', true);
-                break;
+            // DETENER MOVIMIENTO
+            this.player.setVelocity(0, 0);
 
-            case 'up':
-                this.player.setFlipX(false);
-                this.player.anims.play('still-up', true);
-                break;
-
-            case 'left':
-                this.player.setFlipX(true);
-                this.player.anims.play('still-side', true);
-                break;
-
-            case 'right':
-                this.player.setFlipX(false);
-                this.player.anims.play('still-side', true);
-                break;
-            }
+            this.playIdleAnimation();
         }
     }
  
+    private playIdleAnimation(): void {
+        switch (this.lastDirection) {
+
+            case 'down':
+            this.player.setFlipX(false);
+            this.player.anims.play('still', true);
+            break;
+
+            case 'up':
+            this.player.setFlipX(false);
+            this.player.anims.play('still-up', true);
+            break;
+
+            case 'left':
+            this.player.setFlipX(true);
+            this.player.anims.play('still-side', true);
+            break;
+
+            case 'right':
+            this.player.setFlipX(false);
+            this.player.anims.play('still-side', true);
+            break;
+        }
+    }
 }
