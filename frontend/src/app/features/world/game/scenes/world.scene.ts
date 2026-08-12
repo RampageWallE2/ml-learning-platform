@@ -106,52 +106,68 @@ export class WorldScene extends Phaser.Scene {
         const speed = 200;
 
         let velocityX = 0;
-        let velocityY= 0
-
-        this.player.setVelocity(0);
+        let velocityY = 0;
 
         if (this.cursors.left.isDown) {
-            this.player.setVelocityX(-speed);
+            velocityX = -speed;
+            this.lastDirection = 'left';
             this.player.setFlipX(true);
-            this.player.anims.play('walk-side', true);
-            this.lastDirection = 'left'
-        } else if (this.cursors.right.isDown) {
-            this.player.setVelocityX(speed);
-            this.player.setFlipX(false);
-            this.player.anims.play('walk-side', true);
-            this.lastDirection = 'right'
-        } else if (this.cursors.up.isDown) {
-            this.player.setVelocityY(-speed);
-            this.player.setFlipX(false);
-            this.player.anims.play('walk-up', true);
-            this.lastDirection = 'up'
-        }else if (this.cursors.down.isDown) {
-            this.player.setVelocityY(speed);
-            this.player.setFlipX(false);
-            this.player.anims.play('walk-down', true);
-            this.lastDirection = 'down'
-        } else {
-            // this.player.anims.stop();
-            switch (this.lastDirection) {
-                
-                case 'down':
-                    this.player.setFlipX(false);
-                    this.player.anims.play('still', true);
-                    break;
-                case 'up':
-                    this.player.setFlipX(false);
-                    this.player.anims.play('still-up', true);
-                    break;
-                case 'left':
-                    this.player.setFlipX(true);
-                    this.player.anims.play('still-side', true);
-                    break
-                case 'right':
-                    this.player.setFlipX(false);
-                    this.player.anims.play('still-side', true);
-                    break;                
-            }
         }
 
+        if (this.cursors.right.isDown) {
+            velocityX = speed;
+            this.lastDirection = 'right';
+            this.player.setFlipX(false);
+        }
+
+        if (this.cursors.up.isDown) {
+            velocityY = -speed;
+            this.lastDirection = 'up';
+        }
+
+        if (this.cursors.down.isDown) {
+            velocityY = speed;
+            this.lastDirection = 'down';
+        }
+
+        this.player.setVelocity(velocityX, velocityY);
+
+        // Normaliza la velocidad diagonal
+        //   this.player.body.velocity.normalize().scale(speed);
+
+        if (velocityX !== 0 || velocityY !== 0) {
+            if (velocityY < 0) {
+            this.player.anims.play('walk-up', true);
+            this.player.setFlipX(false);
+            } else if (velocityY > 0) {
+            this.player.anims.play('walk-down', true);
+            this.player.setFlipX(false);
+            } else if (velocityX !== 0) {
+            this.player.anims.play('walk-side', true);
+            }
+        } else {
+            switch (this.lastDirection) {
+            case 'down':
+                this.player.setFlipX(false);
+                this.player.anims.play('still', true);
+                break;
+
+            case 'up':
+                this.player.setFlipX(false);
+                this.player.anims.play('still-up', true);
+                break;
+
+            case 'left':
+                this.player.setFlipX(true);
+                this.player.anims.play('still-side', true);
+                break;
+
+            case 'right':
+                this.player.setFlipX(false);
+                this.player.anims.play('still-side', true);
+                break;
+            }
+        }
     }
+ 
 }
