@@ -1,5 +1,6 @@
 import { Type } from '@angular/core';
 import Phaser from 'phaser';
+import { gameEvents, GameEvents } from '../events/game-events';
 
 type WorldTilesets = {
     trees: Phaser.Tilemaps.Tileset;
@@ -84,9 +85,7 @@ export class WorldScene extends Phaser.Scene {
 
     }
 
-    private createInteractions(
-        map: Phaser.Tilemaps.Tilemap
-        ): Phaser.GameObjects.Zone[] {
+    private createInteractions(map: Phaser.Tilemaps.Tilemap): Phaser.GameObjects.Zone[] {
 
         const interactionLayer = map.getObjectLayer('Interactions');
 
@@ -249,15 +248,15 @@ export class WorldScene extends Phaser.Scene {
 
 
         if (this.currentInteraction && Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
-            console.log(
-                'Interacción:',
+            gameEvents.emit(
+                GameEvents.OPEN_LESSON,
                 this.currentInteraction
             );
         }
     }
 
     private handlerMovement() : void {
-        const speed = 225;
+        const speed = 200;
 
         let x = 0;
         let y = 0;
@@ -345,11 +344,37 @@ export class WorldScene extends Phaser.Scene {
         }
     };
 
+    private createPlayer(map: Phaser.Tilemaps.Tilemap): void {
+        const spawnLayer = map.getObjectLayer('SpawnPoints');
 
-    private createMapLayers(
-        map: Phaser.Tilemaps.Tilemap,
-        tiles: WorldTilesets
-        ): Phaser.Tilemaps.TilemapLayer {
+        const playerSpawn = spawnLayer?.objects.find(
+            object => object.name === 'player-start'
+        );
+
+        if (
+            !playerSpawn ||
+            playerSpawn.x === undefined ||
+            playerSpawn.y === undefined
+        ) {
+            throw new Error('No se encontró player-start');
+        }
+
+        this.player = this.physics.add.sprite(
+            playerSpawn.x,
+            playerSpawn.y,
+            'player',
+            0
+        );
+
+        
+        this.player.setCollideWorldBounds(true);
+        this.player.setBodySize(16, 10);
+        this.player.setOffset(8, 20);
+        this.player.setDepth(10)
+        console.log('Player:', this.player.depth);
+    }
+
+    private createMapLayers( map: Phaser.Tilemaps.Tilemap, tiles: WorldTilesets): Phaser.Tilemaps.TilemapLayer {
 
         map.createLayer('Ground', [
             tiles.trees,
@@ -392,12 +417,72 @@ export class WorldScene extends Phaser.Scene {
             tiles.ruins
         ]);
 
-        map.createLayer('Trees', [
+        const treesUpperLayer = map.createLayer('Trees_upper', [
             tiles.trees,
             tiles.wood
         ]);
 
+        const treesLowerLayer = map.createLayer('Trees_lower', [
+            tiles.trees,
+            tiles.wood
+        ]);
+        const buildingsLowerLayer = map.createLayer('Buildings_lower', [
+            tiles.ruins,
+        ]);
+
+        buildingsLowerLayer?.setDepth(11)
+        treesUpperLayer?.setDepth(20)
+
+        console.log('Trees upper:', treesUpperLayer?.depth);
+
         return waterLayer;
+    }
+
+    private setupInput() : void{
+        this.cursors = this.input.keyboard!.createCursorKeys();
+
+        this.interactionKey = this.input.keyboard!.addKey(
+            Phaser.Input.Keyboard.KeyCodes.E
+        );
+    }
+
+    private setupCamera(map: Phaser.Tilemaps.Tilemap): void{
+        this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+        this.cameras.main.startFollow(this.player);
+    }
+
+    private setCollisions(map: Phaser.Tilemaps.Tilemap, water: Phaser.Tilemaps.TilemapLayer): void{
+        const collisionZones = this.createMapCollisions(map);
+        
+        this.physics.add.collider(
+            this.player,
+            collisionZones
+        );
+        
+        this.physics.world.setBounds(
+            0,
+            0,
+            map.widthInPixels,
+            map.heightInPixels
+        );
+
+    }
+
+    private setupInteractionUI ():void {
+        this.interactionText = this.add.text(
+            0,
+            0,
+            'Presiona E',
+            {
+            fontSize: '18px',
+            color: '#ffffff',
+            backgroundColor: '#000000'
+            }
+        );
+        
+        this.interactionText
+            .setVisible(false)
+            .setDepth(1000);
     }
 
 create(): void {
@@ -405,84 +490,25 @@ create(): void {
 
     const tilesets = this.createTilesets(map);
     const waterLayer = this.createMapLayers(map, tilesets);
-
-    const spawnLayer = map.getObjectLayer('SpawnPoints');
-
-    const playerSpawn = spawnLayer?.objects.find(
-        object => object.name === 'player-start'
-    );
-
-    if (!playerSpawn || playerSpawn.x === undefined || playerSpawn.y === undefined) {
-        throw new Error('No se encontró player-start');
-    }
-
-    // PLAYER
-    this.player = this.physics.add.sprite(
-        playerSpawn.x,
-        playerSpawn.y,
-        'player',
-        0
-    );
-
-    this.player.setCollideWorldBounds(true);
-    this.player.setBodySize(16, 10);
-    this.player.setOffset(8, 20);
-
+    this.createPlayer(map);
     this.createPlayerAnimations();
+
+    //PLAYER
 
     // INTERACCIONES
     this.interactionZones = this.createInteractions(map);
 
     // COLISIONES
-    const collisionZones = this.createMapCollisions(map);
-
-    waterLayer.setCollisionByExclusion([-1]);
-
-    this.physics.add.collider(
-        this.player,
-        collisionZones
-    );
-
-    // MUNDO
-    this.physics.world.setBounds(
-        0,
-        0,
-        map.widthInPixels,
-        map.heightInPixels
-    );
+    this.setCollisions(map, waterLayer);
 
     // INPUT
-    this.cursors = this.input.keyboard!.createCursorKeys();
+    this.setupInput();
 
-    this.interactionKey = this.input.keyboard!.addKey(
-        Phaser.Input.Keyboard.KeyCodes.E
-    );
-
-    // UI
-    this.interactionText = this.add.text(
-        0,
-        0,
-        'Presiona E',
-        {
-        fontSize: '18px',
-        color: '#ffffff',
-        backgroundColor: '#000000'
-        }
-    );
-
-    this.interactionText
-        .setVisible(false)
-        .setDepth(1000);
+    // INTERACCIONES
+    this.setupInteractionUI();
 
     // CÁMARA
-    this.cameras.main.setBounds(
-        0,
-        0,
-        map.widthInPixels,
-        map.heightInPixels
-    );
-
-    this.cameras.main.startFollow(this.player);
+    this.setupCamera(map);
 }
 
     override update(): void {

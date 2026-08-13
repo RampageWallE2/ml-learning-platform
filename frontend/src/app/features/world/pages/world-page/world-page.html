@@ -1,3 +1,25 @@
 <div class="world-page">
-    <div id="phaser-container"></div>
+
+  <div id="phaser-container"></div>
+
+  @if (lessonActive()) {
+    <div class="lesson-overlay">
+
+      <div class="lesson-panel">
+
+        <h2>Lección</h2>
+
+        <p>
+          {{ lessonActive() }}
+        </p>
+
+        <button (click)="closeLesson()">
+          Cerrar
+        </button>
+
+      </div>
+
+    </div>
+  }
+
 </div>
