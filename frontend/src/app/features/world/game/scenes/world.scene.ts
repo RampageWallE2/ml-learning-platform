@@ -4,8 +4,12 @@ export class WorldScene extends Phaser.Scene {
 
     private player!: Phaser.Physics.Arcade.Sprite;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+    private interactionKey! : Phaser.Input.Keyboard.Key;
+    private currentInteraction : string | null = null;
+    private interactionText! : Phaser.GameObjects.Text;
     private readonly direction = new Phaser.Math.Vector2();         
     private lastDirection: 'down' | 'up' | 'left' | 'right' = 'down';   
+    private interactionZones: Phaser.GameObjects.Zone[] = [];
 
     constructor() {
         super('WorldScene');
@@ -26,9 +30,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
 
-    private createMapCollisions(
-        map: Phaser.Tilemaps.Tilemap
-    ): Phaser.GameObjects.Zone[] {
+    private createMapCollisions(map: Phaser.Tilemaps.Tilemap): Phaser.GameObjects.Zone[] {
         const collisionLayer = map.getObjectLayer('Collision');
         
         if (!collisionLayer) {
@@ -65,6 +67,60 @@ export class WorldScene extends Phaser.Scene {
 
     }
 
+    private createInteractions(
+        map: Phaser.Tilemaps.Tilemap
+        ): Phaser.GameObjects.Zone[] {
+
+        const interactionLayer = map.getObjectLayer('Interactions');
+
+        const lesson = interactionLayer?.objects[0];
+
+        console.log({
+        name: lesson?.name,
+        x: lesson?.x,
+        y: lesson?.y,
+        width: lesson?.width,
+        height: lesson?.height
+        });
+
+        if (!interactionLayer) {
+            throw new Error('No se encontró la capa Interactions');
+        }
+
+        const zones: Phaser.GameObjects.Zone[] = [];
+
+        interactionLayer.objects.forEach(object => {
+
+            const width = object.width ?? 0;
+            const height = object.height ?? 0;
+
+            if (
+            object.x === undefined ||
+            object.y === undefined ||
+            width <= 0 ||
+            height <= 0
+            ) {
+            return;
+            }
+
+            const zone = this.add.zone(
+            object.x + width / 2,
+            object.y + height / 2,
+            width,
+            height
+            );
+
+            zone.setData('interactionName', object.name ?? '');
+
+            this.physics.add.existing(zone, true);
+
+            zones.push(zone);
+        });
+
+        return zones;
+    }
+
+
     create(): void {
 
         const map = this.make.tilemap({
@@ -80,8 +136,6 @@ export class WorldScene extends Phaser.Scene {
         if (!playerSpawn) {
             throw new Error('No se encontro player-start')
         }
-        
-
 
         const mushroomsTileset = map.addTilesetImage(
             'mushrooms',
@@ -127,13 +181,6 @@ export class WorldScene extends Phaser.Scene {
         map.tilesets.map(tileset => tileset.name)
         );
 
-        console.log({
-        treesTileset,
-        shrubTileset,
-        pathTileset,
-        waterTileset
-        });
-        
         if (!treesTileset || !shrubTileset || !pathTileset || !waterTileset || !woodTileset || !ruinsTileset || !waterTileset || !mushroomsTileset || !rocksTileset) {
             throw new Error('No se pudo crear la capa water');
         }
@@ -169,6 +216,8 @@ export class WorldScene extends Phaser.Scene {
 
 
         this.player = this.physics.add.sprite(playerSpawn.x!, playerSpawn.y!, 'player', 0)
+
+        this.interactionZones = this.createInteractions(map);
 
         const treeLayer = map.createLayer(
             'Trees', [ treesTileset, woodTileset ], 0, 0
@@ -236,14 +285,6 @@ export class WorldScene extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
 
-        // treeLayer.setCollisionByExclusion([-1]);
-        // this.physics.add.collider(
-        //     this.player,
-        //     treeLayer
-        // )
-
-
-
         //Colisiones con el Agua
         const collisionZones =  this.createMapCollisions(map);
 
@@ -254,11 +295,6 @@ export class WorldScene extends Phaser.Scene {
              collisionZones
         )
 
-
-
-        
-
-
         this.player.setCollideWorldBounds(true);
 
         this.player.setBodySize(16,10);
@@ -267,12 +303,55 @@ export class WorldScene extends Phaser.Scene {
         //KEYBOARD
         this.cursors = this.input.keyboard!.createCursorKeys();
 
+        this.interactionKey = this.input.keyboard!.addKey(
+            Phaser.Input.Keyboard.KeyCodes.E
+        );
+
+        this.interactionText = this.add.text(
+            0, 0, 'Presiona E', {fontSize: '18px', color: '#ffffff', backgroundColor: '#000000'}
+        );
+
+        this.interactionText.setVisible(false).setDepth(1000)
         this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels)
         //SEGUIMIENTO DE LA CAMARA AL JUGADOR
         this.cameras.main.startFollow(this.player);
     }
 
     override update(): void {
+
+        this.currentInteraction = null;
+        this.interactionText.setVisible(false);
+
+
+        for (const zone of this.interactionZones) {
+
+            if (this.physics.overlap(this.player, zone)) {
+
+                this.currentInteraction =
+                zone.getData('interactionName');
+
+                this.interactionText
+                .setPosition(
+                    this.player.x - 40,
+                    this.player.y - 45
+                )
+                .setVisible(true);
+
+                break;
+            }
+        }
+
+
+        if (
+            this.currentInteraction &&
+            Phaser.Input.Keyboard.JustDown(this.interactionKey)
+            ) {
+            console.log(
+                'Interacción:',
+                this.currentInteraction
+            );
+        }
+
         const speed = 225;
 
         let x = 0;

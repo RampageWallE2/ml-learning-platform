@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" infinite="0" nextlayerid="11" nextobjectid="107">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" infinite="0" nextlayerid="12" nextobjectid="109">
  <editorsettings>
   <export target="../public/assets/game/maps/world.tmj" format="json"/>
  </editorsettings>
@@ -844,7 +844,7 @@
 </data>
  </layer>
  <objectgroup id="9" name="SpawnPoints">
-  <object id="1" name="player-start" x="771.333" y="367.333">
+  <object id="1" name="player-start" x="766.666" y="510.666">
    <point/>
   </object>
  </objectgroup>
@@ -937,5 +937,8 @@
   <object id="102" x="357.333" y="194.333" width="138" height="46.3333"/>
   <object id="103" x="356.667" y="241" width="87" height="42.3333"/>
   <object id="106" x="285.333" y="288" width="58" height="33.6667"/>
+ </objectgroup>
+ <objectgroup id="11" name="Interactions">
+  <object id="108" name="lesson-01" x="736" y="318.667" width="95" height="33.6667"/>
  </objectgroup>
 </map>
