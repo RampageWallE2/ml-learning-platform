@@ -2,6 +2,12 @@ import { Type } from '@angular/core';
 import Phaser from 'phaser';
 import { gameEvents, GameEvents } from '../events/game-events';
 
+
+type TiledProperty = {
+  name: string;
+  value: string | number | boolean;
+};
+
 type WorldTilesets = {
     trees: Phaser.Tilemaps.Tileset;
     shrub: Phaser.Tilemaps.Tileset;
@@ -11,6 +17,9 @@ type WorldTilesets = {
     ruins: Phaser.Tilemaps.Tileset;
     mushrooms: Phaser.Tilemaps.Tileset;
     rocks: Phaser.Tilemaps.Tileset;
+    farm: Phaser.Tilemaps.Tileset;
+    terrain: Phaser.Tilemaps.Tileset;
+    farm_details: Phaser.Tilemaps.Tileset;
 }
 
 export class WorldScene extends Phaser.Scene {
@@ -18,15 +27,26 @@ export class WorldScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private interactionKey! : Phaser.Input.Keyboard.Key;
-    private currentInteraction : string | null = null;
+    private currentInteraction: Phaser.GameObjects.Zone | null = null;
     private interactionText! : Phaser.GameObjects.Text;
     private readonly direction = new Phaser.Math.Vector2();         
     private lastDirection: 'down' | 'up' | 'left' | 'right' = 'down';   
     private interactionZones: Phaser.GameObjects.Zone[] = [];
+    private isPlayerLocked = false;
 
     constructor() {
         super('WorldScene');
     }
+
+
+    private readonly lockPlayer = (): void => {
+    this.isPlayerLocked = true;
+    this.player.setVelocity(0, 0);
+    };
+
+    private readonly unlockPlayer = (): void => {
+    this.isPlayerLocked = false;
+    };
 
     preload(): void {
         this.load.spritesheet('player', 'assets/game/characters/character2.png', {frameWidth: 32, frameHeight:32})
@@ -38,8 +58,119 @@ export class WorldScene extends Phaser.Scene {
         this.load.image('ruins', 'assets/game/tilesets/ruins.png');
         this.load.image('mushrooms', 'assets/game/tilesets/mushrooms.png')
         this.load.image('rocks', 'assets/game/tilesets/rocks.png')
+        this.load.image('farm', 'assets/game/tilesets/farm/farm.png')
+        this.load.image('terrain', 'assets/game/tilesets/farm/terrain.png')
+        this.load.image('farm_details', 'assets/game/tilesets/farm/farm_details.png')
         this.load.tilemapTiledJSON('world', 'assets/game/maps/world.tmj')
 
+    }
+
+    private createTilesets(map: Phaser.Tilemaps.Tilemap) : WorldTilesets{
+
+        const mushrooms = map.addTilesetImage('mushrooms','mushrooms');
+        const ruins = map. addTilesetImage('ruins', 'ruins');
+        const water = map.addTilesetImage('water', 'water');
+        const trees = map.addTilesetImage('trees', 'trees');
+        const shrub = map.addTilesetImage('shrub', 'shrub');
+        const path = map.addTilesetImage('path', 'path');
+        const rocks = map.addTilesetImage('rocks', 'rocks');
+        const wood = map.addTilesetImage('wood', 'wood');
+        const farm = map.addTilesetImage('farm', 'farm');
+        const farm_details = map.addTilesetImage('farm_details', 'farm_details');
+        const terrain = map.addTilesetImage('terrain', 'terrain');
+
+        if (
+            !mushrooms || !ruins || !water || !trees || 
+            !shrub || !path || !rocks || !wood || !farm || !farm_details || !terrain
+        ) {
+            throw new Error('No se pudo crear la capa water');
+        }
+        return {
+            mushrooms, ruins, water, trees, shrub, path, rocks, wood, farm, farm_details, terrain
+        }
+    };
+
+    private createMapLayers( map: Phaser.Tilemaps.Tilemap, tiles: WorldTilesets): Phaser.Tilemaps.TilemapLayer {
+
+        map.createLayer('Ground', [
+            tiles.trees,
+            tiles.shrub,
+            tiles.path
+        ]);
+
+        const waterLayer = map.createLayer(
+            'Water',
+            [tiles.water],
+            0,
+            0,
+            false
+        );
+
+        if (!(waterLayer instanceof Phaser.Tilemaps.TilemapLayer)) {
+            throw new Error('No se pudo crear la capa Water como TilemapLayer');
+        }
+
+        map.createLayer('Ornamental_plants', [
+            tiles.mushrooms,
+            tiles.trees
+        ]);
+
+        map.createLayer('Aquatic_plants', [
+            tiles.water
+        ]);
+
+        map.createLayer('Path', [
+            tiles.path,
+            tiles.wood
+        ]);
+
+        map.createLayer('Rocks', [
+            tiles.rocks,
+            tiles.path
+        ]);
+
+        map.createLayer('Buildings', [
+            tiles.ruins,
+            tiles.farm
+        ]);
+
+        const treesUpperLayer = map.createLayer('Trees_upper', [
+            tiles.trees,
+            tiles.wood
+        ]);
+
+        map.createLayer('Trees_intermediate', [
+            tiles.farm_details,
+        ]);
+        
+        const treesLowerLayer = map.createLayer('Trees_lower', [
+            tiles.trees,
+            tiles.farm_details
+        ]);
+        
+        const buildingsLowerLayer = map.createLayer('Buildings_lower', [
+            tiles.ruins,
+        ]);
+
+        map.createLayer('Field', [
+            tiles.terrain
+        ])
+
+        map.createLayer('Field_content', [
+            tiles.farm_details
+        ])
+
+        map.createLayer('Objects_upper', [
+            tiles.farm,
+            tiles.farm_details
+        ])
+
+        buildingsLowerLayer?.setDepth(11)
+        treesUpperLayer?.setDepth(20)
+
+        console.log('Trees upper:', treesUpperLayer?.depth);
+
+        return waterLayer;
     }
 
     private createMap(): Phaser.Tilemaps.Tilemap {
@@ -126,7 +257,29 @@ export class WorldScene extends Phaser.Scene {
             height
             );
 
+            const getProperty = (name: string) =>
+            object.properties?.find(
+                (property: TiledProperty) => property.name === name
+            )?.value;
+                
+
             zone.setData('interactionName', object.name ?? '');
+
+            zone.setData('interactionType', getProperty('interactionType'));
+
+            zone.setData(
+                'lessonId',
+                getProperty('lessonId')
+            );
+
+            zone.setData(
+                'step',
+                getProperty('step')
+            )
+
+            zone.setData('npcId', getProperty('npcId'));
+
+            zone.setData('dialogueId', getProperty('dialogueId'));
 
             this.physics.add.existing(zone, true);
 
@@ -224,6 +377,11 @@ export class WorldScene extends Phaser.Scene {
     }
 
     private handlerInteractions() : void {
+
+        if (this.isPlayerLocked) {
+            this.interactionText.setVisible(false);
+            return;
+        }
         this.currentInteraction = null;
         this.interactionText.setVisible(false);
 
@@ -232,8 +390,7 @@ export class WorldScene extends Phaser.Scene {
 
             if (this.physics.overlap(this.player, zone)) {
 
-                this.currentInteraction =
-                zone.getData('interactionName');
+                this.currentInteraction = zone
 
                 this.interactionText
                 .setPosition(
@@ -245,17 +402,50 @@ export class WorldScene extends Phaser.Scene {
                 break;
             }
         }
+   
+        if ( this.currentInteraction && Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
 
+            const type = this.currentInteraction.getData('interactionType');
+                console.log('Interacción:', this.currentInteraction.getData('interactionName'));
+                console.log('Tipo:', type);
 
-        if (this.currentInteraction && Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
-            gameEvents.emit(
-                GameEvents.OPEN_LESSON,
-                this.currentInteraction
-            );
-        }
+                if (type === 'lesson') {
+
+                    const lesson = {
+                        lessonId : this.currentInteraction.getData('lessonId'),
+                        step : this.currentInteraction.getData('step')
+                    }
+                    
+                    console.log('Leccion ', lesson);
+
+                    gameEvents.emit(
+                        GameEvents.OPEN_LESSON,
+                        lesson
+                    );
+                }
+
+                if (type === 'dialogue') {
+                    const dialogue  = {
+                        npcId : this.currentInteraction.getData('npcId'),
+                        dialogueId : this.currentInteraction.getData('dialogueId')
+                    }
+                    console.log('Phaser emite', dialogue)
+                    gameEvents.emit(
+                        GameEvents.OPEN_DIALOGUE,
+                        dialogue
+                    )
+
+                }
+            }
     }
 
     private handlerMovement() : void {
+        
+        if (this.isPlayerLocked) {
+            this.player.setVelocity(0, 0);
+            return;
+        }
+
         const speed = 200;
 
         let x = 0;
@@ -321,28 +511,7 @@ export class WorldScene extends Phaser.Scene {
         }
     }
 
-    private createTilesets(map: Phaser.Tilemaps.Tilemap) : WorldTilesets{
 
-        const mushrooms = map.addTilesetImage('mushrooms','mushrooms');
-        const ruins = map. addTilesetImage('ruins', 'ruins');
-        const water = map.addTilesetImage('water', 'water');
-        const trees = map.addTilesetImage('trees', 'trees');
-        const shrub = map.addTilesetImage('shrub', 'shrub');
-        const path = map.addTilesetImage('path', 'path');
-        const rocks = map.addTilesetImage('rocks', 'rocks');
-        const wood = map.addTilesetImage('wood', 'wood');
-
-        if (
-            !mushrooms || !ruins || !water || !trees || 
-            !shrub || !path || !rocks || !wood
-        ) {
-            throw new Error('No se pudo crear la capa water');
-        }
-        
-        return {
-            mushrooms, ruins, water, trees, shrub, path, rocks, wood
-        }
-    };
 
     private createPlayer(map: Phaser.Tilemaps.Tilemap): void {
         const spawnLayer = map.getObjectLayer('SpawnPoints');
@@ -374,69 +543,7 @@ export class WorldScene extends Phaser.Scene {
         console.log('Player:', this.player.depth);
     }
 
-    private createMapLayers( map: Phaser.Tilemaps.Tilemap, tiles: WorldTilesets): Phaser.Tilemaps.TilemapLayer {
 
-        map.createLayer('Ground', [
-            tiles.trees,
-            tiles.shrub,
-            tiles.path
-        ]);
-
-        const waterLayer = map.createLayer(
-            'Water',
-            [tiles.water],
-            0,
-            0,
-            false
-        );
-
-        if (!(waterLayer instanceof Phaser.Tilemaps.TilemapLayer)) {
-            throw new Error('No se pudo crear la capa Water como TilemapLayer');
-        }
-
-        map.createLayer('Ornamental_plants', [
-            tiles.mushrooms,
-            tiles.trees
-        ]);
-
-        map.createLayer('Aquatic_plants', [
-            tiles.water
-        ]);
-
-        map.createLayer('Path', [
-            tiles.path,
-            tiles.wood
-        ]);
-
-        map.createLayer('Rocks', [
-            tiles.rocks,
-            tiles.path
-        ]);
-
-        map.createLayer('Buildings', [
-            tiles.ruins
-        ]);
-
-        const treesUpperLayer = map.createLayer('Trees_upper', [
-            tiles.trees,
-            tiles.wood
-        ]);
-
-        const treesLowerLayer = map.createLayer('Trees_lower', [
-            tiles.trees,
-            tiles.wood
-        ]);
-        const buildingsLowerLayer = map.createLayer('Buildings_lower', [
-            tiles.ruins,
-        ]);
-
-        buildingsLowerLayer?.setDepth(11)
-        treesUpperLayer?.setDepth(20)
-
-        console.log('Trees upper:', treesUpperLayer?.depth);
-
-        return waterLayer;
-    }
 
     private setupInput() : void{
         this.cursors = this.input.keyboard!.createCursorKeys();
@@ -486,6 +593,17 @@ export class WorldScene extends Phaser.Scene {
     }
 
 create(): void {
+
+    gameEvents.on(
+        GameEvents.LOCK_PLAYER,
+        this.lockPlayer
+    );
+
+    gameEvents.on(
+        GameEvents.UNLOCK_PLAYER,
+        this.unlockPlayer
+    );
+
     const map = this.createMap();
 
     const tilesets = this.createTilesets(map);

@@ -2,24 +2,35 @@
 
   <div id="phaser-container"></div>
 
-  @if (lessonActive()) {
-    <div class="lesson-overlay">
+  @if (currentObjective()) {
+    <div class="objective">
+      <strong>Objetivo</strong>
+      <span>{{ currentObjective() }}</span>
+    </div>
+  }
 
+  @if (lessonActive(); as lesson) {
+    <div class="lesson-overlay">
       <div class="lesson-panel">
 
-        <h2>Lección</h2>
-
-        <p>
-          {{ lessonActive() }}
-        </p>
-
-        <button (click)="closeLesson()">
-          Cerrar
-        </button>
+        @if (
+          lesson.lessonId === 'lesson-01' &&
+          lesson.step === 1
+        ) {
+          <app-lesson-01-nursery
+            (completed)="closeLesson()"
+          />
+        }
 
       </div>
-
     </div>
+  }
+
+  @if (activeDialogue(); as dialogue) {
+    <app-dialogue
+      [dialogue]="dialogue"
+      (completed)="closeDialogue()"
+    />
   }
 
 </div>

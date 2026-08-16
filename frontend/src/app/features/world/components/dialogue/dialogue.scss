@@ -1,0 +1,19 @@
+.dialogue-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  padding: 40px;
+}
+
+.dialogue-box {
+  width: min(800px, 90%);
+  padding: 24px;
+
+  background: white;
+  border-radius: 12px;
+}

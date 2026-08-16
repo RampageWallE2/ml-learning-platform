@@ -1,0 +1,268 @@
+<section class="nursery-lesson">
+
+    <h2>El vivero</h2>
+
+    @if (nurseryStage() === 'intro') {
+
+        <h2>El vivero</h2>
+
+        <p>
+            {{ introMessages[introStep()] }}
+        </p>
+
+        <button (click)="nextIntro()">
+            {{ introStep() === introMessages.length - 1
+            ? 'Comenzar'
+            : 'Continuar'
+            }}
+        </button>
+
+    }
+
+    @if (nurseryStage() === 'observation') {
+
+        <h3>Observa el resultado</h3>
+
+        <p>
+            Ahora las plantas del Grupo B están mucho más separadas
+            y ocupan una zona más amplia.
+        </p>
+
+        <button (click)="nurseryStage.set('question')">
+            Continuar
+        </button>
+
+    }
+
+
+    @if (nurseryStage() === 'experiment') {
+
+    <p class="lesson-instruction">
+        Observa ambos grupos.
+        Mueve las plantas del Grupo B para que
+        estén más separadas entre sí.
+    </p>
+
+    <div class="nursery-groups">
+
+        <!-- GRUPO A -->
+
+        <div class="nursery-group">
+
+        <h3>Grupo A</h3>
+
+        <svg viewBox="0 0 500 220">
+
+            <rect
+            x="5"
+            y="5"
+            width="490"
+            height="210"
+            rx="12"
+            class="nursery-ground"
+            />
+
+            @for (
+            plant of referencePlants;
+            track plant.id
+            ) {
+
+            <g
+                [attr.transform]="
+                'translate(' +
+                plant.x + ' ' +
+                plant.y + ')'
+                "
+            >
+
+                <ellipse
+                cx="0"
+                cy="14"
+                rx="15"
+                ry="5"
+                class="plant-shadow"
+                />
+
+                <image
+                x="-16"
+                y="-24"
+                width="32"
+                height="32"
+                href="assets/game/tilesets/objects/Plant5.png"
+                />
+            </g>
+            }
+
+        </svg>
+
+        </div>
+
+
+        <!-- GRUPO B -->
+
+        <div class="nursery-group">
+
+        <h3>Grupo B</h3>
+
+        <svg
+            viewBox="0 0 500 220"
+            (pointermove)="movePlant($event)"
+            (pointerup)="endPlantDrag()"
+            (pointerleave)="endPlantDrag()"
+        >
+
+            <rect
+            x="5"
+            y="5"
+            width="490"
+            height="210"
+            rx="12"
+            class="nursery-ground"
+            />
+
+            @for (
+            plant of nurseryPlants();
+            track plant.id
+            ) {
+
+            <g
+                class="draggable"
+                [attr.transform]="
+                'translate(' +
+                plant.x + ' ' +
+                plant.y + ')'
+                "
+                (pointerdown)="
+                startPlantDrag(
+                    $event,
+                    plant.id
+                )
+                "
+            >
+
+                <ellipse
+                cx="0"
+                cy="14"
+                rx="15"
+                ry="5"
+                class="plant-shadow"
+                />
+
+                <image
+                x="-16"
+                y="-24"
+                width="32"
+                height="32"
+                href="assets/game/tilesets/objects/Plant5.png"
+                />
+
+            </g>
+
+            }
+
+        </svg>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="spread-feedback">
+
+    <div class="spread-labels">
+        <span>Juntas</span>
+        <span>Más dispersas</span>
+    </div>
+
+    <div class="spread-meter">
+
+        <div
+        class="spread-meter-value"
+        [style.width.%]="spreadProgress()"
+        ></div>
+
+    </div>
+
+    <p>
+        {{ spreadFeedback() }}
+    </p>
+
+    </div>
+
+    <div class="lesson-actions">
+
+    <button
+        class="secondary-button"
+        (click)="resetNursery()"
+    >
+        Reiniciar
+    </button>
+
+    <button
+        [disabled]="!canContinue()"
+        (click)="finishNurseryExperiment()"
+    >
+        Listo
+    </button>
+
+    </div>
+    }
+    @if (nurseryStage() === 'question') {
+
+    <h3>
+        ¿Qué caracteriza al grupo que está más disperso?
+    </h3>
+
+    <div class="answer-options">
+
+        <button (click)="answerNursery('separated')">
+        Sus elementos están más separados
+        </button>
+
+        <button (click)="answerNursery('more')">
+        Tiene más elementos
+        </button>
+
+        <button (click)="answerNursery('together')">
+        Sus elementos están más juntos
+        </button>
+
+        <button (click)="answerNursery('bigger')">
+        Sus elementos son más grandes
+        </button>
+
+    </div>
+
+    @if ( nurseryAnswer() && nurseryAnswer() !== 'separated') {
+        <p class="feedback">
+        Observa nuevamente cómo están distribuidas las plantas.
+        </p>
+    }
+    }
+
+    @if (nurseryStage() === 'completed') {
+
+        <div class="lesson-success">
+
+        <h3>¡Bien!</h3>
+
+        <p>
+            Cuando los elementos están más separados
+            o extendidos, decimos que existe mayor
+            <strong>dispersión</strong>.
+        </p>
+
+        <p>
+            Acabas de descubrir el concepto sin
+            utilizar ninguna fórmula.
+        </p>
+
+        <button (click)="finishLesson()">
+            Volver al mundo
+        </button>
+        </div>
+    
+    }
+    
+</section>
