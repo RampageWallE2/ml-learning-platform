@@ -1,5 +1,34 @@
 import { Component, computed, output, signal } from '@angular/core';
 
+import { DialogueData } from '../../components/dialogue/dialogue.types';
+
+export const LESSON_01_INTRO: DialogueData = {
+  id: 'lesson-01-intro',
+
+  messages: [
+    {
+      speaker: 'npc',
+      name: 'Viverista',
+      text: 'Estas plantas pertenecen a dos grupos del vivero.'
+    },
+    {
+      speaker: 'player',
+      name: 'Tú',
+      text: 'A simple vista parecen bastante parecidas.'
+    },
+    {
+      speaker: 'npc',
+      name: 'Viverista',
+      text: 'Fíjate menos en las plantas y más en el espacio que hay entre ellas.'
+    },
+    {
+      speaker: 'npc',
+      name: 'Viverista',
+      text: 'Quiero que experimentes. Mueve las plantas del Grupo B y haz que queden mucho más separadas que las del Grupo A.'
+    }
+  ]
+};
+
 type NurseryPlant = {
   id: number;
   x: number;
@@ -7,7 +36,6 @@ type NurseryPlant = {
 };
 
 type NurseryStage =
-  | 'intro'
   | 'experiment'
   | 'observation'
   | 'question'
@@ -51,35 +79,12 @@ nurseryPlants = signal<NurseryPlant[]>(
   this.initialNurseryPlants.map(plant => ({ ...plant }))
 );
 
-introStep = signal(0);
-
-readonly introMessages = [
-  'Observa estos dos grupos de plantas.',
-  'En el Grupo A las plantas están bastante juntas.',
-  'Tu tarea será modificar el Grupo B para que sus plantas estén más separadas.'
-];
-
-nextIntro(): void {
-  const next = this.introStep() + 1;
-
-  if (next < this.introMessages.length) {
-    this.introStep.set(next);
-    return;
-  }
-
-  this.nurseryStage.set('experiment');
-}
-
-nurseryStage = signal<NurseryStage>('intro');
+nurseryStage = signal<NurseryStage>('experiment');
 
   nurseryAnswer =
-    signal<string | null>(null);
-
-  movedPlantsCount = signal(0);
+    signal<NurseryAnswer | null>(null);
 
   private draggedPlantId: number | null = null;
-  private movedPlantIds = new Set<number>();
-  
 
   private calculateSpread( plants: NurseryPlant[]): number {
 
@@ -249,7 +254,7 @@ finishNurseryExperiment(): void {
   this.nurseryStage.set('observation');
 }
   
-  answerNursery(answer: string): void {
+  answerNursery(answer: NurseryAnswer): void {
     this.nurseryAnswer.set(answer);
 
     if (answer === 'separated') {

@@ -1,0 +1,14 @@
+<div class="interaction-overlay">
+  <div class="interaction-panel">
+
+    <button
+      class="close-button"
+      (click)="closed.emit()"
+    >
+      ×
+    </button>
+
+    <ng-content />
+
+  </div>
+</div>

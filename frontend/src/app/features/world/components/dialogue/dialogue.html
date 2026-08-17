@@ -1,17 +1,72 @@
-<div class="dialogue-overlay">
+<div class="dialogue">
 
-  <div class="dialogue-box">
+  <div class="conversation">
 
-    <h3>Guía del pueblo</h3>
+    <!-- JUGADOR -->
+    @if (playerMessage(); as message) {
+      <div
+        class="message message--player"
+        [class.message--active]="currentMessage()?.speaker === 'player'"
+      >
 
-    <p>
-      {{ currentDialogueText() }}
-    </p>
+        <div class="bubble">
+          <strong>{{ message.name }}</strong>
+          <p>{{ message.text }}</p>
+        </div>
 
-    <button (click)="nextDialogue()">
-      Continuar
+        @if (message.portrait) {
+          <img
+            class="portrait"
+            [src]="message.portrait"
+            [alt]="message.name"
+          >
+        } @else {
+          <div class="portrait-placeholder">
+            {{ message.name.charAt(0) }}
+          </div>
+        }
+
+      </div>
+    }
+
+
+    <!-- NPC -->
+    @if (npcMessage(); as message) {
+      <div
+        class="message message--npc"
+        [class.message--active]="currentMessage()?.speaker === 'npc'"
+      >
+
+        @if (message.portrait) {
+          <img
+            class="portrait"
+            [src]="message.portrait"
+            [alt]="message.name"
+          >
+        } @else {
+          <div class="portrait-placeholder">
+            {{ message.name.charAt(0) }}
+          </div>
+        }
+
+        <div class="bubble">
+          <strong>{{ message.name }}</strong>
+          <p>{{ message.text }}</p>
+        </div>
+
+      </div>
+    }
+
+  </div>
+
+
+  <div class="dialogue-actions">
+    <button 
+      class="btn btn--primary"
+      (click)="next()"
+    >
+      {{ isLastMessage() ? 'Continuar' : 'Siguiente' }}
     </button>
-
   </div>
 
 </div>

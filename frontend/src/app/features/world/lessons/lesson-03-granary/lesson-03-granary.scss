@@ -1,0 +1,310 @@
+/* =========================
+   SACOS
+   ========================= */
+
+.granary-sacks {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.sack-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 18px 10px;
+
+  border: 2px solid var(--color-earth);
+  border-radius: 10px;
+
+  background: var(--color-surface-alt);
+
+  box-shadow:
+    0 4px 0 rgba(40, 51, 45, 0.14);
+
+  strong {
+    color: var(--color-text);
+  }
+}
+
+.sack-icon {
+  display: grid;
+  place-items: center;
+
+  width: 44px;
+  height: 44px;
+
+  border-radius: 8px;
+
+  color: var(--color-surface);
+  background: var(--color-earth);
+
+  font-size: 18px;
+}
+
+
+/* =========================
+   CENTRO DESCUBIERTO
+   ========================= */
+
+.discovery-card {
+  max-width: 650px;
+  width: 100%;
+
+  margin: 0 auto;
+  padding: 20px;
+
+  box-sizing: border-box;
+
+  text-align: center;
+
+  border-left:
+    4px solid var(--color-primary);
+
+  border-radius: 8px;
+
+  background:
+    rgba(127, 163, 107, 0.14);
+
+  h3 {
+    margin: 8px 0;
+
+    color: var(--color-primary);
+  }
+
+  p {
+    margin: 0;
+
+    color: var(--color-text-muted);
+
+    line-height: 1.5;
+  }
+}
+
+
+/* =========================
+   PROGRESO
+   ========================= */
+
+.distance-progress {
+  display: flex;
+  justify-content: center;
+
+  gap: 10px;
+}
+
+.progress-sack {
+  display: grid;
+  place-items: center;
+
+  width: 38px;
+  height: 38px;
+
+  border: 2px solid var(--color-earth);
+  border-radius: 6px;
+
+  color: var(--color-text-muted);
+  background: var(--color-surface-alt);
+
+  font-weight: 700;
+}
+
+.progress-sack--current {
+  border-color: var(--color-primary);
+
+  color: var(--color-surface);
+  background: var(--color-primary);
+}
+
+.progress-sack--completed {
+  border-color: var(--color-success);
+
+  color: var(--color-success);
+  background:
+    rgba(95, 145, 79, 0.14);
+}
+
+
+/* =========================
+   RECTA NUMÉRICA
+   ========================= */
+
+.distance-board {
+  max-width: 700px;
+  width: 100%;
+
+  margin: 0 auto;
+  padding: 20px;
+
+  box-sizing: border-box;
+
+  border: 2px solid var(--color-earth);
+  border-radius: 10px;
+
+  background: var(--color-surface-alt);
+
+  box-shadow:
+    0 4px 0 rgba(40, 51, 45, 0.14);
+}
+
+.distance-values {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 12px;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: 10px;
+
+    border-radius: 6px;
+
+    background: var(--color-surface);
+  }
+
+  span {
+    color: var(--color-text-muted);
+
+    font-size: 12px;
+  }
+
+  strong {
+    color: var(--color-primary);
+
+    font-size: 20px;
+  }
+}
+
+.number-line {
+  display: block;
+
+  width: 100%;
+
+  margin-top: 10px;
+}
+
+.axis {
+  stroke: var(--color-text-muted);
+  stroke-width: 2;
+}
+
+.tick {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+}
+
+.tick-label {
+  fill: var(--color-text-muted);
+
+  font-size: 12px;
+}
+
+.center-line {
+  stroke: var(--color-earth);
+  stroke-width: 2;
+
+  stroke-dasharray: 4 4;
+}
+
+.center-label {
+  fill: var(--color-earth);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.current-point {
+  fill: var(--color-primary);
+
+  stroke: var(--color-text);
+  stroke-width: 2;
+}
+
+
+/* =========================
+   RESPUESTAS DISTANCIA
+   ========================= */
+
+.distance-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 10px;
+}
+
+
+/* =========================
+   RESUMEN FINAL
+   ========================= */
+
+.distance-summary {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, 1fr);
+
+  gap: 8px;
+
+  margin: 20px 0;
+
+  div {
+    display: flex;
+    flex-direction: column;
+
+    padding: 10px;
+
+    border: 1px solid var(--color-primary-soft);
+    border-radius: 6px;
+
+    background: var(--color-surface);
+  }
+
+  span {
+    color: var(--color-text-muted);
+
+    font-size: 12px;
+  }
+
+  strong {
+    margin-top: 4px;
+
+    color: var(--color-primary);
+  }
+}
+
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 750px) {
+
+  .granary-sacks {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .distance-options {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .distance-summary {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+}

@@ -6,10 +6,10 @@ import {
   signal
 } from '@angular/core';
 
-export type DialogueData = {
-  npcId: string;
-  dialogueId: string;
-};
+import {
+  DialogueData,
+  DialogueMessage
+} from './dialogue.types';
 
 @Component({
   selector: 'app-dialogue',
@@ -23,44 +23,49 @@ export class Dialogue {
 
   completed = output<void>();
 
-  dialogueStep = signal(0);
+  currentIndex = signal(0);
 
-  private readonly dialogues: Record<string, string[]> = {
-    'intro-01': [
-      'Bienvenido. Este pueblo vive de sus cultivos, talleres y producción.',
+  currentMessage = computed(() =>
+    this.dialogue().messages[this.currentIndex()]
+  );
 
-      'Cada día generamos datos: cantidades producidas, tiempos de trabajo, resultados y también errores.',
+  npcMessage = computed<DialogueMessage | null>(() => {
+    const messages = this.dialogue().messages.slice(
+      0,
+      this.currentIndex() + 1
+    );
 
-      'Machine Learning nos permite encontrar patrones en esos datos y usarlos para tomar mejores decisiones.',
-
-      'Pero antes de construir modelos, hay que aprender a observar los datos y entender qué nos están diciendo.',
-
-      'Empieza por los cultivos. Allí encontrarás tu primera tarea.'
-    ]
-  };
-
-  currentDialogueText = computed(() => {
-    const dialogueId = this.dialogue().dialogueId;
-
-    return this.dialogues[dialogueId]?.[
-      this.dialogueStep()
-    ] ?? '';
+    return [...messages]
+      .reverse()
+      .find(message => message.speaker === 'npc')
+      ?? null;
   });
 
-  nextDialogue(): void {
-    const dialogueId = this.dialogue().dialogueId;
+  playerMessage = computed<DialogueMessage | null>(() => {
+    const messages = this.dialogue().messages.slice(
+      0,
+      this.currentIndex() + 1
+    );
 
-    const lines =
-      this.dialogues[dialogueId] ?? [];
+    return [...messages]
+      .reverse()
+      .find(message => message.speaker === 'player')
+      ?? null;
+  });
 
-    const nextStep =
-      this.dialogueStep() + 1;
+  isLastMessage = computed(() =>
+    this.currentIndex() >=
+    this.dialogue().messages.length - 1
+  );
 
-    if (nextStep < lines.length) {
-      this.dialogueStep.set(nextStep);
+  next(): void {
+    if (this.isLastMessage()) {
+      this.completed.emit();
       return;
     }
 
-    this.completed.emit();
+    this.currentIndex.update(
+      index => index + 1
+    );
   }
 }

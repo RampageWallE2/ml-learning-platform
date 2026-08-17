@@ -1791,7 +1791,7 @@
 </data>
  </layer>
  <objectgroup id="9" name="SpawnPoints">
-  <object id="1" name="player-start" x="155.53" y="116.56">
+  <object id="1" name="player-start" x="1224.2" y="612.893">
    <point/>
   </object>
  </objectgroup>
@@ -1805,11 +1805,20 @@
    <properties>
     <property name="interactionType" value="lesson"/>
     <property name="lessonId" value="lesson-02"/>
-    <property name="step" type="int" value="2"/>
    </properties>
   </object>
-  <object id="111" name="lesson-04" x="738" y="688" width="265" height="106"/>
-  <object id="112" name="lesson-03" x="1298" y="1178" width="194" height="141"/>
+  <object id="111" name="lesson-04" x="738" y="688" width="265" height="106">
+   <properties>
+    <property name="interactionType" value="lesson"/>
+    <property name="lessonId" value="lesson-04"/>
+   </properties>
+  </object>
+  <object id="112" name="lesson-03" x="1298" y="1178" width="194" height="141">
+   <properties>
+    <property name="interactionType" value="lesson"/>
+    <property name="lessonId" value="lesson-03"/>
+   </properties>
+  </object>
   <object id="113" name="lesson-01" x="580.667" y="190" width="222" height="72">
    <properties>
     <property name="interactionType" value="lesson"/>

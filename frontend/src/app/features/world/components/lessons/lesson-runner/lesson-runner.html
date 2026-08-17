@@ -1,0 +1,58 @@
+@if (currentStep(); as step) {
+
+  @switch (step.type) {
+
+    @case ('dialogue') {
+
+      <app-dialogue
+        [dialogue]="step.dialogue"
+        (completed)="nextStep()"
+      />
+
+    }
+
+    @case ('exercise') {
+
+      @switch (step.exerciseId) {
+
+        @case ('nursery-spread') {
+
+          <app-lesson-01-nursery
+            (completed)="nextStep()"
+          />
+
+        }
+
+        @case ('farm-stability') {
+          <app-lesson-02-farm
+          (completed)="nextStep()"
+          />
+        }
+
+
+        @case ('granary-distance') {
+          <app-lesson-03-granary
+            (completed)="nextStep()"
+          />
+        }
+
+
+        @case ('plaza-challenge') {
+          <app-lesson-04-plaza
+            (completed)="nextStep()"
+          />
+        }
+
+
+      }
+
+    }
+
+
+
+
+    
+
+  }
+
+}

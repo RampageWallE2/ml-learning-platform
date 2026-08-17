@@ -1,24 +1,23 @@
-import {
-  AfterViewInit,
-  Component,
-  OnDestroy,
-  signal
-} from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, signal, inject } from '@angular/core';
 
 import Phaser, { Game } from 'phaser';
 
 import { gameConfig } from '../../game/config/game.config';
-import {
-  gameEvents,
-  GameEvents
-} from '../../game/events/game-events';
+import { gameEvents, GameEvents } from '../../game/events/game-events';
 
-import {
-  Dialogue,
-  DialogueData
-} from '../../components/dialogue/dialogue';
+import { Dialogue } from '../../components/dialogue/dialogue';
 
-import { Lesson01Nursery } from '../../lessons/lesson-01-nursery/lesson-01-nursery';
+import { DialogueData, DialogueRequest } from '../../components/dialogue/dialogue.types';
+
+import { DIALOGUES } from '../../lessons/data/dialogues.data';
+
+import { InteractionPanel } from '../../components/interaction-panel/interaction-panel';
+
+import { LessonRunner } from '../../components/lessons/lesson-runner/lesson-runner';
+
+import { ProgressService } from '../../progress/progress.service';
+import { ZoneProgress } from '../../components/zone-progress/zone-progress';
+
 
 
 type LessonData = {
@@ -26,17 +25,20 @@ type LessonData = {
   step: number;
 };
 
-
 @Component({
   selector: 'app-world-page',
   imports: [
-    Lesson01Nursery,
-    Dialogue
+    LessonRunner,
+    Dialogue,
+    InteractionPanel,
+    ZoneProgress
   ],
   templateUrl: './world-page.html',
   styleUrl: './world-page.scss',
 })
 export class WorldPage implements AfterViewInit, OnDestroy {
+
+  readonly progress = inject(ProgressService)
 
   private game?: Phaser.Game;
 
@@ -45,7 +47,15 @@ export class WorldPage implements AfterViewInit, OnDestroy {
 
   introCompleted = signal(false);
   currentObjective = signal<string | null>(null);
+  lesson01Completed = signal(false);
 
+
+  completeLesson(lessonId: string): void {
+    console.log('Lección completada:', lessonId);
+    this.progress.completeLesson(lessonId);
+    this.closeLesson();
+    
+  }
 
   closeLesson(): void {
     this.lessonActive.set(null);
@@ -58,9 +68,12 @@ export class WorldPage implements AfterViewInit, OnDestroy {
   closeDialogue(): void {
     const dialogue = this.activeDialogue();
 
-    if (dialogue?.dialogueId === 'intro-01') {
+    if (dialogue?.id === 'intro-01') {
       this.introCompleted.set(true);
-      this.currentObjective.set('Investiga los cultivos');
+
+      this.currentObjective.set(
+        'Investiga los cultivos'
+      );
     }
 
     this.activeDialogue.set(null);
@@ -79,12 +92,15 @@ export class WorldPage implements AfterViewInit, OnDestroy {
     )
   };
 
-
-  
-
   private readonly handlerOpenDialogue = (
-    dialogue: DialogueData
+    request: DialogueRequest
   ): void => {
+
+    const dialogue = DIALOGUES[request.dialogueId] 
+
+    if(!dialogue) {
+      console.log('No existe ningun dialogo', dialogue )
+    }
     this.activeDialogue.set(dialogue);
 
     gameEvents.emit(

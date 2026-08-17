@@ -1,0 +1,167 @@
+.zone-progress {
+  position: absolute;
+
+  top: 20px;
+  left: 20px;
+
+  z-index: 50;
+
+  width: 290px;
+
+  overflow: hidden;
+
+  border: 2px solid var(--color-earth);
+  border-radius: 8px;
+
+  background: var(--color-surface);
+
+  box-shadow:
+    0 5px 0 rgba(40, 51, 45, 0.28),
+    0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+
+/* HEADER */
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+
+  padding: 14px 16px;
+
+  border: 0;
+
+  color: var(--color-text);
+  background: var(--color-surface);
+
+  text-align: left;
+
+  cursor: pointer;
+
+  div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  strong {
+    font-family: var(--font-retro);
+    font-size: 11px;
+
+    color: var(--color-primary);
+  }
+
+  &:hover {
+    background: var(--color-surface-alt);
+  }
+}
+
+
+.progress-zone {
+  color: var(--color-earth);
+
+  font-family: var(--font-retro);
+  font-size: 8px;
+
+  text-transform: uppercase;
+}
+
+
+/* CONTADOR */
+
+.progress-counter {
+  display: grid;
+  place-items: center;
+
+  min-width: 44px;
+  height: 32px;
+
+  border-radius: 6px;
+
+  color: var(--color-surface);
+  background: var(--color-primary);
+
+  font-weight: 700;
+}
+
+
+/* BARRA */
+
+.progress-bar {
+  height: 6px;
+
+  background: var(--color-surface-alt);
+}
+
+.progress-bar-value {
+  height: 100%;
+
+  background: var(--color-primary);
+
+  transition: width 0.25s ease;
+}
+
+
+/* LISTA */
+
+.progress-content {
+  display: grid;
+
+  gap: 4px;
+
+  padding: 10px;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 9px 10px;
+
+  border-radius: 6px;
+
+  color: var(--color-text-muted);
+}
+
+.progress-item--current {
+  color: var(--color-text);
+
+  background:
+    rgba(127, 163, 107, 0.15);
+
+  font-weight: 600;
+}
+
+.progress-item--completed {
+  color: var(--color-success);
+}
+
+.progress-status {
+  width: 20px;
+
+  flex-shrink: 0;
+
+  text-align: center;
+
+  font-weight: 700;
+}
+
+
+@media (max-width: 750px) {
+
+  .zone-progress {
+    top: 12px;
+    left: 12px;
+
+    width: min(
+      280px,
+      calc(100% - 24px)
+    );
+  }
+
+}

@@ -1,0 +1,26 @@
+body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-retro);
+  line-height: 1.4;
+}
+
+h2 {
+  font-size: 22px;
+}
+
+h3 {
+  font-size: 15px;
+}
+
+p {
+  font-family: var(--font-body);
+}

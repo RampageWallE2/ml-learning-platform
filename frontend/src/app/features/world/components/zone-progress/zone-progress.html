@@ -1,0 +1,96 @@
+<aside class="zone-progress">
+
+  <button
+    class="progress-header"
+    (click)="toggle()"
+  >
+
+    <div>
+      <span class="progress-zone">
+        {{ zone().name }}
+      </span>
+
+      <strong>
+        {{ zone().topic }}
+      </strong>
+    </div>
+
+
+    <div class="progress-counter">
+
+      {{ zone().completedLessons }}
+      /
+      {{ zone().totalLessons }}
+
+    </div>
+
+  </button>
+
+
+  <div class="progress-bar">
+
+    <div
+      class="progress-bar-value"
+      [style.width.%]="zone().percentage"
+    ></div>
+
+  </div>
+
+
+  @if (expanded()) {
+
+    <div class="progress-content">
+
+      @for (
+        lesson of zone().lessons;
+        track lesson.lessonId
+      ) {
+
+        <div
+          class="progress-item"
+
+          [class.progress-item--completed]="
+            lesson.status === 'completed'
+          "
+
+          [class.progress-item--current]="
+            lesson.status === 'current'
+          "
+        >
+
+          <span class="progress-status">
+
+            @if (
+              lesson.status === 'completed'
+            ) {
+              ✓
+            }
+
+            @if (
+              lesson.status === 'current'
+            ) {
+              ●
+            }
+
+            @if (
+              lesson.status === 'pending'
+            ) {
+              ○
+            }
+
+          </span>
+
+
+          <span>
+            {{ lesson.name }}
+          </span>
+
+        </div>
+
+      }
+
+    </div>
+
+  }
+
+</aside>

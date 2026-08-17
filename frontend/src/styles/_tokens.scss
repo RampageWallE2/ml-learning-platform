@@ -1,36 +1,26 @@
-@use './styles/tokens';
-@use './styles/typography';
-@use './styles/buttons';
-@use './styles/lessons';
-html,
-body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-}
-
-app-root {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
 :root {
+  --font-body: 'Inter', sans-serif;
+  --font-retro: 'Press Start 2P', monospace;
+  /* Colores principales */
   --color-primary: #3f6b4f;
   --color-primary-soft: #7fa36b;
 
+  /* Superficies */
   --color-surface: #f4ebd8;
   --color-surface-alt: #e3d2ae;
 
+  /* Tierra / bordes */
   --color-earth: #8b6246;
 
+  /* Texto */
   --color-text: #28332d;
   --color-text-muted: #647067;
 
+  /* Estados */
   --color-success: #5f914f;
   --color-warning: #c5903f;
   --color-error: #b85c4a;
 
+  /* Overlay */
   --color-overlay: rgba(20, 28, 23, 0.72);
 }

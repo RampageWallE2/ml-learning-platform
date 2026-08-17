@@ -1,0 +1,457 @@
+<section class="lesson farm-lesson">
+
+  <header class="lesson-header">
+    <span class="lesson-tag">Lección 2</span>
+
+    <h2>Producción de las parcelas</h2>
+
+    <p>
+      Compara cómo cambia la producción de dos parcelas
+      a lo largo de varios días.
+    </p>
+  </header>
+
+
+  <!-- ESTABILIDAD -->
+
+  @if (stage() === 'stability') {
+
+    <div class="lesson-card lesson-card--instruction">
+      <strong>Observa los datos</strong>
+
+      <p>
+        Estos son los resultados obtenidos durante cinco días.
+        Fíjate en cómo se distribuyen los valores.
+      </p>
+    </div>
+
+
+    <div class="parcels">
+
+      <!-- PARCELA A -->
+
+      <article class="parcel">
+
+        <div class="parcel-header">
+          <div>
+            <span>Producción diaria</span>
+            <h3>Parcela A</h3>
+          </div>
+
+          <span class="parcel-badge">
+            5 días
+          </span>
+        </div>
+
+
+        <div class="values">
+
+          @for (value of parcelA; track $index) {
+            <span>{{ value }}</span>
+          }
+
+        </div>
+
+
+        <div class="plot-container">
+
+          <svg
+            viewBox="0 0 440 120"
+            class="plot"
+          >
+
+            <line
+              x1="40"
+              y1="75"
+              x2="400"
+              y2="75"
+              class="axis"
+            />
+
+
+            @for (tick of axisTicks; track tick) {
+
+              <line
+                [attr.x1]="getPointX(tick)"
+                y1="70"
+                [attr.x2]="getPointX(tick)"
+                y2="80"
+                class="tick"
+              />
+
+              <text
+                [attr.x]="getPointX(tick)"
+                y="103"
+                text-anchor="middle"
+                class="tick-label"
+              >
+                {{ tick }}
+              </text>
+
+            }
+
+
+            @for (
+              point of parcelAPoints;
+              track $index
+            ) {
+
+              <circle
+                [attr.cx]="point.x"
+                [attr.cy]="point.y"
+                r="8"
+                class="point"
+              />
+
+              <text
+                [attr.x]="point.x"
+                [attr.y]="point.y - 12"
+                text-anchor="middle"
+                class="point-label"
+              >
+                {{ point.value }}
+              </text>
+
+            }
+
+          </svg>
+
+        </div>
+
+      </article>
+
+
+      <!-- PARCELA B -->
+
+      <article class="parcel">
+
+        <div class="parcel-header">
+          <div>
+            <span>Producción diaria</span>
+            <h3>Parcela B</h3>
+          </div>
+
+          <span class="parcel-badge">
+            5 días
+          </span>
+        </div>
+
+
+        <div class="values">
+
+          @for (value of parcelB; track $index) {
+            <span>{{ value }}</span>
+          }
+
+        </div>
+
+
+        <div class="plot-container">
+
+          <svg
+            viewBox="0 0 440 120"
+            class="plot"
+          >
+
+            <line
+              x1="40"
+              y1="75"
+              x2="400"
+              y2="75"
+              class="axis"
+            />
+
+
+            @for (tick of axisTicks; track tick) {
+
+              <line
+                [attr.x1]="getPointX(tick)"
+                y1="70"
+                [attr.x2]="getPointX(tick)"
+                y2="80"
+                class="tick"
+              />
+
+              <text
+                [attr.x]="getPointX(tick)"
+                y="103"
+                text-anchor="middle"
+                class="tick-label"
+              >
+                {{ tick }}
+              </text>
+
+            }
+
+
+            @for (
+              point of parcelBPoints;
+              track $index
+            ) {
+
+              <circle
+                [attr.cx]="point.x"
+                [attr.cy]="point.y"
+                r="8"
+                class="point"
+              />
+
+              <text
+                [attr.x]="point.x"
+                [attr.y]="point.y - 12"
+                text-anchor="middle"
+                class="point-label"
+              >
+                {{ point.value }}
+              </text>
+
+            }
+
+          </svg>
+
+        </div>
+
+      </article>
+
+    </div>
+
+
+    <div class="question-section">
+
+      <span class="lesson-tag">
+        Compara
+      </span>
+
+      <h3>
+        ¿Cuál parcela parece tener una producción más estable?
+      </h3>
+
+
+      <div class="answer-options">
+
+        <button
+          class="btn btn--answer"
+          (click)="selectStableParcel('A')"
+        >
+          Parcela A
+        </button>
+
+        <button
+          class="btn btn--answer"
+          (click)="selectStableParcel('B')"
+        >
+          Parcela B
+        </button>
+
+      </div>
+
+
+      @if (stabilityAnswer() === 'B') {
+
+        <div class="feedback feedback--hint">
+
+          <strong>Observa nuevamente</strong>
+
+          <p>
+            Fíjate en cuánto cambian los resultados
+            de un día a otro.
+          </p>
+
+        </div>
+
+      }
+
+    </div>
+
+  }
+
+
+  <!-- PROMEDIO -->
+
+  @if (stage() === 'average') {
+
+    <div class="discovery-header">
+
+      <span class="lesson-tag">
+        Nuevo descubrimiento
+      </span>
+
+      <h3>
+        Ahora observa algo interesante
+      </h3>
+
+      <p>
+        Calculemos el promedio de producción
+        de cada parcela.
+      </p>
+
+    </div>
+
+
+    <div class="averages">
+
+      <article class="average-card">
+
+        <span>Parcela A</span>
+
+        <strong>
+          {{ averageA() }}
+        </strong>
+
+        <small>Promedio</small>
+
+      </article>
+
+
+      <article class="average-card">
+
+        <span>Parcela B</span>
+
+        <strong>
+          {{ averageB() }}
+        </strong>
+
+        <small>Promedio</small>
+
+      </article>
+
+    </div>
+
+
+    <div class="observation-card">
+
+      <strong>Mismo promedio</strong>
+
+      <p>
+        Ambas parcelas tienen un promedio de producción
+        de <strong>10</strong>.
+      </p>
+
+      <p>
+        Pero sus resultados no se comportan de la misma manera.
+      </p>
+
+    </div>
+
+
+    <div class="question-section">
+
+      <span class="lesson-tag">
+        Piensa en la distribución
+      </span>
+
+      <h3>
+        Entonces, ¿qué diferencia estás observando?
+      </h3>
+
+
+      <div class="answer-options">
+
+        <button
+          class="btn btn--answer"
+          (click)="selectDifference('concentrated')"
+        >
+          Los resultados de A están más concentrados
+        </button>
+
+        <button
+          class="btn btn--answer"
+          (click)="selectDifference('more-data')"
+        >
+          A tiene más mediciones
+        </button>
+
+        <button
+          class="btn btn--answer"
+          (click)="selectDifference('higher-average')"
+        >
+          B tiene un promedio mayor
+        </button>
+
+        <button
+          class="btn btn--answer"
+          (click)="selectDifference('same')"
+        >
+          Ambas se comportan igual
+        </button>
+
+      </div>
+
+
+      @if (
+        differenceAnswer() &&
+        differenceAnswer() !== 'concentrated'
+      ) {
+
+        <div class="feedback feedback--hint">
+
+          <strong>Una pista</strong>
+
+          <p>
+            Ambas tienen la misma cantidad de datos
+            y el mismo promedio. Observa cómo están
+            distribuidos los valores.
+          </p>
+
+        </div>
+
+      }
+
+    </div>
+
+  }
+
+
+  <!-- COMPLETADA -->
+
+  @if (stage() === 'completed') {
+
+    <div class="lesson-completion">
+
+      <span class="success-label">
+        Concepto reforzado
+      </span>
+
+      <h3>
+        El promedio no cuenta toda la historia
+      </h3>
+
+      <div class="conclusion-comparison">
+
+        <div>
+          <span>Parcela A</span>
+          <strong>Más concentrada</strong>
+        </div>
+
+        <div>
+          <span>Parcela B</span>
+          <strong>Más dispersa</strong>
+        </div>
+
+      </div>
+
+
+      <p>
+        Ambas parcelas tienen un promedio de
+        <strong>10</strong>.
+      </p>
+
+      <p>
+        Sin embargo, los resultados de la Parcela A
+        están mucho más concentrados, mientras que los
+        de la Parcela B están más dispersos.
+      </p>
+
+
+      <button
+        class="btn btn--primary"
+        (click)="finishLesson()"
+      >
+        Continuar
+      </button>
+
+    </div>
+
+  }
+
+</section>

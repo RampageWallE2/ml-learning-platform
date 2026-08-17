@@ -1,5 +1,13 @@
 <div class="world-page">
 
+  @if (progress.currentZone(); as zone) {
+
+    <app-zone-progress
+      [zone]="zone"
+    />
+
+  }
+  
   <div id="phaser-container"></div>
 
   @if (currentObjective()) {
@@ -9,28 +17,32 @@
     </div>
   }
 
+  <!-- LECCIONES -->
   @if (lessonActive(); as lesson) {
-    <div class="lesson-overlay">
-      <div class="lesson-panel">
 
-        @if (
-          lesson.lessonId === 'lesson-01' &&
-          lesson.step === 1
-        ) {
-          <app-lesson-01-nursery
-            (completed)="closeLesson()"
-          />
-        }
+    <app-interaction-panel
+      (closed)="closeLesson()"
+    >
 
-      </div>
-    </div>
+      <app-lesson-runner
+        [lessonId]="lesson.lessonId"
+        (completed)="completeLesson($event)"
+      />
+
+    </app-interaction-panel>
+
   }
 
+  <!-- DIÁLOGOS -->
   @if (activeDialogue(); as dialogue) {
-    <app-dialogue
-      [dialogue]="dialogue"
-      (completed)="closeDialogue()"
-    />
+    <app-interaction-panel
+      (closed)="closeDialogue()"
+    >
+      <app-dialogue
+        [dialogue]="dialogue"
+        (completed)="closeDialogue()"
+      />
+    </app-interaction-panel>
   }
 
 </div>

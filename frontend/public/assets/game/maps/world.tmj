@@ -1928,8 +1928,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":155.53,
-                 "y":116.56
+                 "x":1224.19666666667,
+                 "y":612.893333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -2004,24 +2004,30 @@
                          "name":"lessonId",
                          "type":"string",
                          "value":"lesson-02"
-                        }, 
-                        {
-                         "name":"step",
-                         "type":"int",
-                         "value":2
                         }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":210,
-                 "x":1300.50033333333,
-                 "y":224.333333333333
+                 "x":1300.5,
+                 "y":224.333
                 }, 
                 {
                  "height":106,
                  "id":111,
                  "name":"lesson-04",
                  "opacity":1,
+                 "properties":[
+                        {
+                         "name":"interactionType",
+                         "type":"string",
+                         "value":"lesson"
+                        }, 
+                        {
+                         "name":"lessonId",
+                         "type":"string",
+                         "value":"lesson-04"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
@@ -2034,6 +2040,17 @@
                  "id":112,
                  "name":"lesson-03",
                  "opacity":1,
+                 "properties":[
+                        {
+                         "name":"interactionType",
+                         "type":"string",
+                         "value":"lesson"
+                        }, 
+                        {
+                         "name":"lessonId",
+                         "type":"string",
+                         "value":"lesson-03"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
@@ -2066,7 +2083,7 @@
                  "type":"",
                  "visible":true,
                  "width":222,
-                 "x":580.666666666667,
+                 "x":580.667,
                  "y":190
                 }, 
                 {

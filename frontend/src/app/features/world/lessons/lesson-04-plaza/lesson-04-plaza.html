@@ -1,0 +1,441 @@
+<section class="lesson">
+
+  <header class="lesson-header">
+
+    <span class="lesson-tag">
+      Desafío de la zona
+    </span>
+
+    <h2>La plaza</h2>
+
+    <p>
+      Supera los tres retos para demostrar
+      lo que aprendiste sobre dispersión.
+    </p>
+
+  </header>
+
+
+  <!-- PROGRESO -->
+
+  <div class="challenge-progress">
+
+    <div
+      [class.challenge-step--active]="
+        stage() === 'dispersion'
+      "
+      [class.challenge-step--completed]="
+        stage() !== 'dispersion'
+      "
+      class="challenge-step"
+    >
+      1
+    </div>
+
+    <span></span>
+
+    <div
+      [class.challenge-step--active]="
+        stage() === 'average'
+      "
+      [class.challenge-step--completed]="
+        stage() === 'distance' ||
+        stage() === 'completed'
+      "
+      class="challenge-step"
+    >
+      2
+    </div>
+
+    <span></span>
+
+    <div
+      [class.challenge-step--active]="
+        stage() === 'distance'
+      "
+      [class.challenge-step--completed]="
+        stage() === 'completed'
+      "
+      class="challenge-step"
+    >
+      3
+    </div>
+
+  </div>
+
+
+@if (stage() === 'dispersion') {
+
+  <div class="challenge-heading">
+
+    <span class="lesson-tag">
+      Reto 1 de 3
+    </span>
+
+    <h3>
+      Producción de tomates
+    </h3>
+
+    <p>
+      Durante cinco días se registraron los kilogramos
+      de tomates cosechados en dos parcelas.
+    </p>
+
+  </div>
+
+
+  <div class="data-comparison">
+
+    <article class="data-card">
+
+      <h3>Parcela A</h3>
+
+      <div class="data-values">
+        @for (value of tomatoPlotA; track $index) {
+          <span>{{ value }} kg</span>
+        }
+      </div>
+
+    </article>
+
+
+    <article class="data-card">
+
+      <h3>Parcela B</h3>
+
+      <div class="data-values">
+        @for (value of tomatoPlotB; track $index) {
+          <span>{{ value }} kg</span>
+        }
+      </div>
+
+    </article>
+
+  </div>
+
+
+  <div class="question-section">
+
+    <h3>
+      ¿Cuál parcela presenta una producción más dispersa?
+    </h3>
+
+    <div class="answer-options">
+
+      <button
+        class="btn btn--answer"
+        (click)="selectDispersion('A')"
+      >
+        Parcela A
+      </button>
+
+      <button
+        class="btn btn--answer"
+        (click)="selectDispersion('B')"
+      >
+        Parcela B
+      </button>
+
+    </div>
+
+
+    @if (dispersionAnswer() === 'A') {
+
+      <div class="feedback feedback--hint">
+
+        <strong>Observa nuevamente</strong>
+
+        <p>
+          Fíjate en qué parcela los valores están
+          más separados entre sí.
+        </p>
+
+      </div>
+    }
+
+  </div>
+}
+
+    @if (stage() === 'average') {
+
+    <div class="challenge-heading">
+
+        <span class="lesson-tag">
+        Reto 2 de 3
+        </span>
+
+        <h3>
+        Producción de los invernaderos
+        </h3>
+
+        <p>
+        Se registró la producción diaria de dos
+        invernaderos durante cinco días.
+        </p>
+
+    </div>
+
+
+    <div class="data-comparison">
+
+        <article class="data-card">
+
+        <h3>Invernadero A</h3>
+
+        <div class="data-values">
+            @for (value of greenhouseA; track $index) {
+            <span>{{ value }} kg</span>
+            }
+        </div>
+
+        <div class="average-calculation">
+
+            <p>
+            72 + 74 + 75 + 76 + 78 = 375
+            </p>
+
+            <strong>
+            375 ÷ 5 = 75 kg
+            </strong>
+
+        </div>
+
+        </article>
+
+
+        <article class="data-card">
+
+        <h3>Invernadero B</h3>
+
+        <div class="data-values">
+            @for (value of greenhouseB; track $index) {
+            <span>{{ value }} kg</span>
+            }
+        </div>
+
+        <div class="average-calculation">
+
+            <p>
+            58 + 68 + 75 + 84 + 90 = 375
+            </p>
+
+            <strong>
+            375 ÷ 5 = 75 kg
+            </strong>
+
+        </div>
+
+        </article>
+
+    </div>
+
+
+    <div class="question-section">
+
+        <h3>
+        Ambos tienen un promedio de 75 kg.
+        ¿Podemos decir que su producción se comporta igual?
+        </h3>
+
+
+        <div class="answer-options">
+
+        <button
+            class="btn btn--answer"
+            (click)="selectAverage('same')"
+        >
+            Sí, porque tienen el mismo promedio
+        </button>
+
+        <button
+            class="btn btn--answer"
+            (click)="selectAverage('different-dispersion')"
+        >
+            No, porque sus valores tienen distinta dispersión
+        </button>
+
+        <button
+            class="btn btn--answer"
+            (click)="selectAverage('more-data')"
+        >
+            No, porque A tiene más mediciones
+        </button>
+
+        <button
+            class="btn btn--answer"
+            (click)="selectAverage('higher-b')"
+        >
+            No, porque B tiene un promedio mayor
+        </button>
+
+        </div>
+
+
+        @if (
+        averageAnswer() &&
+        averageAnswer() !== 'different-dispersion'
+        ) {
+
+        <div class="feedback feedback--hint">
+
+            <strong>Observa los datos</strong>
+
+            <p>
+            Ambos tienen cinco mediciones y el mismo
+            promedio. Compara qué tan separados están
+            sus valores.
+            </p>
+
+        </div>
+        }
+
+    </div>
+    }
+
+
+    @if (stage() === 'distance') {
+
+    <div class="challenge-heading">
+
+        <span class="lesson-tag">
+        Reto 3 de 3
+        </span>
+
+        <h3>
+        Producción diaria de papa
+        </h3>
+
+        <p>
+        Un cultivo produce en promedio 72 kg de papa
+        por día. Hoy se registraron 89 kg.
+        </p>
+
+    </div>
+
+
+    <div class="distance-challenge">
+
+        <div>
+        <span>Producción promedio</span>
+
+        <strong>
+            {{ potatoAverage }} kg
+        </strong>
+        </div>
+
+        <span class="distance-arrow">
+        ↔
+        </span>
+
+        <div>
+        <span>Producción de hoy</span>
+
+        <strong>
+            {{ potatoProduction }} kg
+        </strong>
+        </div>
+
+    </div>
+
+
+    <div class="question-section">
+
+        <h3>
+        ¿A qué distancia se encuentra la producción
+        de hoy respecto al promedio?
+        </h3>
+
+
+        <div class="distance-options">
+
+        @for (option of distanceOptions; track option) {
+
+            <button
+            class="btn btn--answer"
+            (click)="selectDistance(option)"
+            >
+            {{ option }} kg
+            </button>
+
+        }
+
+        </div>
+
+
+        @if (
+        distanceAnswer() !== null &&
+        distanceAnswer() !== correctDistance
+        ) {
+
+        <div class="feedback feedback--hint">
+
+            <strong>Una pista</strong>
+
+            <p>
+            Calcula la diferencia entre
+            89 kg y 72 kg.
+            </p>
+
+        </div>
+        }
+
+    </div>
+    }
+
+
+  <!-- COMPLETADO -->
+
+  @if (stage() === 'completed') {
+
+    <div class="lesson-completion">
+
+      <span class="success-label">
+        Zona completada
+      </span>
+
+      <h3>
+        Desafío de la Plaza superado
+      </h3>
+
+
+      <div class="achievement-list">
+
+        <div>
+          <span>✓</span>
+          <p>
+            Reconoces cuándo un conjunto
+            presenta mayor dispersión.
+          </p>
+        </div>
+
+        <div>
+          <span>✓</span>
+          <p>
+            Entiendes que el promedio no
+            describe todo el comportamiento.
+          </p>
+        </div>
+
+        <div>
+          <span>✓</span>
+          <p>
+            Puedes medir la distancia
+            de un dato respecto al centro.
+          </p>
+        </div>
+
+      </div>
+
+
+      <button
+        class="btn btn--primary"
+        (click)="finishChallenge()"
+      >
+        Completar zona
+      </button>
+
+    </div>
+
+  }
+
+</section>
