@@ -9,17 +9,12 @@ type TiledProperty = {
 };
 
 type WorldTilesets = {
-    trees: Phaser.Tilemaps.Tileset;
-    shrub: Phaser.Tilemaps.Tileset;
-    path: Phaser.Tilemaps.Tileset;
-    water: Phaser.Tilemaps.Tileset;
-    wood: Phaser.Tilemaps.Tileset;
-    ruins: Phaser.Tilemaps.Tileset;
-    mushrooms: Phaser.Tilemaps.Tileset;
-    rocks: Phaser.Tilemaps.Tileset;
-    farm: Phaser.Tilemaps.Tileset;
     terrain: Phaser.Tilemaps.Tileset;
-    farm_details: Phaser.Tilemaps.Tileset;
+    orangeTree: Phaser.Tilemaps.Tileset;
+    propsBuildings: Phaser.Tilemaps.Tileset;
+    trees: Phaser.Tilemaps.Tileset;
+    crops: Phaser.Tilemaps.Tileset;
+    fences: Phaser.Tilemaps.Tileset;
 }
 
 export class WorldScene extends Phaser.Scene {
@@ -50,57 +45,136 @@ export class WorldScene extends Phaser.Scene {
 
     preload(): void {
         this.load.spritesheet('player', 'assets/game/characters/character2.png', {frameWidth: 32, frameHeight:32})
-        this.load.image('trees', 'assets/game/tilesets/trees.png');
-        this.load.image('shrub', 'assets/game/tilesets/shrub.png');
-        this.load.image('path', 'assets/game/tilesets/path.png');
-        this.load.image('water', 'assets/game/tilesets/water.png');
-        this.load.image('wood', 'assets/game/tilesets/wood.png');
-        this.load.image('ruins', 'assets/game/tilesets/ruins.png');
-        this.load.image('mushrooms', 'assets/game/tilesets/mushrooms.png')
-        this.load.image('rocks', 'assets/game/tilesets/rocks.png')
-        this.load.image('farm', 'assets/game/tilesets/farm/farm.png')
-        this.load.image('terrain', 'assets/game/tilesets/farm/terrain.png')
-        this.load.image('farm_details', 'assets/game/tilesets/farm/farm_details.png')
+
+        this.load.image('terrain', 'assets/game/tilesets/terrain/terrain.png')
+        this.load.image('orangeTree', 'assets/game/tilesets/vegetation/orangeTree.png')
+        this.load.image('trees', 'assets/game/tilesets/vegetation/trees.png')
+        this.load.image('propsBuildings', 'assets/game/tilesets/buildings/propsBuildings.png')
+        this.load.image('crops', 'assets/game/tilesets/crops/crops.png')
+        this.load.image('fences', 'assets/game/tilesets/fences/fences.png')
         this.load.tilemapTiledJSON('world', 'assets/game/maps/world.tmj')
 
     }
 
     private createTilesets(map: Phaser.Tilemaps.Tilemap) : WorldTilesets{
 
-        const mushrooms = map.addTilesetImage('mushrooms','mushrooms');
-        const ruins = map. addTilesetImage('ruins', 'ruins');
-        const water = map.addTilesetImage('water', 'water');
-        const trees = map.addTilesetImage('trees', 'trees');
-        const shrub = map.addTilesetImage('shrub', 'shrub');
-        const path = map.addTilesetImage('path', 'path');
-        const rocks = map.addTilesetImage('rocks', 'rocks');
-        const wood = map.addTilesetImage('wood', 'wood');
-        const farm = map.addTilesetImage('farm', 'farm');
-        const farm_details = map.addTilesetImage('farm_details', 'farm_details');
         const terrain = map.addTilesetImage('terrain', 'terrain');
+        const orangeTree = map.addTilesetImage('orangeTree', 'orangeTree');
+        const propsBuildings = map.addTilesetImage('propsBuildings', 'propsBuildings');
+        const trees = map.addTilesetImage('trees', 'trees');
+        const crops = map.addTilesetImage('crops', 'crops');
+        const fences = map.addTilesetImage('fences', 'fences');
+        
 
         if (
-            !mushrooms || !ruins || !water || !trees || 
-            !shrub || !path || !rocks || !wood || !farm || !farm_details || !terrain
+            !terrain || !orangeTree || !propsBuildings || !trees || !fences || !crops
         ) {
             throw new Error('No se pudo crear la capa water');
         }
         return {
-            mushrooms, ruins, water, trees, shrub, path, rocks, wood, farm, farm_details, terrain
+            terrain, orangeTree, propsBuildings, trees, crops, fences
         }
     };
 
     private createMapLayers( map: Phaser.Tilemaps.Tilemap, tiles: WorldTilesets): Phaser.Tilemaps.TilemapLayer {
 
-        map.createLayer('Ground', [
-            tiles.trees,
-            tiles.shrub,
-            tiles.path
-        ]);
+        map.createLayer('Terrain/Ground', [
+            tiles.terrain,
+        ]).setDepth(0);
 
+        map.createLayer('Terrain/Paths', [
+            tiles.terrain,
+        ]).setDepth(0);
+
+        map.createLayer('Terrain/Farmland', [
+            tiles.terrain,
+        ]).setDepth(0);
+
+        map.createLayer('Terrain/Ground_Details', [
+            tiles.propsBuildings
+        ]).setDepth(1);
+        
+        map.createLayer('Terrain/Ground_Details_2', [
+            tiles.propsBuildings
+        ]
+        ).setDepth(2);
+        
+        map.createLayer('Structures/Vehicles', [
+            tiles.propsBuildings
+        ]
+        ).setDepth(3);
+        
+        map.createLayer('Structures/Props', [
+            tiles.propsBuildings
+        ]
+        ).setDepth(4);
+        map.createLayer('Structures/Props_2', [
+            tiles.propsBuildings
+        ]
+        ).setDepth(4);
+        map.createLayer('Structures/Props_3', [
+            tiles.propsBuildings
+        ]
+        ).setDepth(4);
+        map.createLayer('Structures/Buildings', [
+            tiles.propsBuildings
+        ]
+        ).setDepth(3);
+        map.createLayer('Structures/Fences', [
+            tiles.fences
+        ]
+        ).setDepth(4);
+
+        map.createLayer('Nature/Forest_Walls', [
+            tiles.trees
+        ]
+        ).setDepth(6)
+        
+        map.createLayer('Nature/Trees', [
+            tiles.trees,
+        ]
+        ).setDepth(14)
+        
+        map.createLayer('Nature/Trees_2', [
+            tiles.trees,
+        ]
+        ).setDepth(14)
+        
+        map.createLayer('Nature/Crops', [
+            tiles.crops,
+            tiles.propsBuildings
+        ]
+        ).setDepth(15)
+ 
+        map.createLayer('Nature/Crops_2', [
+            tiles.crops,
+            tiles.propsBuildings
+        ]
+        ).setDepth(16)
+
+        map.createLayer('Nature/Forest_Walls_2', [
+            tiles.trees
+        ]
+        ).setDepth(7)
+        
+        map.createLayer('Nature/Forest_Walls_3', [
+            tiles.trees
+        ]
+        ).setDepth(8)
+
+        map.createLayer('Nature/Forest_Walls_4', [
+            tiles.trees
+        ]
+        ).setDepth(9)
+
+        map.createLayer('Nature/Forest_Walls_5', [
+            tiles.trees
+        ]
+        ).setDepth(10)
+                
         const waterLayer = map.createLayer(
-            'Water',
-            [tiles.water],
+            'Terrain/Water',
+            [tiles.terrain],
             0,
             0,
             false
@@ -109,66 +183,6 @@ export class WorldScene extends Phaser.Scene {
         if (!(waterLayer instanceof Phaser.Tilemaps.TilemapLayer)) {
             throw new Error('No se pudo crear la capa Water como TilemapLayer');
         }
-
-        map.createLayer('Ornamental_plants', [
-            tiles.mushrooms,
-            tiles.trees
-        ]);
-
-        map.createLayer('Aquatic_plants', [
-            tiles.water
-        ]);
-
-        map.createLayer('Path', [
-            tiles.path,
-            tiles.wood
-        ]);
-
-        map.createLayer('Rocks', [
-            tiles.rocks,
-            tiles.path
-        ]);
-
-        map.createLayer('Buildings', [
-            tiles.ruins,
-            tiles.farm
-        ]);
-
-        const treesUpperLayer = map.createLayer('Trees_upper', [
-            tiles.trees,
-            tiles.wood
-        ]);
-
-        map.createLayer('Trees_intermediate', [
-            tiles.farm_details,
-        ]);
-        
-        const treesLowerLayer = map.createLayer('Trees_lower', [
-            tiles.trees,
-            tiles.farm_details
-        ]);
-        
-        const buildingsLowerLayer = map.createLayer('Buildings_lower', [
-            tiles.ruins,
-        ]);
-
-        map.createLayer('Field', [
-            tiles.terrain
-        ])
-
-        map.createLayer('Field_content', [
-            tiles.farm_details
-        ])
-
-        map.createLayer('Objects_upper', [
-            tiles.farm,
-            tiles.farm_details
-        ])
-
-        buildingsLowerLayer?.setDepth(11)
-        treesUpperLayer?.setDepth(20)
-
-        console.log('Trees upper:', treesUpperLayer?.depth);
 
         return waterLayer;
     }
@@ -539,7 +553,7 @@ export class WorldScene extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.setBodySize(16, 10);
         this.player.setOffset(8, 20);
-        this.player.setDepth(10)
+        this.player.setDepth(12)
         console.log('Player:', this.player.depth);
     }
 
