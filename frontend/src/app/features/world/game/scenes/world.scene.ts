@@ -10,11 +10,43 @@ type TiledProperty = {
 
 type WorldTilesets = {
     terrain: Phaser.Tilemaps.Tileset;
-    orangeTree: Phaser.Tilemaps.Tileset;
     propsBuildings: Phaser.Tilemaps.Tileset;
     trees: Phaser.Tilemaps.Tileset;
     crops: Phaser.Tilemaps.Tileset;
     fences: Phaser.Tilemaps.Tileset;
+
+    
+    water_1: Phaser.Tilemaps.Tileset;
+    city_terrain: Phaser.Tilemaps.Tileset;
+    city_terrains_global: Phaser.Tilemaps.Tileset;
+    well : Phaser.Tilemaps.Tileset;
+    // city_props: Phaser.Tilemaps.Tileset;
+    
+    office: Phaser.Tilemaps.Tileset;
+    generic_buildings: Phaser.Tilemaps.Tileset;
+    fire_station: Phaser.Tilemaps.Tileset;
+    garden: Phaser.Tilemaps.Tileset;
+    villas: Phaser.Tilemaps.Tileset
+    police_station: Phaser.Tilemaps.Tileset
+
+    cow_big_white: Phaser.Tilemaps.Tileset
+    dog_german_shepherd_dark_brown: Phaser.Tilemaps.Tileset
+    dogshouse: Phaser.Tilemaps.Tileset
+    rabbit_white: Phaser.Tilemaps.Tileset
+    rooster_golden: Phaser.Tilemaps.Tileset
+    
+    
+    character_postman_3: Phaser.Tilemaps.Tileset
+    farmer_1_chopping: Phaser.Tilemaps.Tileset
+    farmer_1: Phaser.Tilemaps.Tileset
+    farmer_2: Phaser.Tilemaps.Tileset
+    worker_helmet: Phaser.Tilemaps.Tileset
+    
+    worksite_props: Phaser.Tilemaps.Tileset
+
+
+    
+
 }
 
 export class WorldScene extends Phaser.Scene {
@@ -47,11 +79,38 @@ export class WorldScene extends Phaser.Scene {
         this.load.spritesheet('player', 'assets/game/characters/character2.png', {frameWidth: 32, frameHeight:32})
 
         this.load.image('terrain', 'assets/game/tilesets/terrain/terrain.png')
-        this.load.image('orangeTree', 'assets/game/tilesets/vegetation/orangeTree.png')
         this.load.image('trees', 'assets/game/tilesets/vegetation/trees.png')
         this.load.image('propsBuildings', 'assets/game/tilesets/buildings/propsBuildings.png')
         this.load.image('crops', 'assets/game/tilesets/crops/crops.png')
         this.load.image('fences', 'assets/game/tilesets/fences/fences.png')
+
+        this.load.image('office', 'assets/game/tilesets/buildings/office.png')
+        this.load.image('generic_buildings', 'assets/game/tilesets/buildings/generic_buildings.png')
+        this.load.image('fire_station', 'assets/game/tilesets/buildings/fire_station.png')
+        this.load.image('garden', 'assets/game/tilesets/buildings/garden.png')
+        this.load.image('villas', 'assets/game/tilesets/buildings/villas.png')
+        this.load.image('police_station', 'assets/game/tilesets/buildings/police_station.png')
+        
+        this.load.image('water_1', 'assets/game/tilesets/terrain/water/water_1.png')
+        this.load.image('city_terrain', 'assets/game/tilesets/terrain/city_terrain.png')
+        this.load.image('city_terrains_global', 'assets/game/tilesets/terrain/city_terrains_global.png')
+        
+        
+        this.load.image('cow_big_white', 'assets/game/tilesets/animals/cow_big_white.png')
+        this.load.image('dog_german_shepherd_dark_brown', 'assets/game/tilesets/animals/dog_german_shepherd_dark_brown.png')
+        this.load.image('dogshouse', 'assets/game/tilesets/animals/dogshouse.png')
+        this.load.image('rabbit_white', 'assets/game/tilesets/animals/rabbit_white.png')
+        this.load.image('rooster_golden', 'assets/game/tilesets/animals/rooster_golden.png')
+        
+        this.load.image('character_postman_3', 'assets/game/characters/character_postman_3.png')
+        this.load.image('farmer_1_chopping', 'assets/game/characters/farmer_1_chopping.png')
+        this.load.image('farmer_1', 'assets/game/characters/farmer_1.png')
+        this.load.image('farmer_2', 'assets/game/characters/farmer_2.png')
+        this.load.image('worker_helmet', 'assets/game/characters/worker_helmet.png')
+        
+        this.load.image('well', 'assets/game/tilesets/props/well.png')
+        this.load.image('worksite_props', 'assets/game/tilesets/props/worksite_props.png')
+
         this.load.tilemapTiledJSON('world', 'assets/game/maps/world.tmj')
 
     }
@@ -59,32 +118,80 @@ export class WorldScene extends Phaser.Scene {
     private createTilesets(map: Phaser.Tilemaps.Tilemap) : WorldTilesets{
 
         const terrain = map.addTilesetImage('terrain', 'terrain');
-        const orangeTree = map.addTilesetImage('orangeTree', 'orangeTree');
         const propsBuildings = map.addTilesetImage('propsBuildings', 'propsBuildings');
         const trees = map.addTilesetImage('trees', 'trees');
         const crops = map.addTilesetImage('crops', 'crops');
         const fences = map.addTilesetImage('fences', 'fences');
-        
 
+        const water_1 = map.addTilesetImage('water_1', 'water_1');
+        const city_terrain = map.addTilesetImage('city_terrain', 'city_terrain');
+        const city_terrains_global = map.addTilesetImage('city_terrains_global', 'city_terrains_global');
+        
+        const office = map.addTilesetImage('office', 'office');
+        const generic_buildings = map.addTilesetImage('generic_buildings', 'generic_buildings');
+        const fire_station = map.addTilesetImage('fire_station', 'fire_station');
+        const garden = map.addTilesetImage('garden', 'garden');
+
+        const villas = map.addTilesetImage('villas', 'villas');
+        const police_station = map.addTilesetImage('police_station', 'police_station');        
+        
+        const cow_big_white = map.addTilesetImage('cow_big_white', 'cow_big_white');        
+        const dog_german_shepherd_dark_brown = 
+        map.addTilesetImage('dog_german_shepherd_dark_brown', 'dog_german_shepherd_dark_brown');        
+        const dogshouse = map.addTilesetImage('dogshouse', 'dogshouse');        
+        const rabbit_white = map.addTilesetImage('rabbit_white', 'rabbit_white');        
+        const rooster_golden = map.addTilesetImage('rooster_golden', 'rooster_golden');        
+        
+        const character_postman_3 = map.addTilesetImage('character_postman_3', 'character_postman_3');       
+        const farmer_1_chopping = map.addTilesetImage('farmer_1_chopping', 'farmer_1_chopping');       
+        const farmer_1 = map.addTilesetImage('farmer_1', 'farmer_1');       
+        const farmer_2 = map.addTilesetImage('farmer_2', 'farmer_2');       
+        const worker_helmet = map.addTilesetImage('worker_helmet', 'worker_helmet');       
+        
+        const worksite_props = map.addTilesetImage('worksite_props', 'worksite_props');       
+
+        const well = map.addTilesetImage('well', 'well');       
+        
         if (
-            !terrain || !orangeTree || !propsBuildings || !trees || !fences || !crops
+            !terrain || !propsBuildings || !trees || !fences || 
+            !crops || !water_1 || !city_terrains_global || !city_terrain ||
+            !office || !generic_buildings || !fire_station || !garden || 
+            !villas || !police_station || !cow_big_white || !dog_german_shepherd_dark_brown ||
+            !dogshouse || !rabbit_white || !rooster_golden || !character_postman_3 ||
+            !farmer_1_chopping || !farmer_1 || !farmer_2 || !worker_helmet || !well || 
+            !worksite_props
         ) {
             throw new Error('No se pudo crear la capa water');
         }
         return {
-            terrain, orangeTree, propsBuildings, trees, crops, fences
+            terrain, propsBuildings, trees, crops, fences, 
+            water_1, city_terrains_global, city_terrain,
+            office, generic_buildings, fire_station, garden,
+            villas, police_station, cow_big_white, dog_german_shepherd_dark_brown,
+            dogshouse, rabbit_white, rooster_golden, character_postman_3, farmer_1_chopping,
+            farmer_1, farmer_2, worker_helmet, well, worksite_props
         }
     };
 
     private createMapLayers( map: Phaser.Tilemaps.Tilemap, tiles: WorldTilesets): Phaser.Tilemaps.TilemapLayer {
 
+        
         map.createLayer('Terrain/Ground', [
             tiles.terrain,
+            tiles.city_terrains_global
         ]).setDepth(0);
 
         map.createLayer('Terrain/Paths', [
             tiles.terrain,
         ]).setDepth(0);
+
+        map.createLayer('Terrain/Road', [
+            tiles.city_terrain,
+        ]).setDepth(1);
+        
+        map.createLayer('Terrain/Road_Details', [
+            tiles.city_terrain,
+        ]).setDepth(2);
 
         map.createLayer('Terrain/Farmland', [
             tiles.terrain,
@@ -99,13 +206,33 @@ export class WorldScene extends Phaser.Scene {
         ]
         ).setDepth(2);
         
+        map.createLayer('Entities/Animals', [
+            tiles.cow_big_white,
+            tiles.dog_german_shepherd_dark_brown, 
+            tiles.dogshouse,
+            tiles.rabbit_white,
+            tiles.rooster_golden,
+        ]
+        ).setDepth(3);
+
+        map.createLayer('Entities/NPCs', [
+            tiles.character_postman_3,
+            tiles.farmer_1_chopping, 
+            tiles.farmer_1,
+            tiles.farmer_2
+        ]
+        ).setDepth(3);
+
         map.createLayer('Structures/Vehicles', [
             tiles.propsBuildings
         ]
         ).setDepth(3);
         
         map.createLayer('Structures/Props', [
-            tiles.propsBuildings
+            tiles.propsBuildings,
+            tiles.garden,
+            tiles.well,
+            tiles.worksite_props
         ]
         ).setDepth(4);
         map.createLayer('Structures/Props_2', [
@@ -116,12 +243,22 @@ export class WorldScene extends Phaser.Scene {
             tiles.propsBuildings
         ]
         ).setDepth(4);
+        
         map.createLayer('Structures/Buildings', [
-            tiles.propsBuildings
+            tiles.propsBuildings,
+            tiles.office,
+            tiles.generic_buildings,
+            tiles.fire_station,
+            tiles.garden, 
+            tiles.villas,
+            tiles.police_station,
+            tiles.worksite_props     
         ]
         ).setDepth(3);
+
         map.createLayer('Structures/Fences', [
-            tiles.fences
+            tiles.fences,
+            tiles.worksite_props
         ]
         ).setDepth(4);
 
@@ -134,6 +271,11 @@ export class WorldScene extends Phaser.Scene {
             tiles.trees,
         ]
         ).setDepth(14)
+
+        map.createLayer('Nature/Bushes', [
+            tiles.garden,
+        ]
+        ).setDepth(2)
         
         map.createLayer('Nature/Trees_2', [
             tiles.trees,
@@ -171,14 +313,21 @@ export class WorldScene extends Phaser.Scene {
             tiles.trees
         ]
         ).setDepth(10)
+
+        map.createLayer('Upper/Trees', [
+            tiles.trees
+        ]
+        ).setDepth(20)
                 
         const waterLayer = map.createLayer(
             'Terrain/Water',
-            [tiles.terrain],
-            0,
-            0,
-            false
-        );
+            [tiles.water_1]
+        ).setDepth(1);
+
+        map.createLayer(
+            'Terrain/Water_Details',
+            [tiles.city_terrains_global]
+        ).setDepth(1);
 
         if (!(waterLayer instanceof Phaser.Tilemaps.TilemapLayer)) {
             throw new Error('No se pudo crear la capa Water como TilemapLayer');
@@ -460,7 +609,7 @@ export class WorldScene extends Phaser.Scene {
             return;
         }
 
-        const speed = 200;
+        const speed = 500;
 
         let x = 0;
         let y = 0;
