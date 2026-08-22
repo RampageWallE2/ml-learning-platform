@@ -67,7 +67,19 @@ export class WorldScene extends Phaser.Scene {
     private lastDirection: 'down' | 'up' | 'left' | 'right' = 'down';   
     private interactionZones: Phaser.GameObjects.Zone[] = [];
     private isPlayerLocked = false;
+    private mobileDirection = new Phaser.Math.Vector2(0, 0);
 
+    private joystickBase?: Phaser.GameObjects.Arc;
+    private joystickKnob?: Phaser.GameObjects.Arc;
+    private joystickZone?: Phaser.GameObjects.Zone;
+
+    private joystickPointerId: number | null = null;
+
+    private readonly joystickRadius = 45;
+    
+    private mobileInteractButton?: Phaser.GameObjects.Arc;
+    private mobileInteractText?: Phaser.GameObjects.Text;
+    
     constructor() {
         super('WorldScene');
     }
@@ -269,7 +281,8 @@ export class WorldScene extends Phaser.Scene {
 
         map.createLayer('Structures/Vehicles', [
             tiles.propsBuildings,
-            tiles.worksite_props
+            tiles.worksite_props,
+            tiles.vehicles
         ]
         ).setDepth(3);
         
@@ -614,114 +627,466 @@ export class WorldScene extends Phaser.Scene {
         }
     }
 
-    private handlerInteractions() : void {
 
-        if (this.isPlayerLocked) {
-            this.interactionText.setVisible(false);
-            return;
-        }
+    private handlerInteractions(): void {
+
+    if (this.isPlayerLocked) {
         this.currentInteraction = null;
         this.interactionText.setVisible(false);
+        this.updateMobileInteractButtonState();
+        return;
+    }
 
+    this.currentInteraction = null;
+    this.interactionText.setVisible(false);
 
-        for (const zone of this.interactionZones) {
+    for (const zone of this.interactionZones) {
 
-            if (this.physics.overlap(this.player, zone)) {
+        if (this.physics.overlap(this.player, zone)) {
 
-                this.currentInteraction = zone
+            this.currentInteraction = zone;
 
-                this.interactionText
+            this.interactionText
                 .setPosition(
                     this.player.x - 40,
                     this.player.y - 45
                 )
                 .setVisible(true);
 
-                break;
-            }
+            break;
         }
-   
-        if ( this.currentInteraction && Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
-
-            const type = this.currentInteraction.getData('interactionType');
-                console.log('Interacción:', this.currentInteraction.getData('interactionName'));
-                console.log('Tipo:', type);
-
-                if (type === 'lesson') {
-
-                    const lesson = {
-                        lessonId : this.currentInteraction.getData('lessonId'),
-                        step : this.currentInteraction.getData('step')
-                    }
-                    
-                    console.log('Leccion ', lesson);
-
-                    gameEvents.emit(
-                        GameEvents.OPEN_LESSON,
-                        lesson
-                    );
-                }
-
-                if (type === 'dialogue') {
-                    const dialogue  = {
-                        npcId : this.currentInteraction.getData('npcId'),
-                        dialogueId : this.currentInteraction.getData('dialogueId')
-                    }
-                    console.log('Phaser emite', dialogue)
-                    gameEvents.emit(
-                        GameEvents.OPEN_DIALOGUE,
-                        dialogue
-                    )
-
-                }
-            }
     }
 
-    private handlerMovement() : void {
-        
-        if (this.isPlayerLocked) {
-            this.player.setVelocity(0, 0);
+    this.updateMobileInteractButtonState();
+
+    if (
+        this.currentInteraction &&
+        Phaser.Input.Keyboard.JustDown(this.interactionKey)
+    ) {
+        this.triggerInteraction();
+    }
+    }
+
+    private triggerInteraction(): void {
+
+        if (!this.currentInteraction) {
             return;
         }
 
-        const speed = 500;
-
-        let x = 0;
-        let y = 0;
-
-        if (this.cursors.left.isDown) {
-            x = -1;
+        if (this.isPlayerLocked) {
+            return;
         }
 
-        if (this.cursors.right.isDown) {
-            x = 1;
+        const type =
+            this.currentInteraction.getData('interactionType');
+
+        console.log(
+            'Interacción:',
+            this.currentInteraction.getData('interactionName')
+        );
+
+        console.log('Tipo:', type);
+
+        if (type === 'lesson') {
+
+            const lesson = {
+                lessonId:
+                    this.currentInteraction.getData('lessonId'),
+
+                step:
+                    this.currentInteraction.getData('step')
+            };
+
+            console.log('Lección:', lesson);
+
+            gameEvents.emit(
+                GameEvents.OPEN_LESSON,
+                lesson
+            );
         }
 
-        if (this.cursors.up.isDown) {
-            y = -1;
+        if (type === 'dialogue') {
+
+            const dialogue = {
+                npcId:
+                    this.currentInteraction.getData('npcId'),
+
+                dialogueId:
+                    this.currentInteraction.getData('dialogueId')
+            };
+
+            console.log('Phaser emite:', dialogue);
+
+            gameEvents.emit(
+                GameEvents.OPEN_DIALOGUE,
+                dialogue
+            );
         }
+    }
 
-        if (this.cursors.down.isDown) {
-            y = 1;
+    private createMobileInteractButton(): void {
+
+    this.mobileInteractButton = this.add.circle(
+        0,
+        0,
+        40,
+        0x000000,
+        0.4
+    );
+
+    this.mobileInteractButton
+        .setScrollFactor(0)
+        .setDepth(1000)
+        .setInteractive();
+
+
+    this.mobileInteractText = this.add.text(
+        0,
+        0,
+        'E',
+        {
+            fontSize: '24px',
+            color: '#ffffff'
         }
+    );
 
-        this.direction.set(x, y);
+    this.mobileInteractText
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(1001);
 
-        if (this.direction.lengthSq() > 0) {
-            this.direction.normalize().scale(speed);
 
-            this.player.setVelocity(
+    this.mobileInteractButton.on(
+        'pointerdown',
+        () => {
+            this.triggerInteraction();
+        }
+    );
+
+    // Lo coloca correctamente apenas se crea
+    this.repositionMobileControls();
+}
+
+    private handlerMovement(): void {
+
+    if (this.isPlayerLocked) {
+        this.player.setVelocity(0, 0);
+        return;
+    }
+
+    const speed = 500;
+
+    let x = 0;
+    let y = 0;
+
+    // =========================
+    // TECLADO
+    // =========================
+
+    if (this.cursors.left.isDown) {
+        x = -1;
+    }
+
+    if (this.cursors.right.isDown) {
+        x = 1;
+    }
+
+    if (this.cursors.up.isDown) {
+        y = -1;
+    }
+
+    if (this.cursors.down.isDown) {
+        y = 1;
+    }
+
+    // =========================
+    // MÓVIL
+    // =========================
+
+    if (this.mobileDirection.lengthSq() > 0) {
+        x = this.mobileDirection.x;
+        y = this.mobileDirection.y;
+    }
+
+    // =========================
+    // MOVIMIENTO
+    // =========================
+
+    this.direction.set(x, y);
+
+    if (this.direction.lengthSq() > 0) {
+
+        this.direction
+            .normalize()
+            .scale(speed);
+
+        this.player.setVelocity(
             this.direction.x,
             this.direction.y
+        );
+
+        this.playWalkAnimation(x, y);
+
+    } else {
+
+        this.player.setVelocity(0, 0);
+
+        this.playIdleAnimation();
+    }
+    }
+
+
+private createMobileJoystick(): void {
+
+    this.joystickBase = this.add.circle(
+        0,
+        0,
+        55,
+        0x000000,
+        0.25
+    );
+
+    this.joystickBase
+        .setScrollFactor(0)
+        .setDepth(1000);
+
+
+    this.joystickKnob = this.add.circle(
+        0,
+        0,
+        25,
+        0xffffff,
+        0.55
+    );
+
+    this.joystickKnob
+        .setScrollFactor(0)
+        .setDepth(1001);
+
+
+    this.joystickZone = this.add.zone(
+        0,
+        0,
+        160,
+        160
+    );
+
+    this.joystickZone
+        .setScrollFactor(0)
+        .setDepth(1002)
+        .setInteractive();
+
+
+    this.joystickZone.on(
+        'pointerdown',
+        (pointer: Phaser.Input.Pointer) => {
+
+            this.joystickPointerId = pointer.id;
+
+            this.updateMobileJoystick(pointer);
+        }
+    );
+
+
+    this.input.on(
+        'pointermove',
+        (pointer: Phaser.Input.Pointer) => {
+
+            if (pointer.id !== this.joystickPointerId) {
+                return;
+            }
+
+            this.updateMobileJoystick(pointer);
+        }
+    );
+
+
+    this.input.on(
+        'pointerup',
+        (pointer: Phaser.Input.Pointer) => {
+
+            if (pointer.id !== this.joystickPointerId) {
+                return;
+            }
+
+            this.resetMobileJoystick();
+        }
+    );
+
+
+    // Posición inicial
+    this.repositionMobileControls();
+
+
+    // Si cambia el tamaño/orientación
+    this.scale.on(
+        'resize',
+        this.repositionMobileControls,
+        this
+    );
+}
+
+// private repositionMobileControls(): void {
+
+//     if (
+//         !this.joystickBase ||
+//         !this.joystickKnob ||
+//         !this.joystickZone
+//     ) {
+//         return;
+//     }
+
+//     const width = this.scale.gameSize.width;
+//     const height = this.scale.gameSize.height;
+
+//     const joystickX = 90;
+//     const joystickY = height - 90;
+
+//     this.joystickBase.setPosition(
+//         joystickX,
+//         joystickY
+//     );
+
+//     this.joystickKnob.setPosition(
+//         joystickX,
+//         joystickY
+//     );
+
+//     this.joystickZone.setPosition(
+//         joystickX,
+//         joystickY
+//     );
+
+//     // Por si cambia el tamaño mientras lo estás tocando
+//     this.mobileDirection.set(0, 0);
+//     this.joystickPointerId = null;
+// }
+
+
+private repositionMobileControls(): void {
+
+    const width = this.scale.gameSize.width;
+    const height = this.scale.gameSize.height;
+
+
+    // =========================
+    // JOYSTICK
+    // =========================
+
+    if (
+        this.joystickBase &&
+        this.joystickKnob &&
+        this.joystickZone
+    ) {
+
+        const joystickX = 90;
+        const joystickY = height - 90;
+
+        this.joystickBase.setPosition(
+            joystickX,
+            joystickY
+        );
+
+        this.joystickKnob.setPosition(
+            joystickX,
+            joystickY
+        );
+
+        this.joystickZone.setPosition(
+            joystickX,
+            joystickY
+        );
+
+        this.mobileDirection.set(0, 0);
+        this.joystickPointerId = null;
+    }
+
+
+    // =========================
+    // BOTÓN E
+    // =========================
+
+    if (
+        this.mobileInteractButton &&
+        this.mobileInteractText
+    ) {
+
+        const buttonX = width - 90;
+        const buttonY = height - 90;
+
+        this.mobileInteractButton.setPosition(
+            buttonX,
+            buttonY
+        );
+
+        this.mobileInteractText.setPosition(
+            buttonX,
+            buttonY
+        );
+    }
+}
+
+    private updateMobileJoystick(
+        pointer: Phaser.Input.Pointer
+    ): void {
+
+        if (!this.joystickBase || !this.joystickKnob) {
+            return;
+        }
+
+        const dx = pointer.x - this.joystickBase.x;
+        const dy = pointer.y - this.joystickBase.y;
+
+        const distance = Math.sqrt(
+            dx * dx + dy * dy
+        );
+
+        // Zona muerta en el centro
+        if (distance < 8) {
+
+            this.mobileDirection.set(0, 0);
+
+            this.joystickKnob.setPosition(
+                this.joystickBase.x,
+                this.joystickBase.y
             );
 
-            this.playWalkAnimation(x, y);
-
-        } else {
-            this.player.setVelocity(0, 0);
-
-            this.playIdleAnimation();
+            return;
         }
+
+        const normalizedX = dx / distance;
+        const normalizedY = dy / distance;
+
+        this.mobileDirection.set(
+            normalizedX,
+            normalizedY
+        );
+
+        const knobDistance = Math.min(
+            distance,
+            this.joystickRadius
+        );
+
+        this.joystickKnob.setPosition(
+            this.joystickBase.x + normalizedX * knobDistance,
+            this.joystickBase.y + normalizedY * knobDistance
+        );
+    }
+
+    private resetMobileJoystick(): void {
+
+        this.joystickPointerId = null;
+
+        this.mobileDirection.set(0, 0);
+
+        if (!this.joystickBase || !this.joystickKnob) {
+            return;
+        }
+
+        this.joystickKnob.setPosition(
+            this.joystickBase.x,
+            this.joystickBase.y
+        );
     }
 
     private playIdleAnimation(): void {
@@ -749,6 +1114,17 @@ export class WorldScene extends Phaser.Scene {
         }
     }
 
+    private isMobileDevice(): boolean {
+
+        const hasTouch =
+            this.sys.game.device.input.touch ||
+            navigator.maxTouchPoints > 0;
+
+        const coarsePointer =
+            window.matchMedia('(pointer: coarse)').matches;
+
+        return hasTouch && coarsePointer;
+    }
 
 
     private createPlayer(map: Phaser.Tilemaps.Tilemap): void {
@@ -780,8 +1156,6 @@ export class WorldScene extends Phaser.Scene {
         this.player.setDepth(12)
         console.log('Player:', this.player.depth);
     }
-
-
 
     private setupInput() : void{
         this.cursors = this.input.keyboard!.createCursorKeys();
@@ -831,84 +1205,111 @@ export class WorldScene extends Phaser.Scene {
     }
 
 
-private createInteriorZones(map: Phaser.Tilemaps.Tilemap): void {
+    private createInteriorZones(map: Phaser.Tilemaps.Tilemap): void {
 
-    const objectLayer = map.getObjectLayer('InteriorZones');
+        const objectLayer = map.getObjectLayer('InteriorZones');
 
-    if (!objectLayer) {
-        throw new Error('No existe InteriorZones');
-    }
+        if (!objectLayer) {
+            throw new Error('No existe InteriorZones');
+        }
 
-    const interiorObject = objectLayer.objects.find(
-        object => object.name === 'control-center-interior'
-    );
-
-    if (!interiorObject) {
-        throw new Error(
-            'No existe control-center-interior en Tiled'
+        const interiorObject = objectLayer.objects.find(
+            object => object.name === 'control-center-interior'
         );
-    }
 
-    const x = interiorObject.x ?? 0;
-    const y = interiorObject.y ?? 0;
-    const width = interiorObject.width ?? 0;
-    const height = interiorObject.height ?? 0;
+        if (!interiorObject) {
+            throw new Error(
+                'No existe control-center-interior en Tiled'
+            );
+        }
 
-    this.controlCenterInterior = this.add.zone(
+        const x = interiorObject.x ?? 0;
+        const y = interiorObject.y ?? 0;
+        const width = interiorObject.width ?? 0;
+        const height = interiorObject.height ?? 0;
+
+        this.controlCenterInterior = this.add.zone(
+            x + width / 2,
+            y + height / 2,
+            width,
+            height,
+        );
+
+        this.add.rectangle(
         x + width / 2,
         y + height / 2,
         width,
         height,
+        0xff0000,
+        0.3
     );
-
-    this.add.rectangle(
-    x + width / 2,
-    y + height / 2,
-    width,
-    height,
-    0xff0000,
-    0.3
-);
-}
-
-
-private updateControlCenterInterior(): void {
-
-    if (!this.controlCenterInterior) {
-        return;
     }
 
-    const playerBounds = this.player.getBounds();
-    const interiorBounds = this.controlCenterInterior.getBounds();
 
-    const isInside = Phaser.Geom.Intersects.RectangleToRectangle(
-        playerBounds,
-        interiorBounds
-    );
+    private updateControlCenterInterior(): void {
 
-    if (isInside && !this.isInsideControlCenter) {
-        console.log('ENTRÓ AL CENTRO DE CONTROL');
+        if (!this.controlCenterInterior) {
+            return;
+        }
 
-        this.controlCenterRoof?.setAlpha(0.15);
+        const playerBounds = this.player.getBounds();
+        const interiorBounds = this.controlCenterInterior.getBounds();
+
+        const isInside = Phaser.Geom.Intersects.RectangleToRectangle(
+            playerBounds,
+            interiorBounds
+        );
+
+        if (isInside && !this.isInsideControlCenter) {
+            console.log('ENTRÓ AL CENTRO DE CONTROL');
+
+            this.controlCenterRoof?.setAlpha(0.15);
+        }
+
+        if (!isInside && this.isInsideControlCenter) {
+            console.log('SALIÓ DEL CENTRO DE CONTROL');
+
+            this.controlCenterRoof?.setAlpha(1);
+        }
+
+        this.isInsideControlCenter = isInside;
     }
 
-    if (!isInside && this.isInsideControlCenter) {
-        console.log('SALIÓ DEL CENTRO DE CONTROL');
+    private updateMobileInteractButtonState(): void {
+        
+        if (
+            !this.mobileInteractButton ||
+            !this.mobileInteractText
+        ) {
+            return;
+        }
 
-        this.controlCenterRoof?.setAlpha(1);
+        const isActive =
+            this.currentInteraction !== null &&
+            !this.isPlayerLocked;
+
+        // Apariencia
+        this.mobileInteractButton.setAlpha(
+            isActive ? 1 : 0.0
+        );
+
+        this.mobileInteractText.setAlpha(
+            isActive ? 1 : 0.0
+        );
+
+        // Activar / desactivar realmente el botón
+        if (this.mobileInteractButton.input) {
+            this.mobileInteractButton.input.enabled = isActive;
+        }
     }
 
-    this.isInsideControlCenter = isInside;
-}
+    private enterControlCenter(): void {
+        this.controlCenterRoof?.setVisible(false);
+    }
 
-
-private enterControlCenter(): void {
-    this.controlCenterRoof?.setVisible(false);
-}
-
-private exitControlCenter(): void {
-    this.controlCenterRoof?.setVisible(true);
-}
+    private exitControlCenter(): void {
+        this.controlCenterRoof?.setVisible(true);
+    }
 
     create(): void {
 
@@ -928,6 +1329,12 @@ private exitControlCenter(): void {
     const waterLayer = this.createMapLayers(map, tilesets);
     this.createPlayer(map);
     this.createPlayerAnimations();
+
+
+    if (this.isMobileDevice()) {
+        this.createMobileJoystick();
+        this.createMobileInteractButton();
+    }
 
     //PLAYER
 
