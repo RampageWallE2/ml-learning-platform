@@ -44,6 +44,13 @@ type WorldTilesets = {
     
     worksite_props: Phaser.Tilemaps.Tileset
 
+    military_base: Phaser.Tilemaps.Tileset
+    beach: Phaser.Tilemaps.Tileset
+    city_props: Phaser.Tilemaps.Tileset
+    character_postman_1: Phaser.Tilemaps.Tileset
+    garage_sales: Phaser.Tilemaps.Tileset
+    vehicles: Phaser.Tilemaps.Tileset
+    subway_and_train_station: Phaser.Tilemaps.Tileset
 
     
 
@@ -64,6 +71,14 @@ export class WorldScene extends Phaser.Scene {
     constructor() {
         super('WorldScene');
     }
+
+    private controlCenterInterior?: Phaser.GameObjects.Zone;
+
+    private controlCenterRoof?:
+        Phaser.Tilemaps.TilemapLayer |
+        Phaser.Tilemaps.TilemapGPULayer;
+
+    private isInsideControlCenter = false;
 
 
     private readonly lockPlayer = (): void => {
@@ -110,6 +125,15 @@ export class WorldScene extends Phaser.Scene {
         
         this.load.image('well', 'assets/game/tilesets/props/well.png')
         this.load.image('worksite_props', 'assets/game/tilesets/props/worksite_props.png')
+        
+        this.load.image('military_base', 'assets/game/tilesets/buildings/military_base.png')
+        this.load.image('beach', 'assets/game/tilesets/props/beach.png')
+        this.load.image('city_props', 'assets/game/tilesets/props/city_props.png')
+        this.load.image('character_postman_1', 'assets/game/characters/character_postman_1.png')
+        this.load.image('garage_sales', 'assets/game/tilesets/buildings/garage_sales.png')
+        this.load.image('vehicles', 'assets/game/tilesets/vehicles/vehicles.png')
+        this.load.image('subway_and_train_station', 'assets/game/tilesets/props/subway_and_train_station.png')
+        
 
         this.load.tilemapTiledJSON('world', 'assets/game/maps/world.tmj')
 
@@ -149,6 +173,15 @@ export class WorldScene extends Phaser.Scene {
         const worker_helmet = map.addTilesetImage('worker_helmet', 'worker_helmet');       
         
         const worksite_props = map.addTilesetImage('worksite_props', 'worksite_props');       
+        
+        const military_base = map.addTilesetImage('military_base', 'military_base');      
+        const beach = map.addTilesetImage('beach', 'beach');      
+        const city_props = map.addTilesetImage('city_props', 'city_props');      
+        const character_postman_1 = map.addTilesetImage('character_postman_1', 'character_postman_1');      
+        const garage_sales = map.addTilesetImage('garage_sales', 'garage_sales');      
+        const vehicles = map.addTilesetImage('vehicles', 'vehicles');      
+        const subway_and_train_station = map.addTilesetImage('subway_and_train_station', 'subway_and_train_station');      
+
 
         const well = map.addTilesetImage('well', 'well');       
         
@@ -159,7 +192,8 @@ export class WorldScene extends Phaser.Scene {
             !villas || !police_station || !cow_big_white || !dog_german_shepherd_dark_brown ||
             !dogshouse || !rabbit_white || !rooster_golden || !character_postman_3 ||
             !farmer_1_chopping || !farmer_1 || !farmer_2 || !worker_helmet || !well || 
-            !worksite_props
+            !worksite_props || !military_base || !beach || !city_props || !character_postman_1 ||
+            !garage_sales || !vehicles || !subway_and_train_station
         ) {
             throw new Error('No se pudo crear la capa water');
         }
@@ -169,7 +203,8 @@ export class WorldScene extends Phaser.Scene {
             office, generic_buildings, fire_station, garden,
             villas, police_station, cow_big_white, dog_german_shepherd_dark_brown,
             dogshouse, rabbit_white, rooster_golden, character_postman_3, farmer_1_chopping,
-            farmer_1, farmer_2, worker_helmet, well, worksite_props
+            farmer_1, farmer_2, worker_helmet, well, worksite_props, military_base, beach,
+            city_props, character_postman_1, garage_sales, vehicles, subway_and_train_station
         }
     };
 
@@ -185,21 +220,30 @@ export class WorldScene extends Phaser.Scene {
             tiles.terrain,
         ]).setDepth(0);
 
+        map.createLayer('Terrain/Beach', [ 
+            tiles.beach,
+            tiles.city_terrains_global,
+            // tiles.terrain
+        ]).setDepth(4);
+
         map.createLayer('Terrain/Road', [
             tiles.city_terrain,
         ]).setDepth(1);
         
         map.createLayer('Terrain/Road_Details', [
             tiles.city_terrain,
-        ]).setDepth(2);
+            tiles.city_props
+        ]).setDepth(5);
 
         map.createLayer('Terrain/Farmland', [
             tiles.terrain,
         ]).setDepth(0);
 
         map.createLayer('Terrain/Ground_Details', [
+            tiles.propsBuildings,
+            tiles.worksite_props,
             tiles.propsBuildings
-        ]).setDepth(1);
+        ]).setDepth(0);
         
         map.createLayer('Terrain/Ground_Details_2', [
             tiles.propsBuildings
@@ -224,7 +268,8 @@ export class WorldScene extends Phaser.Scene {
         ).setDepth(3);
 
         map.createLayer('Structures/Vehicles', [
-            tiles.propsBuildings
+            tiles.propsBuildings,
+            tiles.worksite_props
         ]
         ).setDepth(3);
         
@@ -232,11 +277,13 @@ export class WorldScene extends Phaser.Scene {
             tiles.propsBuildings,
             tiles.garden,
             tiles.well,
-            tiles.worksite_props
+            tiles.worksite_props,
+            tiles.military_base
         ]
         ).setDepth(4);
         map.createLayer('Structures/Props_2', [
-            tiles.propsBuildings
+            tiles.propsBuildings,
+            tiles.worksite_props
         ]
         ).setDepth(4);
         map.createLayer('Structures/Props_3', [
@@ -252,20 +299,37 @@ export class WorldScene extends Phaser.Scene {
             tiles.garden, 
             tiles.villas,
             tiles.police_station,
-            tiles.worksite_props     
+            tiles.worksite_props,
+            tiles.military_base,
+            tiles.city_props
         ]
-        ).setDepth(3);
+        ).setDepth(5);
 
         map.createLayer('Structures/Fences', [
             tiles.fences,
-            tiles.worksite_props
+            tiles.worksite_props,
+            tiles.military_base,
+            tiles.city_terrains_global
         ]
         ).setDepth(4);
 
+        map.createLayer('Structures/ControlCenterInterior', [
+            tiles.character_postman_1,
+            tiles.garage_sales,
+            tiles.propsBuildings
+        ]).setDepth(10);
+        
+        map.createLayer('Structures/ControlCenterInterior_2', [
+            tiles.vehicles,
+            tiles.garage_sales,
+            tiles.propsBuildings,
+            tiles.subway_and_train_station
+        ]).setDepth(10);
+        
         map.createLayer('Nature/Forest_Walls', [
             tiles.trees
         ]
-        ).setDepth(6)
+        ).setDepth(7)
         
         map.createLayer('Nature/Trees', [
             tiles.trees,
@@ -318,7 +382,18 @@ export class WorldScene extends Phaser.Scene {
             tiles.trees
         ]
         ).setDepth(20)
-                
+
+        const controlCenterRoof = map.createLayer('Upper/ControlCenterRoof', [
+            tiles.military_base
+        ]).setDepth(50)
+
+
+        if (!controlCenterRoof) {
+            throw new Error('No se pudo crear ControlCenterRoof');
+        }
+
+        this.controlCenterRoof = controlCenterRoof;
+    
         const waterLayer = map.createLayer(
             'Terrain/Water',
             [tiles.water_1]
@@ -755,7 +830,87 @@ export class WorldScene extends Phaser.Scene {
             .setDepth(1000);
     }
 
-create(): void {
+
+private createInteriorZones(map: Phaser.Tilemaps.Tilemap): void {
+
+    const objectLayer = map.getObjectLayer('InteriorZones');
+
+    if (!objectLayer) {
+        throw new Error('No existe InteriorZones');
+    }
+
+    const interiorObject = objectLayer.objects.find(
+        object => object.name === 'control-center-interior'
+    );
+
+    if (!interiorObject) {
+        throw new Error(
+            'No existe control-center-interior en Tiled'
+        );
+    }
+
+    const x = interiorObject.x ?? 0;
+    const y = interiorObject.y ?? 0;
+    const width = interiorObject.width ?? 0;
+    const height = interiorObject.height ?? 0;
+
+    this.controlCenterInterior = this.add.zone(
+        x + width / 2,
+        y + height / 2,
+        width,
+        height,
+    );
+
+    this.add.rectangle(
+    x + width / 2,
+    y + height / 2,
+    width,
+    height,
+    0xff0000,
+    0.3
+);
+}
+
+
+private updateControlCenterInterior(): void {
+
+    if (!this.controlCenterInterior) {
+        return;
+    }
+
+    const playerBounds = this.player.getBounds();
+    const interiorBounds = this.controlCenterInterior.getBounds();
+
+    const isInside = Phaser.Geom.Intersects.RectangleToRectangle(
+        playerBounds,
+        interiorBounds
+    );
+
+    if (isInside && !this.isInsideControlCenter) {
+        console.log('ENTRÓ AL CENTRO DE CONTROL');
+
+        this.controlCenterRoof?.setAlpha(0.15);
+    }
+
+    if (!isInside && this.isInsideControlCenter) {
+        console.log('SALIÓ DEL CENTRO DE CONTROL');
+
+        this.controlCenterRoof?.setAlpha(1);
+    }
+
+    this.isInsideControlCenter = isInside;
+}
+
+
+private enterControlCenter(): void {
+    this.controlCenterRoof?.setVisible(false);
+}
+
+private exitControlCenter(): void {
+    this.controlCenterRoof?.setVisible(true);
+}
+
+    create(): void {
 
     gameEvents.on(
         GameEvents.LOCK_PLAYER,
@@ -790,10 +945,15 @@ create(): void {
 
     // CÁMARA
     this.setupCamera(map);
+
+    this.createInteriorZones(map);
+
 }
 
     override update(): void {
         this.handlerMovement();
         this.handlerInteractions();
+        this.updateControlCenterInterior();
+
     }
 }
