@@ -6033,7 +6033,7 @@
                  "name":"ControlCenterRoof",
                  "opacity":1,
                  "type":"tilelayer",
-                 "visible":true,
+                 "visible":false,
                  "width":128,
                  "x":0,
                  "y":0
@@ -6582,16 +6582,16 @@
          "name":"InteriorZones",
          "objects":[
                 {
-                 "height":214.666666666667,
+                 "height":214.667,
                  "id":185,
                  "name":"control-center-interior",
                  "opacity":1,
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":222.666666666667,
-                 "x":3229.33333333333,
-                 "y":3253.33333333333
+                 "width":222.667,
+                 "x":3229.33,
+                 "y":3253.33
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -6614,8 +6614,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":3238.32,
-                 "y":3017.84
+                 "x":1559.65333333333,
+                 "y":717.84
                 }],
          "opacity":1,
          "type":"objectgroup",

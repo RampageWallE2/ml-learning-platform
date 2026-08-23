@@ -1,33 +1,10 @@
-import { Component, computed, output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  output,
+  signal
+} from '@angular/core';
 
-import { DialogueData } from '../../components/dialogue/dialogue.types';
-
-export const LESSON_01_INTRO: DialogueData = {
-  id: 'lesson-01-intro',
-
-  messages: [
-    {
-      speaker: 'npc',
-      name: 'Viverista',
-      text: 'Estas plantas pertenecen a dos grupos del vivero.'
-    },
-    {
-      speaker: 'player',
-      name: 'Tú',
-      text: 'A simple vista parecen bastante parecidas.'
-    },
-    {
-      speaker: 'npc',
-      name: 'Viverista',
-      text: 'Fíjate menos en las plantas y más en el espacio que hay entre ellas.'
-    },
-    {
-      speaker: 'npc',
-      name: 'Viverista',
-      text: 'Quiero que experimentes. Mueve las plantas del Grupo B y haz que queden mucho más separadas que las del Grupo A.'
-    }
-  ]
-};
 
 type NurseryPlant = {
   id: number;
@@ -35,17 +12,25 @@ type NurseryPlant = {
   y: number;
 };
 
+
 type NurseryStage =
   | 'experiment'
-  | 'observation'
-  | 'question'
+  | 'reflection'
+  | 'concept'
+  | 'check'
   | 'completed';
+
 
 type NurseryAnswer =
   | 'separated'
   | 'more'
-  | 'together'
   | 'bigger'
+  | 'different';
+
+
+type CheckAnswer =
+  | 'x'
+  | 'y';
 
 
 @Component({
@@ -58,61 +43,96 @@ export class Lesson01Nursery {
 
   completed = output<void>();
 
-readonly referencePlants: NurseryPlant[] = [
-  { id: 1, x: 200, y: 110 },
-  { id: 2, x: 230, y: 105 },
-  { id: 3, x: 260, y: 115 },
-  { id: 4, x: 290, y: 105 },
-  { id: 5, x: 320, y: 110 }
-];
 
-private readonly initialNurseryPlants: NurseryPlant[] = [
-  { id: 1, x: 200, y: 110 },
-  { id: 2, x: 230, y: 105 },
-  { id: 3, x: 260, y: 115 },
-  { id: 4, x: 290, y: 105 },
-  { id: 5, x: 320, y: 110 }
-];
+  readonly referencePlants: NurseryPlant[] = [
+    { id: 1, x: 200, y: 110 },
+    { id: 2, x: 230, y: 105 },
+    { id: 3, x: 260, y: 115 },
+    { id: 4, x: 290, y: 105 },
+    { id: 5, x: 320, y: 110 }
+  ];
 
 
-nurseryPlants = signal<NurseryPlant[]>(
-  this.initialNurseryPlants.map(plant => ({ ...plant }))
-);
+  private readonly initialNurseryPlants: NurseryPlant[] = [
+    { id: 1, x: 200, y: 110 },
+    { id: 2, x: 230, y: 105 },
+    { id: 3, x: 260, y: 115 },
+    { id: 4, x: 290, y: 105 },
+    { id: 5, x: 320, y: 110 }
+  ];
 
-nurseryStage = signal<NurseryStage>('experiment');
+
+  nurseryPlants = signal<NurseryPlant[]>(
+    this.initialNurseryPlants.map(
+      plant => ({ ...plant })
+    )
+  );
+
+
+  nurseryStage =
+    signal<NurseryStage>('experiment');
+
 
   nurseryAnswer =
     signal<NurseryAnswer | null>(null);
 
+
+  checkAnswer =
+    signal<CheckAnswer | null>(null);
+
+
   private draggedPlantId: number | null = null;
 
-  private calculateSpread( plants: NurseryPlant[]): number {
+
+  private calculateSpread(
+    plants: NurseryPlant[]
+  ): number {
 
     const centerX =
-      plants.reduce((sum, plant) => sum + plant.x, 0)
-      / plants.length;
+      plants.reduce(
+        (sum, plant) => sum + plant.x,
+        0
+      ) / plants.length;
+
 
     const centerY =
-      plants.reduce((sum, plant) => sum + plant.y, 0)
-      / plants.length;
+      plants.reduce(
+        (sum, plant) => sum + plant.y,
+        0
+      ) / plants.length;
 
-    const distances = plants.map(plant => {
-      const dx = plant.x - centerX;
-      const dy = plant.y - centerY;
 
-      return Math.sqrt(
-        dx * dx +
-        dy * dy
-      );
-    });
+    const distances = plants.map(
+      plant => {
+
+        const dx =
+          plant.x - centerX;
+
+        const dy =
+          plant.y - centerY;
+
+
+        return Math.sqrt(
+          dx * dx +
+          dy * dy
+        );
+      }
+    );
+
 
     return distances.reduce(
-      (sum, distance) => sum + distance,
+      (sum, distance) =>
+        sum + distance,
       0
     ) / distances.length;
   }
 
-  private readonly referenceSpread = this.calculateSpread(this.referencePlants);
+
+  private readonly referenceSpread =
+    this.calculateSpread(
+      this.referencePlants
+    );
+
 
   nurserySpread = computed(() =>
     this.calculateSpread(
@@ -120,147 +140,249 @@ nurseryStage = signal<NurseryStage>('experiment');
     )
   );
 
+
   spreadRatio = computed(() =>
     this.nurserySpread() /
     this.referenceSpread
   );
 
-  spreadFeedback = computed(() => {
-    const ratio = this.spreadRatio();
 
-    if (ratio < 1.7) {
-      return 'Las plantas siguen bastante juntas.';
-    }
+  spreadProgress = computed(() => {
 
-    if (ratio < 2.0) {
-      return 'Se están separando. Sigue experimentando.';
-    }
+    const ratio =
+      this.spreadRatio();
 
-    if (ratio < 2.8) {
-      return 'Ahora el grupo está bastante más extendido.';
-    }
 
-    return '¡Bien! El Grupo B está claramente más disperso.';
+    const progress =
+      ((ratio - 1) / 1.8) * 100;
+
+
+    return Math.max(
+      0,
+      Math.min(
+        100,
+        progress
+      )
+    );
   });
 
-  continueToQuestion(): void {
-    this.nurseryStage.set('question');
-  }
-  
+
+  spreadFeedback = computed(() => {
+
+    const ratio =
+      this.spreadRatio();
+
+
+    if (ratio < 1.7) {
+      return 'Las plantas todavía están bastante agrupadas.';
+    }
+
+
+    if (ratio < 2.0) {
+      return 'El grupo empieza a ocupar más espacio.';
+    }
+
+
+    if (ratio < 2.8) {
+      return 'Ahora las plantas están claramente más separadas.';
+    }
+
+
+    return '¡Bien! El Grupo B está mucho más extendido.';
+  });
+
+
   canContinue = computed(() =>
     this.spreadRatio() >= 2.8
   );
 
-  finishLesson(): void {
-    this.completed.emit();
-  }
 
-  startPlantDrag(event: PointerEvent, plantId: number): void {
+  startPlantDrag(
+    event: PointerEvent,
+    plantId: number
+  ): void {
+
     event.preventDefault();
 
-    this.draggedPlantId = plantId;
+    this.draggedPlantId =
+      plantId;
   }
 
-  
 
-  movePlant(event: PointerEvent): void {
-    if (this.draggedPlantId === null) {
+  movePlant(
+    event: PointerEvent
+  ): void {
+
+    if (
+      this.draggedPlantId === null
+    ) {
       return;
     }
+
 
     const svg =
       event.currentTarget as SVGSVGElement;
 
-    const point = svg.createSVGPoint();
 
-    point.x = event.clientX;
-    point.y = event.clientY;
+    const point =
+      svg.createSVGPoint();
 
-    const matrix = svg.getScreenCTM();
+
+    point.x =
+      event.clientX;
+
+    point.y =
+      event.clientY;
+
+
+    const matrix =
+      svg.getScreenCTM();
+
 
     if (!matrix) {
       return;
     }
+
 
     const svgPoint =
       point.matrixTransform(
         matrix.inverse()
       );
 
-    const plantId = this.draggedPlantId;
 
-    const x = Math.max(
-      30,
-      Math.min(470, svgPoint.x)
-    );
+    const plantId =
+      this.draggedPlantId;
 
-    const y = Math.max(
-      35,
-      Math.min(185, svgPoint.y)
-    );
 
-    this.nurseryPlants.update(plants =>
-      plants.map(plant =>
-        plant.id === plantId
-          ? {
-              ...plant,
-              x,
-              y
-            }
-          : plant
-      )
+    const x =
+      Math.max(
+        30,
+        Math.min(
+          470,
+          svgPoint.x
+        )
+      );
+
+
+    const y =
+      Math.max(
+        35,
+        Math.min(
+          185,
+          svgPoint.y
+        )
+      );
+
+
+    this.nurseryPlants.update(
+      plants =>
+        plants.map(
+          plant =>
+            plant.id === plantId
+              ? {
+                  ...plant,
+                  x,
+                  y
+                }
+              : plant
+        )
     );
   }
 
-
-  
-  spreadProgress = computed(() => {
-    const ratio = this.spreadRatio();
-
-    const progress =
-      ((ratio - 1) / 1.8) * 100;
-
-    return Math.max(
-      0,
-      Math.min(100, progress)
-    );
-  });
-
-  
 
   endPlantDrag(): void {
-    this.draggedPlantId = null;
+
+    this.draggedPlantId =
+      null;
   }
 
+
+  finishNurseryExperiment(): void {
+
+    if (!this.canContinue()) {
+      return;
+    }
+
+    this.nurseryStage.set(
+      'reflection'
+    );
+  }
+
+
+  answerNursery(
+    answer: NurseryAnswer
+  ): void {
+
+    this.nurseryAnswer.set(
+      answer
+    );
+
+
+    if (
+      answer === 'separated'
+    ) {
+      this.nurseryStage.set(
+        'concept'
+      );
+    }
+  }
+
+
+  continueToCheck(): void {
+
+    this.nurseryStage.set(
+      'check'
+    );
+  }
+
+
+  answerCheck(
+    answer: CheckAnswer
+  ): void {
+
+    this.checkAnswer.set(
+      answer
+    );
+
+
+    if (answer === 'y') {
+      this.nurseryStage.set(
+        'completed'
+      );
+    }
+  }
+
+
   resetNursery(): void {
+
     this.nurseryPlants.set(
       this.initialNurseryPlants.map(
         plant => ({ ...plant })
       )
     );
 
-    this.nurseryStage.set('experiment');
-    this.nurseryAnswer.set(null);
-    this.draggedPlantId = null;
+
+    this.nurseryStage.set(
+      'experiment'
+    );
+
+
+    this.nurseryAnswer.set(
+      null
+    );
+
+    this.checkAnswer.set(
+      null
+    );
+
+    this.draggedPlantId =
+      null;
   }
 
-  
 
-finishNurseryExperiment(): void {
-  if (!this.canContinue()) {
-    return;
+  finishLesson(): void {
+
+    this.completed.emit();
   }
-
-  this.nurseryStage.set('observation');
-}
-  
-  answerNursery(answer: NurseryAnswer): void {
-    this.nurseryAnswer.set(answer);
-
-    if (answer === 'separated') {
-      this.nurseryStage.set('completed');
-    }
-  }
-
 
 }

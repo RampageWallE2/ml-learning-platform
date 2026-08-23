@@ -5,10 +5,19 @@ import {
   signal
 } from '@angular/core';
 
+
 type GranaryStage =
-  | 'center'
   | 'distances'
+  | 'interpretation'
   | 'completed';
+
+
+type InterpretationAnswer =
+  | 'farther'
+  | 'closer'
+  | 'same'
+  | 'heavier';
+
 
 @Component({
   selector: 'app-lesson-03-granary',
@@ -20,21 +29,34 @@ export class Lesson03Granary {
 
   completed = output<void>();
 
+
+  /* =========================
+     DATOS DEL LOTE
+     ========================= */
+
   readonly sackWeights = [
-    6,
-    8,
-    10,
-    11,
-    15
+    47,
+    49,
+    50,
+    52,
+    52
   ];
 
-  readonly average = 10;
+
+  readonly average = 50;
+
 
   readonly axisTicks = [
-    5,
-    10,
-    15
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53
   ];
+
 
   readonly distanceOptions = [
     0,
@@ -45,14 +67,36 @@ export class Lesson03Granary {
     5
   ];
 
-  stage = signal<GranaryStage>('center');
 
-  centerAnswer = signal<number | null>(null);
+  /* =========================
+     ESTADO
+     ========================= */
 
-  currentSackIndex = signal(0);
+  stage =
+    signal<GranaryStage>(
+      'distances'
+    );
 
-  distanceAnswer = signal<number | null>(null);
 
+  currentSackIndex =
+    signal(0);
+
+
+  distanceAnswer =
+    signal<number | null>(
+      null
+    );
+
+
+  interpretationAnswer =
+    signal<InterpretationAnswer | null>(
+      null
+    );
+
+
+  /* =========================
+     SACO ACTUAL
+     ========================= */
 
   currentWeight = computed(() =>
     this.sackWeights[
@@ -61,6 +105,12 @@ export class Lesson03Granary {
   );
 
 
+  /*
+   * Internamente usamos Math.abs()
+   * porque estamos trabajando con
+   * distancia, no con desviaciones
+   * positivas o negativas.
+   */
   currentDistance = computed(() =>
     Math.abs(
       this.currentWeight() -
@@ -69,59 +119,133 @@ export class Lesson03Granary {
   );
 
 
-  selectCenter(answer: number): void {
+  /* =========================
+     DISTANCIAS COMPLETAS
+     ========================= */
 
-    this.centerAnswer.set(answer);
+  readonly sackDistances =
+    this.sackWeights.map(
+      weight => ({
+        weight,
+        distance:
+          Math.abs(
+            weight -
+            this.average
+          )
+      })
+    );
 
-    if (answer === this.average) {
-      this.stage.set('distances');
-    }
 
-  }
+  /* =========================
+     RESPUESTA DE CADA SACO
+     ========================= */
+
+  selectDistance(
+    answer: number
+  ): void {
+
+    this.distanceAnswer.set(
+      answer
+    );
 
 
-  selectDistance(answer: number): void {
-
-    this.distanceAnswer.set(answer);
-
-    if (answer !== this.currentDistance()) {
+    if (
+      answer !==
+      this.currentDistance()
+    ) {
       return;
     }
+
 
     const isLast =
       this.currentSackIndex() >=
       this.sackWeights.length - 1;
 
+
     if (isLast) {
-      this.stage.set('completed');
+
+      this.stage.set(
+        'interpretation'
+      );
+
       return;
     }
 
+
     this.currentSackIndex.update(
-      index => index + 1
+      index =>
+        index + 1
     );
 
-    this.distanceAnswer.set(null);
 
+    this.distanceAnswer.set(
+      null
+    );
   }
 
 
-  getPointX(value: number): number {
+  /* =========================
+     INTERPRETACIÓN
+     ========================= */
 
-    const min = 5;
-    const max = 15;
+  selectInterpretation(
+    answer: InterpretationAnswer
+  ): void {
+
+    this.interpretationAnswer.set(
+      answer
+    );
+
+
+    if (
+      answer === 'farther'
+    ) {
+
+      this.stage.set(
+        'completed'
+      );
+    }
+  }
+
+
+  /* =========================
+     RECTA NUMÉRICA
+     ========================= */
+
+  getPointX(
+    value: number
+  ): number {
+
+    const min = 46;
+    const max = 53;
 
     const start = 40;
     const end = 400;
 
-    return start +
-      ((value - min) / (max - min)) *
-      (end - start);
 
+    return (
+      start +
+      (
+        (
+          value - min
+        ) /
+        (
+          max - min
+        )
+      ) *
+      (
+        end - start
+      )
+    );
   }
 
 
+  /* =========================
+     FINAL
+     ========================= */
+
   finishLesson(): void {
+
     this.completed.emit();
   }
 

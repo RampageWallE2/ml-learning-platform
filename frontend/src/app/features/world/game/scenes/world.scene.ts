@@ -774,7 +774,7 @@ export class WorldScene extends Phaser.Scene {
         return;
     }
 
-    const speed = 500;
+    const speed = 250;
 
     let x = 0;
     let y = 0;

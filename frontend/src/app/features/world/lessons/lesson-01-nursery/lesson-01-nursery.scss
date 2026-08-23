@@ -1,13 +1,19 @@
-/* GRUPOS */
+/* =========================
+   GRUPOS DEL VIVERO
+   ========================= */
 
 .nursery-groups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 20px;
+
+  min-width: 0;
 }
 
 .nursery-group {
+  min-width: 0;
+
   overflow: hidden;
 
   border: 2px solid var(--color-earth);
@@ -21,6 +27,7 @@
     display: block;
 
     width: 100%;
+    max-width: 100%;
 
     touch-action: none;
   }
@@ -34,6 +41,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  gap: 12px;
 
   padding: 12px 16px;
 
@@ -53,7 +62,9 @@
 }
 
 
-/* TERRENO SVG */
+/* =========================
+   TERRENO SVG
+   ========================= */
 
 .nursery-ground {
   fill: #dce8c7;
@@ -75,10 +86,16 @@
 }
 
 
-/* DISPERSIÓN */
+/* =========================
+   MEDIDOR
+   ========================= */
 
 .spread-feedback {
+  width: 100%;
+
   padding: 16px 18px;
+
+  box-sizing: border-box;
 
   border-radius: 8px;
 
@@ -96,6 +113,8 @@
 .spread-labels {
   display: flex;
   justify-content: space-between;
+
+  gap: 12px;
 
   margin-bottom: 8px;
 
@@ -126,55 +145,300 @@
   transition: width 0.2s ease;
 }
 
-/* OBSERVACIÓN */
 
-.lesson-state-card {
-  max-width: 600px;
-  margin: 30px auto;
-  padding: 32px;
-
-  text-align: center;
-
-  border: 2px solid var(--color-primary);
-  border-radius: 12px;
-
-  background: rgba(127, 163, 107, 0.12);
-
-  h3 {
-    margin: 10px 0;
-    color: var(--color-primary);
-  }
-
-  p {
-    margin-bottom: 24px;
-
-    line-height: 1.6;
-  }
-}
-
-.state-icon {
-  display: grid;
-  place-items: center;
-
-  width: 42px;
-  height: 42px;
-
-  margin: 0 auto;
-
-  border-radius: 50%;
-
-  color: white;
-  background: var(--color-success);
-
-  font-weight: 700;
-}
+/* =========================
+   TEXTO FINAL
+   ========================= */
 
 .success-note {
   color: var(--color-text-muted);
 }
 
+
+/* =========================
+   MICROCOMPROBACIÓN
+   ========================= */
+
+.check-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  width: 100%;
+  min-width: 0;
+
+  gap: 24px;
+
+  margin-top: 24px;
+}
+
+.check-group {
+  position: relative;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 240px;
+
+  padding: 20px;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  border: 2px solid var(--color-earth);
+  border-radius: 12px;
+
+  background: rgba(227, 210, 174, 0.32);
+
+  color: var(--color-text);
+
+  text-align: center;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+  }
+}
+
+.check-group-title {
+  display: block;
+
+  margin-bottom: 18px;
+
+  color: var(--color-text);
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+
+/* =========================
+   GRUPO X
+   ========================= */
+
+.plant-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 150px;
+
+  gap: 12px;
+
+  img {
+    width: 34px;
+    height: 34px;
+
+    flex: 0 0 auto;
+
+    image-rendering: pixelated;
+  }
+}
+
+
+/* =========================
+   GRUPO Y
+   ========================= */
+
+.plant-area {
+  position: relative;
+
+  width: 100%;
+  max-width: 100%;
+  height: 160px;
+
+  overflow: hidden;
+}
+
+.check-plant {
+  position: absolute;
+
+  width: 34px;
+  height: 34px;
+
+  image-rendering: pixelated;
+
+  /*
+   * left/top representan el centro
+   * de cada planta.
+   */
+  transform: translate(-50%, -50%);
+}
+
+
+/* Distribución irregular y extendida */
+
+.check-plant--1 {
+  left: 10%;
+  top: 20%;
+}
+
+.check-plant--2 {
+  left: 30%;
+  top: 70%;
+}
+
+.check-plant--3 {
+  left: 52%;
+  top: 35%;
+}
+
+.check-plant--4 {
+  left: 73%;
+  top: 76%;
+}
+
+.check-plant--5 {
+  left: 90%;
+  top: 44%;
+}
+
+
+/* =========================
+   RESPONSIVE ESPECÍFICO
+   DEL VIVERO
+   ========================= */
+
 @media (max-width: 750px) {
+
   .nursery-groups {
     grid-template-columns: 1fr;
+  }
+
+
+  .group-header {
+    padding: 10px 12px;
+  }
+
+
+  .spread-feedback {
+    padding: 14px;
+  }
+
+
+  .spread-labels {
+    font-size: 12px;
+  }
+
+
+  /* Microcomprobación */
+
+  .check-groups {
+    grid-template-columns: 1fr;
+
+    gap: 18px;
+
+    margin-top: 18px;
+  }
+
+
+  .check-group {
+    min-height: 210px;
+
+    padding: 16px 12px;
+  }
+
+
+  .plant-row {
+    min-height: 125px;
+
+    gap: 6px;
+
+    img {
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+
+  .plant-area {
+    height: 135px;
+  }
+
+
+  .check-plant {
+    width: 28px;
+    height: 28px;
+  }
+
+
+  /*
+   * Seguimos usando porcentajes.
+   * No volvemos a posiciones fijas en px.
+   */
+
+  .check-plant--1 {
+    left: 10%;
+    top: 20%;
+  }
+
+  .check-plant--2 {
+    left: 30%;
+    top: 70%;
+  }
+
+  .check-plant--3 {
+    left: 52%;
+    top: 35%;
+  }
+
+  .check-plant--4 {
+    left: 73%;
+    top: 76%;
+  }
+
+  .check-plant--5 {
+    left: 90%;
+    top: 44%;
+  }
+}
+
+
+@media (max-width: 400px) {
+
+  .nursery-groups {
+    gap: 14px;
+  }
+
+
+  .spread-labels {
+    gap: 8px;
+
+    font-size: 11px;
+  }
+
+
+  .check-group {
+    min-height: 190px;
+
+    padding: 14px 10px;
+  }
+
+
+  .plant-row {
+    min-height: 110px;
+
+    gap: 4px;
+
+    img {
+      width: 25px;
+      height: 25px;
+    }
+  }
+
+
+  .plant-area {
+    height: 115px;
+  }
+
+
+  .check-plant {
+    width: 25px;
+    height: 25px;
   }
 }

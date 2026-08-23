@@ -1,4 +1,8 @@
-<section class="lesson">
+<section class="lesson granary-lesson">
+
+  <!-- =========================
+       ENCABEZADO
+       ========================= -->
 
   <header class="lesson-header">
 
@@ -6,31 +10,40 @@
       Lección 3
     </span>
 
-    <h2>El granero</h2>
+    <h2>
+      Control de peso del trigo
+    </h2>
 
     <p>
-      Aprende a medir qué tan lejos están
-      los datos de su centro.
+      Usa el promedio del lote como referencia
+      para comparar el peso de cada saco.
     </p>
 
   </header>
 
 
-  <!-- ENCONTRAR EL CENTRO -->
+  <!-- =========================
+       ETAPA 1:
+       REVISAR LOS SACOS
+       ========================= -->
 
-  @if (stage() === 'center') {
+  @if (stage() === 'distances') {
 
-    <div class="lesson-card">
+    <div class="lesson-card lesson-card--instruction">
 
-      <strong>Pesos registrados</strong>
+      <strong>
+        Lote de trigo — control de peso
+      </strong>
 
       <p>
-        Estos son los pesos de cinco sacos
-        almacenados en el granero.
+        Se seleccionaron cinco sacos antes de trasladar
+        el lote hacia los silos.
       </p>
 
     </div>
 
+
+    <!-- SACOS DEL LOTE -->
 
     <div class="granary-sacks">
 
@@ -39,7 +52,11 @@
         track $index
       ) {
 
-        <div class="sack-card">
+        <article class="sack-card">
+
+          <span class="sack-number">
+            Saco {{ $index + 1 }}
+          </span>
 
           <span class="sack-icon">
             ◼
@@ -49,101 +66,33 @@
             {{ weight }} kg
           </strong>
 
-        </div>
+        </article>
 
       }
 
     </div>
 
 
-    <div class="question-section">
+    <!-- PROMEDIO DEL LOTE -->
 
-      <span class="lesson-tag">
-        Encuentra el centro
+    <div class="lot-average">
+
+      <span>
+        Peso promedio del lote
       </span>
 
-      <h3>
-        ¿Cuál es el peso promedio de los cinco sacos?
-      </h3>
+      <strong>
+        {{ average }} kg por saco
+      </strong>
 
-
-      <div class="answer-options">
-
-        <button
-          class="btn btn--answer"
-          (click)="selectCenter(8)"
-        >
-          8 kg
-        </button>
-
-        <button
-          class="btn btn--answer"
-          (click)="selectCenter(9)"
-        >
-          9 kg
-        </button>
-
-        <button
-          class="btn btn--answer"
-          (click)="selectCenter(10)"
-        >
-          10 kg
-        </button>
-
-        <button
-          class="btn btn--answer"
-          (click)="selectCenter(12)"
-        >
-          12 kg
-        </button>
-
-      </div>
-
-
-      @if (
-        centerAnswer() &&
-        centerAnswer() !== average
-      ) {
-
-        <div class="feedback feedback--hint">
-
-          <strong>Inténtalo otra vez</strong>
-
-          <p>
-            Suma los cinco pesos y divide
-            el resultado entre 5.
-          </p>
-
-        </div>
-
-      }
+      <small>
+        Este será nuestro punto de referencia.
+      </small>
 
     </div>
 
-  }
 
-
-  <!-- DISTANCIAS -->
-
-  @if (stage() === 'distances') {
-
-    <div class="discovery-card">
-
-      <span class="lesson-tag">
-        Centro encontrado
-      </span>
-
-      <h3>
-        Promedio = 10 kg
-      </h3>
-
-      <p>
-        Ahora vamos a medir qué tan lejos está
-        cada saco de ese valor.
-      </p>
-
-    </div>
-
+    <!-- PROGRESO -->
 
     <div class="distance-progress">
 
@@ -161,7 +110,7 @@
             $index === currentSackIndex()
           "
         >
-          {{ weight }}
+          {{ $index + 1 }}
         </div>
 
       }
@@ -169,39 +118,67 @@
     </div>
 
 
+    <!-- ESTACIÓN DE CONTROL -->
+
     <div class="distance-board">
+
+      <div class="control-heading">
+
+        <span class="lesson-tag">
+          Revisando saco {{ currentSackIndex() + 1 }}
+        </span>
+
+        <h3>
+          Estación de control de peso
+        </h3>
+
+      </div>
+
 
       <div class="distance-values">
 
         <div>
-          <span>Saco actual</span>
+
+          <span>
+            Peso registrado
+          </span>
 
           <strong>
             {{ currentWeight() }} kg
           </strong>
+
         </div>
 
+
         <div>
-          <span>Centro</span>
+
+          <span>
+            Centro / promedio
+          </span>
 
           <strong>
             {{ average }} kg
           </strong>
+
         </div>
 
       </div>
 
 
+      <!-- RECTA VISUAL -->
+
       <svg
-        viewBox="0 0 440 120"
+        viewBox="0 0 440 135"
         class="number-line"
       >
 
+        <!-- EJE -->
+
         <line
           x1="40"
-          y1="65"
+          y1="72"
           x2="400"
-          y2="65"
+          y2="72"
           class="axis"
         />
 
@@ -213,15 +190,16 @@
 
           <line
             [attr.x1]="getPointX(tick)"
-            y1="60"
+            y1="66"
             [attr.x2]="getPointX(tick)"
-            y2="72"
+            y2="78"
             class="tick"
           />
 
+
           <text
             [attr.x]="getPointX(tick)"
-            y="92"
+            y="105"
             text-anchor="middle"
             class="tick-label"
           >
@@ -231,23 +209,35 @@
         }
 
 
-        <!-- CENTRO -->
+        <!-- DISTANCIA VISUAL -->
+
+        <line
+          [attr.x1]="getPointX(currentWeight())"
+          y1="52"
+          [attr.x2]="getPointX(average)"
+          y2="52"
+          class="distance-line"
+        />
+
+
+        <!-- PROMEDIO -->
 
         <line
           [attr.x1]="getPointX(average)"
-          y1="24"
+          y1="25"
           [attr.x2]="getPointX(average)"
-          y2="74"
+          y2="82"
           class="center-line"
         />
 
+
         <text
           [attr.x]="getPointX(average)"
-          y="17"
+          y="18"
           text-anchor="middle"
           class="center-label"
         >
-          centro
+          promedio
         </text>
 
 
@@ -255,15 +245,23 @@
 
         <circle
           [attr.cx]="getPointX(currentWeight())"
-          cy="65"
+          cy="72"
           r="9"
           class="current-point"
         />
 
       </svg>
 
+
+      <p class="distance-hint">
+        Observa el espacio entre el peso registrado
+        y el promedio del lote.
+      </p>
+
     </div>
 
+
+    <!-- PREGUNTA -->
 
     <div class="question-section">
 
@@ -272,9 +270,9 @@
       </span>
 
       <h3>
-        ¿A qué distancia está
-        {{ currentWeight() }} kg
-        del promedio de {{ average }} kg?
+        ¿A cuántos kilogramos del promedio
+        se encuentra el saco de
+        {{ currentWeight() }} kg?
       </h3>
 
 
@@ -304,11 +302,14 @@
 
         <div class="feedback feedback--hint">
 
-          <strong>Observa la recta</strong>
+          <strong>
+            Observa nuevamente
+          </strong>
 
           <p>
-            Cuenta cuántas unidades separan
-            el saco del centro.
+            Compara el peso registrado con los
+            {{ average }} kg del promedio.
+            ¿Cuántos kilogramos hay entre ambos valores?
           </p>
 
         </div>
@@ -320,52 +321,208 @@
   }
 
 
-  <!-- EJERCICIO TERMINADO -->
+  <!-- =========================
+       ETAPA 2:
+       INTERPRETAR
+       ========================= -->
 
-  @if (stage() === 'completed') {
+  @if (stage() === 'interpretation') {
 
-    <div class="lesson-completion">
+    <div class="interpretation-header">
 
-      <span class="success-label">
-        Nueva idea descubierta
+      <span class="lesson-tag">
+        Control del lote completado
       </span>
 
       <h3>
-        Distancia al centro
+        No todos los sacos están igual de lejos del promedio
       </h3>
 
-      <div class="distance-summary">
+      <p>
+        Observa las distancias que encontraste
+        para los cinco sacos.
+      </p>
 
-        @for (
-          weight of sackWeights;
-          track weight
-        ) {
+    </div>
 
-          <div>
-            <span>
-              {{ weight }} kg
-            </span>
 
-            <strong>
-              {{ weight > average
-                ? weight - average
-                : average - weight }} kg
-            </strong>
-          </div>
+    <div class="distance-summary">
 
-        }
+      @for (
+        sack of sackDistances;
+        track $index
+      ) {
+
+        <div class="distance-summary-card">
+
+          <span>
+            Saco {{ $index + 1 }}
+          </span>
+
+          <strong>
+            {{ sack.weight }} kg
+          </strong>
+
+          <small>
+            Distancia
+          </small>
+
+          <b>
+            {{ sack.distance }} kg
+          </b>
+
+        </div>
+
+      }
+
+    </div>
+
+
+    <div class="question-section">
+
+      <span class="lesson-tag">
+        Interpreta los resultados
+      </span>
+
+      <h3>
+        ¿Qué podemos decir del saco de 47 kg
+        comparado con el de 49 kg?
+      </h3>
+
+
+      <div class="answer-options">
+
+        <button
+          class="btn btn--answer"
+          (click)="selectInterpretation('farther')"
+        >
+          El saco de 47 kg está más lejos del promedio
+        </button>
+
+
+        <button
+          class="btn btn--answer"
+          (click)="selectInterpretation('closer')"
+        >
+          El saco de 47 kg está más cerca del promedio
+        </button>
+
+
+        <button
+          class="btn btn--answer"
+          (click)="selectInterpretation('same')"
+        >
+          Ambos están a la misma distancia
+        </button>
+
+
+        <button
+          class="btn btn--answer"
+          (click)="selectInterpretation('heavier')"
+        >
+          El saco de 47 kg es el más pesado
+        </button>
+
+      </div>
+
+
+      @if (
+        interpretationAnswer() &&
+        interpretationAnswer() !== 'farther'
+      ) {
+
+        <div class="feedback feedback--hint">
+
+          <strong>
+            Revisa las distancias
+          </strong>
+
+          <p>
+            El saco de 47 kg está a 3 kg del promedio.
+            El de 49 kg está a solo 1 kg.
+          </p>
+
+        </div>
+
+      }
+
+    </div>
+
+  }
+
+
+  <!-- =========================
+       ETAPA 3:
+       CONCLUSIÓN
+       ========================= -->
+
+  @if (stage() === 'completed') {
+
+    <div class="lesson-completion granary-completion">
+
+      <span class="success-label">
+        Nueva idea
+      </span>
+
+      <h3>
+        Distancia respecto al centro
+      </h3>
+
+
+      <div class="distance-example">
+
+        <span>
+          Peso registrado
+          <strong>47 kg</strong>
+        </span>
+
+        <span class="distance-arrow">
+          3 kg
+        </span>
+
+        <span>
+          Promedio
+          <strong>50 kg</strong>
+        </span>
 
       </div>
 
 
       <p>
-        Cuanto más lejos se encuentra un dato
-        del centro, mayor es su distancia.
+        Un dato puede encontrarse más cerca o más lejos
+        del promedio del conjunto.
       </p>
 
+
       <p>
-        Estas distancias nos ayudan a empezar
-        a medir la <strong>dispersión</strong>.
+        Por ejemplo, un saco de
+        <strong>47 kg</strong>
+        se encuentra a
+        <strong>3 kg</strong>
+        del promedio de
+        <strong>50 kg</strong>.
+      </p>
+
+
+      <div class="granary-note">
+
+        <strong>
+          ¿Qué significa esto para el lote?
+        </strong>
+
+        <p>
+          Estas distancias permiten identificar rápidamente
+          qué mediciones se encuentran más alejadas
+          del comportamiento central del grupo.
+        </p>
+
+      </div>
+
+
+      <p class="dispersion-connection">
+        Si varias mediciones están muy alejadas del centro,
+        tenemos una pista de que el conjunto puede estar
+        más <strong>disperso</strong>.
       </p>
 
 

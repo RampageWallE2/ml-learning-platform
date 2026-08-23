@@ -6,7 +6,7 @@
 
   z-index: 50;
 
-  width: 290px;
+  width: 310px;
 
   overflow: hidden;
 
@@ -21,7 +21,9 @@
 }
 
 
-/* HEADER */
+/* =========================
+   HEADER
+   ========================= */
 
 .progress-header {
   display: flex;
@@ -29,6 +31,8 @@
   justify-content: space-between;
 
   width: 100%;
+
+  gap: 12px;
 
   padding: 14px 16px;
 
@@ -41,21 +45,34 @@
 
   cursor: pointer;
 
-  div:first-child {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
+  transition:
+    background 0.15s ease;
 
-  strong {
-    font-family: var(--font-retro);
-    font-size: 11px;
-
-    color: var(--color-primary);
-  }
 
   &:hover {
     background: var(--color-surface-alt);
+  }
+}
+
+
+.progress-header-info {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  gap: 3px;
+
+
+  strong {
+    color: var(--color-primary);
+
+    font-family: var(--font-retro);
+    font-size: 11px;
+
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
   }
 }
 
@@ -70,7 +87,23 @@
 }
 
 
-/* CONTADOR */
+/* =========================
+   LADO DERECHO HEADER
+   ========================= */
+
+.progress-header-side {
+  display: flex;
+  align-items: center;
+
+  flex: 0 0 auto;
+
+  gap: 8px;
+}
+
+
+/* =========================
+   CONTADOR
+   ========================= */
 
 .progress-counter {
   display: grid;
@@ -78,6 +111,10 @@
 
   min-width: 44px;
   height: 32px;
+
+  padding: 0 6px;
+
+  box-sizing: border-box;
 
   border-radius: 6px;
 
@@ -88,7 +125,28 @@
 }
 
 
-/* BARRA */
+/* =========================
+   FLECHA
+   ========================= */
+
+.progress-chevron {
+  color: var(--color-text-muted);
+
+  font-size: 10px;
+
+  transition:
+    transform 0.2s ease;
+}
+
+
+.progress-chevron--expanded {
+  transform: rotate(180deg);
+}
+
+
+/* =========================
+   BARRA
+   ========================= */
 
 .progress-bar {
   height: 6px;
@@ -96,16 +154,68 @@
   background: var(--color-surface-alt);
 }
 
+
 .progress-bar-value {
   height: 100%;
 
   background: var(--color-primary);
 
-  transition: width 0.25s ease;
+  transition:
+    width 0.25s ease;
 }
 
 
-/* LISTA */
+/* =========================
+   OBJETIVO ACTUAL
+   ========================= */
+
+.current-objective {
+  padding: 12px 16px 13px;
+
+  border-bottom:
+    1px solid rgba(139, 98, 70, 0.18);
+
+  background:
+    rgba(127, 163, 107, 0.09);
+
+
+  p {
+    margin: 5px 0 0;
+
+    color: var(--color-text);
+
+    font-size: 13px;
+    line-height: 1.45;
+
+    overflow-wrap: break-word;
+  }
+}
+
+
+.objective-label {
+  color: var(--color-primary);
+
+  font-family: var(--font-retro);
+  font-size: 8px;
+
+  text-transform: uppercase;
+}
+
+
+.current-objective--completed {
+  background:
+    rgba(95, 145, 79, 0.1);
+
+
+  .objective-label {
+    color: var(--color-success);
+  }
+}
+
+
+/* =========================
+   LISTA
+   ========================= */
 
 .progress-content {
   display: grid;
@@ -113,11 +223,17 @@
   gap: 4px;
 
   padding: 10px;
+
+  border-top:
+    1px solid rgba(139, 98, 70, 0.12);
 }
+
 
 .progress-item {
   display: flex;
   align-items: center;
+
+  min-width: 0;
 
   gap: 10px;
 
@@ -128,6 +244,7 @@
   color: var(--color-text-muted);
 }
 
+
 .progress-item--current {
   color: var(--color-text);
 
@@ -137,9 +254,15 @@
   font-weight: 600;
 }
 
+
 .progress-item--completed {
   color: var(--color-success);
 }
+
+
+/* =========================
+   ESTADO
+   ========================= */
 
 .progress-status {
   width: 20px;
@@ -152,6 +275,39 @@
 }
 
 
+/* =========================
+   INFO LECCIÓN
+   ========================= */
+
+.progress-item-info {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  gap: 2px;
+
+
+  > span {
+    overflow-wrap: anywhere;
+  }
+
+
+  small {
+    color: var(--color-primary);
+
+    font-size: 10px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+  }
+}
+
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
 @media (max-width: 750px) {
 
   .zone-progress {
@@ -159,9 +315,56 @@
     right: 12px;
 
     width: min(
-      280px,
+      300px,
       calc(100% - 24px)
     );
+  }
+
+
+  .progress-header {
+    padding: 12px;
+  }
+
+
+  .current-objective {
+    padding:
+      10px 12px 11px;
+
+
+    p {
+      font-size: 12px;
+    }
+  }
+
+
+  .progress-content {
+    padding: 8px;
+  }
+
+}
+
+
+@media (max-width: 400px) {
+
+  .zone-progress {
+    width:
+      calc(100% - 24px);
+  }
+
+
+  .progress-counter {
+    min-width: 40px;
+    height: 30px;
+
+    font-size: 12px;
+  }
+
+
+  .progress-header-info {
+
+    strong {
+      font-size: 10px;
+    }
   }
 
 }

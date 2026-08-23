@@ -2,33 +2,47 @@
 
   <header class="lesson-header">
     <span class="lesson-tag">Lección 1</span>
+
     <h2>El vivero</h2>
-    <p>Descubre cómo cambia un grupo cuando sus elementos se separan.</p>
+
+    <p>
+      Experimenta con la distribución de los plantones del vivero.
+    </p>
   </header>
 
 
+  <!-- ========================= -->
   <!-- EXPERIMENTO -->
+  <!-- ========================= -->
+
   @if (nurseryStage() === 'experiment') {
 
     <div class="lesson-card lesson-card--instruction">
+
       <strong>Tu tarea</strong>
 
       <p>
-        Observa ambos grupos. Mueve las plantas del Grupo B
-        para que estén más separadas entre sí.
+        Ambos grupos tienen cinco plantones.
+        Reorganiza el Grupo B para que ocupe una zona mucho más amplia.
       </p>
+
     </div>
 
 
     <div class="nursery-groups">
 
       <!-- GRUPO A -->
+
       <article class="nursery-group">
 
         <div class="group-header">
+
           <span>Referencia</span>
+
           <h3>Grupo A</h3>
+
         </div>
+
 
         <svg viewBox="0 0 500 220">
 
@@ -40,6 +54,7 @@
             rx="12"
             class="nursery-ground"
           />
+
 
           @for (
             plant of referencePlants;
@@ -62,6 +77,7 @@
                 class="plant-shadow"
               />
 
+
               <image
                 x="-16"
                 y="-24"
@@ -71,6 +87,7 @@
               />
 
             </g>
+
           }
 
         </svg>
@@ -79,12 +96,19 @@
 
 
       <!-- GRUPO B -->
-      <article class="nursery-group nursery-group--interactive">
+
+      <article
+        class="nursery-group nursery-group--interactive"
+      >
 
         <div class="group-header">
+
           <span>Interactivo</span>
+
           <h3>Grupo B</h3>
+
         </div>
+
 
         <svg
           viewBox="0 0 500 220"
@@ -101,6 +125,7 @@
             rx="12"
             class="nursery-ground"
           />
+
 
           @for (
             plant of nurseryPlants();
@@ -130,6 +155,7 @@
                 class="plant-shadow"
               />
 
+
               <image
                 x="-16"
                 y="-24"
@@ -150,19 +176,31 @@
 
 
     <!-- MEDIDOR -->
+
     <div class="spread-feedback">
 
       <div class="spread-labels">
-        <span>Juntas</span>
-        <span>Más dispersas</span>
+
+        <span>
+          Más agrupadas
+        </span>
+
+        <span>
+          Más extendidas
+        </span>
+
       </div>
 
+
       <div class="spread-meter">
+
         <div
           class="spread-meter-value"
           [style.width.%]="spreadProgress()"
         ></div>
+
       </div>
+
 
       <p>
         {{ spreadFeedback() }}
@@ -180,6 +218,7 @@
         Reiniciar
       </button>
 
+
       <button
         class="btn btn--primary"
         [disabled]="!canContinue()"
@@ -189,28 +228,125 @@
       </button>
 
     </div>
+
   }
 
 
-  <!-- OBSERVACIÓN -->
-  @if (nurseryStage() === 'observation') {
+  <!-- ========================= -->
+  <!-- REFLEXIÓN -->
+  <!-- ========================= -->
 
-    <div class="lesson-state-card">
+  @if (nurseryStage() === 'reflection') {
 
-      <span class="state-icon">✓</span>
+    <div class="question-section">
 
-      <h3>Observa el resultado</h3>
+      <span class="lesson-tag">
+        Observa lo que hiciste
+      </span>
+
+
+      <h3>
+        ¿Qué cambió principalmente en el Grupo B?
+      </h3>
+
+
+      <div class="answer-options">
+
+        <button
+          class="btn btn--answer"
+          (click)="answerNursery('more')"
+        >
+          Ahora tiene más plantas
+        </button>
+
+
+        <button
+          class="btn btn--answer"
+          (click)="answerNursery('bigger')"
+        >
+          Las plantas son más grandes
+        </button>
+
+
+        <button
+          class="btn btn--answer"
+          (click)="answerNursery('separated')"
+        >
+          Las plantas están más separadas
+        </button>
+
+
+        <button
+          class="btn btn--answer"
+          (click)="answerNursery('different')"
+        >
+          Cambió el tipo de planta
+        </button>
+
+      </div>
+
+
+      @if (
+        nurseryAnswer() &&
+        nurseryAnswer() !== 'separated'
+      ) {
+
+        <div class="feedback feedback--hint">
+
+          <strong>
+            Observa otra vez
+          </strong>
+
+          <p>
+            La cantidad, el tamaño y el tipo de planta
+            siguen siendo los mismos.
+          </p>
+
+        </div>
+
+      }
+
+    </div>
+
+  }
+
+
+  <!-- ========================= -->
+  <!-- DESCUBRIMIENTO -->
+  <!-- ========================= -->
+
+  @if (nurseryStage() === 'concept') {
+
+    <div class="lesson-completion concept-discovery">
+
+      <span class="success-label">
+        Concepto descubierto
+      </span>
+
+
+      <h3>
+        Dispersión
+      </h3>
+
 
       <p>
-        Ahora las plantas del Grupo B están mucho más
-        separadas y ocupan una zona más amplia.
+        No cambió la cantidad de plantas.
+        Cambió la forma en que están distribuidas.
       </p>
+
+
+      <p>
+        Cuando los elementos de un conjunto están
+        más separados o extendidos, decimos que existe
+        una mayor <strong>dispersión</strong>.
+      </p>
+
 
       <button
         class="btn btn--primary"
-        (click)="nurseryStage.set('question')"
+        (click)="continueToCheck()"
       >
-        Continuar
+        Comprobar
       </button>
 
     </div>
@@ -218,85 +354,148 @@
   }
 
 
-  <!-- PREGUNTA -->
-  @if (nurseryStage() === 'question') {
+  <!-- ========================= -->
+  <!-- MICROCOMPROBACIÓN -->
+  <!-- ========================= -->
 
-    <div class="question-section">
+  @if (nurseryStage() === 'check') {
 
-      <span class="lesson-tag">Comprueba lo aprendido</span>
+  <div class="question-section spread-check">
 
-      <h3>
-        ¿Qué caracteriza al grupo que está más disperso?
-      </h3>
+    <span class="lesson-tag">
+      Comprobación rápida
+    </span>
 
-      <div class="answer-options">
+    <h3>
+      ¿Cuál grupo presenta mayor dispersión?
+    </h3>
 
-        <button
-          class="btn btn--answer"
-          (click)="answerNursery('separated')"
-        >
-          Sus elementos están más separados
-        </button>
+    <div class="check-groups">
 
-        <button
-          class="btn btn--answer"
-          (click)="answerNursery('more')"
-        >
-          Tiene más elementos
-        </button>
+      <!-- GRUPO X -->
+      <button
+        class="check-group"
+        (click)="answerCheck('x')"
+      >
+        <span class="check-group-title">
+          Grupo X
+        </span>
 
-        <button
-          class="btn btn--answer"
-          (click)="answerNursery('together')"
-        >
-          Sus elementos están más juntos
-        </button>
+        <div class="plant-row">
 
-        <button
-          class="btn btn--answer"
-          (click)="answerNursery('bigger')"
-        >
-          Sus elementos son más grandes
-        </button>
+          <img
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+          <img
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+          <img
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+          <img
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+          <img
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
 
-      </div>
-
-      @if (
-        nurseryAnswer() &&
-        nurseryAnswer() !== 'separated'
-      ) {
-        <div class="feedback feedback--hint">
-          <strong>Observa otra vez</strong>
-          <p>
-            Fíjate en cómo están distribuidas las plantas,
-            no en su cantidad o tamaño.
-          </p>
         </div>
-      }
+      </button>
+
+
+      <!-- GRUPO Y -->
+      <button
+        class="check-group"
+        (click)="answerCheck('y')"
+      >
+        <span class="check-group-title">
+          Grupo Y
+        </span>
+
+        <div class="plant-area">
+
+          <img
+            class="check-plant check-plant--1"
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+
+          <img
+            class="check-plant check-plant--2"
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+
+          <img
+            class="check-plant check-plant--3"
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+
+          <img
+            class="check-plant check-plant--4"
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+
+          <img
+            class="check-plant check-plant--5"
+            src="assets/game/tilesets/objects/Plant5.png"
+            alt="Plantón"
+          >
+
+        </div>
+      </button>
 
     </div>
-  }
+
+    @if (checkAnswer() === 'x') {
+      <div class="feedback feedback--hint">
+        <strong>Observa la distribución</strong>
+        <p>
+          Ambos grupos tienen cinco plantas.
+          Fíjate en cuál ocupa una zona más amplia.
+        </p>
+      </div>
+    }
+
+  </div>
+}
 
 
+  <!-- ========================= -->
   <!-- COMPLETADA -->
+  <!-- ========================= -->
+
   @if (nurseryStage() === 'completed') {
 
     <div class="lesson-completion">
 
       <span class="success-label">
-        Concepto descubierto
+        Correcto
       </span>
 
-      <h3>Dispersión</h3>
+
+      <h3>
+        Grupo Y
+      </h3>
+
 
       <p>
-        Cuando los elementos están más separados o extendidos,
-        decimos que existe una mayor <strong>dispersión</strong>.
+        Ambos grupos tienen la misma cantidad de elementos,
+        pero el Grupo Y ocupa una zona más amplia.
       </p>
 
+
       <p class="success-note">
-        Acabas de descubrir el concepto sin utilizar ninguna fórmula.
+        Por eso presenta una mayor dispersión.
       </p>
+
 
       <button
         class="btn btn--primary"

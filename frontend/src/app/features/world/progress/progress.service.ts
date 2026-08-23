@@ -1,125 +1,907 @@
-import { computed, Injectable, signal } from '@angular/core';
+// import {
+//   computed,
+//   Injectable,
+//   signal
+// } from '@angular/core';
 
-import { ZoneProgress } from './progress.types';
+// import {
+//   LessonProgressItem,
+//   ZoneProgress
+// } from './progress.types';
+
+
+// type ZoneDefinition = {
+//   id: string;
+//   name: string;
+//   topic: string;
+
+//   lessons: {
+//     lessonId: string;
+//     name: string;
+//     objective: string;
+//   }[];
+// };
+
+
+// @Injectable({
+//   providedIn: 'root'
+// })
+// export class ProgressService {
+
+//   /* =========================
+//      DEFINICIÓN DE LAS ZONAS
+//      ========================= */
+
+//   private readonly zones: ZoneDefinition[] = [
+
+//     /* =========================
+//        ZONA 1
+//        ========================= */
+
+//     {
+//       id: 'zone-01',
+//       name: 'Zona 1',
+//       topic: 'Dispersión',
+
+//       lessons: [
+//         {
+//           lessonId: 'lesson-01',
+//           name: 'El vivero',
+
+//           objective:
+//             'Ve al vivero y habla con el encargado.'
+//         },
+//         {
+//           lessonId: 'lesson-02',
+//           name: 'La granja',
+
+//           objective:
+//             'Ve a la granja y habla con el encargado.'
+//         },
+//         {
+//           lessonId: 'lesson-03',
+//           name: 'Almacén de trigo',
+
+//           objective:
+//             'Ve al almacén de trigo y habla con el encargado.'
+//         },
+//         {
+//           lessonId: 'lesson-04',
+//           name: 'La plaza',
+
+//           objective:
+//             'Ve a la plaza y habla con el Inspector Salazar.'
+//         }
+//       ]
+//     },
+
+
+//     /* =========================
+//        ZONA 2
+//        ========================= */
+
+//     {
+//       id: 'zone-02',
+//       name: 'Zona 2',
+//       topic: 'Medición de la variabilidad',
+
+//       lessons: [
+//         {
+//           lessonId: 'lesson-05',
+//           name: 'Patio de Inspección',
+
+//           objective:
+//             'Ve al Patio de Inspección y habla con el encargado.'
+//         },
+//         {
+//           lessonId: 'lesson-06',
+//           name: 'Estación Técnica',
+
+//           objective:
+//             'Ve a la Estación Técnica y habla con el encargado.'
+//         },
+//         {
+//           lessonId: 'lesson-07',
+//           name: 'Taller',
+
+//           objective:
+//             'Ve al Taller y habla con el encargado.'
+//         },
+//         {
+//           lessonId: 'lesson-08',
+//           name: 'Centro de Control',
+
+//           objective:
+//             'Ve al Centro de Control y habla con el encargado.'
+//         }
+//       ]
+//     }
+
+//   ];
+
+
+//   /* =========================
+//      LECCIONES COMPLETADAS
+//      ========================= */
+
+//   private readonly completedLessonIds =
+//     signal<string[]>([]);
+
+
+//   /* =========================
+//      TODAS LAS LECCIONES
+//      EN ORDEN
+//      ========================= */
+
+//   private readonly orderedLessons =
+//     this.zones.flatMap(
+//       zone => zone.lessons
+//     );
+
+
+//   /* =========================
+//      ZONA ACTUAL
+//      ========================= */
+
+//   readonly currentZone =
+//     computed<ZoneProgress | null>(() => {
+
+//       const zones =
+//         this.zones.map(
+//           zone =>
+//             this.buildZoneProgress(zone)
+//         );
+
+
+//       /*
+//        * Buscamos la primera zona
+//        * que todavía no esté terminada.
+//        */
+//       return (
+//         zones.find(
+//           zone => !zone.completed
+//         ) ??
+//         zones.at(-1) ??
+//         null
+//       );
+//     });
+
+
+//   /* =========================
+//      LECCIÓN ACTUAL
+//      ========================= */
+
+//   readonly currentLesson =
+//     computed<LessonProgressItem | null>(() => {
+
+//       const zone =
+//         this.currentZone();
+
+
+//       if (!zone) {
+//         return null;
+//       }
+
+
+//       return (
+//         zone.lessons.find(
+//           lesson =>
+//             lesson.status === 'current'
+//         ) ??
+//         null
+//       );
+//     });
+
+
+//   /* =========================
+//      OBJETIVO ACTUAL
+//      ========================= */
+
+//   readonly currentObjective =
+//     computed<string | null>(() => {
+
+//       return (
+//         this.currentLesson()?.objective ??
+//         null
+//       );
+//     });
+
+
+//   /* =========================
+//      COMPLETAR LECCIÓN
+//      ========================= */
+
+//   completeLesson(
+//     lessonId: string
+//   ): void {
+
+//     /*
+//      * Si ya está terminada,
+//      * no hacemos nada.
+//      */
+//     if (
+//       this.isLessonCompleted(
+//         lessonId
+//       )
+//     ) {
+//       return;
+//     }
+
+
+//     /*
+//      * Tampoco permitimos completar
+//      * una lección que todavía está
+//      * bloqueada.
+//      */
+//     if (
+//       !this.isLessonAvailable(
+//         lessonId
+//       )
+//     ) {
+//       return;
+//     }
+
+
+//     this.completedLessonIds.update(
+//       completed => [
+//         ...completed,
+//         lessonId
+//       ]
+//     );
+//   }
+
+
+//   /* =========================
+//      LECCIÓN COMPLETADA
+//      ========================= */
+
+//   isLessonCompleted(
+//     lessonId: string
+//   ): boolean {
+
+//     return this.completedLessonIds()
+//       .includes(
+//         lessonId
+//       );
+//   }
+
+
+//   /* =========================
+//      LECCIÓN DISPONIBLE
+//      ========================= */
+
+//   isLessonAvailable(
+//     lessonId: string
+//   ): boolean {
+
+//     const lessonIndex =
+//       this.orderedLessons.findIndex(
+//         lesson =>
+//           lesson.lessonId ===
+//           lessonId
+//       );
+
+
+//     /*
+//      * Si la lección no existe,
+//      * tampoco está disponible.
+//      */
+//     if (lessonIndex === -1) {
+//       return false;
+//     }
+
+
+//     /*
+//      * Una lección ya terminada
+//      * sigue siendo accesible.
+//      *
+//      * Esto nos permitirá repetirla
+//      * si luego queremos hacerlo.
+//      */
+//     if (
+//       this.isLessonCompleted(
+//         lessonId
+//       )
+//     ) {
+//       return true;
+//     }
+
+
+//     /*
+//      * La primera lección está
+//      * disponible desde el inicio.
+//      */
+//     if (lessonIndex === 0) {
+//       return true;
+//     }
+
+
+//     /*
+//      * Para acceder a una lección,
+//      * todas las anteriores deben
+//      * haberse completado.
+//      */
+//     const previousLessons =
+//       this.orderedLessons.slice(
+//         0,
+//         lessonIndex
+//       );
+
+
+//     return previousLessons.every(
+//       lesson =>
+//         this.isLessonCompleted(
+//           lesson.lessonId
+//         )
+//     );
+//   }
+
+
+//   /* =========================
+//      CONSTRUIR PROGRESO
+//      DE UNA ZONA
+//      ========================= */
+
+//   private buildZoneProgress(
+//     zone: ZoneDefinition
+//   ): ZoneProgress {
+
+//     const completed =
+//       this.completedLessonIds();
+
+
+//     /*
+//      * Primera lección de ESTA zona
+//      * que todavía no fue completada.
+//      */
+//     const firstPending =
+//       zone.lessons.find(
+//         lesson =>
+//           !completed.includes(
+//             lesson.lessonId
+//           )
+//       );
+
+
+//     const lessons =
+//       zone.lessons.map(
+//         lesson => {
+
+//           const isCompleted =
+//             completed.includes(
+//               lesson.lessonId
+//             );
+
+
+//           /*
+//            * CORRECCIÓN IMPORTANTE:
+//            *
+//            * Antes:
+//            * const isCurrent =
+//            *   firstPending?.lessonId;
+//            *
+//            * Eso solamente obtenía un string.
+//            *
+//            * Ahora realmente preguntamos:
+//            * "¿Esta lección es la primera
+//            * pendiente?"
+//            */
+//           const isCurrent =
+//             lesson.lessonId ===
+//             firstPending?.lessonId;
+
+
+//           return {
+//             ...lesson,
+
+//             status: isCompleted
+//               ? 'completed' as const
+//               : isCurrent
+//                 ? 'current' as const
+//                 : 'pending' as const
+//           };
+//         }
+//       );
+
+
+//     const completedLessons =
+//       lessons.filter(
+//         lesson =>
+//           lesson.status ===
+//           'completed'
+//       ).length;
+
+
+//     const totalLessons =
+//       lessons.length;
+
+
+//     return {
+//       id: zone.id,
+//       name: zone.name,
+//       topic: zone.topic,
+
+//       lessons,
+
+//       completedLessons,
+//       totalLessons,
+
+//       percentage:
+//         totalLessons === 0
+//           ? 0
+//           : Math.round(
+//               (
+//                 completedLessons /
+//                 totalLessons
+//               ) * 100
+//             ),
+
+//       completed:
+//         completedLessons ===
+//         totalLessons
+//     };
+//   }
+
+// }
+
+import {
+  computed,
+  Injectable,
+  signal
+} from '@angular/core';
+
+import {
+  LessonProgressItem,
+  ZoneProgress
+} from './progress.types';
+
+
+type LessonDefinition = {
+  lessonId: string;
+  name: string;
+  objective: string;
+};
+
 
 type ZoneDefinition = {
-    id: string;
-    name: string; 
-    topic: string;
+  id: string;
+  name: string;
+  topic: string;
 
-    lessons: {
-        lessonId: string;
-        name: string;
-    }[];
-}
+  lessons: LessonDefinition[];
+};
 
-@Injectable({providedIn: 'root'})
+
+@Injectable({
+  providedIn: 'root'
+})
 export class ProgressService {
-    private readonly zones:ZoneDefinition[] = [
+
+  /* =========================
+     DEFINICIÓN DEL RECORRIDO
+     ========================= */
+
+  private readonly zones: ZoneDefinition[] = [
+
+    /* =========================
+       ZONA 1
+       ========================= */
+
+    {
+      id: 'zone-01',
+      name: 'Zona 1',
+      topic: 'Dispersión',
+
+      lessons: [
         {
-            id: 'zone-01',
-            name: 'Zona 1', 
-            topic: 'Dispersion',
-
-            lessons: [
-                {
-                    lessonId: 'lesson-01',
-                    name: 'El vivero'
-                },
-                {
-                    lessonId: 'lesson-02',
-                    name: 'La granja'
-                },
-                {
-                    lessonId: 'lesson-03',
-                    name: 'EL granero'
-                },
-                {
-                    lessonId: 'lesson-04',
-                    name: 'La plaza'
-                },
-            ]
+          lessonId: 'lesson-01',
+          name: 'El vivero',
+          objective:
+            'Ve al vivero y habla con el encargado.'
+        },
+        {
+          lessonId: 'lesson-02',
+          name: 'La granja',
+          objective:
+            'Ve a la granja y habla con el encargado.'
+        },
+        {
+          lessonId: 'lesson-03',
+          name: 'Almacén de trigo',
+          objective:
+            'Ve al almacén de trigo y habla con el encargado.'
+        },
+        {
+          lessonId: 'lesson-04',
+          name: 'La plaza',
+          objective:
+            'Ve a la plaza y habla con el Inspector Salazar.'
         }
-    ];
-    private readonly  completedLessonIds = signal<string[]>([]);
+      ]
+    },
 
-    readonly currentZone = computed<ZoneProgress | null>(() => {
-        const zones = this.zones.map( zone => 
-            this.buildZoneProgress(zone)
-        );
 
-        return (
-            zones.find(zone => !zone.completed) ??
-            zones.at(-1) ??
-            null
-        )
-    });
+    /* =========================
+       ZONA 2
+       ========================= */
 
-    completeLesson(lessonId: string): void{
-        if(this.completedLessonIds().includes(lessonId)){
-            return;
+    {
+      id: 'zone-02',
+      name: 'Zona 2',
+      topic: 'Medición de la variabilidad',
+
+      lessons: [
+        {
+          lessonId: 'lesson-05',
+          name: 'Patio de Inspección',
+          objective:
+            'Ve al Patio de Inspección y habla con el encargado.'
+        },
+        {
+          lessonId: 'lesson-06',
+          name: 'Estación Técnica',
+          objective:
+            'Ve a la Estación Técnica y habla con el encargado.'
+        },
+        {
+          lessonId: 'lesson-07',
+          name: 'Taller',
+          objective:
+            'Ve al Taller y habla con el encargado.'
+        },
+        {
+          lessonId: 'lesson-08',
+          name: 'Centro de Control',
+          objective:
+            'Ve al Centro de Control y habla con el encargado.'
         }
-
-        this.completedLessonIds.update(
-            completed => [
-                ...completed,
-                lessonId
-            ]
-        );   
+      ]
     }
 
-    isLessonCompleted(lessonId:string): boolean {
-        return this.completedLessonIds().includes(lessonId)
-    }
+  ];
 
-    private buildZoneProgress(zone: ZoneDefinition) : ZoneProgress {
-        const completed = this.completedLessonIds();
 
-        const firstPending = zone.lessons.find(
-            lesson => !completed.includes(
-                lesson.lessonId
+  /* =========================
+     TODAS LAS LECCIONES
+     EN ORDEN PEDAGÓGICO
+     ========================= */
+
+  private readonly orderedLessons =
+    this.zones.flatMap(
+      zone => zone.lessons
+    );
+
+
+  /* =========================
+     LECCIONES COMPLETADAS
+     ========================= */
+
+  private readonly completedLessonIds =
+    signal<string[]>([]);
+
+
+  /* =========================
+     ID DE LA LECCIÓN ACTUAL
+     ========================= */
+
+  private readonly currentLessonId =
+    computed<string | null>(() => {
+
+      const completed =
+        this.completedLessonIds();
+
+
+      const firstPending =
+        this.orderedLessons.find(
+          lesson =>
+            !completed.includes(
+              lesson.lessonId
             )
         );
-        const lessons = zone.lessons.map(lesson => {
-            const isCompleted = completed.includes(lesson.lessonId);
-            const isCurrent = firstPending?.lessonId;
 
-            return {
-                ...lesson,
-                
-                status : isCompleted
-                    ? 'completed' as const 
-                    : isCurrent
-                        ? 'current' as const 
-                        : 'pending' as const
-            }
-        });
 
-        const completedLessons = lessons.filter(
-            lesson => lesson.status === 'completed'
-        ).length;
+      return (
+        firstPending?.lessonId ??
+        null
+      );
+    });
 
-        const totalLessons = lessons.length;
 
-        return {
-            id: zone.id,
-            name: zone.name,
-            topic: zone.topic,
+  /* =========================
+     ZONAS CON PROGRESO
+     ========================= */
 
-            lessons,
-            
-            completedLessons,
-            totalLessons,
+  readonly zoneProgress =
+    computed<ZoneProgress[]>(() =>
 
-            percentage:
-                totalLessons === 0
-                ? 0 
-                : Math.round(
-                    (
-                        completedLessons / totalLessons
-                    ) * 100
-                ),
-            completed : completedLessons === totalLessons
+      this.zones.map(
+        zone =>
+          this.buildZoneProgress(
+            zone
+          )
+      )
+
+    );
+
+
+  /* =========================
+     ZONA ACTUAL
+     ========================= */
+
+  readonly currentZone =
+    computed<ZoneProgress | null>(() => {
+
+      const zones =
+        this.zoneProgress();
+
+
+      /*
+       * Primera zona que todavía
+       * no ha sido completada.
+       */
+      return (
+        zones.find(
+          zone => !zone.completed
+        ) ??
+        zones.at(-1) ??
+        null
+      );
+    });
+
+
+  /* =========================
+     LECCIÓN ACTUAL
+     ========================= */
+
+  readonly currentLesson =
+    computed<LessonProgressItem | null>(() => {
+
+      const lessonId =
+        this.currentLessonId();
+
+
+      if (!lessonId) {
+        return null;
+      }
+
+
+      for (
+        const zone of this.zoneProgress()
+      ) {
+
+        const lesson =
+          zone.lessons.find(
+            item =>
+              item.lessonId ===
+              lessonId
+          );
+
+
+        if (lesson) {
+          return lesson;
         }
+
+      }
+
+
+      return null;
+    });
+
+
+  /* =========================
+     OBJETIVO ACTUAL
+     ========================= */
+
+  readonly currentObjective =
+    computed<string | null>(() =>
+
+      this.currentLesson()?.objective ??
+      null
+
+    );
+
+
+  /* =========================
+     COMPLETAR LECCIÓN
+     ========================= */
+
+  completeLesson(
+    lessonId: string
+  ): void {
+
+    /*
+     * Si ya está completada,
+     * no hacemos nada.
+     */
+    if (
+      this.isLessonCompleted(
+        lessonId
+      )
+    ) {
+      return;
     }
+
+
+    /*
+     * Impide completar una
+     * lección futura.
+     */
+    if (
+      !this.isLessonAvailable(
+        lessonId
+      )
+    ) {
+      return;
+    }
+
+
+    this.completedLessonIds.update(
+      completed => [
+        ...completed,
+        lessonId
+      ]
+    );
+  }
+
+
+  /* =========================
+     ¿ESTÁ COMPLETADA?
+     ========================= */
+
+  isLessonCompleted(
+    lessonId: string
+  ): boolean {
+
+    return this.completedLessonIds()
+      .includes(
+        lessonId
+      );
+  }
+
+
+  /* =========================
+     ¿ESTÁ DISPONIBLE?
+     ========================= */
+
+  isLessonAvailable(
+    lessonId: string
+  ): boolean {
+
+    const lessonIndex =
+      this.orderedLessons.findIndex(
+        lesson =>
+          lesson.lessonId ===
+          lessonId
+      );
+
+
+    /*
+     * Lección desconocida.
+     */
+    if (lessonIndex === -1) {
+      return false;
+    }
+
+
+    /*
+     * Una lección completada
+     * puede volver a jugarse.
+     */
+    if (
+      this.isLessonCompleted(
+        lessonId
+      )
+    ) {
+      return true;
+    }
+
+
+    /*
+     * Solo la primera lección
+     * pendiente está disponible.
+     */
+    return (
+      this.currentLessonId() ===
+      lessonId
+    );
+  }
+
+
+  /* =========================
+     ¿ES LA LECCIÓN ACTUAL?
+     ========================= */
+
+  isCurrentLesson(
+    lessonId: string
+  ): boolean {
+
+    return (
+      this.currentLessonId() ===
+      lessonId
+    );
+  }
+
+
+  /* =========================
+     CONSTRUIR PROGRESO
+     ========================= */
+
+  private buildZoneProgress(
+    zone: ZoneDefinition
+  ): ZoneProgress {
+
+    const completed =
+      this.completedLessonIds();
+
+
+    const currentLessonId =
+      this.currentLessonId();
+
+
+    const lessons =
+      zone.lessons.map(
+        lesson => {
+
+          const isCompleted =
+            completed.includes(
+              lesson.lessonId
+            );
+
+
+          const isCurrent =
+            lesson.lessonId ===
+            currentLessonId;
+
+
+          return {
+            ...lesson,
+
+            status: isCompleted
+              ? 'completed' as const
+              : isCurrent
+                ? 'current' as const
+                : 'pending' as const
+          };
+        }
+      );
+
+
+    const completedLessons =
+      lessons.filter(
+        lesson =>
+          lesson.status ===
+          'completed'
+      ).length;
+
+
+    const totalLessons =
+      lessons.length;
+
+
+    return {
+      id: zone.id,
+      name: zone.name,
+      topic: zone.topic,
+
+      lessons,
+
+      completedLessons,
+      totalLessons,
+
+      percentage:
+        totalLessons === 0
+          ? 0
+          : Math.round(
+              (
+                completedLessons /
+                totalLessons
+              ) * 100
+            ),
+
+      completed:
+        completedLessons ===
+        totalLessons
+    };
+  }
+
 }

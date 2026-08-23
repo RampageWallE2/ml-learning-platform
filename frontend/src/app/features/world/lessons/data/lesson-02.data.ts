@@ -13,23 +13,28 @@ export const LESSON_02: LessonDefinition = {
         messages: [
           {
             speaker: 'npc',
-            name: 'Granjero',
-            text: 'Estas dos parcelas tuvieron un promedio de producción muy parecido.'
+            name: 'Encargado de la granja',
+            text: 'Así que vienes del vivero. Me dijeron que estuviste comparando cómo se distribuían distintos grupos.'
           },
           {
             speaker: 'player',
             name: 'Tú',
-            text: 'Entonces, ¿las dos están funcionando igual?'
+            text: 'Sí. Aprendí que algunos grupos pueden estar mucho más dispersos que otros.'
           },
           {
             speaker: 'npc',
-            name: 'Granjero',
-            text: 'Eso parece si miramos solamente el promedio.'
+            name: 'Encargado de la granja',
+            text: 'Entonces quizá puedas ayudarme con esto.'
           },
           {
             speaker: 'npc',
-            name: 'Granjero',
-            text: 'Pero observa lo que produjo cada parcela durante varios días.'
+            name: 'Encargado de la granja',
+            text: 'Tenemos dos parcelas de trigo. Durante los últimos cinco días registramos cuántos kilogramos produjo cada una.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Encargado de la granja',
+            text: 'Necesito una producción relativamente constante para cumplir pedidos diarios cercanos a 50 kg. Observa los registros y dime con cuál confiarías más.'
           }
         ]
       }
@@ -50,17 +55,27 @@ export const LESSON_02: LessonDefinition = {
           {
             speaker: 'player',
             name: 'Tú',
-            text: 'Ahora entiendo. Tener el mismo promedio no significa que los datos se comporten igual.'
+            text: 'Entonces dos parcelas pueden tener el mismo promedio y aun así comportarse de manera muy diferente.'
           },
           {
             speaker: 'npc',
-            name: 'Granjero',
-            text: 'Exactamente. El promedio nos habla del centro, pero no nos dice cuánto cambian los valores alrededor de él.'
+            name: 'Encargado de la granja',
+            text: 'Exactamente. Por eso no deberíamos tomar decisiones mirando solamente el promedio.'
           },
           {
             speaker: 'npc',
-            name: 'Granjero',
-            text: 'Por eso también necesitamos observar la dispersión.'
+            name: 'Encargado de la granja',
+            text: 'De hecho, en el almacén tenemos otro problema.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Encargado de la granja',
+            text: 'Están revisando sacos que deberían tener un peso parecido, pero algunos están quedando por encima y otros por debajo del valor esperado.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Encargado de la granja',
+            text: 'Ve a hablar con el encargado del almacén. Tal vez puedas ayudarlo a interpretar esas diferencias.'
           }
         ]
       }

@@ -1,28 +1,39 @@
 <section class="lesson farm-lesson">
 
   <header class="lesson-header">
-    <span class="lesson-tag">Lección 2</span>
+    <span class="lesson-tag">
+      Lección 2
+    </span>
 
-    <h2>Producción de las parcelas</h2>
+    <h2>
+      Producción de la granja
+    </h2>
 
     <p>
-      Compara cómo cambia la producción de dos parcelas
-      a lo largo de varios días.
+      Compara los registros de dos parcelas de trigo
+      y decide cuál ofrece una producción más regular.
     </p>
   </header>
 
 
-  <!-- ESTABILIDAD -->
+  <!-- =========================
+       ETAPA 1: DECISIÓN
+       ========================= -->
 
   @if (stage() === 'stability') {
 
     <div class="lesson-card lesson-card--instruction">
-      <strong>Observa los datos</strong>
+
+      <strong>
+        El problema
+      </strong>
 
       <p>
-        Estos son los resultados obtenidos durante cinco días.
-        Fíjate en cómo se distribuyen los valores.
+        El encargado necesita cubrir pedidos diarios
+        cercanos a 50 kg de trigo.
+        Observa la producción registrada durante cinco días.
       </p>
+
     </div>
 
 
@@ -33,21 +44,33 @@
       <article class="parcel">
 
         <div class="parcel-header">
+
           <div>
-            <span>Producción diaria</span>
-            <h3>Parcela A</h3>
+            <span>
+              Producción diaria
+            </span>
+
+            <h3>
+              Parcela A
+            </h3>
           </div>
 
           <span class="parcel-badge">
             5 días
           </span>
+
         </div>
 
 
         <div class="values">
 
-          @for (value of parcelA; track $index) {
-            <span>{{ value }}</span>
+          @for (
+            value of parcelA;
+            track $index
+          ) {
+            <span>
+              {{ value }} kg
+            </span>
           }
 
         </div>
@@ -56,32 +79,45 @@
         <div class="plot-container">
 
           <svg
-            viewBox="0 0 440 120"
+            viewBox="0 0 440 135"
             class="plot"
           >
 
+            <text
+              x="220"
+              y="18"
+              text-anchor="middle"
+              class="axis-title"
+            >
+              Producción diaria (kg)
+            </text>
+
+
             <line
               x1="40"
-              y1="75"
+              y1="78"
               x2="400"
-              y2="75"
+              y2="78"
               class="axis"
             />
 
 
-            @for (tick of axisTicks; track tick) {
+            @for (
+              tick of axisTicks;
+              track tick
+            ) {
 
               <line
                 [attr.x1]="getPointX(tick)"
-                y1="70"
+                y1="73"
                 [attr.x2]="getPointX(tick)"
-                y2="80"
+                y2="83"
                 class="tick"
               />
 
               <text
                 [attr.x]="getPointX(tick)"
-                y="103"
+                y="108"
                 text-anchor="middle"
                 class="tick-label"
               >
@@ -126,21 +162,33 @@
       <article class="parcel">
 
         <div class="parcel-header">
+
           <div>
-            <span>Producción diaria</span>
-            <h3>Parcela B</h3>
+            <span>
+              Producción diaria
+            </span>
+
+            <h3>
+              Parcela B
+            </h3>
           </div>
 
           <span class="parcel-badge">
             5 días
           </span>
+
         </div>
 
 
         <div class="values">
 
-          @for (value of parcelB; track $index) {
-            <span>{{ value }}</span>
+          @for (
+            value of parcelB;
+            track $index
+          ) {
+            <span>
+              {{ value }} kg
+            </span>
           }
 
         </div>
@@ -149,32 +197,45 @@
         <div class="plot-container">
 
           <svg
-            viewBox="0 0 440 120"
+            viewBox="0 0 440 135"
             class="plot"
           >
 
+            <text
+              x="220"
+              y="18"
+              text-anchor="middle"
+              class="axis-title"
+            >
+              Producción diaria (kg)
+            </text>
+
+
             <line
               x1="40"
-              y1="75"
+              y1="78"
               x2="400"
-              y2="75"
+              y2="78"
               class="axis"
             />
 
 
-            @for (tick of axisTicks; track tick) {
+            @for (
+              tick of axisTicks;
+              track tick
+            ) {
 
               <line
                 [attr.x1]="getPointX(tick)"
-                y1="70"
+                y1="73"
                 [attr.x2]="getPointX(tick)"
-                y2="80"
+                y2="83"
                 class="tick"
               />
 
               <text
                 [attr.x]="getPointX(tick)"
-                y="103"
+                y="108"
                 text-anchor="middle"
                 class="tick-label"
               >
@@ -216,14 +277,18 @@
     </div>
 
 
+    <!-- DECISIÓN -->
+
     <div class="question-section">
 
       <span class="lesson-tag">
-        Compara
+        Toma una decisión
       </span>
 
       <h3>
-        ¿Cuál parcela parece tener una producción más estable?
+        Tenemos pedidos diarios de aproximadamente
+        50 kg. ¿Con cuál parcela confiarías más para
+        mantener una producción regular?
       </h3>
 
 
@@ -246,15 +311,20 @@
       </div>
 
 
-      @if (stabilityAnswer() === 'B') {
+      @if (
+        stabilityAnswer() === 'B'
+      ) {
 
         <div class="feedback feedback--hint">
 
-          <strong>Observa nuevamente</strong>
+          <strong>
+            Observa nuevamente
+          </strong>
 
           <p>
+            No busques solamente el día con mayor producción.
             Fíjate en cuánto cambian los resultados
-            de un día a otro.
+            entre un día y otro.
           </p>
 
         </div>
@@ -266,23 +336,44 @@
   }
 
 
-  <!-- PROMEDIO -->
+  <!-- =========================
+       ETAPA 2: REVELACIÓN
+       ========================= -->
 
   @if (stage() === 'average') {
+
+    <div class="farm-message">
+
+      <span class="farm-message-speaker">
+        Encargado de la granja
+      </span>
+
+      <p>
+        Yo también elegiría la Parcela A para
+        cumplir pedidos diarios.
+      </p>
+
+      <p>
+        Pero hay algo extraño.
+        Mira el promedio de producción de ambas.
+      </p>
+
+    </div>
+
 
     <div class="discovery-header">
 
       <span class="lesson-tag">
-        Nuevo descubrimiento
+        Hay algo que no encaja
       </span>
 
       <h3>
-        Ahora observa algo interesante
+        Ambas parcelas tienen el mismo promedio
       </h3>
 
       <p>
-        Calculemos el promedio de producción
-        de cada parcela.
+        Sin embargo, acabas de concluir
+        que no se comportan de la misma manera.
       </p>
 
     </div>
@@ -292,26 +383,34 @@
 
       <article class="average-card">
 
-        <span>Parcela A</span>
+        <span>
+          Parcela A
+        </span>
 
         <strong>
-          {{ averageA() }}
+          {{ averageA() }} kg
         </strong>
 
-        <small>Promedio</small>
+        <small>
+          por día en promedio
+        </small>
 
       </article>
 
 
       <article class="average-card">
 
-        <span>Parcela B</span>
+        <span>
+          Parcela B
+        </span>
 
         <strong>
-          {{ averageB() }}
+          {{ averageB() }} kg
         </strong>
 
-        <small>Promedio</small>
+        <small>
+          por día en promedio
+        </small>
 
       </article>
 
@@ -320,15 +419,14 @@
 
     <div class="observation-card">
 
-      <strong>Mismo promedio</strong>
+      <strong>
+        Mismo promedio: 50 kg/día
+      </strong>
 
       <p>
-        Ambas parcelas tienen un promedio de producción
-        de <strong>10</strong>.
-      </p>
-
-      <p>
-        Pero sus resultados no se comportan de la misma manera.
+        El promedio es exactamente el mismo,
+        pero los registros diarios muestran
+        comportamientos muy diferentes.
       </p>
 
     </div>
@@ -341,7 +439,8 @@
       </span>
 
       <h3>
-        Entonces, ¿qué diferencia estás observando?
+        Si ambas producen 50 kg diarios en promedio,
+        ¿por qué la Parcela A parece más regular?
       </h3>
 
 
@@ -351,28 +450,29 @@
           class="btn btn--answer"
           (click)="selectDifference('concentrated')"
         >
-          Los resultados de A están más concentrados
+          Sus producciones diarias están más agrupadas
+          alrededor de valores similares
         </button>
 
         <button
           class="btn btn--answer"
           (click)="selectDifference('more-data')"
         >
-          A tiene más mediciones
+          Tiene más días registrados
         </button>
 
         <button
           class="btn btn--answer"
           (click)="selectDifference('higher-average')"
         >
-          B tiene un promedio mayor
+          Su promedio es mayor
         </button>
 
         <button
           class="btn btn--answer"
           (click)="selectDifference('same')"
         >
-          Ambas se comportan igual
+          Las dos parcelas se comportan igual
         </button>
 
       </div>
@@ -385,12 +485,14 @@
 
         <div class="feedback feedback--hint">
 
-          <strong>Una pista</strong>
+          <strong>
+            Una pista
+          </strong>
 
           <p>
-            Ambas tienen la misma cantidad de datos
-            y el mismo promedio. Observa cómo están
-            distribuidos los valores.
+            Ambas parcelas tienen cinco registros
+            y exactamente el mismo promedio.
+            Observa cómo están distribuidos los valores diarios.
           </p>
 
         </div>
@@ -402,45 +504,127 @@
   }
 
 
-  <!-- COMPLETADA -->
+  <!-- =========================
+       ETAPA 3: CONCLUSIÓN
+       ========================= -->
 
   @if (stage() === 'completed') {
 
-    <div class="lesson-completion">
+    <div class="lesson-completion farm-completion">
 
       <span class="success-label">
-        Concepto reforzado
+        Descubrimiento
       </span>
 
       <h3>
         El promedio no cuenta toda la historia
       </h3>
 
+
       <div class="conclusion-comparison">
 
-        <div>
-          <span>Parcela A</span>
-          <strong>Más concentrada</strong>
+
+        <!-- PARCELA A -->
+
+        <div class="conclusion-card">
+
+          <span class="conclusion-title">
+            Parcela A
+          </span>
+
+          <div class="conclusion-values">
+
+            @for (
+              value of parcelA;
+              track $index
+            ) {
+              <span>
+                {{ value }}
+              </span>
+            }
+
+          </div>
+
+          <small>
+            Promedio
+          </small>
+
+          <strong class="conclusion-average">
+            50 kg/día
+          </strong>
+
+          <span class="conclusion-result">
+            Producción más regular
+          </span>
+
         </div>
 
-        <div>
-          <span>Parcela B</span>
-          <strong>Más dispersa</strong>
+
+        <!-- PARCELA B -->
+
+        <div class="conclusion-card">
+
+          <span class="conclusion-title">
+            Parcela B
+          </span>
+
+          <div class="conclusion-values">
+
+            @for (
+              value of parcelB;
+              track $index
+            ) {
+              <span>
+                {{ value }}
+              </span>
+            }
+
+          </div>
+
+          <small>
+            Promedio
+          </small>
+
+          <strong class="conclusion-average">
+            50 kg/día
+          </strong>
+
+          <span class="conclusion-result">
+            Producción más variable
+          </span>
+
         </div>
 
       </div>
 
 
       <p>
-        Ambas parcelas tienen un promedio de
-        <strong>10</strong>.
+        El promedio indica alrededor de qué valor
+        se encuentran los datos, pero no muestra
+        por sí solo qué tan variables son.
       </p>
 
       <p>
-        Sin embargo, los resultados de la Parcela A
-        están mucho más concentrados, mientras que los
-        de la Parcela B están más dispersos.
+        La Parcela A mantiene sus producciones
+        bastante agrupadas, mientras que los registros
+        de la Parcela B están mucho más extendidos.
       </p>
+
+
+      <div class="business-note">
+
+        <strong>
+          En este caso
+        </strong>
+
+        <p>
+          Como necesitamos atender pedidos diarios cercanos
+          a 50 kg, la Parcela A resulta más predecible.
+          Eso no significa que siempre sea la mejor parcela:
+          depende de la decisión que queramos tomar.
+        </p>
+
+      </div>
 
 
       <button

@@ -4,19 +4,25 @@ import {
   signal
 } from '@angular/core';
 
+
 type PlazaStage =
   | 'dispersion'
   | 'average'
   | 'distance'
   | 'completed';
 
-type DispersionAnswer = 'A' | 'B';
+
+type DispersionAnswer =
+  | 'A'
+  | 'B';
+
 
 type AverageAnswer =
   | 'same'
   | 'different-dispersion'
   | 'more-data'
   | 'higher-b';
+
 
 @Component({
   selector: 'app-lesson-04-plaza',
@@ -28,87 +34,183 @@ export class Lesson04Plaza {
 
   completed = output<void>();
 
-  // RETO 1 - cosecha de tomates
-  readonly tomatoPlotA = [
-    42, 43, 44, 45, 46
+
+  /* =========================
+     REPORTE 1 — VIVERO
+     ALTURA DE PLANTONES
+     ========================= */
+
+  readonly nurseryGroupA = [
+    28,
+    29,
+    30,
+    31,
+    32
   ];
 
-  readonly tomatoPlotB = [
-    29, 37, 44, 52, 58
+
+  readonly nurseryGroupB = [
+    18,
+    24,
+    30,
+    36,
+    42
   ];
 
-  // RETO 2 - invernaderos
-  readonly greenhouseA = [
-    72, 74, 75, 76, 78
+
+  /* =========================
+     REPORTE 2 — GRANJA
+     PRODUCCIÓN DIARIA
+     ========================= */
+
+  readonly farmPlotA = [
+    48,
+    49,
+    50,
+    51,
+    52
   ];
 
-  readonly greenhouseB = [
-    58, 68, 75, 84, 90
+
+  readonly farmPlotB = [
+    32,
+    41,
+    50,
+    59,
+    68
   ];
 
-  readonly greenhouseTotalA = 375;
-  readonly greenhouseTotalB = 375;
-  readonly greenhouseAverage = 75;
 
-  // RETO 3 - producción de papa
-  readonly potatoAverage = 72;
-  readonly potatoProduction = 89;
-  readonly correctDistance = 17;
+  readonly farmAverage = 50;
+
+
+  /* =========================
+     REPORTE 3 — ALMACÉN
+     PESO DEL TRIGO
+     ========================= */
+
+  readonly sackAverage = 50;
+
+  readonly inspectedSackWeight = 46;
+
+  readonly correctDistance = 4;
+
 
   readonly distanceOptions = [
-    12,
-    15,
-    17,
-    21
+    2,
+    4,
+    46,
+    50
   ];
 
-  stage = signal<PlazaStage>('dispersion');
+
+  /* =========================
+     ESTADO
+     ========================= */
+
+  stage =
+    signal<PlazaStage>(
+      'dispersion'
+    );
+
 
   dispersionAnswer =
-    signal<DispersionAnswer | null>(null);
+    signal<DispersionAnswer | null>(
+      null
+    );
+
 
   averageAnswer =
-    signal<AverageAnswer | null>(null);
+    signal<AverageAnswer | null>(
+      null
+    );
+
 
   distanceAnswer =
-    signal<number | null>(null);
+    signal<number | null>(
+      null
+    );
 
+
+  /* =========================
+     REPORTE 1
+     ========================= */
 
   selectDispersion(
     answer: DispersionAnswer
   ): void {
 
-    this.dispersionAnswer.set(answer);
+    this.dispersionAnswer.set(
+      answer
+    );
+
 
     if (answer === 'B') {
-      this.stage.set('average');
+
+      this.stage.set(
+        'average'
+      );
     }
   }
 
+
+  /* =========================
+     REPORTE 2
+     ========================= */
 
   selectAverage(
     answer: AverageAnswer
   ): void {
 
-    this.averageAnswer.set(answer);
+    this.averageAnswer.set(
+      answer
+    );
 
-    if (answer === 'different-dispersion') {
-      this.stage.set('distance');
+
+    if (
+      answer ===
+      'different-dispersion'
+    ) {
+
+      this.stage.set(
+        'distance'
+      );
     }
   }
 
 
-  selectDistance(answer: number): void {
+  /* =========================
+     REPORTE 3
+     ========================= */
 
-    this.distanceAnswer.set(answer);
+  selectDistance(
+    answer: number
+  ): void {
 
-    if (answer === this.correctDistance) {
-      this.stage.set('completed');
+    this.distanceAnswer.set(
+      answer
+    );
+
+
+    if (
+      answer ===
+      this.correctDistance
+    ) {
+
+      this.stage.set(
+        'completed'
+      );
     }
   }
 
+
+  /* =========================
+     FINAL
+     ========================= */
 
   finishChallenge(): void {
+
     this.completed.emit();
   }
+
 }

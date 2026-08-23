@@ -1,11 +1,16 @@
 <aside class="zone-progress">
 
+  <!-- =========================
+       HEADER
+       ========================= -->
+
   <button
     class="progress-header"
     (click)="toggle()"
   >
 
-    <div>
+    <div class="progress-header-info">
+
       <span class="progress-zone">
         {{ zone().name }}
       </span>
@@ -13,19 +18,38 @@
       <strong>
         {{ zone().topic }}
       </strong>
+
     </div>
 
 
-    <div class="progress-counter">
+    <div class="progress-header-side">
 
-      {{ zone().completedLessons }}
-      /
-      {{ zone().totalLessons }}
+      <div class="progress-counter">
+
+        {{ zone().completedLessons }}
+        /
+        {{ zone().totalLessons }}
+
+      </div>
+
+
+      <span
+        class="progress-chevron"
+        [class.progress-chevron--expanded]="
+          expanded()
+        "
+      >
+        ▼
+      </span>
 
     </div>
 
   </button>
 
+
+  <!-- =========================
+       BARRA
+       ========================= -->
 
   <div class="progress-bar">
 
@@ -36,6 +60,45 @@
 
   </div>
 
+
+  <!-- =========================
+       OBJETIVO ACTUAL
+       ========================= -->
+
+  @if (currentObjective()) {
+
+    <div class="current-objective">
+
+      <span class="objective-label">
+        Objetivo actual
+      </span>
+
+      <p>
+        {{ currentObjective() }}
+      </p>
+
+    </div>
+
+  } @else {
+
+    <div class="current-objective current-objective--completed">
+
+      <span class="objective-label">
+        Progreso
+      </span>
+
+      <p>
+        Has completado todas las actividades de esta zona.
+      </p>
+
+    </div>
+
+  }
+
+
+  <!-- =========================
+       LISTA DE LECCIONES
+       ========================= -->
 
   @if (expanded()) {
 
@@ -81,9 +144,24 @@
           </span>
 
 
-          <span>
-            {{ lesson.name }}
-          </span>
+          <div class="progress-item-info">
+
+            <span>
+              {{ lesson.name }}
+            </span>
+
+
+            @if (
+              lesson.status === 'current'
+            ) {
+
+              <small>
+                Actual
+              </small>
+
+            }
+
+          </div>
 
         </div>
 

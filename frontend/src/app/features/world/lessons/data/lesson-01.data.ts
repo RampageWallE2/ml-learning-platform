@@ -14,22 +14,27 @@ export const LESSON_01: LessonDefinition = {
           {
             speaker: 'npc',
             name: 'Viverista',
-            text: 'Estas plantas pertenecen a dos grupos del vivero.'
+            text: 'Estos dos grupos tienen cinco plantones cada uno.'
           },
           {
             speaker: 'player',
             name: 'Tú',
-            text: 'A simple vista parecen bastante parecidas.'
+            text: 'Entonces, en cantidad, son iguales.'
           },
           {
             speaker: 'npc',
             name: 'Viverista',
-            text: 'Fíjate menos en las plantas y más en el espacio que hay entre ellas.'
+            text: 'Exactamente. En el Grupo A las plantas están aproximadamente a 40 cm unas de otras.'
           },
           {
             speaker: 'npc',
             name: 'Viverista',
-            text: 'Experimenta con el Grupo B. Mueve sus plantas hasta que queden mucho más separadas que las del Grupo A.'
+            text: 'Quiero aprovechar mejor otra zona del vivero. Reorganiza el Grupo B para que sus plantas queden mucho más extendidas.'
+          },
+          {
+            speaker: 'player',
+            name: 'Tú',
+            text: 'Entendido. Voy a probar distintas posiciones.'
           }
         ]
       }
@@ -50,22 +55,27 @@ export const LESSON_01: LessonDefinition = {
           {
             speaker: 'player',
             name: 'Tú',
-            text: 'Ahora el Grupo B ocupa mucho más espacio.'
+            text: 'Entonces ya puedo reconocer cuándo un grupo está más disperso.'
           },
           {
             speaker: 'npc',
             name: 'Viverista',
-            text: 'Exacto. Sus elementos están más separados entre sí.'
+            text: 'Exactamente. Pero en el trabajo real no siempre basta con mirar los datos.'
           },
           {
             speaker: 'npc',
             name: 'Viverista',
-            text: 'A esta característica la llamamos dispersión.'
+            text: 'En la granja están comparando la producción de dos parcelas. Dicen que producen prácticamente lo mismo en promedio...'
           },
           {
             speaker: 'npc',
             name: 'Viverista',
-            text: 'Cuando los elementos están más extendidos, decimos que existe una mayor dispersión.'
+            text: '...pero los resultados de una de ellas son mucho menos regulares.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Viverista',
+            text: 'Ve a hablar con la encargada de la granja. Creo que lo que acabas de aprender te servirá.'
           }
         ]
       }

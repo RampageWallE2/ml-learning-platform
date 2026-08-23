@@ -1,6 +1,13 @@
 <div class="world-page">
 
-  @if (progress.currentZone(); as zone) {
+  <!-- =========================
+       PROGRESO
+       ========================= -->
+
+  @if (
+    progress.currentZone();
+    as zone
+  ) {
 
     <app-zone-progress
       [zone]="zone"
@@ -8,10 +15,61 @@
 
   }
 
-  <div id="phaser-container"></div>
 
-  <!-- LECCIONES -->
-  @if (lessonActive(); as lesson) {
+  <!-- =========================
+       PHASER
+       ========================= -->
+
+  <div
+    id="phaser-container"
+  ></div>
+
+
+  <!-- =========================
+       ACTIVIDAD BLOQUEADA
+       ========================= -->
+
+  @if (
+    blockedLessonMessage();
+    as message
+  ) {
+
+    <div
+      class="lesson-locked-toast"
+      role="status"
+      aria-live="polite"
+    >
+
+      <div class="lesson-locked-icon">
+        🔒
+      </div>
+
+
+      <div class="lesson-locked-content">
+
+        <strong>
+          Actividad bloqueada
+        </strong>
+
+        <p>
+          {{ message }}
+        </p>
+
+      </div>
+
+    </div>
+
+  }
+
+
+  <!-- =========================
+       LECCIONES
+       ========================= -->
+
+  @if (
+    lessonActive();
+    as lesson
+  ) {
 
     <app-interaction-panel
       (closed)="closeLesson()"
@@ -26,16 +84,27 @@
 
   }
 
-  <!-- DIÁLOGOS -->
-  @if (activeDialogue(); as dialogue) {
+
+  <!-- =========================
+       DIÁLOGOS
+       ========================= -->
+
+  @if (
+    activeDialogue();
+    as dialogue
+  ) {
+
     <app-interaction-panel
       (closed)="closeDialogue()"
     >
+
       <app-dialogue
         [dialogue]="dialogue"
         (completed)="closeDialogue()"
       />
+
     </app-interaction-panel>
+
   }
 
 </div>

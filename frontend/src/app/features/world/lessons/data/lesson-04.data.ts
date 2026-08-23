@@ -6,29 +6,40 @@ export const LESSON_04: LessonDefinition = {
   steps: [
     {
       type: 'dialogue',
+
       dialogue: {
         id: 'lesson-04-intro',
 
         messages: [
           {
             speaker: 'npc',
-            name: 'Coordinadora',
-            text: 'Has recorrido el vivero, la granja y el granero.'
-          },
-          {
-            speaker: 'npc',
-            name: 'Coordinadora',
-            text: 'Antes de continuar tu camino, quiero comprobar qué aprendiste sobre la dispersión.'
+            name: 'Inspector Salazar',
+            text: 'Me dijeron que has estado ayudando en el vivero, la granja y el almacén de trigo.'
           },
           {
             speaker: 'player',
             name: 'Tú',
-            text: 'Adelante.'
+            text: 'Sí. En cada lugar los datos se comportaban de manera diferente.'
           },
           {
             speaker: 'npc',
-            name: 'Coordinadora',
-            text: 'Tendrás que superar tres desafíos.'
+            name: 'Inspector Salazar',
+            text: 'Justamente por eso quería hablar contigo. Me llegaron tres reportes de esas áreas y necesito revisarlos.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Inspector Salazar',
+            text: 'Esta vez no voy a decirte qué debes buscar. Observa cada situación y toma una decisión.'
+          },
+          {
+            speaker: 'player',
+            name: 'Tú',
+            text: 'Entendido.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Inspector Salazar',
+            text: 'Si puedes interpretar correctamente los tres reportes, estarás listo para continuar hacia el Centro de Operaciones.'
           }
         ]
       }
@@ -41,24 +52,50 @@ export const LESSON_04: LessonDefinition = {
 
     {
       type: 'dialogue',
+
       dialogue: {
         id: 'lesson-04-final',
 
         messages: [
           {
             speaker: 'npc',
-            name: 'Coordinadora',
-            text: 'Excelente. Ya puedes reconocer cuándo los datos están dispersos y entender por qué el promedio no siempre cuenta toda la historia.'
+            name: 'Inspector Salazar',
+            text: 'Muy bien. Los tres reportes están revisados.'
           },
           {
             speaker: 'player',
             name: 'Tú',
-            text: 'Y también puedo medir qué tan lejos está un valor de su centro.'
+            text: 'Entonces ya puedo reconocer cuándo los datos son más variables y comparar cómo se comportan.'
           },
           {
             speaker: 'npc',
-            name: 'Coordinadora',
-            text: 'Exactamente. Estás preparado para continuar.'
+            name: 'Inspector Salazar',
+            text: 'Sí. Cuando tenemos pocos datos, podemos observarlos uno por uno y entender bastante bien lo que ocurre.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Inspector Salazar',
+            text: 'Pero acaba de llegar un informe del Centro de Operaciones.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Inspector Salazar',
+            text: 'Allí las máquinas generan mediciones constantemente. No pueden detenerse a revisar cada lectura de esta manera.'
+          },
+          {
+            speaker: 'player',
+            name: 'Tú',
+            text: 'Entonces necesitarían resumir toda esa variabilidad.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Inspector Salazar',
+            text: 'Exactamente. Necesitan una forma de representarla con un número que puedan comparar entre equipos.'
+          },
+          {
+            speaker: 'npc',
+            name: 'Inspector Salazar',
+            text: 'Ve al Patio de Inspección y habla con el encargado. Están intentando resolver ese problema.'
           }
         ]
       }
