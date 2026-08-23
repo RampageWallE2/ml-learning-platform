@@ -5792,7 +5792,7 @@
     <property name="step" type="int" value="1"/>
    </properties>
   </object>
-  <object id="114" name="intro-guide" x="543.333" y="365.5" width="180" height="130">
+  <object id="114" name="intro-guide" x="460" y="365.5" width="263.333" height="208.667">
    <properties>
     <property name="dialogueId" value="intro-01"/>
     <property name="interactionType" value="dialogue"/>
@@ -5804,7 +5804,7 @@
   <object id="185" name="control-center-interior" x="3229.33" y="3253.33" width="222.667" height="214.667"/>
  </objectgroup>
  <objectgroup id="9" name="SpawnPoints">
-  <object id="1" name="player-start" x="1559.65" y="717.84">
+  <object id="1" name="player-start" x="618.317" y="447.84">
    <point/>
   </object>
  </objectgroup>
