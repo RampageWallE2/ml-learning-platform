@@ -1,4 +1,3 @@
-import { Type } from '@angular/core';
 import Phaser from 'phaser';
 import { gameEvents, GameEvents } from '../events/game-events';
 
@@ -926,43 +925,6 @@ private createMobileJoystick(): void {
     );
 }
 
-// private repositionMobileControls(): void {
-
-//     if (
-//         !this.joystickBase ||
-//         !this.joystickKnob ||
-//         !this.joystickZone
-//     ) {
-//         return;
-//     }
-
-//     const width = this.scale.gameSize.width;
-//     const height = this.scale.gameSize.height;
-
-//     const joystickX = 90;
-//     const joystickY = height - 90;
-
-//     this.joystickBase.setPosition(
-//         joystickX,
-//         joystickY
-//     );
-
-//     this.joystickKnob.setPosition(
-//         joystickX,
-//         joystickY
-//     );
-
-//     this.joystickZone.setPosition(
-//         joystickX,
-//         joystickY
-//     );
-
-//     // Por si cambia el tamaño mientras lo estás tocando
-//     this.mobileDirection.set(0, 0);
-//     this.joystickPointerId = null;
-// }
-
-
 private repositionMobileControls(): void {
 
     const width = this.scale.gameSize.width;
@@ -1170,7 +1132,7 @@ private repositionMobileControls(): void {
         this.cameras.main.startFollow(this.player);
     }
 
-    private setCollisions(map: Phaser.Tilemaps.Tilemap, water: Phaser.Tilemaps.TilemapLayer): void{
+    private setCollisions(map: Phaser.Tilemaps.Tilemap): void{
         const collisionZones = this.createMapCollisions(map);
         
         this.physics.add.collider(
@@ -1234,15 +1196,6 @@ private repositionMobileControls(): void {
             width,
             height,
         );
-
-        this.add.rectangle(
-        x + width / 2,
-        y + height / 2,
-        width,
-        height,
-        0xff0000,
-        0.3
-    );
     }
 
 
@@ -1303,14 +1256,6 @@ private repositionMobileControls(): void {
         }
     }
 
-    private enterControlCenter(): void {
-        this.controlCenterRoof?.setVisible(false);
-    }
-
-    private exitControlCenter(): void {
-        this.controlCenterRoof?.setVisible(true);
-    }
-
     create(): void {
 
     gameEvents.on(
@@ -1342,7 +1287,7 @@ private repositionMobileControls(): void {
     this.interactionZones = this.createInteractions(map);
 
     // COLISIONES
-    this.setCollisions(map, waterLayer);
+    this.setCollisions(map);
 
     // INPUT
     this.setupInput();

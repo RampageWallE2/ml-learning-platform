@@ -10,68 +10,6 @@
   height: 100%;
 }
 
-/* LECCIONES */
-
-.lesson-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 100;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgba(0, 0, 0, 0.6);
-}
-
-.lesson-panel {
-  width: min(600px, 90%);
-  padding: 32px;
-
-  background: white;
-  border-radius: 12px;
-}
-
-/* DIÁLOGOS */
-
-.dialogue-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 100;
-
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-
-  padding: 40px;
-}
-
-.dialogue-box {
-  width: min(800px, 90%);
-  padding: 24px;
-
-  background: white;
-  border-radius: 12px;
-}
-
-/* OBJETIVO ACTUAL */
-
-.objective {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  z-index: 50;
-
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  padding: 12px 16px;
-
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-}
-
 /* =========================
    ACTIVIDAD BLOQUEADA
    ========================= */
