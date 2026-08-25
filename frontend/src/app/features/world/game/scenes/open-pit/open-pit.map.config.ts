@@ -1,9 +1,9 @@
 import { TilemapSceneConfig } from '../../tiled/tilemap-config.types';
 
-export const ZONE_01_MAP_CONFIG = {
-  mapKey: 'zone-01',
+export const OPEN_PIT_MAP_CONFIG = {
+  mapKey: 'open-pit',
 
-  mapPath: 'assets/game/maps/zone-01.tmj',
+  mapPath: 'assets/game/maps/open-pit.tmj',
 
   tilesets: [
     {
@@ -29,6 +29,11 @@ export const ZONE_01_MAP_CONFIG = {
     {
       name: 'Structures/Buildings',
       tilesets: ['city_props'],
+      depth: 2,
+    },
+    {
+      name: 'Mina/?',
+      tilesets: ['terrain'],
       depth: 1,
     }
   ],

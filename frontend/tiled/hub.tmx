@@ -1,21 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="50" height="30" tilewidth="32" tileheight="32" infinite="0" nextlayerid="17" nextobjectid="22">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="50" height="30" tilewidth="32" tileheight="32" infinite="0" nextlayerid="17" nextobjectid="23">
  <editorsettings>
   <export target="../public/assets/game/maps/hub.tmj" format="json"/>
  </editorsettings>
  <tileset firstgid="1" source="terrain.tsx"/>
  <tileset firstgid="737" source="city_props.tsx"/>
  <objectgroup id="9" name="Collision">
-  <object id="2" x="69.6667" y="527.667" width="169.333" height="178.667"/>
   <object id="3" x="607" y="74.3333" width="172" height="156"/>
   <object id="4" x="1368" y="256.667" width="158.667" height="176"/>
-  <object id="5" x="802" y="733.667" width="186.667" height="152"/>
  </objectgroup>
  <objectgroup id="11" name="Interactions">
-  <object id="16" name="to-zone-01" x="777" y="88" width="205" height="136">
+  <object id="16" name="to-surface-selection" x="777" y="88" width="205" height="136">
    <properties>
     <property name="interactionType" value="transition"/>
-    <property name="targetScene" value="Zone01Scene"/>
+    <property name="targetScene" value="SurfaceSelectionScene"/>
     <property name="targetSpawn" value="from-hub"/>
    </properties>
   </object>
@@ -26,26 +24,19 @@
     <property name="targetSpawn" value="from-hub"/>
    </properties>
   </object>
-  <object id="18" name="to-zone-03" x="605.333" y="716" width="213.333" height="177.333">
+  <object id="18" name="to-zone-03" x="46.6663" y="354.667" width="213.333" height="177.333">
    <properties>
     <property name="interactionType" value="transition"/>
     <property name="targetScene" value="Zone03Scene"/>
     <property name="targetSpawn" value="from-hub"/>
    </properties>
   </object>
-  <object id="21" name="to-zone-04" x="81.3333" y="358.667" width="152" height="169.333">
-   <properties>
-    <property name="interactionType" value="transition"/>
-    <property name="targetScene" value="Zone04Scene"/>
-    <property name="targetSpawn" value="from-hub"/>
-   </properties>
-  </object>
  </objectgroup>
  <objectgroup id="8" name="SpawnPoints">
-  <object id="1" name="player-start" x="790" y="512">
+  <object id="1" name="player-start" x="818" y="669.333">
    <point/>
   </object>
-  <object id="6" name="from-zone-01" x="860.333" y="297.667">
+  <object id="6" name="from-surface-selection" x="879" y="300.334">
    <point/>
   </object>
   <object id="9" x="1010.67" y="628">
@@ -57,13 +48,10 @@
   <object id="11" x="261.333" y="638.667">
    <point/>
   </object>
-  <object id="12" name="from-zone-02" x="1311.33" y="521.333">
+  <object id="12" name="from-zone-02" x="1298" y="548">
    <point/>
   </object>
-  <object id="13" name="from-zone-03" x="752.333" y="702.667">
-   <point/>
-  </object>
-  <object id="14" name="from-zone-04" x="295.333" y="463.667">
+  <object id="13" name="from-zone-03" x="295" y="469.334">
    <point/>
   </object>
  </objectgroup>
@@ -130,11 +118,11 @@
 0,0,1610615910,1610615942,1610615974,1610616006,1610616038,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,1610615909,1610615941,1610615973,1610616005,1610616037,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3221228836,3221228835,3221228776,3221228775,3221228774,3221228773,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3221228804,3221228803,3221228744,3221228743,3221228742,3221228741,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3221228772,3221228771,3221228712,3221228711,3221228710,3221228709,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3221228740,3221228739,3221228680,3221228679,3221228678,3221228677,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3221228708,3221228707,3221228648,3221228647,3221228646,3221228645,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>

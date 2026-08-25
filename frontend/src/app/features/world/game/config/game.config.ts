@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { HubScene } from '../scenes/hub/hub.scene';
-import { Zone01Scene } from '../scenes/zone-01/zone-01.scene';
+import { OpenPitScene } from '../scenes/open-pit/open-pit.scene';
+import { SurfaceSelectionScene } from '../scenes/surface-selection/surface-selection.scene';
 import { Zone02Scene } from '../scenes/zone-02/zone-02.scene';
 import { Zone03Scene } from '../scenes/zone-03/zone-03.scene';
 import { Zone04Scene } from '../scenes/zone-04/zone-04.scene';
+import { QuarriesScene } from '../scenes/quarries/quarries.scene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -28,5 +30,13 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [HubScene, Zone01Scene, Zone02Scene, Zone03Scene, Zone04Scene],
+  scene: [
+    HubScene,
+    SurfaceSelectionScene,
+    OpenPitScene,
+    QuarriesScene,
+    Zone02Scene,
+    Zone03Scene,
+    Zone04Scene,
+  ],
 };

@@ -64,10 +64,6 @@ const SCENE_ZONES: Record<
   string,
   SceneZoneMetadata
 > = {
-  Zone01Scene: {
-    zoneId: 'zone-01',
-    name: 'Zona 1'
-  },
   Zone02Scene: {
     zoneId: 'zone-02',
     name: 'Zona 2'
@@ -124,9 +120,31 @@ export class WorldPage
       if (sceneKey === 'HubScene') {
         return {
           name: 'HUB',
-          topic: 'Centro de rutas',
+          topic: 'Selección principal',
           objective:
-            'Elige una zona para comenzar tu recorrido.',
+            'Elige un ámbito para comenzar tu recorrido.',
+          zone: null
+        };
+      }
+
+
+      if (sceneKey === 'SurfaceSelectionScene') {
+        return {
+          name: 'Minería de Superficie',
+          topic: 'Selección de modalidad',
+          objective:
+            'Elige Tajo Abierto / Open Pit para entrar al escenario.',
+          zone: null
+        };
+      }
+
+
+      if (sceneKey === 'OpenPitScene') {
+        return {
+          name: 'Open Pit',
+          topic: 'Minería de Superficie',
+          objective:
+            'Explora el escenario de Tajo Abierto.',
           zone: null
         };
       }
