@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   Component,
   OnDestroy,
+  computed,
   inject,
   signal
 } from '@angular/core';
@@ -53,6 +54,35 @@ type LessonData = {
 };
 
 
+type SceneZoneMetadata = {
+  zoneId: string;
+  name: string;
+};
+
+
+const SCENE_ZONES: Record<
+  string,
+  SceneZoneMetadata
+> = {
+  Zone01Scene: {
+    zoneId: 'zone-01',
+    name: 'Zona 1'
+  },
+  Zone02Scene: {
+    zoneId: 'zone-02',
+    name: 'Zona 2'
+  },
+  Zone03Scene: {
+    zoneId: 'zone-03',
+    name: 'Zona 3'
+  },
+  Zone04Scene: {
+    zoneId: 'zone-04',
+    name: 'Zona 4'
+  }
+};
+
+
 @Component({
   selector: 'app-world-page',
 
@@ -74,6 +104,86 @@ export class WorldPage
 
 
   private game?: Phaser.Game;
+
+
+  /* =========================
+     ESCENARIO ACTUAL
+     ========================= */
+
+  private readonly activeSceneKey =
+    signal('HubScene');
+
+
+  readonly progressPanel =
+    computed(() => {
+
+      const sceneKey =
+        this.activeSceneKey();
+
+
+      if (sceneKey === 'HubScene') {
+        return {
+          name: 'HUB',
+          topic: 'Centro de rutas',
+          objective:
+            'Elige una zona para comenzar tu recorrido.',
+          zone: null
+        };
+      }
+
+
+      const sceneZone =
+        SCENE_ZONES[sceneKey];
+
+
+      if (!sceneZone) {
+        return {
+          name: 'Mundo',
+          topic: 'Exploración',
+          objective:
+            'Continúa explorando el escenario.',
+          zone: null
+        };
+      }
+
+
+      const zone =
+        this.progress.zoneProgress()
+          .find(
+            item =>
+              item.id ===
+              sceneZone.zoneId
+          ) ?? null;
+
+
+      if (!zone) {
+        return {
+          name: sceneZone.name,
+          topic: 'Próximamente',
+          objective:
+            'Esta zona todavía no tiene actividades configuradas.',
+          zone: null
+        };
+      }
+
+
+      const nextLesson =
+        zone.lessons.find(
+          lesson =>
+            lesson.status !==
+            'completed'
+        );
+
+
+      return {
+        name: zone.name,
+        topic: zone.topic,
+        objective:
+          nextLesson?.objective ??
+          'Has completado todas las actividades de esta zona.',
+        zone
+      };
+    });
 
 
   /* =========================
@@ -288,6 +398,20 @@ export class WorldPage
 
 
   /* =========================
+     CAMBIO DE ESCENARIO
+     ========================= */
+
+  private readonly handlerSceneChanged = (
+    sceneKey: string
+  ): void => {
+
+    this.activeSceneKey.set(
+      sceneKey
+    );
+  };
+
+
+  /* =========================
      MOSTRAR BLOQUEO
      ========================= */
 
@@ -375,6 +499,12 @@ export class WorldPage
     );
 
 
+    gameEvents.on(
+      GameEvents.SCENE_CHANGED,
+      this.handlerSceneChanged
+    );
+
+
     this.game =
       new Phaser.Game(
         gameConfig
@@ -397,6 +527,12 @@ export class WorldPage
     gameEvents.off(
       GameEvents.OPEN_DIALOGUE,
       this.handlerOpenDialogue
+    );
+
+
+    gameEvents.off(
+      GameEvents.SCENE_CHANGED,
+      this.handlerSceneChanged
     );
 
 

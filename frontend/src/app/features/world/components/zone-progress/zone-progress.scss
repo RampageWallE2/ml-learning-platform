@@ -55,6 +55,16 @@
 }
 
 
+.progress-header--static {
+  cursor: default;
+
+
+  &:hover {
+    background: var(--color-surface);
+  }
+}
+
+
 .progress-header-info {
   display: flex;
   flex-direction: column;
@@ -220,9 +230,14 @@
 .progress-content {
   display: grid;
 
+  max-height:
+    min(360px, calc(100vh - 190px));
+
   gap: 4px;
 
   padding: 10px;
+
+  overflow-y: auto;
 
   border-top:
     1px solid rgba(139, 98, 70, 0.12);
@@ -315,30 +330,100 @@
     right: 12px;
 
     width: min(
-      300px,
+      230px,
       calc(100% - 24px)
     );
   }
 
 
   .progress-header {
-    padding: 12px;
+    gap: 6px;
+
+    padding: 8px 9px;
   }
 
 
-  .current-objective {
-    padding:
-      10px 12px 11px;
+  .progress-header-info {
+    gap: 2px;
 
 
-    p {
-      font-size: 12px;
+    strong {
+      font-size: 9px;
     }
   }
 
 
+  .progress-zone {
+    font-size: 7px;
+  }
+
+
+  .progress-header-side {
+    gap: 5px;
+  }
+
+
+  .progress-counter {
+    min-width: 34px;
+    height: 24px;
+
+    padding: 0 4px;
+
+    font-size: 10px;
+  }
+
+
+  .progress-bar {
+    height: 4px;
+  }
+
+
+  .current-objective {
+    padding: 7px 9px 8px;
+
+
+    p {
+      margin-top: 3px;
+
+      font-size: 10px;
+      line-height: 1.35;
+    }
+  }
+
+
+  .current-objective--collapsed {
+
+    p {
+      display: -webkit-box;
+
+      overflow: hidden;
+
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+  }
+
+
+  .objective-label {
+    font-size: 7px;
+  }
+
+
   .progress-content {
-    padding: 8px;
+    max-height: 40dvh;
+
+    gap: 2px;
+
+    padding: 6px;
+  }
+
+
+  .progress-item {
+    gap: 6px;
+
+    padding: 6px;
+
+    font-size: 12px;
   }
 
 }
@@ -347,24 +432,10 @@
 @media (max-width: 400px) {
 
   .zone-progress {
-    width:
-      calc(100% - 24px);
-  }
-
-
-  .progress-counter {
-    min-width: 40px;
-    height: 30px;
-
-    font-size: 12px;
-  }
-
-
-  .progress-header-info {
-
-    strong {
-      font-size: 10px;
-    }
+    width: min(
+      220px,
+      calc(100% - 24px)
+    );
   }
 
 }

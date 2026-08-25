@@ -7,16 +7,19 @@
   <button
     class="progress-header"
     (click)="toggle()"
+    [class.progress-header--static]="
+      !hasLessons()
+    "
   >
 
     <div class="progress-header-info">
 
       <span class="progress-zone">
-        {{ zone().name }}
+        {{ name() }}
       </span>
 
       <strong>
-        {{ zone().topic }}
+        {{ topic() }}
       </strong>
 
     </div>
@@ -24,23 +27,27 @@
 
     <div class="progress-header-side">
 
-      <div class="progress-counter">
+      @if (zone(); as zone) {
 
-        {{ zone().completedLessons }}
-        /
-        {{ zone().totalLessons }}
+        <div class="progress-counter">
 
-      </div>
+          {{ zone.completedLessons }}
+          /
+          {{ zone.totalLessons }}
+
+        </div>
 
 
-      <span
-        class="progress-chevron"
-        [class.progress-chevron--expanded]="
-          expanded()
-        "
-      >
-        ▼
-      </span>
+        <span
+          class="progress-chevron"
+          [class.progress-chevron--expanded]="
+            expanded()
+          "
+        >
+          ▼
+        </span>
+
+      }
 
     </div>
 
@@ -51,45 +58,14 @@
        BARRA
        ========================= -->
 
-  <div class="progress-bar">
+  @if (zone(); as zone) {
 
-    <div
-      class="progress-bar-value"
-      [style.width.%]="zone().percentage"
-    ></div>
+    <div class="progress-bar">
 
-  </div>
-
-
-  <!-- =========================
-       OBJETIVO ACTUAL
-       ========================= -->
-
-  @if (currentObjective()) {
-
-    <div class="current-objective">
-
-      <span class="objective-label">
-        Objetivo actual
-      </span>
-
-      <p>
-        {{ currentObjective() }}
-      </p>
-
-    </div>
-
-  } @else {
-
-    <div class="current-objective current-objective--completed">
-
-      <span class="objective-label">
-        Progreso
-      </span>
-
-      <p>
-        Has completado todas las actividades de esta zona.
-      </p>
+      <div
+        class="progress-bar-value"
+        [style.width.%]="zone.percentage"
+      ></div>
 
     </div>
 
@@ -97,15 +73,44 @@
 
 
   <!-- =========================
+       OBJETIVO ACTUAL
+       ========================= -->
+
+  <div
+    class="current-objective"
+    [class.current-objective--collapsed]="
+      !expanded()
+    "
+    [class.current-objective--completed]="
+      completed()
+    "
+  >
+
+    <span class="objective-label">
+      Objetivo actual
+    </span>
+
+    <p>
+      {{ objective() }}
+    </p>
+
+  </div>
+
+
+  <!-- =========================
        LISTA DE LECCIONES
        ========================= -->
 
-  @if (expanded()) {
+  @if (
+    expanded() &&
+    zone();
+    as zone
+  ) {
 
     <div class="progress-content">
 
       @for (
-        lesson of zone().lessons;
+        lesson of zone.lessons;
         track lesson.lessonId
       ) {
 

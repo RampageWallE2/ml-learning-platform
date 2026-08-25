@@ -5,12 +5,15 @@
        ========================= -->
 
   @if (
-    progress.currentZone();
-    as zone
+    progressPanel();
+    as panel
   ) {
 
     <app-zone-progress
-      [zone]="zone"
+      [name]="panel.name"
+      [topic]="panel.topic"
+      [objective]="panel.objective"
+      [zone]="panel.zone"
     />
 
   }

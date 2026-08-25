@@ -15,6 +15,12 @@ type InteractionType =
   | 'transition';
 
 
+type SceneTransitionHandler = (
+  targetScene: string,
+  targetSpawn?: string
+) => void;
+
+
 export class InteractionManager {
 
   private readonly interactionZones:
@@ -32,7 +38,9 @@ export class InteractionManager {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly map: Phaser.Tilemaps.Tilemap,
-    private readonly player: Phaser.Physics.Arcade.Sprite
+    private readonly player: Phaser.Physics.Arcade.Sprite,
+    private readonly requestSceneTransition:
+      SceneTransitionHandler
   ) {
 
     this.interactionText =
@@ -541,11 +549,9 @@ export class InteractionManager {
     }
 
 
-    this.scene.scene.start(
+    this.requestSceneTransition(
       targetScene,
-      {
-        spawnId: targetSpawn
-      }
+      targetSpawn
     );
   }
 

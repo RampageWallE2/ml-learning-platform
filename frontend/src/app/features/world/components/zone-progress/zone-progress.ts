@@ -19,32 +19,38 @@ import {
 export class ZoneProgress {
 
   zone =
-    input.required<ZoneProgressData>();
+    input<ZoneProgressData | null>(
+      null
+    );
+
+
+  name =
+    input.required<string>();
+
+
+  topic =
+    input.required<string>();
+
+
+  objective =
+    input.required<string>();
 
 
   expanded =
     signal(false);
 
 
-  /* =========================
-     LECCIÓN ACTUAL
-     ========================= */
-
-  currentLesson = computed(() =>
-    this.zone().lessons.find(
-      lesson =>
-        lesson.status === 'current'
-    ) ?? null
+  hasLessons = computed(() =>
+    (
+      this.zone()?.lessons.length ??
+      0
+    ) > 0
   );
 
 
-  /* =========================
-     OBJETIVO ACTUAL
-     ========================= */
-
-  currentObjective = computed(() =>
-    this.currentLesson()?.objective ??
-    null
+  completed = computed(() =>
+    this.zone()?.completed ??
+    false
   );
 
 
@@ -53,6 +59,10 @@ export class ZoneProgress {
      ========================= */
 
   toggle(): void {
+
+    if (!this.hasLessons()) {
+      return;
+    }
 
     this.expanded.update(
       value => !value

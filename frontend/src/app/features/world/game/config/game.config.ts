@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { HubScene } from '../scenes/hub/hub.scene';
-import { WorldScene } from '../scenes/world.scene';
 import { Zone01Scene } from '../scenes/zone-01/zone-01.scene';
 import { Zone02Scene } from '../scenes/zone-02/zone-02.scene';
 import { Zone03Scene } from '../scenes/zone-03/zone-03.scene';
@@ -29,5 +28,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [HubScene, Zone01Scene, Zone02Scene, Zone03Scene, Zone04Scene, WorldScene],
+  scene: [HubScene, Zone01Scene, Zone02Scene, Zone03Scene, Zone04Scene],
 };

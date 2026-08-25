@@ -17,6 +17,8 @@ import { PlayerController } from './player/player.controller';
 
 import { createStaticZonesFromLayer, findSpawnPoint } from './tiled/tiled.utils';
 
+import { RetroSceneTransition } from './transitions/retro-scene-transition';
+
 type SceneStartData = {
   spawnId?: string;
 };
@@ -33,6 +35,8 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   private inputController!: InputController;
 
   private interactionManager!: InteractionManager;
+
+  private sceneTransition!: RetroSceneTransition;
 
   protected playerController!: PlayerController;
 
@@ -71,10 +75,13 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
     this.inputController = new InputController(this);
 
+    this.sceneTransition = new RetroSceneTransition(this);
+
     this.interactionManager = new InteractionManager(
       this,
       buildResult.map,
       this.playerController.sprite,
+      this.startSceneTransition,
     );
 
     this.setupCollisions(buildResult.map);
@@ -84,6 +91,12 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.onSceneCreated(buildResult);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+
+    gameEvents.emit(GameEvents.SCENE_CHANGED, this.scene.key);
+
+    this.lockPlayer();
+
+    this.sceneTransition.playIn(this.unlockPlayer);
   }
 
   override update(): void {
@@ -98,7 +111,9 @@ export abstract class BaseWorldScene extends Phaser.Scene {
       this.playerController.isLocked(),
     );
 
-    this.inputController.setInteractAvailable(interactionAvailable);
+    this.inputController.setInteractAvailable(
+      interactionAvailable && !this.sceneTransition.isPlaying(),
+    );
 
     this.onSceneUpdated();
   }
@@ -157,6 +172,20 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.playerController?.unlock();
   };
 
+  private readonly startSceneTransition = (targetScene: string, targetSpawn?: string): void => {
+    if (this.sceneTransition.isPlaying()) {
+      return;
+    }
+
+    this.lockPlayer();
+
+    this.sceneTransition.playOut(() => {
+      this.scene.start(targetScene, {
+        spawnId: targetSpawn,
+      });
+    });
+  };
+
   private handleShutdown(): void {
     gameEvents.off(GameEvents.LOCK_PLAYER, this.lockPlayer);
 
@@ -167,5 +196,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.inputController?.destroy();
 
     this.interactionManager?.destroy();
+
+    this.sceneTransition?.destroy();
   }
 }

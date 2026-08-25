@@ -6,6 +6,8 @@ export const GameEvents = {
     OPEN_LESSON: 'open-lesson',
     OPEN_DIALOGUE: 'open-dialogue',
 
+    SCENE_CHANGED: 'scene-changed',
+
     LOCK_PLAYER: 'lock-player',
     UNLOCK_PLAYER: 'unlock-player'
 } as const;
