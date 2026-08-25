@@ -12,6 +12,12 @@ export const ZONE_02_MAP_CONFIG = {
       textureKey: 'terrain',
       imagePath: 'assets/game/tilesets/terrain/terrain.png',
     },
+    {
+      id: 'city_props',
+      tiledName: 'city_props',
+      textureKey: 'city_props',
+      imagePath: 'assets/game/tilesets/props/city_props.png',
+    }
   ],
 
   layers: [
@@ -20,5 +26,10 @@ export const ZONE_02_MAP_CONFIG = {
       tilesets: ['terrain'],
       depth: 0,
     },
+    {
+      name: 'Structures/Buildings',
+      tilesets: ['city_props'],
+      depth: 1,
+    }
   ],
 } satisfies TilemapSceneConfig;
