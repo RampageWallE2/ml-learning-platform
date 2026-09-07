@@ -42,6 +42,30 @@ export const OPEN_PIT_MAP_CONFIG = {
       textureKey: 'city_props',
       imagePath: 'assets/game/tilesets/props/city_props.png',
     },
+    {
+      id: 'terrain2',
+      tiledName: 'terrain2',
+      textureKey: 'terrain2',
+      imagePath: 'assets/game/tilesets/terrain/terrain2.png',
+    },
+    {
+      id: 'military_base',
+      tiledName: 'military_base',
+      textureKey: 'military_base',
+      imagePath: 'assets/game/tilesets/buildings/military_base.png',
+    },
+    {
+      id: 'crusher',
+      tiledName: 'crusher',
+      textureKey: 'crusher',
+      imagePath: 'assets/game/tilesets/vehicles/crusher.png',
+    },
+    {
+      id: 'conveyor_belt',
+      tiledName: 'conveyor_belt',
+      textureKey: 'conveyor_belt',
+      imagePath: 'assets/game/tilesets/vehicles/conveyor_belt.png',
+    },
   ],
 
   layers: [
@@ -111,9 +135,59 @@ export const OPEN_PIT_MAP_CONFIG = {
       depth: 1.2,
     },
     {
+      name: 'Roads/Road_Ground',
+      tilesets: ['terrain2'],
+      depth: 1.3,
+    },
+    {
+      name: 'Roads/Road_Edges',
+      tilesets: ['terrain2'],
+      depth: 1.4,
+    },
+    {
+      name: 'Roads/Road_Details',
+      tilesets: ['terrain2'],
+      depth: 1.5,
+    },
+    {
+      name: 'Roads/Road_Props',
+      tilesets: ['terrain2'],
+      depth: 1.6,
+    },
+    {
       name: 'Structures/Buildings',
       tilesets: ['city_props'],
       depth: 2,
+    },
+    {
+      name: 'Waste_Dump/Ground',
+      tilesets: ['beach', 'beach_2'],
+      depth: 2.1,
+    },
+    {
+      name: 'Waste_Dump/Dirt',
+      tilesets: ['beach', 'beach_2'],
+      depth: 2.2,
+    },
+    {
+      name: 'Waste_Dump/Vehicles',
+      tilesets: ['heavy_machinery'],
+      depth: 2.3,
+    },
+    {
+      name: 'Control_Center/Buildings',
+      tilesets: ['military_base'],
+      depth: 2.4,
+    },
+    {
+      name: 'Area de Chancado/Buildings',
+      tilesets: ['crusher', 'conveyor_belt'],
+      depth: 2.5,
+    },
+    {
+      name: 'Area de Chancado/Ground',
+      tilesets: ['crusher', 'conveyor_belt'],
+      depth: 2.6,
     },
   ],
 } satisfies TilemapSceneConfig;
