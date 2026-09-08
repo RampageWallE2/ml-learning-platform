@@ -7,6 +7,12 @@ export const OPEN_PIT_MAP_CONFIG = {
 
   tilesets: [
     {
+      id: 'worksite_props',
+      tiledName: 'worksite_props',
+      textureKey: 'worksite_props',
+      imagePath: 'assets/game/tilesets/props/worksite_props.png',
+    },
+    {
       id: 'terrain',
       tiledName: 'terrain',
       textureKey: 'terrain',
@@ -141,7 +147,7 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Roads/Road_Edges',
-      tilesets: ['terrain2'],
+      tilesets: ['terrain2', 'beach'],
       depth: 1.4,
     },
     {
@@ -151,7 +157,7 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Roads/Road_Props',
-      tilesets: ['terrain2'],
+      tilesets: ['terrain2', 'worksite_props', 'city_props'],
       depth: 1.6,
     },
     {
@@ -180,13 +186,13 @@ export const OPEN_PIT_MAP_CONFIG = {
       depth: 2.4,
     },
     {
-      name: 'Area de Chancado/Buildings',
-      tilesets: ['crusher', 'conveyor_belt'],
+      name: 'Area de Chancado/Ground',
+      tilesets: ['terrain2'],
       depth: 2.5,
     },
     {
-      name: 'Area de Chancado/Ground',
-      tilesets: ['crusher', 'conveyor_belt'],
+      name: 'Area de Chancado/Buildings',
+      tilesets: ['crusher', 'conveyor_belt', 'worksite_props'],
       depth: 2.6,
     },
   ],
