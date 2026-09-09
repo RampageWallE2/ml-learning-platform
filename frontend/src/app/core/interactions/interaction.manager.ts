@@ -15,6 +15,16 @@ type InteractionType =
   | 'transition';
 
 
+const TRANSITION_DESTINATIONS: Readonly<Record<string, string>> = {
+  HubScene: 'HUB',
+  SurfaceSelectionScene: 'Minería de Superficie',
+  OpenPitScene: 'Tajo Abierto / Open Pit',
+  QuarriesScene: 'Canteras',
+  Zone02Scene: 'Zona 2',
+  Zone03Scene: 'Zona 3',
+  Zone04Scene: 'Zona 4',
+};
+
 type SceneTransitionHandler = (
   targetScene: string,
   targetSpawn?: string
@@ -342,14 +352,18 @@ export class InteractionManager {
         0,
         'Presiona E',
         {
-          fontSize: '18px',
+          fontSize: '16px',
           color: '#ffffff',
-          backgroundColor: '#000000'
+          backgroundColor: '#202018',
+          align: 'center',
+          padding: { x: 8, y: 6 },
+          wordWrap: { width: 260, useAdvancedWrap: true },
         }
       );
 
 
     text
+      .setOrigin(0.5, 1)
       .setVisible(false)
       .setDepth(1000);
 
@@ -361,14 +375,43 @@ export class InteractionManager {
   private showInteractionText():
     void {
 
+    const zone = this.currentInteraction;
+
+    if (!zone) {
+      return;
+    }
+
+    const isTransition = zone.getData('interactionType') === 'transition';
+    const targetScene = zone.getData('targetScene') as string | undefined;
+    const destination = targetScene
+      ? TRANSITION_DESTINATIONS[targetScene] ?? targetScene
+      : undefined;
+    const view = this.scene.cameras.main.worldView;
+    const wrapWidth = Math.max(1, Math.min(260, view.width - 40));
+
+    if (this.interactionText.style.wordWrapWidth !== wrapWidth) {
+      this.interactionText.setWordWrapWidth(wrapWidth, true);
+    }
+
+    this.interactionText.setText(
+      isTransition && destination
+        ? `Ir a ${destination}\nPulsa E para entrar`
+        : 'Presiona E'
+    );
+
+    // Keep the sector label visible when a wide zone exceeds a mobile viewport.
+    const x = isTransition ? zone.x : this.player.x;
+    const y = isTransition
+      ? zone.y - zone.displayHeight / 2 - 8
+      : this.player.y - 30;
+    const halfWidth = this.interactionText.displayWidth / 2;
+
     this.interactionText
       .setPosition(
-        this.player.x - 40,
-        this.player.y - 45
+        Phaser.Math.Clamp(x, view.left + halfWidth + 8, view.right - halfWidth - 8),
+        Phaser.Math.Clamp(y, view.top + this.interactionText.displayHeight + 8, view.bottom - 8)
       )
-      .setVisible(
-        true
-      );
+      .setVisible(true);
   }
 
 
