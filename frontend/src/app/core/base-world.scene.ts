@@ -23,6 +23,10 @@ type SceneStartData = {
   spawnId?: string;
 };
 
+const CAMERA_FOLLOW_LERP = 0.15;
+const CAMERA_DEADZONE_WIDTH = 64;
+const CAMERA_DEADZONE_HEIGHT = 48;
+
 /**
  * Coordina el funcionamiento compartido por las escenas del mundo.
  *
@@ -155,9 +159,16 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   }
 
   private setupCamera(map: Phaser.Tilemaps.Tilemap): void {
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    const camera = this.cameras.main;
 
-    this.cameras.main.startFollow(this.playerController.sprite);
+    camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    camera.startFollow(
+      this.playerController.sprite,
+      true,
+      CAMERA_FOLLOW_LERP,
+      CAMERA_FOLLOW_LERP,
+    );
+    camera.setDeadzone(CAMERA_DEADZONE_WIDTH, CAMERA_DEADZONE_HEIGHT);
   }
 
   private readonly lockPlayer = (): void => {

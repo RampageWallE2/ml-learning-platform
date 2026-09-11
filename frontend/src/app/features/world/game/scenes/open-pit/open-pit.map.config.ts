@@ -120,6 +120,36 @@ export const OPEN_PIT_MAP_CONFIG = {
       textureKey: 'conections',
       imagePath: 'assets/game/tilesets/buildings/conections.png',
     },
+    {
+      id: 'dump_truck_4',
+      tiledName: 'dump_truck_4',
+      textureKey: 'dump_truck_4',
+      imagePath: 'assets/game/tilesets/vehicles/dump_truck_4.png',
+    },
+    {
+      id: 'dump_truck_3',
+      tiledName: 'dump_truck_3',
+      textureKey: 'dump_truck_3',
+      imagePath: 'assets/game/tilesets/vehicles/dump_truck_3.png',
+    },
+    {
+      id: 'auto_repair_shop',
+      tiledName: 'auto_repair_shop',
+      textureKey: 'auto_repair_shop',
+      imagePath: 'assets/game/tilesets/buildings/auto_repair_shop.png',
+    },
+    {
+      id: 'electrical_substation',
+      tiledName: 'electrical_substation',
+      textureKey: 'electrical_substation',
+      imagePath: 'assets/game/tilesets/buildings/electrical_substation.png',
+    },
+    {
+      id: 'modular_camp',
+      tiledName: 'modular_camp',
+      textureKey: 'modular_camp',
+      imagePath: 'assets/game/tilesets/buildings/modular_camp.png',
+    },
   ],
 
   layers: [
@@ -185,7 +215,7 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Pit/Vehicles',
-      tilesets: ['heavy_machinery'],
+      tilesets: ['heavy_machinery', 'dump_truck_2'],
       depth: 1.2,
     },
     {
@@ -207,6 +237,16 @@ export const OPEN_PIT_MAP_CONFIG = {
       name: 'Roads/Road_Props',
       tilesets: ['terrain2', 'worksite_props', 'city_props'],
       depth: 1.6,
+    },
+    {
+      name: 'Electrical_Substation/Buildings',
+      tilesets: ['electrical_substation', 'modular_camp'],
+      depth: 1.7,
+    },
+    {
+      name: 'Repair_Shop/Buildings',
+      tilesets: ['auto_repair_shop'],
+      depth: 1.8,
     },
     {
       name: 'Structures/Buildings',
@@ -285,7 +325,7 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Processing_Area/Props',
-      tilesets: ['worksite_props'],
+      tilesets: ['worksite_props', 'city_props'],
       depth: 3.5,
     },
     {
@@ -295,7 +335,13 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Processing_Area/Vehicles',
-      tilesets: ['city_terrain', 'dump_truck_2', 'heavy_machinery'],
+      tilesets: [
+        'city_terrain',
+        'dump_truck_2',
+        'dump_truck_3',
+        'dump_truck_4',
+        'heavy_machinery',
+      ],
       depth: 3.7,
     },
   ],
