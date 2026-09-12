@@ -52,6 +52,22 @@ export type TileLayerConfig = {
 };
 
 
+export type AmbientSoundConfig = {
+
+  /*
+   * Identificador utilizado por la propiedad
+   * soundId del punto en Tiled.
+   */
+  id: string;
+
+
+  /*
+   * Archivo de audio que cargará Phaser.
+   */
+  audioPath: string;
+};
+
+
 export type TilemapSceneConfig = {
 
   mapKey: string;
@@ -65,6 +81,10 @@ export type TilemapSceneConfig = {
 
   layers:
     readonly TileLayerConfig[];
+
+
+  ambientSounds?:
+    readonly AmbientSoundConfig[];
 };
 
 

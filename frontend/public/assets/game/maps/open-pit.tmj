@@ -4,6 +4,162 @@
  "layers":[
         {
          "draworder":"topdown",
+         "id":59,
+         "name":"Ambient_Sounds",
+         "objects":[
+                {
+                 "height":0,
+                 "id":31,
+                 "name":"mill",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"radius",
+                         "type":"int",
+                         "value":1600
+                        }, 
+                        {
+                         "name":"soundId",
+                         "type":"string",
+                         "value":"mill"
+                        }, 
+                        {
+                         "name":"volume",
+                         "type":"float",
+                         "value":0.4
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":3034.66666666667,
+                 "y":1730.66666666667
+                }, 
+                {
+                 "height":0,
+                 "id":33,
+                 "name":"excavator",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"radius",
+                         "type":"int",
+                         "value":1600
+                        }, 
+                        {
+                         "name":"soundId",
+                         "type":"string",
+                         "value":"excavator"
+                        }, 
+                        {
+                         "name":"volume",
+                         "type":"float",
+                         "value":0.4
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":802.666666666667,
+                 "y":1320
+                }, 
+                {
+                 "height":0,
+                 "id":34,
+                 "name":"dump_truck",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"radius",
+                         "type":"int",
+                         "value":1600
+                        }, 
+                        {
+                         "name":"soundId",
+                         "type":"string",
+                         "value":"dump_truck"
+                        }, 
+                        {
+                         "name":"volume",
+                         "type":"float",
+                         "value":0.4
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":2765.33333333333,
+                 "y":712
+                }, 
+                {
+                 "height":0,
+                 "id":35,
+                 "name":"dump_truck_02",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"radius",
+                         "type":"int",
+                         "value":1600
+                        }, 
+                        {
+                         "name":"soundId",
+                         "type":"string",
+                         "value":"dump_truck"
+                        }, 
+                        {
+                         "name":"volume",
+                         "type":"float",
+                         "value":0.4
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":3158,
+                 "y":3476
+                }, 
+                {
+                 "height":0,
+                 "id":36,
+                 "name":"excavator_02",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"radius",
+                         "type":"int",
+                         "value":1600
+                        }, 
+                        {
+                         "name":"soundId",
+                         "type":"string",
+                         "value":"excavator"
+                        }, 
+                        {
+                         "name":"volume",
+                         "type":"float",
+                         "value":0.4
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":3423,
+                 "y":3475
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":2,
          "name":"SpawnPoints",
          "objects":[
@@ -17,8 +173,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1585.66666666667,
-                 "y":3486.66333333333
+                 "x":1585.67,
+                 "y":3486.66
                 }, 
                 {
                  "height":0,
@@ -30,8 +186,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1673.66633333333,
-                 "y":3488.66666666667
+                 "x":1673.67,
+                 "y":3488.67
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -79,9 +235,9 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":268.833666666667,
-                 "x":1467.77239393939,
-                 "y":3503.83333333333
+                 "width":268.834,
+                 "x":1467.77,
+                 "y":3503.83
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -5382,8 +5538,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":58,
- "nextobjectid":30,
+ "nextlayerid":60,
+ "nextobjectid":37,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

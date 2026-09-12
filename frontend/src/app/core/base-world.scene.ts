@@ -9,6 +9,8 @@ import {
   TilemapSceneConfig,
 } from '../features/world/game/tiled/tilemap-config.types';
 
+import { AmbientAudioManager, preloadAmbientSounds } from './audio/ambient-audio.manager';
+
 import { InputController } from './input/input.controller';
 
 import { InteractionManager } from './interactions/interaction.manager';
@@ -40,6 +42,8 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
   private interactionManager!: InteractionManager;
 
+  private ambientAudioManager!: AmbientAudioManager;
+
   private sceneTransition!: RetroSceneTransition;
 
   protected playerController!: PlayerController;
@@ -66,6 +70,8 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     }
 
     preloadTilemap(this, this.mapConfig);
+
+    preloadAmbientSounds(this, this.mapConfig.ambientSounds);
   }
 
   create(): void {
@@ -76,6 +82,13 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     const buildResult = buildTilemap(this, this.mapConfig);
 
     this.createPlayerController(buildResult.map);
+
+    this.ambientAudioManager = new AmbientAudioManager(
+      this,
+      buildResult.map,
+      this.playerController.sprite,
+      this.mapConfig.ambientSounds,
+    );
 
     this.inputController = new InputController(this);
 
@@ -103,12 +116,14 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.sceneTransition.playIn(this.unlockPlayer);
   }
 
-  override update(): void {
+  override update(_time: number, delta: number): void {
     this.inputController.getDirection(this.direction);
 
     const interactRequested = this.inputController.consumeInteract();
 
     this.playerController.update(this.direction);
+
+    this.ambientAudioManager.update(delta);
 
     const interactionAvailable = this.interactionManager.update(
       interactRequested,
@@ -207,6 +222,8 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.inputController?.destroy();
 
     this.interactionManager?.destroy();
+
+    this.ambientAudioManager?.destroy();
 
     this.sceneTransition?.destroy();
   }

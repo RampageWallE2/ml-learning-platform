@@ -5,6 +5,21 @@ export const OPEN_PIT_MAP_CONFIG = {
 
   mapPath: 'assets/game/maps/open-pit.tmj',
 
+  ambientSounds: [
+    {
+      id: 'mill',
+      audioPath: 'assets/game/audio/ambient/mill.mp3',
+    },
+    {
+      id: 'excavator',
+      audioPath: 'assets/game/audio/ambient/excavator.mp3',
+    },
+    {
+      id: 'dump_truck',
+      audioPath: 'assets/game/audio/ambient/dump_truck.mp3',
+    },
+  ],
+
   tilesets: [
     {
       id: 'worksite_props',
