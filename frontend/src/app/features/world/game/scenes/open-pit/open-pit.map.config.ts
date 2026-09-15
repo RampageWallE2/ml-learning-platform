@@ -252,17 +252,17 @@ export const OPEN_PIT_MAP_CONFIG = {
     {
       name: 'Roads/Road_Ground',
       tilesets: ['terrain2'],
-      depth: 1.3,
+      depth: 1.11,
     },
     {
       name: 'Roads/Road_Edges',
       tilesets: ['terrain2', 'beach'],
-      depth: 1.4,
+      depth: 1.12,
     },
     {
       name: 'Roads/Road_Details',
       tilesets: ['terrain2'],
-      depth: 1.5,
+      depth: 1.13,
     },
     {
       name: 'Roads/Road_Props',
