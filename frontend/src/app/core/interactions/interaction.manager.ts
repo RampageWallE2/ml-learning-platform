@@ -1,12 +1,22 @@
 import Phaser from 'phaser';
 
-import { gameEvents, GameEvents } from '../../features/world/game/events/game-events';
+import {
+  gameEvents,
+  GameEvents,
+  LessonProgressSnapshot,
+} from '../../features/world/game/events/game-events';
 
 import {
   getObjectLayerOrThrow,
   getTiledProperty,
   getTiledRectangle
 } from '../tiled/tiled.utils';
+
+import {
+  getLessonIndicatorCopy,
+  getLessonInteractionCopy,
+  getLessonStatus,
+} from './lesson-indicator';
 
 
 type InteractionType =
@@ -30,11 +40,28 @@ type SceneTransitionHandler = (
   targetSpawn?: string
 ) => void;
 
+type LessonIndicator = {
+  lessonId: string;
+  text: Phaser.GameObjects.Text;
+  baseY: number;
+  animation?: Phaser.Tweens.Tween;
+};
+
 
 export class InteractionManager {
 
   private readonly interactionZones:
     Phaser.GameObjects.Zone[] = [];
+
+
+  private readonly lessonIndicators:
+    LessonIndicator[] = [];
+
+
+  private lessonProgress: LessonProgressSnapshot = {
+    currentLessonId: null,
+    completedLessonIds: [],
+  };
 
 
   private currentInteraction:
@@ -58,6 +85,12 @@ export class InteractionManager {
 
 
     this.createInteractions();
+
+
+    gameEvents.on(
+      GameEvents.LESSON_PROGRESS_CHANGED,
+      this.handleLessonProgressChanged
+    );
   }
 
 
@@ -126,7 +159,26 @@ export class InteractionManager {
 
   destroy(): void {
 
+    gameEvents.off(
+      GameEvents.LESSON_PROGRESS_CHANGED,
+      this.handleLessonProgressChanged
+    );
+
     this.interactionText.destroy();
+
+
+    for (
+      const indicator
+      of this.lessonIndicators
+    ) {
+
+      indicator.animation?.stop();
+
+      indicator.text.destroy();
+    }
+
+
+    this.lessonIndicators.length = 0;
 
 
     for (
@@ -186,6 +238,12 @@ export class InteractionManager {
          DATOS GENERALES
          ========================= */
 
+      const interactionType =
+        getTiledProperty<InteractionType>(
+          object,
+          'interactionType'
+        );
+
       zone.setData(
         'interactionName',
         object.name ?? ''
@@ -194,10 +252,7 @@ export class InteractionManager {
 
       zone.setData(
         'interactionType',
-        getTiledProperty<string>(
-          object,
-          'interactionType'
-        )
+        interactionType
       );
 
 
@@ -205,12 +260,16 @@ export class InteractionManager {
          LECCIÓN
          ========================= */
 
-      zone.setData(
-        'lessonId',
+      const lessonId =
         getTiledProperty<string>(
           object,
           'lessonId'
-        )
+        );
+
+
+      zone.setData(
+        'lessonId',
+        lessonId
       );
 
 
@@ -283,6 +342,25 @@ export class InteractionManager {
       this.interactionZones.push(
         zone
       );
+
+
+      if (
+        interactionType === 'lesson' &&
+        lessonId
+      ) {
+
+        const indicator =
+          this.createLessonIndicator(
+            zone,
+            lessonId
+          );
+
+
+        zone.setData(
+          'lessonIndicator',
+          indicator
+        );
+      }
     }
   }
 
@@ -318,6 +396,11 @@ export class InteractionManager {
         zone;
 
 
+      this.getLessonIndicator(
+        zone
+      )?.text.setVisible(false);
+
+
       this.showInteractionText();
 
 
@@ -328,6 +411,13 @@ export class InteractionManager {
 
   private clearCurrentInteraction():
     void {
+
+    if (this.currentInteraction) {
+
+      this.getLessonIndicator(
+        this.currentInteraction
+      )?.text.setVisible(true);
+    }
 
     this.currentInteraction =
       null;
@@ -342,6 +432,146 @@ export class InteractionManager {
   /* =========================
      UI
      ========================= */
+
+  private createLessonIndicator(
+    zone: Phaser.GameObjects.Zone,
+    lessonId: string
+  ): LessonIndicator {
+
+    const baseY =
+      zone.y -
+      zone.displayHeight / 2 -
+      10;
+
+
+    const text =
+      this.scene.add.text(
+        zone.x,
+        baseY,
+        '',
+        {
+          fontFamily: '"Courier New", monospace',
+          fontSize: '14px',
+          fontStyle: 'bold',
+          color: '#d8d1bc',
+          backgroundColor: '#191814',
+          align: 'center',
+          padding: { x: 8, y: 5 },
+          lineSpacing: 2,
+        }
+      );
+
+
+    text
+      .setOrigin(0.5, 1)
+      .setDepth(999)
+      .setStroke('#080805', 3);
+
+
+    const indicator: LessonIndicator = {
+      lessonId,
+      text,
+      baseY,
+    };
+
+
+    this.lessonIndicators.push(
+      indicator
+    );
+
+
+    this.updateLessonIndicator(
+      indicator
+    );
+
+
+    return indicator;
+  }
+
+
+  private updateLessonIndicator(
+    indicator: LessonIndicator
+  ): void {
+
+    indicator.animation?.stop();
+
+    indicator.animation = undefined;
+
+
+    const status =
+      getLessonStatus(
+        indicator.lessonId,
+        this.lessonProgress
+      );
+
+
+    indicator.text
+      .setText(
+        getLessonIndicatorCopy(
+          indicator.lessonId,
+          status
+        )
+      )
+      .setY(indicator.baseY)
+      .setScale(1)
+      .setAlpha(
+        status === 'pending'
+          ? 0.72
+          : 1
+      );
+
+
+    if (status === 'current') {
+
+      indicator.text
+        .setColor('#f8d66d')
+        .setBackgroundColor('#211b0b')
+        .setStroke('#080805', 4)
+        .setScale(1.06);
+
+
+      indicator.animation =
+        this.scene.tweens.add({
+          targets: indicator.text,
+          y: indicator.baseY - 5,
+          duration: 700,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.inOut',
+        });
+
+
+      return;
+    }
+
+
+    if (status === 'completed') {
+
+      indicator.text
+        .setColor('#a6d7a0')
+        .setBackgroundColor('#132016')
+        .setStroke('#071009', 3);
+
+
+      return;
+    }
+
+
+    indicator.text
+      .setColor('#d8d1bc')
+      .setBackgroundColor('#191814')
+      .setStroke('#080805', 3);
+  }
+
+
+  private getLessonIndicator(
+    zone: Phaser.GameObjects.Zone
+  ): LessonIndicator | undefined {
+
+    return zone.getData(
+      'lessonIndicator'
+    ) as LessonIndicator | undefined;
+  }
 
   private createInteractionText():
     Phaser.GameObjects.Text {
@@ -381,7 +611,8 @@ export class InteractionManager {
       return;
     }
 
-    const isTransition = zone.getData('interactionType') === 'transition';
+    const interactionType = zone.getData('interactionType') as InteractionType | undefined;
+    const isTransition = interactionType === 'transition';
     const targetScene = zone.getData('targetScene') as string | undefined;
     const destination = targetScene
       ? TRANSITION_DESTINATIONS[targetScene] ?? targetScene
@@ -393,11 +624,17 @@ export class InteractionManager {
       this.interactionText.setWordWrapWidth(wrapWidth, true);
     }
 
-    this.interactionText.setText(
-      isTransition && destination
-        ? `Ir a ${destination}\nPulsa E para entrar`
-        : 'Presiona E'
-    );
+    const lessonId = zone.getData('lessonId') as string | undefined;
+    const lessonStatus = lessonId
+      ? getLessonStatus(lessonId, this.lessonProgress)
+      : undefined;
+    const prompt = isTransition && destination
+      ? `Ir a ${destination}\nPulsa E para entrar`
+      : interactionType === 'lesson' && lessonId && lessonStatus
+        ? getLessonInteractionCopy(lessonId, lessonStatus)
+        : 'Presiona E';
+
+    this.interactionText.setText(prompt);
 
     // Keep the sector label visible when a wide zone exceeds a mobile viewport.
     const x = isTransition ? zone.x : this.player.x;
@@ -413,6 +650,36 @@ export class InteractionManager {
       )
       .setVisible(true);
   }
+
+
+  private readonly handleLessonProgressChanged = (
+    progress: LessonProgressSnapshot
+  ): void => {
+
+    this.lessonProgress = {
+      currentLessonId:
+        progress.currentLessonId,
+      completedLessonIds: [
+        ...progress.completedLessonIds
+      ],
+    };
+
+
+    for (
+      const indicator
+      of this.lessonIndicators
+    ) {
+
+      this.updateLessonIndicator(
+        indicator
+      );
+    }
+
+
+    if (this.currentInteraction) {
+      this.showInteractionText();
+    }
+  };
 
 
   /* =========================

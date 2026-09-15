@@ -15,7 +15,8 @@ import {
 
 import {
   gameEvents,
-  GameEvents
+  GameEvents,
+  LessonProgressSnapshot
 } from '../../game/events/game-events';
 
 import {
@@ -254,6 +255,9 @@ export class WorldPage
     );
 
 
+    this.publishLessonProgress();
+
+
     this.closeLesson();
   }
 
@@ -419,7 +423,49 @@ export class WorldPage
     this.activeSceneKey.set(
       sceneKey
     );
+
+
+    this.publishLessonProgress();
   };
+
+
+  /* =========================
+     SINCRONIZAR PROGRESO
+     CON PHASER
+     ========================= */
+
+  private publishLessonProgress(): void {
+
+    const zones =
+      this.progress.zoneProgress();
+
+
+    const snapshot: LessonProgressSnapshot = {
+      currentLessonId:
+        this.progress.currentLesson()
+          ?.lessonId ?? null,
+      completedLessonIds:
+        zones.flatMap(
+          zone =>
+            zone.lessons
+              .filter(
+                lesson =>
+                  lesson.status ===
+                  'completed'
+              )
+              .map(
+                lesson =>
+                  lesson.lessonId
+              )
+        ),
+    };
+
+
+    gameEvents.emit(
+      GameEvents.LESSON_PROGRESS_CHANGED,
+      snapshot
+    );
+  }
 
 
   /* =========================

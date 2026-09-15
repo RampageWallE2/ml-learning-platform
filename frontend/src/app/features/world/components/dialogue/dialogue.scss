@@ -7,7 +7,7 @@
 .dialogue {
   --dialogue-ink: #f3f1db;
   display: grid;
-  grid-template-rows: minmax(145px, 23vh) minmax(110px, 1fr) minmax(145px, 23vh);
+  grid-template-rows: minmax(145px, max-content) minmax(80px, 1fr) minmax(145px, max-content);
   width: 100%;
   height: 100%;
   color: var(--dialogue-ink);

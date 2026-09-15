@@ -1,18 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { Dialogue } from './dialogue';
+import { DialogueData } from './dialogue.types';
 
 describe('Dialogue', () => {
-  const data = {
+  const data: DialogueData = {
     id: 'test-dialogue',
     messages: [
-      { speaker: 'npc' as const, name: 'Encargado', text: 'Primer mensaje.' },
-      { speaker: 'player' as const, name: 'Tú', text: 'Respuesta.' }
+      { speaker: 'npc', name: 'Encargado', text: 'Primer mensaje.' },
+      { speaker: 'player', name: 'Tú', text: 'Respuesta.' }
     ]
   };
 
-  function create() {
+  function create(dialogue: DialogueData = data) {
     const fixture = TestBed.createComponent(Dialogue);
-    fixture.componentRef.setInput('dialogue', data);
+    fixture.componentRef.setInput('dialogue', dialogue);
     fixture.detectChanges();
     return fixture;
   }
@@ -39,5 +40,56 @@ describe('Dialogue', () => {
     expect(completed).not.toHaveBeenCalled();
     fixture.componentInstance.next();
     expect(completed).toHaveBeenCalledOnce();
+  });
+
+  it('resolves stable character ids through the central portrait registry', () => {
+    const fixture = create({
+      id: 'registered-character',
+      messages: [
+        {
+          speaker: 'npc',
+          characterId: 'ramp-controller',
+          name: 'Encargado de rampa',
+          text: 'Mensaje de prueba.'
+        }
+      ]
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    const frame = root.querySelector<HTMLElement>('.dialogue-band--npc .portrait-frame');
+    const portrait = frame?.querySelector<HTMLElement>('.character-portrait--desktop');
+
+    expect(frame?.dataset['characterId']).toBe('ramp-controller');
+    expect(portrait?.style.backgroundImage).toContain('character_postman_1.png');
+  });
+
+  it('keeps the generic fallback for dialogue messages without a character id', () => {
+    const fixture = create();
+    const root = fixture.nativeElement as HTMLElement;
+    const npcFrame = root.querySelector<HTMLElement>('.dialogue-band--npc .portrait-frame');
+    const playerFrame = root.querySelector<HTMLElement>('.dialogue-band--player .portrait-frame');
+
+    expect(npcFrame?.dataset['characterId']).toBe('npc-default');
+    expect(playerFrame?.dataset['characterId']).toBe('player');
+  });
+
+  it('gives an explicit portrait priority over the registered character', () => {
+    const fixture = create({
+      id: 'custom-portrait',
+      messages: [
+        {
+          speaker: 'npc',
+          characterId: 'ramp-controller',
+          portrait: '/assets/custom/avatar.png',
+          name: 'Personaje',
+          text: 'Mensaje de prueba.'
+        }
+      ]
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    const frame = root.querySelector<HTMLElement>('.dialogue-band--npc .portrait-frame');
+    const portrait = frame?.querySelector<HTMLElement>('.character-portrait--desktop');
+
+    expect(frame?.dataset['characterId']).toBe('custom');
+    expect(portrait?.style.backgroundImage).toContain('/assets/custom/avatar.png');
   });
 });
