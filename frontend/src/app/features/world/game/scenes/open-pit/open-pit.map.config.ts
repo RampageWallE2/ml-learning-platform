@@ -165,6 +165,12 @@ export const OPEN_PIT_MAP_CONFIG = {
       textureKey: 'modular_camp',
       imagePath: 'assets/game/tilesets/buildings/modular_camp.png',
     },
+    {
+      id: 'character_postman_3',
+      tiledName: 'character_postman_3',
+      textureKey: 'character_postman_3',
+      imagePath: 'assets/game/characters/character_postman_3.png',
+    },
   ],
 
   layers: [
@@ -229,9 +235,19 @@ export const OPEN_PIT_MAP_CONFIG = {
       depth: 1.1,
     },
     {
+      name: 'Pit/Buildings',
+      tilesets: ['city_props'],
+      depth: 1.15,
+    },
+    {
       name: 'Pit/Vehicles',
       tilesets: ['heavy_machinery', 'dump_truck_2'],
       depth: 1.2,
+    },
+    {
+      name: 'Pit/NPC',
+      tilesets: ['character_postman_3'],
+      depth: 1.25,
     },
     {
       name: 'Roads/Road_Ground',
@@ -259,9 +275,29 @@ export const OPEN_PIT_MAP_CONFIG = {
       depth: 1.7,
     },
     {
+      name: 'Electrical_Substation/NPC',
+      tilesets: ['character_postman_3'],
+      depth: 1.75,
+    },
+    {
       name: 'Repair_Shop/Buildings',
       tilesets: ['auto_repair_shop'],
       depth: 1.8,
+    },
+    {
+      name: 'Repair_Shop/Vehicles',
+      tilesets: ['heavy_machinery'],
+      depth: 1.85,
+    },
+    {
+      name: 'Repair_Shop/Character',
+      tilesets: ['character_postman_3'],
+      depth: 1.9,
+    },
+    {
+      name: 'Repair_Shop/NPC',
+      tilesets: ['character_postman_3'],
+      depth: 1.95,
     },
     {
       name: 'Structures/Buildings',
@@ -284,6 +320,11 @@ export const OPEN_PIT_MAP_CONFIG = {
       depth: 2.3,
     },
     {
+      name: 'Waste_Dump/NPC',
+      tilesets: ['character_postman_3'],
+      depth: 2.35,
+    },
+    {
       name: 'Control_Center/Ground',
       tilesets: ['city_terrain'],
       depth: 2.4,
@@ -297,6 +338,11 @@ export const OPEN_PIT_MAP_CONFIG = {
       name: 'Control_Center/Props',
       tilesets: ['city_props'],
       depth: 2.6,
+    },
+    {
+      name: 'Control_Center/NPC',
+      tilesets: ['character_postman_3'],
+      depth: 2.65,
     },
     {
       name: 'Processing_Area/Ground',
@@ -358,6 +404,11 @@ export const OPEN_PIT_MAP_CONFIG = {
         'heavy_machinery',
       ],
       depth: 3.7,
+    },
+    {
+      name: 'Processing_Area/NPC',
+      tilesets: ['character_postman_3'],
+      depth: 3.8,
     },
   ],
 } satisfies TilemapSceneConfig;

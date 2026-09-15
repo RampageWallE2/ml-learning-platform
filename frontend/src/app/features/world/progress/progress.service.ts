@@ -43,33 +43,27 @@ export class ProgressService {
 
     {
       id: 'zone-01',
-      name: 'Zona 1',
+      name: 'Open Pit',
       topic: 'Dispersión',
 
       lessons: [
         {
           lessonId: 'lesson-01',
-          name: 'El vivero',
+          name: 'Carguío en el fondo del tajo',
           objective:
-            'Ve al vivero y habla con el encargado.'
+            'Ve al fondo del tajo y habla con el encargado del carguío.'
         },
         {
           lessonId: 'lesson-02',
-          name: 'La granja',
+          name: 'Control de turnos en la rampa',
           objective:
-            'Ve a la granja y habla con el encargado.'
+            'Ve a la rampa y habla con el encargado del control.'
         },
         {
           lessonId: 'lesson-03',
-          name: 'Almacén de trigo',
+          name: 'Puesto de control de acarreo',
           objective:
-            'Ve al almacén de trigo y habla con el encargado.'
-        },
-        {
-          lessonId: 'lesson-04',
-          name: 'La plaza',
-          objective:
-            'Ve a la plaza y habla con el Inspector Salazar.'
+            'Sigue la ruta hacia ROM/chancado y habla con el encargado del acarreo.'
         }
       ]
     },

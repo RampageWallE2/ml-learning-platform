@@ -64,6 +64,10 @@ const SCENE_ZONES: Record<
   string,
   SceneZoneMetadata
 > = {
+  OpenPitScene: {
+    zoneId: 'zone-01',
+    name: 'Open Pit'
+  },
   Zone02Scene: {
     zoneId: 'zone-02',
     name: 'Zona 2'
@@ -134,17 +138,6 @@ export class WorldPage
           topic: 'Selección de modalidad',
           objective:
             'Elige Tajo Abierto / Open Pit para entrar al escenario.',
-          zone: null
-        };
-      }
-
-
-      if (sceneKey === 'OpenPitScene') {
-        return {
-          name: 'Open Pit',
-          topic: 'Minería de Superficie',
-          objective:
-            'Explora el escenario de Tajo Abierto.',
           zone: null
         };
       }
@@ -321,6 +314,14 @@ export class WorldPage
   private readonly handlerOpenLesson = (
     lesson: LessonData
   ): void => {
+
+    // These Tiled IDs still have legacy exercises; their mining versions come next.
+    if (this.activeSceneKey() === 'OpenPitScene' &&
+        (lesson.lessonId === 'lesson-02' || lesson.lessonId === 'lesson-03') &&
+        this.progress.isLessonAvailable(lesson.lessonId)) {
+      this.showBlockedLessonNotice('Esta clase minera estará disponible próximamente.');
+      return;
+    }
 
     /*
      * Primero preguntamos al sistema

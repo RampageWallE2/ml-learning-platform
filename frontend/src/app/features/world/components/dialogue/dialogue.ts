@@ -58,6 +58,10 @@ export class Dialogue {
     this.dialogue().messages.length - 1
   );
 
+  progressLabel = computed(() =>
+    `${this.currentIndex() + 1} / ${this.dialogue().messages.length}`
+  );
+
   next(): void {
     if (this.isLastMessage()) {
       this.completed.emit();

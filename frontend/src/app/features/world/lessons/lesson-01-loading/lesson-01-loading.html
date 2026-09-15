@@ -1,0 +1,101 @@
+<section class="lesson loading-lesson" aria-labelledby="loading-title">
+  <header class="lesson-header">
+    <span class="lesson-tag">Clase 1 · Carguío en el fondo del tajo</span>
+    <h2 id="loading-title">Distribuye las cargas</h2>
+    <p>Cada camión lleva una carga distinta. Observa los dos grupos completos.</p>
+  </header>
+
+  @if (ordering()) {
+    <div class="lesson-card">
+      <strong>Grupo {{ groupName() }} · {{ stage() === 'order-a' ? '1' : '2' }} de 2</strong>
+      <p>Ordena los camiones desde el que recibió menos carga hasta el que recibió más.</p>
+      <small>Arrastra desde la imagen o usa los botones de cada tarjeta.</small>
+    </div>
+
+    <ol class="load-list" [attr.aria-label]="'Cargas del Grupo ' + groupName()">
+      @for (load of loads(); track load.id; let i = $index) {
+        <li class="load-card" [attr.data-load-index]="i"
+            [class.load-card--dragging]="draggedId() === load.id"
+            [class.load-card--target]="draggedId() !== null && dropIndex() === i"
+            [class.load-card--accepted]="orderAccepted()">
+          <span class="load-position">{{ i + 1 }}</span>
+          <button type="button" class="drag-handle" [disabled]="orderAccepted()"
+                  [attr.aria-label]="'Arrastrar camión ' + load.id + ', ' + load.tonnes + ' toneladas'"
+                  (pointerdown)="startDrag($event, load.id)" (pointermove)="drag($event)"
+                  (pointerup)="endDrag($event)" (pointercancel)="cancelDrag()"
+                  (lostpointercapture)="cancelDrag()">
+            <img src="assets/game/tilesets/vehicles/dump_truck_2.png" alt="" draggable="false">
+            <span>Camión {{ load.id }}</span>
+            <strong>{{ load.tonnes }} t</strong>
+          </button>
+          <div class="move-buttons">
+            <button type="button" [disabled]="i === 0 || orderAccepted()"
+                    [attr.aria-label]="'Mover camión ' + load.id + ' una posición antes'"
+                    (click)="moveLoad(i, i - 1)">Antes</button>
+            <button type="button" [disabled]="i === loads().length - 1 || orderAccepted()"
+                    [attr.aria-label]="'Mover camión ' + load.id + ' una posición después'"
+                    (click)="moveLoad(i, i + 1)">Después</button>
+          </div>
+        </li>
+      }
+    </ol>
+    <div class="order-direction" aria-hidden="true"><span>Menor carga</span><span>Mayor carga</span></div>
+  } @else {
+    <div class="lesson-card">
+      <strong>Compara ambos grupos</strong>
+      <p>Las cargas se colocan según sus toneladas. Las dos líneas usan la misma escala, de 80 a 120 t.</p>
+    </div>
+    <div class="plots">
+      @for (plot of plots; track plot.name) {
+        <article class="plot" [class.plot--b]="plot.name === 'B'">
+          <h3>Grupo {{ plot.name }}</h3>
+          <svg viewBox="0 0 540 185" role="img" [attr.aria-label]="'Grupo ' + plot.name + ': ' + plot.values.join(', ') + ' toneladas, en una escala de 80 a 120'">
+            <line x1="30" y1="140" x2="510" y2="140" class="axis" />
+            @for (tick of ticks; track tick) {
+              <line [attr.x1]="scaleX(tick)" y1="136" [attr.x2]="scaleX(tick)" y2="148" class="axis" />
+              <text [attr.x]="scaleX(tick)" y="170" class="tick">{{ tick }}</text>
+            }
+            @for (point of plot.points; track point.tonnes) {
+              <line [attr.x1]="point.x" [attr.y1]="point.labelY + 5" [attr.x2]="point.x" y2="140" class="guide" />
+              <text [attr.x]="point.x" [attr.y]="point.labelY" class="load-label">{{ point.tonnes }} t</text>
+              <circle [attr.cx]="point.x" cy="140" r="4" class="load-point" />
+            }
+          </svg>
+          <p class="plot-values">{{ plot.values.join(' · ') }} t</p>
+        </article>
+      }
+    </div>
+    @if (stage() === 'compare') {
+      <div class="question-section">
+        <h3>¿En qué grupo las cargas son más irregulares?</h3>
+        <div class="group-choices">
+          <button type="button" class="btn btn--answer" (click)="chooseGroup('A')">Grupo A</button>
+          <button type="button" class="btn btn--answer" (click)="chooseGroup('B')">Grupo B</button>
+        </div>
+      </div>
+    }
+  }
+
+  <div aria-live="polite" aria-atomic="true">
+    @if (feedback()) {
+      <div class="feedback" [class.feedback--hint]="!orderAccepted() && stage() !== 'success'"
+           [class.feedback--success]="orderAccepted() || stage() === 'success'">
+        <p>{{ feedback() }}</p>
+      </div>
+    }
+  </div>
+
+  <div class="lesson-actions">
+    @if (ordering()) {
+      @if (orderAccepted()) {
+        <button type="button" class="btn btn--primary" (click)="continueOrder()">
+          {{ stage() === 'order-a' ? 'Continuar con el Grupo B' : 'Ver las cargas en la escala' }}
+        </button>
+      } @else {
+        <button type="button" class="btn btn--primary" (click)="checkOrder()">Comprobar orden</button>
+      }
+    } @else if (stage() === 'success') {
+      <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+    }
+  </div>
+</section>

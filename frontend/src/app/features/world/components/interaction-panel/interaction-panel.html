@@ -1,14 +1,32 @@
-<div class="interaction-overlay">
-  <div class="interaction-panel">
+<div
+  class="interaction-overlay"
+  [class.interaction-overlay--dialogue]="mode() === 'dialogue'"
+  [class.interaction-overlay--activity]="mode() === 'activity'"
+>
+  <div
+    class="interaction-panel"
+    [class.interaction-panel--dialogue]="mode() === 'dialogue'"
+    [class.interaction-panel--activity]="mode() === 'activity'"
+    role="dialog"
+    aria-modal="true"
+  >
 
     <button
       class="close-button"
+      [class.close-button--dialogue]="mode() === 'dialogue'"
+      [attr.aria-label]="mode() === 'dialogue' ? 'Cerrar diálogo' : 'Cerrar actividad'"
       (click)="closed.emit()"
     >
       ×
     </button>
 
-    <ng-content />
+    <div
+      class="interaction-content"
+      [class.interaction-content--dialogue]="mode() === 'dialogue'"
+      [class.interaction-content--activity]="mode() === 'activity'"
+    >
+      <ng-content />
+    </div>
 
   </div>
 </div>

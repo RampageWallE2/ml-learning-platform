@@ -74,16 +74,11 @@
     as lesson
   ) {
 
-    <app-interaction-panel
+    <app-lesson-runner
+      [lessonId]="lesson.lessonId"
       (closed)="closeLesson()"
-    >
-
-      <app-lesson-runner
-        [lessonId]="lesson.lessonId"
-        (completed)="completeLesson($event)"
-      />
-
-    </app-interaction-panel>
+      (completed)="completeLesson($event)"
+    />
 
   }
 
@@ -98,6 +93,7 @@
   ) {
 
     <app-interaction-panel
+      mode="dialogue"
       (closed)="closeDialogue()"
     >
 

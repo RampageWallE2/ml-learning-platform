@@ -7,10 +7,11 @@ import {
 } from '@angular/core';
 
 import { Dialogue } from '../../dialogue/dialogue';
+import { InteractionPanel } from '../../interaction-panel/interaction-panel';
 import { LessonDefinition } from '../../../lessons/lesson.types';
 
-import { LESSON_01 } from '../../../lessons/data/lesson-01.data';
-import { Lesson01Nursery } from '../../../lessons/lesson-01-nursery/lesson-01-nursery';
+import { LESSON_01_LOADING } from '../../../lessons/data/lesson-01-loading.data';
+import { Lesson01Loading } from '../../../lessons/lesson-01-loading/lesson-01-loading';
 
 import { LESSON_02 } from '../../../lessons/data/lesson-02.data';
 import { Lesson02Farm } from '../../../lessons/lesson-02-farm/lesson-02-farm';
@@ -22,7 +23,7 @@ import { LESSON_04 } from '../../../lessons/data/lesson-04.data';
 import { Lesson04Plaza } from '../../../lessons/lesson-04-plaza/lesson-04-plaza';
 
 const LESSONS: Record<string, LessonDefinition> = {
-  'lesson-01': LESSON_01,
+  'lesson-01': LESSON_01_LOADING,
   'lesson-02': LESSON_02,
   'lesson-03': LESSON_03,
   'lesson-04': LESSON_04,
@@ -33,7 +34,8 @@ const LESSONS: Record<string, LessonDefinition> = {
 
   imports: [
     Dialogue,
-    Lesson01Nursery,
+    InteractionPanel,
+    Lesson01Loading,
     Lesson02Farm,
     Lesson03Granary,
     Lesson04Plaza
@@ -46,6 +48,8 @@ export class LessonRunner {
   lessonId = input.required<string>();
 
   completed = output<string>();
+
+  closed = output<void>();
 
   currentStepIndex = signal(0);
 

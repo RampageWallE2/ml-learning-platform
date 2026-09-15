@@ -1,5 +1,10 @@
 @if (currentStep(); as step) {
 
+  <app-interaction-panel
+    [mode]="step.type === 'dialogue' ? 'dialogue' : 'activity'"
+    (closed)="closed.emit()"
+  >
+
   @switch (step.type) {
 
     @case ('dialogue') {
@@ -15,12 +20,8 @@
 
       @switch (step.exerciseId) {
 
-        @case ('nursery-spread') {
-
-          <app-lesson-01-nursery
-            (completed)="nextStep()"
-          />
-
+        @case ('loading-spread') {
+          <app-lesson-01-loading (completed)="nextStep()" />
         }
 
         @case ('farm-stability') {
@@ -54,5 +55,7 @@
     
 
   }
+
+  </app-interaction-panel>
 
 }

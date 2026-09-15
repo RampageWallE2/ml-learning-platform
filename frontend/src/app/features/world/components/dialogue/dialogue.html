@@ -1,72 +1,52 @@
-<div class="dialogue">
+<section class="dialogue" aria-label="Conversación">
+  <div
+    class="dialogue-band dialogue-band--npc"
+    [class.dialogue-band--active]="currentMessage()?.speaker === 'npc'"
+  >
+    <div class="portrait-frame">
+      @if (npcMessage()?.portrait; as portrait) {
+        <img [src]="portrait" [alt]="'Retrato de ' + (npcMessage()?.name ?? 'personaje')">
+      } @else {
+        <div
+          class="sprite-portrait sprite-portrait--npc"
+          role="img"
+          [attr.aria-label]="'Retrato de ' + (npcMessage()?.name ?? 'personaje')"
+        ></div>
+      }
+    </div>
 
-  <div class="conversation">
-
-    <!-- JUGADOR -->
-    @if (playerMessage(); as message) {
-      <div
-        class="message message--player"
-        [class.message--active]="currentMessage()?.speaker === 'player'"
-      >
-
-        <div class="bubble">
-          <strong>{{ message.name }}</strong>
-          <p>{{ message.text }}</p>
-        </div>
-
-        @if (message.portrait) {
-          <img
-            class="portrait"
-            [src]="message.portrait"
-            [alt]="message.name"
-          >
-        } @else {
-          <div class="portrait-placeholder">
-            {{ message.name.charAt(0) }}
-          </div>
-        }
-
+    @if (currentMessage()?.speaker === 'npc') {
+      <div class="dialogue-copy" aria-live="polite" aria-atomic="true">
+        <strong>{{ currentMessage()?.name }}</strong>
+        <p>{{ currentMessage()?.text }}</p>
       </div>
     }
-
-
-    <!-- NPC -->
-    @if (npcMessage(); as message) {
-      <div
-        class="message message--npc"
-        [class.message--active]="currentMessage()?.speaker === 'npc'"
-      >
-
-        @if (message.portrait) {
-          <img
-            class="portrait"
-            [src]="message.portrait"
-            [alt]="message.name"
-          >
-        } @else {
-          <div class="portrait-placeholder">
-            {{ message.name.charAt(0) }}
-          </div>
-        }
-
-        <div class="bubble">
-          <strong>{{ message.name }}</strong>
-          <p>{{ message.text }}</p>
-        </div>
-
-      </div>
-    }
-
   </div>
 
-
-  <div class="dialogue-actions">
-    <button 
-      class="btn btn--primary"
-      (click)="next()"
-    >
-      {{ isLastMessage() ? 'Continuar' : 'Siguiente' }}
+  <div class="dialogue-stage">
+    <button type="button" class="continue-button" autofocus (click)="next()">
+      <span>{{ isLastMessage() ? 'Continuar' : 'Siguiente' }}</span>
+      <small>clic para avanzar · {{ progressLabel() }}</small>
     </button>
   </div>
 
-</div>
+  <div
+    class="dialogue-band dialogue-band--player"
+    [class.dialogue-band--active]="currentMessage()?.speaker === 'player'"
+  >
+    @if (currentMessage()?.speaker === 'player') {
+      <div class="dialogue-copy" aria-live="polite" aria-atomic="true">
+        <strong>{{ currentMessage()?.name }}</strong>
+        <p>{{ currentMessage()?.text }}</p>
+      </div>
+    }
+
+    <div class="portrait-frame">
+      @if (playerMessage()?.portrait; as portrait) {
+        <img [src]="portrait" [alt]="'Retrato de ' + (playerMessage()?.name ?? 'Tú')">
+      } @else {
+        <div class="sprite-portrait sprite-portrait--player" role="img" aria-label="Retrato del jugador"></div>
+      }
+    </div>
+  </div>
+</section>
