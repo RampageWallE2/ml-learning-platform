@@ -332,26 +332,11 @@ export class ProgressService {
 
 
     /*
-     * Una lección completada
-     * puede volver a jugarse.
+     * Durante el desarrollo todas las lecciones registradas
+     * permanecen disponibles para facilitar las pruebas.
+     * El objetivo actual conserva el orden pedagógico normal.
      */
-    if (
-      this.isLessonCompleted(
-        lessonId
-      )
-    ) {
-      return true;
-    }
-
-
-    /*
-     * Solo la primera lección
-     * pendiente está disponible.
-     */
-    return (
-      this.currentLessonId() ===
-      lessonId
-    );
+    return true;
   }
 
 

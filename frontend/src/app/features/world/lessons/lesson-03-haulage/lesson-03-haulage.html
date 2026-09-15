@@ -1,0 +1,160 @@
+<section class="lesson haulage-lesson" aria-labelledby="haulage-title">
+  <header class="lesson-header">
+    <span class="lesson-tag">Clase 3 · Puesto de control de acarreo</span>
+    <h2 id="haulage-title">Encuentra los extremos</h2>
+    <p>Analiza los tiempos de viaje y descubre una forma de medir la separación entre sus extremos.</p>
+  </header>
+
+  @if (stage() === 'find-min' || stage() === 'min-found' || stage() === 'find-max' || stage() === 'max-found') {
+    <div class="control-card">
+      <span>Registros del tramo</span>
+      <strong>Tiempo de viaje</strong>
+      <small>Salida del tajo → ROM / chancado</small>
+    </div>
+
+    <div class="trip-grid" aria-label="Tiempos registrados: 11, 12, 11, 18 y 12 minutos">
+      @for (trip of trips; track trip.id; let index = $index) {
+        <button
+          type="button"
+          class="trip-card"
+          [class.trip-card--selected]="selectedRecordId() === trip.id"
+          [class.trip-card--minimum]="stage() !== 'find-min' && trip.time === 11"
+          [class.trip-card--maximum]="stage() === 'max-found' && trip.time === 18"
+          (click)="stage() === 'find-min' ? selectFastest(trip.id) : selectSlowest(trip.id)"
+          [disabled]="stage() === 'min-found' || stage() === 'max-found'"
+        >
+          <span>Viaje {{ index + 1 }}</span>
+          <b aria-hidden="true">▰</b>
+          <strong>{{ trip.time }} min</strong>
+        </button>
+      }
+    </div>
+
+    <div class="question-section">
+      @if (stage() === 'find-min') {
+        <span class="lesson-tag">Primer extremo</span>
+        <h3>Selecciona el viaje más rápido</h3>
+        <p>Busca el camión que completó el tramo en menos tiempo.</p>
+      } @else if (stage() === 'min-found') {
+        <span class="extreme-badge">Mínimo = 11 min</span>
+      } @else if (stage() === 'find-max') {
+        <span class="lesson-tag">Segundo extremo</span>
+        <h3>Ahora selecciona el viaje más lento</h3>
+        <p>Busca el camión que necesitó más tiempo para completar el tramo.</p>
+      } @else {
+        <div class="extreme-summary">
+          <span>Mínimo <strong>11 min</strong></span>
+          <span>Máximo <strong>18 min</strong></span>
+        </div>
+      }
+    </div>
+
+    @if (feedback()) {
+      <div class="feedback" [class.feedback--success]="stage() === 'min-found' || stage() === 'max-found'" [class.feedback--hint]="stage() === 'find-min' || stage() === 'find-max'" aria-live="polite">
+        <p>{{ feedback() }}</p>
+      </div>
+    }
+
+    @if (stage() === 'min-found') {
+      <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="continueToMaximum()">Buscar el viaje más lento</button></div>
+    } @else if (stage() === 'max-found') {
+      <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="continueToRange()">Medir la separación</button></div>
+    }
+  }
+
+  @if (stage() === 'measure-range') {
+    <div class="extreme-summary">
+      <span>Mínimo <strong>11 min</strong></span>
+      <span>Máximo <strong>18 min</strong></span>
+    </div>
+
+    <div class="time-scale" aria-label="Escala desde 10 hasta 19 minutos; los datos se extienden desde 11 hasta 18">
+      <div class="scale-track" aria-hidden="true">
+        <span class="range-line" [style.left.%]="position(11)" [style.width.%]="position(18) - position(11)"></span>
+        @for (point of plotPoints; track point.time) {
+          <span class="plot-point" [style.left.%]="position(point.time)"><b>{{ point.count }}</b></span>
+        }
+      </div>
+      <div class="scale-labels" aria-hidden="true">
+        @for (tick of axisTicks; track tick) { <span>{{ tick }}</span> }
+      </div>
+      <p>Los números sobre los puntos indican cuántos viajes tuvieron ese tiempo.</p>
+    </div>
+
+    <div class="question-section">
+      <span class="lesson-tag">Mide la separación</span>
+      <h3>¿Cuánto separa al viaje más rápido del más lento?</h3>
+      <div class="answer-grid">
+        @for (option of rangeOptions; track option) {
+          <button type="button" class="btn btn--answer" (click)="answerRange(option)">{{ option }} min</button>
+        }
+      </div>
+      @if (feedback()) { <div class="feedback feedback--hint" aria-live="polite"><p>{{ feedback() }}</p></div> }
+    </div>
+  }
+
+  @if (stage() === 'formula') {
+    <div class="lesson-completion formula-card">
+      <span class="success-label">Nueva herramienta</span>
+      <h3>Esta separación se llama rango</h3>
+      <div class="formula">
+        <span>Rango = máximo − mínimo</span>
+        <strong>18 − 11 = 7 min</strong>
+      </div>
+      <p>Primero encontraste los extremos y mediste su separación. Ahora ya puedes ponerle nombre a esa medida.</p>
+      <div class="feedback feedback--success"><p>{{ feedback() }}</p></div>
+      <button type="button" class="btn btn--primary" (click)="continueToPractice()">Comprobar con otro registro</button>
+    </div>
+  }
+
+  @if (stage() === 'practice-min' || stage() === 'practice-max' || stage() === 'practice-range') {
+    <div class="practice-header">
+      <span class="lesson-tag">Comprobación rápida</span>
+      <h3>Nuevo registro de viajes</h3>
+      <p>Encuentra sus extremos y calcula el rango.</p>
+    </div>
+
+    <div class="trip-grid trip-grid--practice">
+      @for (trip of practiceTrips; track trip.id; let index = $index) {
+        <button
+          type="button"
+          class="trip-card"
+          [class.trip-card--selected]="selectedRecordId() === trip.id"
+          (click)="selectPracticeExtreme(trip.id)"
+          [disabled]="stage() === 'practice-range'"
+        >
+          <span>Viaje {{ index + 1 }}</span>
+          <strong>{{ trip.time }} min</strong>
+        </button>
+      }
+    </div>
+
+    <div class="question-section">
+      @if (stage() === 'practice-min') {
+        <h3>Selecciona primero el tiempo mínimo</h3>
+      } @else if (stage() === 'practice-max') {
+        <h3>Correcto. Ahora selecciona el tiempo máximo</h3>
+      } @else {
+        <div class="extreme-summary compact"><span>Mínimo <strong>10</strong></span><span>Máximo <strong>15</strong></span></div>
+        <h3>¿Cuál es el rango de este conjunto?</h3>
+        <div class="answer-grid">
+          @for (option of practiceRangeOptions; track option) {
+            <button type="button" class="btn btn--answer" (click)="answerPracticeRange(option)">{{ option }} min</button>
+          }
+        </div>
+      }
+      @if (feedback()) { <div class="feedback" [class.feedback--hint]="stage() !== 'practice-range' || rangeAnswer() !== 5" aria-live="polite"><p>{{ feedback() }}</p></div> }
+    </div>
+  }
+
+  @if (stage() === 'success') {
+    <div class="lesson-completion">
+      <span class="success-label">Comprobación completada</span>
+      <h3>Ya puedes medir la separación entre extremos</h3>
+      <div class="formula"><span>Rango = 15 − 10</span><strong>5 min</strong></div>
+      <p>El rango permite expresar rápidamente cuánto separa al valor máximo del mínimo.</p>
+      <div class="range-warning"><strong>Recuerda:</strong> el rango solo considera los dos extremos del conjunto.</div>
+      <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+    </div>
+  }
+</section>

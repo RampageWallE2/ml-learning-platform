@@ -10,6 +10,7 @@ import {
   DialogueData,
   DialogueMessage
 } from './dialogue.types';
+import { resolveDialoguePortrait } from './dialogue-characters.data';
 
 @Component({
   selector: 'app-dialogue',
@@ -52,6 +53,14 @@ export class Dialogue {
       .find(message => message.speaker === 'player')
       ?? null;
   });
+
+  npcPortrait = computed(() =>
+    resolveDialoguePortrait(this.npcMessage(), 'npc')
+  );
+
+  playerPortrait = computed(() =>
+    resolveDialoguePortrait(this.playerMessage(), 'player')
+  );
 
   isLastMessage = computed(() =>
     this.currentIndex() >=

@@ -3,6 +3,8 @@ import { By } from '@angular/platform-browser';
 import { Dialogue } from '../../dialogue/dialogue';
 import { InteractionPanel } from '../../interaction-panel/interaction-panel';
 import { Lesson01Loading } from '../../../lessons/lesson-01-loading/lesson-01-loading';
+import { Lesson02Ramp } from '../../../lessons/lesson-02-ramp/lesson-02-ramp';
+import { Lesson03Haulage } from '../../../lessons/lesson-03-haulage/lesson-03-haulage';
 import { LessonRunner } from './lesson-runner';
 
 describe('LessonRunner — loading lesson', () => {
@@ -48,5 +50,90 @@ describe('LessonRunner — loading lesson', () => {
     expect(end.dialogue().messages.at(-1)?.text).toContain('encargado del control');
     for (let i = 0; i < 4; i++) end.next();
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-01');
+  });
+});
+
+describe('LessonRunner — ramp lesson', () => {
+  it('plays the planned Class 2 flow before completing lesson-02', () => {
+    const fixture = TestBed.createComponent(LessonRunner);
+    fixture.componentRef.setInput('lessonId', 'lesson-02');
+    fixture.detectChanges();
+    const done = vi.fn();
+    fixture.componentInstance.completed.subscribe(done);
+
+    const intro = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
+    expect(
+      (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
+    ).toBe('dialogue');
+    expect(intro.currentMessage().text).toContain('camiones que viste abajo');
+    expect(intro.dialogue().messages.map(message => message.text).join(' ')).not.toMatch(/rango|mínimo|máximo/i);
+    for (let i = 0; i < 5; i++) intro.next();
+    fixture.detectChanges();
+
+    const game = fixture.debugElement.query(By.directive(Lesson02Ramp)).componentInstance as Lesson02Ramp;
+    expect(
+      (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
+    ).toBe('activity');
+    game.chooseTurn('A');
+    game.revealAverages();
+    game.answerBehavior('no');
+    game.finish();
+    fixture.detectChanges();
+
+    expect(done).not.toHaveBeenCalled();
+    const end = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
+    expect(
+      (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
+    ).toBe('dialogue');
+    expect(end.currentIndex()).toBe(0);
+    expect(end.currentMessage().text).toContain('Turno A');
+    expect(end.dialogue().messages.at(-1)?.text).toContain('encargado del acarreo');
+    for (let i = 0; i < 5; i++) end.next();
+    expect(done).toHaveBeenCalledExactlyOnceWith('lesson-02');
+  });
+});
+
+describe('LessonRunner — haulage lesson', () => {
+  it('plays the planned Class 3 flow before completing lesson-03', () => {
+    const fixture = TestBed.createComponent(LessonRunner);
+    fixture.componentRef.setInput('lessonId', 'lesson-03');
+    fixture.detectChanges();
+    const done = vi.fn();
+    fixture.componentInstance.completed.subscribe(done);
+
+    const intro = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
+    expect(
+      (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
+    ).toBe('dialogue');
+    expect(intro.currentMessage().text).toContain('puesto de control');
+    expect(intro.dialogue().messages.at(-1)?.text).toContain('más rápido y el más lento');
+    for (let i = 0; i < 5; i++) intro.next();
+    fixture.detectChanges();
+
+    const game = fixture.debugElement.query(By.directive(Lesson03Haulage)).componentInstance as Lesson03Haulage;
+    expect(
+      (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
+    ).toBe('activity');
+    game.selectFastest('trip-1');
+    game.continueToMaximum();
+    game.selectSlowest('trip-4');
+    game.continueToRange();
+    game.answerRange(7);
+    game.continueToPractice();
+    game.selectPracticeExtreme('practice-2');
+    game.selectPracticeExtreme('practice-4');
+    game.answerPracticeRange(5);
+    game.finish();
+    fixture.detectChanges();
+
+    expect(done).not.toHaveBeenCalled();
+    const end = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
+    expect(
+      (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
+    ).toBe('dialogue');
+    expect(end.currentMessage().text).toContain('diferencia de 7 minutos');
+    expect(end.dialogue().messages.at(-1)?.text).toContain('ROM y chancado');
+    for (let i = 0; i < 6; i++) end.next();
+    expect(done).toHaveBeenCalledExactlyOnceWith('lesson-03');
   });
 });

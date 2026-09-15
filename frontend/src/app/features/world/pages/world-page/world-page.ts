@@ -315,14 +315,6 @@ export class WorldPage
     lesson: LessonData
   ): void => {
 
-    // These Tiled IDs still have legacy exercises; their mining versions come next.
-    if (this.activeSceneKey() === 'OpenPitScene' &&
-        (lesson.lessonId === 'lesson-02' || lesson.lessonId === 'lesson-03') &&
-        this.progress.isLessonAvailable(lesson.lessonId)) {
-      this.showBlockedLessonNotice('Esta clase minera estará disponible próximamente.');
-      return;
-    }
-
     /*
      * Primero preguntamos al sistema
      * de progreso si esta actividad

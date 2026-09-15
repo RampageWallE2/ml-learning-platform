@@ -13,10 +13,12 @@ import { LessonDefinition } from '../../../lessons/lesson.types';
 import { LESSON_01_LOADING } from '../../../lessons/data/lesson-01-loading.data';
 import { Lesson01Loading } from '../../../lessons/lesson-01-loading/lesson-01-loading';
 
-import { LESSON_02 } from '../../../lessons/data/lesson-02.data';
+import { LESSON_02_RAMP } from '../../../lessons/data/lesson-02-ramp.data';
+import { Lesson02Ramp } from '../../../lessons/lesson-02-ramp/lesson-02-ramp';
 import { Lesson02Farm } from '../../../lessons/lesson-02-farm/lesson-02-farm';
 
-import { LESSON_03 } from '../../../lessons/data/lesson-03.data';
+import { LESSON_03_HAULAGE } from '../../../lessons/data/lesson-03-haulage.data';
+import { Lesson03Haulage } from '../../../lessons/lesson-03-haulage/lesson-03-haulage';
 import { Lesson03Granary } from '../../../lessons/lesson-03-granary/lesson-03-granary';
 
 import { LESSON_04 } from '../../../lessons/data/lesson-04.data';
@@ -24,8 +26,8 @@ import { Lesson04Plaza } from '../../../lessons/lesson-04-plaza/lesson-04-plaza'
 
 const LESSONS: Record<string, LessonDefinition> = {
   'lesson-01': LESSON_01_LOADING,
-  'lesson-02': LESSON_02,
-  'lesson-03': LESSON_03,
+  'lesson-02': LESSON_02_RAMP,
+  'lesson-03': LESSON_03_HAULAGE,
   'lesson-04': LESSON_04,
 };
 
@@ -36,7 +38,9 @@ const LESSONS: Record<string, LessonDefinition> = {
     Dialogue,
     InteractionPanel,
     Lesson01Loading,
+    Lesson02Ramp,
     Lesson02Farm,
+    Lesson03Haulage,
     Lesson03Granary,
     Lesson04Plaza
   ],

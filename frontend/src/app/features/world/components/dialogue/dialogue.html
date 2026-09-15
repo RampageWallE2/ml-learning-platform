@@ -3,16 +3,23 @@
     class="dialogue-band dialogue-band--npc"
     [class.dialogue-band--active]="currentMessage()?.speaker === 'npc'"
   >
-    <div class="portrait-frame">
-      @if (npcMessage()?.portrait; as portrait) {
-        <img [src]="portrait" [alt]="'Retrato de ' + (npcMessage()?.name ?? 'personaje')">
-      } @else {
-        <div
-          class="sprite-portrait sprite-portrait--npc"
-          role="img"
-          [attr.aria-label]="'Retrato de ' + (npcMessage()?.name ?? 'personaje')"
-        ></div>
-      }
+    <div class="portrait-frame" [attr.data-character-id]="npcPortrait().characterId">
+      <div
+        class="character-portrait character-portrait--desktop"
+        role="img"
+        [attr.aria-label]="'Retrato de ' + (npcMessage()?.name ?? 'personaje')"
+        [style.background-image]="'url(' + npcPortrait().src + ')'"
+        [style.background-position]="npcPortrait().position"
+        [style.background-size]="npcPortrait().size"
+      ></div>
+      <div
+        class="character-portrait character-portrait--mobile"
+        role="img"
+        [attr.aria-label]="'Retrato de ' + (npcMessage()?.name ?? 'personaje')"
+        [style.background-image]="'url(' + npcPortrait().src + ')'"
+        [style.background-position]="npcPortrait().mobilePosition"
+        [style.background-size]="npcPortrait().mobileSize"
+      ></div>
     </div>
 
     @if (currentMessage()?.speaker === 'npc') {
@@ -41,12 +48,23 @@
       </div>
     }
 
-    <div class="portrait-frame">
-      @if (playerMessage()?.portrait; as portrait) {
-        <img [src]="portrait" [alt]="'Retrato de ' + (playerMessage()?.name ?? 'Tú')">
-      } @else {
-        <div class="sprite-portrait sprite-portrait--player" role="img" aria-label="Retrato del jugador"></div>
-      }
+    <div class="portrait-frame" [attr.data-character-id]="playerPortrait().characterId">
+      <div
+        class="character-portrait character-portrait--desktop"
+        role="img"
+        [attr.aria-label]="'Retrato de ' + (playerMessage()?.name ?? 'Tú')"
+        [style.background-image]="'url(' + playerPortrait().src + ')'"
+        [style.background-position]="playerPortrait().position"
+        [style.background-size]="playerPortrait().size"
+      ></div>
+      <div
+        class="character-portrait character-portrait--mobile"
+        role="img"
+        [attr.aria-label]="'Retrato de ' + (playerMessage()?.name ?? 'Tú')"
+        [style.background-image]="'url(' + playerPortrait().src + ')'"
+        [style.background-position]="playerPortrait().mobilePosition"
+        [style.background-size]="playerPortrait().mobileSize"
+      ></div>
     </div>
   </div>
 </section>

@@ -1,0 +1,44 @@
+:host { display: block; min-width: 0; }
+.control-card { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 4px 12px; padding: 14px 18px; border: 2px solid var(--color-earth); border-radius: 8px; background: var(--color-surface-alt); }
+.control-card span { color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; }
+.control-card strong { color: var(--color-primary); font-family: var(--font-retro); }
+.control-card small { grid-column: 1 / -1; color: var(--color-text-muted); }
+.trip-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.trip-card { display: grid; place-items: center; gap: 8px; min-width: 0; padding: 15px 8px; border: 2px solid var(--color-earth); border-radius: 8px; color: var(--color-text); background: var(--color-surface-alt); font: inherit; cursor: pointer; }
+.trip-card:not(:disabled):hover, .trip-card:not(:disabled):focus-visible { transform: translateY(-2px); border-color: var(--color-primary); }
+.trip-card:disabled { opacity: 1; cursor: default; }
+.trip-card span { color: var(--color-text-muted); font-size: 12px; }
+.trip-card b { color: var(--color-warning); font-size: 25px; }
+.trip-card strong { white-space: nowrap; font-size: 17px; }
+.trip-card--selected, .trip-card--minimum, .trip-card--maximum { border-color: var(--color-success); background: #e0ebd8; }
+.extreme-badge { display: inline-block; padding: 10px 14px; border-radius: 6px; color: var(--color-surface); background: var(--color-primary); font-family: var(--font-retro); }
+.extreme-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.extreme-summary span { display: flex; justify-content: center; align-items: baseline; gap: 8px; padding: 16px; border: 2px solid var(--color-earth); border-radius: 8px; background: var(--color-surface-alt); }
+.extreme-summary strong { color: var(--color-primary); font: 22px var(--font-retro); }
+.feedback--success { border-left: 4px solid var(--color-success); background: #e0ebd8; }
+.lesson-actions { justify-content: flex-end; }
+.time-scale { padding: 44px 20px 16px; border: 2px solid var(--color-earth); border-radius: 8px; background: var(--color-surface-alt); }
+.scale-track { position: relative; height: 28px; border-bottom: 3px solid var(--color-text-muted); }
+.range-line { position: absolute; bottom: -3px; height: 6px; background: var(--color-warning); }
+.plot-point { position: absolute; bottom: -11px; display: grid; place-items: center; width: 20px; height: 20px; border: 2px solid var(--color-text); border-radius: 50%; background: var(--color-primary-soft); transform: translateX(-50%); }
+.plot-point b { position: absolute; bottom: 24px; font-size: 12px; }
+.scale-labels { display: flex; justify-content: space-between; padding-top: 14px; font-size: 12px; }
+.time-scale > p { margin: 16px 0 0; color: var(--color-text-muted); text-align: center; font-size: 13px; }
+.answer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.formula-card { border-color: var(--color-primary); }
+.formula { display: grid; box-sizing: border-box; gap: 10px; width: min(580px, 100%); margin-inline: auto; padding: 18px; border: 2px solid var(--color-earth); border-radius: 8px; background: var(--color-surface); text-align: center; }
+.formula span { font-weight: 700; }
+.formula strong { color: var(--color-primary); font: 25px var(--font-retro); }
+.practice-header { text-align: center; }
+.trip-grid--practice .trip-card { padding-block: 20px; }
+.extreme-summary.compact { margin-bottom: 18px; }
+.range-warning { padding: 13px; border-left: 4px solid var(--color-warning); background: var(--color-surface-alt); }
+@media (max-width: 700px) {
+  .trip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trip-card:last-child { grid-column: 1 / -1; }
+  .answer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .extreme-summary { grid-template-columns: 1fr; }
+  .time-scale { padding-inline: 10px; }
+  .scale-labels { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .trip-card { transition: none; } }

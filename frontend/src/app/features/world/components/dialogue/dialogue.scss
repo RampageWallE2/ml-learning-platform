@@ -39,6 +39,10 @@
   box-shadow: 0 0 0 4px #25241e;
 }
 
+.dialogue-band:not(.dialogue-band--active) .portrait-frame {
+  filter: grayscale(0.7) brightness(0.55);
+}
+
 .portrait-frame {
   display: grid;
   place-items: center;
@@ -49,7 +53,6 @@
   box-sizing: border-box;
   background: #a6a6a6;
   image-rendering: pixelated;
-  transition: border-color 120ms ease;
 
   img {
     width: 100%;
@@ -59,24 +62,15 @@
   }
 }
 
-.sprite-portrait {
-  width: 128px;
-  height: 128px;
-  flex: 0 0 auto;
+.character-portrait {
+  width: 100%;
+  height: 100%;
   background-repeat: no-repeat;
   image-rendering: pixelated;
 }
 
-.sprite-portrait--npc {
-  background-image: url('/assets/game/characters/character_postman_3.png');
-  background-position: 0 0;
-  background-size: 7416px 5248px;
-}
-
-.sprite-portrait--player {
-  background-image: url('/assets/game/characters/character2.png');
-  background-position: 0 0;
-  background-size: 768px 768px;
+.character-portrait--mobile {
+  display: none;
 }
 
 .dialogue-copy {
@@ -155,40 +149,52 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 600px), (max-height: 560px) and (orientation: landscape) {
   .dialogue {
-    grid-template-rows: minmax(175px, 29dvh) minmax(120px, 1fr) minmax(175px, 29dvh);
+    grid-template-areas:
+      'stage'
+      'speaker';
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .dialogue-band:not(.dialogue-band--active) {
+    display: none;
   }
 
   .dialogue-band {
+    grid-area: speaker;
+    grid-template-columns: 72px minmax(0, 1fr);
     gap: 12px;
-    padding: 18px 14px;
-  }
-
-  .dialogue-band--npc {
-    grid-template-columns: 78px minmax(0, 1fr);
+    max-height: 48dvh;
+    padding: 16px 14px;
+    overflow-y: auto;
   }
 
   .dialogue-band--player {
-    grid-template-columns: minmax(0, 1fr) 78px;
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .dialogue-band--player .portrait-frame {
+    order: -1;
+  }
+
+  .dialogue-band--player .dialogue-copy {
+    justify-self: stretch;
+    text-align: left;
   }
 
   .portrait-frame {
-    width: 78px;
-    height: 78px;
+    align-self: start;
+    width: 72px;
+    height: 72px;
   }
 
-  .sprite-portrait {
-    width: 96px;
-    height: 96px;
+  .character-portrait--desktop {
+    display: none;
   }
 
-  .sprite-portrait--npc {
-    background-size: 5562px 3936px;
-  }
-
-  .sprite-portrait--player {
-    background-size: 576px 576px;
+  .character-portrait--mobile {
+    display: block;
   }
 
   .dialogue-copy {
@@ -204,33 +210,36 @@
   }
 
   .dialogue-stage {
-    padding: 10px;
+    grid-area: stage;
+    place-items: end center;
+    padding: 10px 10px 14px;
   }
 
   .continue-button {
+    width: min(320px, calc(100% - 8px));
+    min-width: 0;
     padding: 10px 16px;
   }
 }
 
 @media (max-height: 560px) and (orientation: landscape) {
-  .dialogue {
-    grid-template-rows: minmax(112px, 31vh) minmax(88px, 1fr) minmax(112px, 31vh);
-  }
-
   .dialogue-band {
-    padding-block: 12px;
+    max-height: 52dvh;
+    padding-block: 10px;
   }
 
   .portrait-frame {
-    width: 88px;
-    height: 74px;
+    width: 64px;
+    height: 58px;
   }
 
-  .dialogue-band--npc {
-    grid-template-columns: 88px minmax(0, 1fr);
-  }
-
+  .dialogue-band,
   .dialogue-band--player {
-    grid-template-columns: minmax(0, 1fr) 88px;
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .dialogue-copy p {
+    font-size: 13px;
+    line-height: 1.4;
   }
 }

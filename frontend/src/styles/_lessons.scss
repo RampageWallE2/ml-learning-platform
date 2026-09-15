@@ -2,6 +2,99 @@
    BASE DE LECCIÓN
    ========================= */
 
+.loading-lesson {
+  --lesson-accent: #8d4e2f;
+  --lesson-accent-soft: #c98759;
+  --lesson-surface: #f5eadc;
+  --lesson-surface-alt: #ead2b7;
+  --lesson-border: #79543f;
+}
+
+.ramp-lesson {
+  --lesson-accent: #796116;
+  --lesson-accent-soft: #b99a3b;
+  --lesson-surface: #f4edd9;
+  --lesson-surface-alt: #e9dbaf;
+  --lesson-border: #755f35;
+}
+
+.haulage-lesson {
+  --lesson-accent: #315f70;
+  --lesson-accent-soft: #78a4ac;
+  --lesson-surface: #edf0e9;
+  --lesson-surface-alt: #d4dfda;
+  --lesson-border: #596765;
+}
+
+.loading-lesson,
+.ramp-lesson,
+.haulage-lesson {
+  --color-primary: var(--lesson-accent);
+  --color-primary-soft: var(--lesson-accent-soft);
+  --color-surface: var(--lesson-surface);
+  --color-surface-alt: var(--lesson-surface-alt);
+  --color-earth: var(--lesson-border);
+}
+
+.lesson > * {
+  animation: lesson-content-enter 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dialogue-band--npc {
+  animation: cinematic-npc-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dialogue-band--player {
+  animation: cinematic-player-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dialogue-copy {
+  animation: dialogue-copy-enter 260ms ease-out both;
+}
+
+.continue-button {
+  animation: dialogue-button-enter 380ms 100ms ease-out both;
+}
+
+@keyframes lesson-content-enter {
+  from { opacity: 0; transform: translateY(12px); }
+}
+
+@keyframes cinematic-npc-enter {
+  from { opacity: 0; transform: translateY(-24px); }
+}
+
+@keyframes cinematic-player-enter {
+  from { opacity: 0; transform: translateY(24px); }
+}
+
+@keyframes dialogue-copy-enter {
+  from { opacity: 0; transform: translateX(-8px); }
+}
+
+@keyframes dialogue-button-enter {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (max-width: 600px), (max-height: 560px) and (orientation: landscape) {
+  .dialogue-band--active {
+    animation-name: cinematic-mobile-enter;
+  }
+
+  @keyframes cinematic-mobile-enter {
+    from { opacity: 0; transform: translateY(18px); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson > *,
+  .dialogue-band,
+  .dialogue-copy,
+  .continue-button {
+    animation: none;
+  }
+}
+
 .lesson {
   display: flex;
   flex-direction: column;

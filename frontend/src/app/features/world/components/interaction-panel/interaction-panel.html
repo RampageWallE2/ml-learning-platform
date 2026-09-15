@@ -25,7 +25,13 @@
       [class.interaction-content--dialogue]="mode() === 'dialogue'"
       [class.interaction-content--activity]="mode() === 'activity'"
     >
-      <ng-content />
+      <div
+        class="interaction-content-inner"
+        [class.interaction-content-inner--dialogue]="mode() === 'dialogue'"
+        [class.interaction-content-inner--activity]="mode() === 'activity'"
+      >
+        <ng-content />
+      </div>
     </div>
 
   </div>
