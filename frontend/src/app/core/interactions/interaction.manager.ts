@@ -4,6 +4,7 @@ import {
   gameEvents,
   GameEvents,
   LessonProgressSnapshot,
+  OpenLessonRequest,
 } from '../../features/world/game/events/game-events';
 
 import {
@@ -149,14 +150,6 @@ export class InteractionManager {
   }
 
 
-  hasActiveInteraction(): boolean {
-
-    return (
-      this.currentInteraction !== null
-    );
-  }
-
-
   destroy(): void {
 
     gameEvents.off(
@@ -270,22 +263,6 @@ export class InteractionManager {
       zone.setData(
         'lessonId',
         lessonId
-      );
-
-
-      /*
-       * Lo mantenemos temporalmente
-       * por compatibilidad con el
-       * contrato actual de OPEN_LESSON.
-       *
-       * Luego podremos eliminar "step".
-       */
-      zone.setData(
-        'step',
-        getTiledProperty<number>(
-          object,
-          'step'
-        )
       );
 
 
@@ -749,14 +726,7 @@ export class InteractionManager {
       this.currentInteraction
         .getData(
           'lessonId'
-        );
-
-
-    const step =
-      this.currentInteraction
-        .getData(
-          'step'
-        );
+        ) as string | undefined;
 
 
     if (!lessonId) {
@@ -769,12 +739,14 @@ export class InteractionManager {
     }
 
 
+    const request: OpenLessonRequest = {
+      lessonId
+    };
+
+
     gameEvents.emit(
       GameEvents.OPEN_LESSON,
-      {
-        lessonId,
-        step
-      }
+      request
     );
   }
 

@@ -5,6 +5,10 @@ export type LessonProgressSnapshot = Readonly<{
     completedLessonIds: readonly string[];
 }>;
 
+export type OpenLessonRequest = Readonly<{
+    lessonId: string;
+}>;
+
 export const gameEvents = new Phaser.Events.EventEmitter();
 
 export const GameEvents = {

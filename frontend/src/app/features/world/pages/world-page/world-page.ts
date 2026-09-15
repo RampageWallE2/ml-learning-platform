@@ -16,7 +16,8 @@ import {
 import {
   gameEvents,
   GameEvents,
-  LessonProgressSnapshot
+  LessonProgressSnapshot,
+  OpenLessonRequest
 } from '../../game/events/game-events';
 
 import {
@@ -47,12 +48,6 @@ import {
 import {
   ZoneProgress
 } from '../../components/zone-progress/zone-progress';
-
-
-type LessonData = {
-  lessonId: string;
-  step: number;
-};
 
 
 type SceneZoneMetadata = {
@@ -203,7 +198,7 @@ export class WorldPage
      ========================= */
 
   lessonActive =
-    signal<LessonData | null>(
+    signal<OpenLessonRequest | null>(
       null
     );
 
@@ -243,12 +238,6 @@ export class WorldPage
   completeLesson(
     lessonId: string
   ): void {
-
-    console.log(
-      'Lección completada:',
-      lessonId
-    );
-
 
     this.progress.completeLesson(
       lessonId
@@ -316,7 +305,7 @@ export class WorldPage
      ========================= */
 
   private readonly handlerOpenLesson = (
-    lesson: LessonData
+    lesson: OpenLessonRequest
   ): void => {
 
     /*
@@ -392,7 +381,7 @@ export class WorldPage
 
     if (!dialogue) {
 
-      console.log(
+      console.warn(
         'No existe ningún diálogo:',
         request.dialogueId
       );

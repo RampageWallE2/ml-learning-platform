@@ -171,6 +171,12 @@ export const OPEN_PIT_MAP_CONFIG = {
       textureKey: 'character_postman_3',
       imagePath: 'assets/game/characters/character_postman_3.png',
     },
+    {
+      id: 'character_postman_1',
+      tiledName: 'character_postman_1',
+      textureKey: 'character_postman_1',
+      imagePath: 'assets/game/characters/character_postman_1.png',
+    },
   ],
 
   layers: [
@@ -246,7 +252,7 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Pit/NPC',
-      tilesets: ['character_postman_3'],
+      tilesets: ['character_postman_3', 'character_postman_1'],
       depth: 1.25,
     },
     {
