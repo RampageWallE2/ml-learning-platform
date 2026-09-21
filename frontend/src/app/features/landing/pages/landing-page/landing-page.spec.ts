@@ -48,4 +48,18 @@ describe('LandingPage', () => {
     expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
     expect(element.querySelector('a.button[href="/register"]')).not.toBeNull();
   });
+
+  it('marks sections for scroll reveal and preserves accessible title text', () => {
+    const fixture = TestBed.createComponent(LandingPage);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const animatedTitles = element.querySelectorAll<HTMLElement>('[appTypewriterText]');
+
+    expect(element.querySelectorAll('[appRevealOnScroll]').length).toBeGreaterThan(5);
+    expect(animatedTitles.length).toBe(4);
+    expect(animatedTitles[0].getAttribute('aria-label')).toBe(
+      'Los datos se entienden cuando los exploras.',
+    );
+    expect(animatedTitles[0].textContent).toContain('cuando los exploras');
+  });
 });

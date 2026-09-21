@@ -8,8 +8,8 @@
   overflow: auto;
   display: grid;
   grid-template-columns: minmax(330px, 0.9fr) minmax(0, 1.1fr);
-  background: #faf9f5;
-  color: #243e31;
+  background: #050914;
+  color: #eef1ec;
   font:
     14px/1.6 Inter,
     sans-serif;
@@ -21,13 +21,24 @@ a {
   color: inherit;
   text-decoration: none;
 }
+.wordmark,
+.eyebrow,
+.diagram span,
+.story-footer,
+.back,
+.divider,
+label,
+.password-field button {
+  font-family: Consolas, monospace;
+}
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid #b47841;
+  outline: 3px solid #f4c44e;
   outline-offset: 4px;
 }
 .auth-story {
-  background: #e6ebdc;
+  background: #0b1322;
+  border-right: 1px solid #202c42;
   display: flex;
   flex-direction: column;
   padding: 45px clamp(30px, 5vw, 80px);
@@ -43,7 +54,7 @@ button:focus-visible {
   letter-spacing: -0.4px;
 }
 .wordmark span {
-  color: #97a58b;
+  color: #f4c44e;
   margin: 0 9px;
 }
 .story-copy {
@@ -53,7 +64,7 @@ button:focus-visible {
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 1.7px;
-  color: #6f806b;
+  color: #77d4ae;
   margin: 0 0 20px;
 }
 h1,
@@ -68,12 +79,11 @@ h2 {
   margin: 0 0 25px;
 }
 em {
-  color: #758969;
-  font-weight: 400;
+  color: #77d4ae;
 }
 .story-copy > p:not(.eyebrow) {
   max-width: 330px;
-  color: #63735f;
+  color: #9ba7b6;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -85,19 +95,20 @@ em {
 }
 .diagram span {
   padding: 10px 12px;
-  border: 1px solid #a7b49b;
+  border: 1px solid #43516a;
   border-radius: 50%;
-  background: #eff2e8;
+  background: #101a2c;
+  color: #dfe5e8;
 }
 .diagram i {
   flex: 1;
   min-width: 10px;
   height: 1px;
-  background: #a7b49b;
+  background: #43516a;
 }
 .story-footer {
   font-size: 10px;
-  color: #75836d;
+  color: #7e8ca1;
   margin: 30px 0 0;
 }
 .auth-main {
@@ -108,7 +119,7 @@ em {
 }
 .back {
   font-size: 11px;
-  color: #6a796e;
+  color: #8f9db0;
   align-self: flex-start;
 }
 .back:hover {
@@ -125,7 +136,7 @@ h1 {
   margin: 0 0 15px;
 }
 .intro {
-  color: #6a766b;
+  color: #98a5b5;
   font-size: 13px;
   margin: 0 0 25px;
 }
@@ -142,7 +153,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 15px;
-  color: #84907f;
+  color: #758399;
   font-size: 10px;
   margin: 24px 0;
 }
@@ -150,7 +161,7 @@ h1 {
 .divider::after {
   content: '';
   height: 1px;
-  background: #d8dfd1;
+  background: #27344b;
   flex: 1;
 }
 fieldset {
@@ -169,25 +180,25 @@ input {
   width: 100%;
   height: 45px;
   padding: 10px 12px;
-  border: 1px solid #c7d0bf;
-  border-radius: 3px;
-  background: #fff;
-  color: #243e31;
+  border: 1px solid #34425b;
+  border-radius: 2px;
+  background: #0b1322;
+  color: #eef1ec;
   font:
     14px Inter,
     sans-serif;
   min-width: 0;
 }
 input::placeholder {
-  color: #8b9488;
+  color: #6f7e92;
   font-size: 12px;
 }
 input:focus {
-  outline: 2px solid #79986b;
+  outline: 2px solid #77d4ae;
   outline-offset: 1px;
 }
 input[aria-invalid='true'] {
-  border-color: #a84e38;
+  border-color: #f07c65;
 }
 .password-field {
   display: flex;
@@ -203,20 +214,20 @@ input[aria-invalid='true'] {
   height: 31px;
   border: 0;
   background: transparent;
-  color: #59734c;
+  color: #77d4ae;
   font-size: 10px;
   cursor: pointer;
 }
 .field-error {
   display: block;
   font-size: 10px;
-  color: #a04632;
+  color: #ff927c;
   min-height: 22px;
   padding-top: 3px;
 }
 .hint {
   display: block;
-  color: #798571;
+  color: #8290a5;
   font-size: 10px;
   margin: 5px 0;
 }
@@ -228,17 +239,18 @@ input[aria-invalid='true'] {
   min-height: 48px;
   margin-top: 8px;
   padding: 12px 18px;
-  border: 1px solid #244d3a;
-  border-radius: 3px;
-  background: #244d3a;
-  color: white;
+  border: 1px solid #f4c44e;
+  border-radius: 2px;
+  background: #f4c44e;
+  color: #050914;
   font:
-    600 13px Inter,
-    sans-serif;
+    600 13px Consolas,
+    monospace;
   cursor: pointer;
 }
 .submit:hover {
-  background: #173e2b;
+  background: #ffd96f;
+  border-color: #ffd96f;
 }
 fieldset:disabled {
   opacity: 0.6;
@@ -249,11 +261,11 @@ fieldset:disabled {
 .switch {
   text-align: center;
   font-size: 11px;
-  color: #788471;
+  color: #8491a4;
   margin: 25px 0 0;
 }
 .switch a {
-  color: #315d3e;
+  color: #77d4ae;
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -263,19 +275,19 @@ fieldset:disabled {
 .error {
   padding: 12px;
   font-size: 12px;
-  border-left: 3px solid #8caa78;
-  background: #eff3e9;
+  border-left: 3px solid #77d4ae;
+  background: #10251f;
   margin: 0 0 18px;
 }
 .error {
-  background: #f9ece7;
-  border-color: #b65b42;
-  color: #913e2c;
+  background: #2a1518;
+  border-color: #f07c65;
+  color: #ffac9b;
 }
 .auth-footer {
   font-size: 10px;
   text-align: center;
-  color: #819077;
+  color: #758399;
   margin: 20px 0 0;
 }
 @media (max-width: 760px) {
