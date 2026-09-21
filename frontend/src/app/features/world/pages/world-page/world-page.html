@@ -1,22 +1,35 @@
 <div class="world-page">
 
-  <!-- =========================
-       PROGRESO
-       ========================= -->
+  <div class="world-hud">
 
-  @if (
-    progressPanel();
-    as panel
-  ) {
+    <div class="world-hud__account">
+      <app-account-menu />
+    </div>
 
-    <app-zone-progress
-      [name]="panel.name"
-      [topic]="panel.topic"
-      [objective]="panel.objective"
-      [zone]="panel.zone"
-    />
 
-  }
+    <!-- =========================
+         PROGRESO
+         ========================= -->
+
+    @if (
+      progressPanel();
+      as panel
+    ) {
+
+      <div class="world-hud__progress">
+
+        <app-zone-progress
+          [name]="panel.name"
+          [topic]="panel.topic"
+          [objective]="panel.objective"
+          [zone]="panel.zone"
+        />
+
+      </div>
+
+    }
+
+  </div>
 
 
   <!-- =========================
@@ -60,6 +73,48 @@
 
       </div>
 
+    </div>
+
+  }
+
+
+  <!-- =========================
+       SINCRONIZACIÓN
+       ========================= -->
+
+  @if (
+    progressSyncError();
+    as message
+  ) {
+
+    <div
+      class="progress-sync-toast progress-sync-toast--error"
+      role="alert"
+    >
+
+      <div>
+        <strong>No se pudo sincronizar</strong>
+        <p>{{ message }}</p>
+      </div>
+
+      <button
+        type="button"
+        [disabled]="loadingProgress() || savingLesson()"
+        (click)="retryProgressSync()"
+      >
+        Reintentar
+      </button>
+
+    </div>
+
+  } @else if (savingLesson()) {
+
+    <div
+      class="progress-sync-toast"
+      role="status"
+      aria-live="polite"
+    >
+      Guardando progreso…
     </div>
 
   }

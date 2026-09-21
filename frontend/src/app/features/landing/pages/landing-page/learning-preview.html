@@ -1,0 +1,48 @@
+<div class="workbook">
+  <div class="workbook-top"><span>CUADERNO DE EXPLORACIÓN</span><span>01 / DATOS</span></div>
+  <div class="exercise">
+    <p class="exercise-label">Una pregunta para empezar</p>
+    <h2>¿Más viajes significa<br />más producción?</h2>
+    <p>Cada viaje transporta 20 toneladas. Observa cómo cambia el total.</p>
+    <div
+      class="plot"
+      role="img"
+      aria-label="Producción: 2 viajes, 40 toneladas; 4 viajes, 80 toneladas; 6 viajes, 120 toneladas."
+    >
+      <span class="axis">Toneladas transportadas</span>
+      <div class="bars">
+        <div><strong>40 t</strong><i style="height: 42px"></i><span>2 viajes</span></div>
+        <div><strong>80 t</strong><i style="height: 84px"></i><span>4 viajes</span></div>
+        <div><strong>120 t</strong><i style="height: 126px"></i><span>6 viajes</span></div>
+      </div>
+    </div>
+    <fieldset>
+      <legend>Con la misma carga, ¿cuánto llevan 5 viajes?</legend>
+      <div class="answers">
+        @for (answer of [80, 100, 120]; track answer) {
+          <button
+            type="button"
+            [class.chosen]="selectedAnswer() === answer"
+            [attr.aria-pressed]="selectedAnswer() === answer"
+            (click)="selectedAnswer.set(answer)"
+          >
+            {{ answer }} t
+          </button>
+        }
+      </div>
+    </fieldset>
+    <p class="feedback" aria-live="polite">
+      {{
+        selectedAnswer() === null
+          ? 'Prueba una respuesta. Equivocarse también es aprender.'
+          : selectedAnswer() === 100
+            ? 'Exacto. 5 viajes × 20 toneladas = 100 toneladas.'
+            : 'Casi. Multiplica los 5 viajes por las 20 toneladas de cada uno.'
+      }}
+    </p>
+  </div>
+  <div class="workbook-bottom">
+    <span class="dot"></span> EJEMPLO INTERACTIVO
+    <span>Observar → Relacionar → Comprender</span>
+  </div>
+</div>

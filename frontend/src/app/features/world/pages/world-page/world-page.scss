@@ -10,6 +10,46 @@
   height: 100%;
 }
 
+
+/* =========================
+   HUD
+   ========================= */
+
+.world-hud {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  left: 20px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+
+  pointer-events: none;
+}
+
+
+.world-hud__account,
+.world-hud__progress {
+  min-width: 0;
+  pointer-events: auto;
+}
+
+
+.world-hud__account {
+  position: relative;
+  z-index: 160;
+}
+
+
+.world-hud__progress {
+  position: relative;
+  z-index: 50;
+
+  margin-left: auto;
+}
+
 /* =========================
    ACTIVIDAD BLOQUEADA
    ========================= */
@@ -17,7 +57,7 @@
 .lesson-locked-toast {
   position: fixed;
 
-  top: 20px;
+  top: 84px;
   left: 20px;
 
   z-index: 80;
@@ -95,10 +135,83 @@
 
 
 /* =========================
+   SINCRONIZACIÓN DE PROGRESO
+   ========================= */
+
+.progress-sync-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 120;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  width: min(390px, calc(100% - 40px));
+  padding: 14px 16px;
+  box-sizing: border-box;
+
+  color: var(--color-text);
+  border: 2px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow:
+    0 5px 0 rgba(40, 51, 45, 0.28),
+    0 10px 22px rgba(0, 0, 0, 0.2);
+
+  font-size: 13px;
+  line-height: 1.4;
+
+  strong {
+    color: var(--color-error);
+    font-family: var(--font-retro);
+    font-size: 9px;
+    text-transform: uppercase;
+  }
+
+  p {
+    margin: 5px 0 0;
+  }
+
+  button {
+    flex: 0 0 auto;
+    padding: 9px 12px;
+
+    color: var(--color-surface);
+    border: 0;
+    border-radius: 6px;
+    background: var(--color-primary);
+
+    font: 700 11px/1 var(--font-body);
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+  }
+}
+
+
+.progress-sync-toast--error {
+  border-color: var(--color-error);
+}
+
+
+/* =========================
    RESPONSIVE
    ========================= */
 
 @media (max-width: 750px) {
+
+  .world-hud {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+
+    gap: 12px;
+  }
 
   .lesson-locked-toast {
     top: 145px;
@@ -117,6 +230,15 @@
     p {
       font-size: 12px;
     }
+  }
+
+
+  .progress-sync-toast {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+
+    width: auto;
   }
 
 }

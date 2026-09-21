@@ -26,3 +26,29 @@ export type ZoneProgress = {
 
   completed: boolean;
 };
+
+
+export type StoredLessonProgressStatus =
+  | 'in_progress'
+  | 'completed';
+
+
+export type StoredLessonProgress = Readonly<{
+  lessonId: string;
+  status: StoredLessonProgressStatus;
+  currentStep: number;
+  startedAt: string;
+  completedAt: string | null;
+  updatedAt: string;
+}>;
+
+
+export type ProgressApiResponse = Readonly<{
+  profileId: string;
+  lessons: StoredLessonProgress[];
+}>;
+
+
+export type SaveLessonProgressResponse = Readonly<{
+  progress: StoredLessonProgress;
+}>;

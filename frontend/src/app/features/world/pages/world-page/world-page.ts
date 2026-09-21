@@ -1,11 +1,20 @@
 import {
   AfterViewInit,
   Component,
+  DestroyRef,
   OnDestroy,
   computed,
   inject,
   signal
 } from '@angular/core';
+
+import {
+  takeUntilDestroyed
+} from '@angular/core/rxjs-interop';
+
+import {
+  finalize
+} from 'rxjs';
 
 import Phaser from 'phaser';
 
@@ -49,6 +58,10 @@ import {
   ZoneProgress
 } from '../../components/zone-progress/zone-progress';
 
+import {
+  AccountMenu
+} from '../../../auth/components/account-menu/account-menu';
+
 
 type SceneZoneMetadata = {
   zoneId: string;
@@ -86,7 +99,8 @@ const SCENE_ZONES: Record<
     LessonRunner,
     Dialogue,
     InteractionPanel,
-    ZoneProgress
+    ZoneProgress,
+    AccountMenu
   ],
 
   templateUrl: './world-page.html',
@@ -97,6 +111,10 @@ export class WorldPage
 
   readonly progress =
     inject(ProgressService);
+
+
+  private readonly destroyRef =
+    inject(DestroyRef);
 
 
   private game?: Phaser.Game;
@@ -232,6 +250,28 @@ export class WorldPage
 
 
   /* =========================
+     SINCRONIZACIÓN DE PROGRESO
+     ========================= */
+
+  readonly loadingProgress =
+    signal(false);
+
+
+  readonly savingLesson =
+    signal(false);
+
+
+  readonly progressSyncError =
+    signal<string | null>(
+      null
+    );
+
+
+  private failedLessonId:
+    string | null = null;
+
+
+  /* =========================
      COMPLETAR LECCIÓN
      ========================= */
 
@@ -239,15 +279,80 @@ export class WorldPage
     lessonId: string
   ): void {
 
-    this.progress.completeLesson(
-      lessonId
+    if (
+      this.savingLesson()
+    ) {
+      return;
+    }
+
+
+    this.failedLessonId =
+      lessonId;
+
+
+    this.progressSyncError.set(
+      null
     );
 
 
-    this.publishLessonProgress();
+    this.savingLesson.set(
+      true
+    );
 
 
-    this.closeLesson();
+    this.progress.completeLesson(
+      lessonId
+    ).pipe(
+      takeUntilDestroyed(
+        this.destroyRef
+      ),
+      finalize(
+        () =>
+          this.savingLesson.set(
+            false
+          )
+      )
+    ).subscribe({
+      next: () => {
+
+        this.failedLessonId =
+          null;
+
+
+        this.savingLesson.set(
+          false
+        );
+
+
+        this.publishLessonProgress();
+
+
+        this.closeLesson();
+      },
+      error: () => {
+
+        this.progressSyncError.set(
+          'No se pudo guardar tu progreso. Comprueba la conexión e inténtalo nuevamente.'
+        );
+      }
+    });
+  }
+
+
+  retryProgressSync(): void {
+
+    if (
+      this.failedLessonId
+    ) {
+      this.completeLesson(
+        this.failedLessonId
+      );
+
+      return;
+    }
+
+
+    this.loadProgress();
   }
 
 
@@ -256,6 +361,25 @@ export class WorldPage
      ========================= */
 
   closeLesson(): void {
+
+    if (
+      this.savingLesson()
+    ) {
+      return;
+    }
+
+
+    if (
+      this.failedLessonId
+    ) {
+      this.failedLessonId =
+        null;
+
+
+      this.progressSyncError.set(
+        null
+      );
+    }
 
     this.lessonActive.set(
       null
@@ -458,6 +582,56 @@ export class WorldPage
 
 
   /* =========================
+     CARGAR PROGRESO GUARDADO
+     ========================= */
+
+  private loadProgress(): void {
+
+    if (
+      this.loadingProgress()
+    ) {
+      return;
+    }
+
+
+    this.failedLessonId =
+      null;
+
+
+    this.progressSyncError.set(
+      null
+    );
+
+
+    this.loadingProgress.set(
+      true
+    );
+
+
+    this.progress.loadProgress().pipe(
+      takeUntilDestroyed(
+        this.destroyRef
+      ),
+      finalize(
+        () =>
+          this.loadingProgress.set(
+            false
+          )
+      )
+    ).subscribe({
+      next: () => {
+        this.publishLessonProgress();
+      },
+      error: () => {
+        this.progressSyncError.set(
+          'No se pudo recuperar tu progreso guardado. Puedes volver a intentarlo.'
+        );
+      }
+    });
+  }
+
+
+  /* =========================
      MOSTRAR BLOQUEO
      ========================= */
 
@@ -555,6 +729,9 @@ export class WorldPage
       new Phaser.Game(
         gameConfig
       );
+
+
+    this.loadProgress();
   }
 
 

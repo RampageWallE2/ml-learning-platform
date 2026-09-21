@@ -1,11 +1,29 @@
 import {
   computed,
   Injectable,
+  inject,
   signal
 } from '@angular/core';
 
 import {
+  HttpClient
+} from '@angular/common/http';
+
+import {
+  Observable,
+  map,
+  of,
+  throwError
+} from 'rxjs';
+
+import {
+  AUTH_CONFIG
+} from '../../../core/auth/auth.config';
+
+import {
   LessonProgressItem,
+  ProgressApiResponse,
+  SaveLessonProgressResponse,
   ZoneProgress
 } from './progress.types';
 
@@ -30,6 +48,13 @@ type ZoneDefinition = {
   providedIn: 'root'
 })
 export class ProgressService {
+
+  private readonly http =
+    inject(HttpClient);
+
+
+  private readonly authConfig =
+    inject(AUTH_CONFIG);
 
   /* =========================
      DEFINICIÓN DEL RECORRIDO
@@ -126,6 +151,57 @@ export class ProgressService {
 
   private readonly completedLessonIds =
     signal<string[]>([]);
+
+
+  /* =========================
+     CARGAR PROGRESO
+     ========================= */
+
+  loadProgress(): Observable<void> {
+
+    return this.http.get<ProgressApiResponse>(
+      `${this.authConfig.apiBaseUrl}/me/progress`,
+      {
+        withCredentials: true
+      }
+    ).pipe(
+      map(response => {
+
+        const completedFromApi =
+          new Set(
+            response.lessons
+              .filter(
+                lesson =>
+                  lesson.status ===
+                  'completed'
+              )
+              .map(
+                lesson =>
+                  lesson.lessonId
+              )
+          );
+
+
+        const registeredCompleted =
+          this.orderedLessons
+            .filter(
+              lesson =>
+                completedFromApi.has(
+                  lesson.lessonId
+                )
+            )
+            .map(
+              lesson =>
+                lesson.lessonId
+            );
+
+
+        this.completedLessonIds.set(
+          registeredCompleted
+        );
+      })
+    );
+  }
 
 
   /* =========================
@@ -255,7 +331,7 @@ export class ProgressService {
 
   completeLesson(
     lessonId: string
-  ): void {
+  ): Observable<void> {
 
     /*
      * Si ya está completada,
@@ -266,7 +342,7 @@ export class ProgressService {
         lessonId
       )
     ) {
-      return;
+      return of(undefined);
     }
 
 
@@ -279,15 +355,49 @@ export class ProgressService {
         lessonId
       )
     ) {
-      return;
+      return throwError(
+        () =>
+          new Error(
+            `Lección desconocida: ${lessonId}`
+          )
+      );
     }
 
 
-    this.completedLessonIds.update(
-      completed => [
-        ...completed,
-        lessonId
-      ]
+    return this.http.put<SaveLessonProgressResponse>(
+      `${this.authConfig.apiBaseUrl}/me/progress/${lessonId}`,
+      {
+        status: 'completed',
+        currentStep: 0
+      },
+      {
+        withCredentials: true
+      }
+    ).pipe(
+      map(response => {
+
+        if (
+          response.progress.status !==
+          'completed'
+        ) {
+          throw new Error(
+            'El backend no confirmó la finalización de la lección.'
+          );
+        }
+
+
+        this.completedLessonIds.update(
+          completed =>
+            completed.includes(
+              lessonId
+            )
+              ? completed
+              : [
+                  ...completed,
+                  lessonId
+                ]
+        );
+      })
     );
   }
 

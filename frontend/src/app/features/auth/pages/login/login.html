@@ -1,0 +1,222 @@
+<div class="auth-page">
+  <aside class="auth-story">
+    <a class="wordmark" routerLink="/">ml<span> / </span>ML Learning</a>
+    <div class="story-copy">
+      <p class="eyebrow">APRENDER ES HACER CONEXIONES</p>
+      <h2>Una pregunta.<br />Un descubrimiento.<br /><em>Tu siguiente paso.</em></h2>
+      <p>Explora las matemáticas y los datos en un mundo que te invita a pensar.</p>
+      <div class="diagram" aria-hidden="true">
+        <span>Observar</span><i></i><span>Comprender</span><i></i><span>Aplicar</span>
+      </div>
+    </div>
+    <p class="story-footer">ML Learning / Aprendizaje interactivo</p>
+  </aside>
+  <main class="auth-main">
+    <a class="back" routerLink="/">← Volver al inicio</a>
+    <section class="auth-card" aria-labelledby="auth-title" [attr.aria-busy]="busy()">
+      <p class="eyebrow">
+        {{ mode() === 'login' ? 'CONTINÚA TU RECORRIDO' : 'EMPIEZA A EXPLORAR' }}
+      </p>
+      <h1 id="auth-title">
+        {{ mode() === 'login' ? 'Qué bueno verte.' : 'La curiosidad empieza aquí.' }}
+      </h1>
+      <p class="intro">
+        {{
+          mode() === 'login'
+            ? 'Inicia sesión y retoma lo que estabas aprendiendo.'
+            : 'Crea tu cuenta para comenzar y guardar tus avances.'
+        }}
+      </p>
+      @if (noticeMessage(); as notice) {
+        <p class="notice" role="status">{{ notice }}</p>
+      }
+      <div class="google-wrap" [attr.inert]="busy() ? '' : null">
+        <div #googleButton class="google-button"></div>
+      </div>
+      @if (googleError(); as googleMessage) {
+        <p class="hint" role="status">{{ googleMessage }}</p>
+      }
+      <div class="divider"><span>o con tu correo</span></div>
+      @if (mode() === 'login') {
+        <form [formGroup]="loginForm" (ngSubmit)="loginWithEmail()" novalidate>
+          <fieldset [disabled]="busy()">
+            <label for="login-email">Correo electrónico</label>
+            <input
+              id="login-email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              maxlength="254"
+              placeholder="nombre@correo.com"
+              [attr.aria-invalid]="
+                loginForm.controls.email.touched && loginForm.controls.email.invalid
+              "
+              aria-describedby="login-email-error"
+            />
+            <span id="login-email-error" class="field-error">
+              @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+                Ingresa un correo electrónico válido.
+              }
+            </span>
+            <label for="login-password">Contraseña</label>
+            <div class="password-field">
+              <input
+                id="login-password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                maxlength="128"
+                [attr.aria-invalid]="
+                  loginForm.controls.password.touched && loginForm.controls.password.invalid
+                "
+                aria-describedby="login-password-error"
+              /><button
+                type="button"
+                [attr.aria-pressed]="showPassword()"
+                (click)="showPassword.set(!showPassword())"
+              >
+                {{ showPassword() ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+            <span id="login-password-error" class="field-error">
+              @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+                Ingresa tu contraseña de 8 a 128 caracteres.
+              }
+            </span>
+            @if (errorMessage(); as message) {
+              <p class="error" role="alert">{{ message }}</p>
+            }
+            <button class="submit" type="submit">
+              {{ submittingCredentials() ? 'Ingresando…' : 'Iniciar sesión' }}
+              <span aria-hidden="true">→</span>
+            </button>
+          </fieldset>
+        </form>
+      } @else {
+        <form [formGroup]="registrationForm" (ngSubmit)="registerWithEmail()" novalidate>
+          <fieldset [disabled]="busy()">
+            <label for="register-name">Tu nombre</label>
+            <input
+              id="register-name"
+              formControlName="displayName"
+              autocomplete="name"
+              maxlength="200"
+              placeholder="¿Cómo te llamas?"
+              [attr.aria-invalid]="
+                registrationForm.controls.displayName.touched &&
+                registrationForm.controls.displayName.invalid
+              "
+              aria-describedby="name-error"
+            />
+            <span id="name-error" class="field-error">
+              @if (
+                registrationForm.controls.displayName.touched &&
+                registrationForm.controls.displayName.invalid
+              ) {
+                Ingresa un nombre de hasta 200 caracteres.
+              }
+            </span>
+            <label for="register-email">Correo electrónico</label>
+            <input
+              id="register-email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              maxlength="254"
+              placeholder="nombre@correo.com"
+              [attr.aria-invalid]="
+                registrationForm.controls.email.touched && registrationForm.controls.email.invalid
+              "
+              aria-describedby="register-email-error"
+            />
+            <span id="register-email-error" class="field-error">
+              @if (
+                registrationForm.controls.email.touched && registrationForm.controls.email.invalid
+              ) {
+                Ingresa un correo electrónico válido.
+              }
+            </span>
+            <label for="register-password">Contraseña</label>
+            <div class="password-field">
+              <input
+                id="register-password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="new-password"
+                maxlength="128"
+                aria-describedby="password-help password-error"
+                [attr.aria-invalid]="
+                  registrationForm.controls.password.touched &&
+                  registrationForm.controls.password.invalid
+                "
+              /><button
+                type="button"
+                [attr.aria-pressed]="showPassword()"
+                (click)="showPassword.set(!showPassword())"
+              >
+                {{ showPassword() ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+            <span id="password-help" class="hint"
+              >Entre 8 y 128 caracteres. Usa una contraseña única.</span
+            >
+            <span id="password-error" class="field-error">
+              @if (
+                registrationForm.controls.password.touched &&
+                registrationForm.controls.password.invalid
+              ) {
+                La contraseña debe tener al menos 8 caracteres.
+              }
+            </span>
+            <label for="register-confirm-password">Repite tu contraseña</label>
+            <input
+              id="register-confirm-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="confirmPassword"
+              autocomplete="new-password"
+              maxlength="128"
+              aria-describedby="confirm-error"
+              [attr.aria-invalid]="
+                registrationForm.controls.confirmPassword.touched &&
+                (registrationForm.hasError('passwordMismatch') ||
+                  registrationForm.controls.confirmPassword.invalid)
+              "
+            />
+            <span id="confirm-error" class="field-error">
+              @if (
+                registrationForm.controls.confirmPassword.touched &&
+                (registrationForm.hasError('passwordMismatch') ||
+                  registrationForm.controls.confirmPassword.invalid)
+              ) {
+                Las contraseñas deben coincidir.
+              }
+            </span>
+            @if (errorMessage(); as message) {
+              <p class="error" role="alert">{{ message }}</p>
+            }
+            <button class="submit" type="submit">
+              {{ submittingCredentials() ? 'Creando cuenta…' : 'Crear mi cuenta' }}
+              <span aria-hidden="true">→</span>
+            </button>
+          </fieldset>
+        </form>
+      }
+      @if (checkingSession()) {
+        <p class="hint" role="status">Comprobando tu sesión…</p>
+      }
+      @if (signingIn()) {
+        <p class="hint" role="status">Conectando con Google…</p>
+      }
+      <p class="switch">
+        {{ mode() === 'login' ? '¿Primera vez por aquí?' : '¿Ya tienes una cuenta?' }}
+        <a
+          [routerLink]="mode() === 'login' ? '/register' : '/login'"
+          [queryParams]="{ returnUrl: returnDestination }"
+          [attr.inert]="busy() ? '' : null"
+          >{{ mode() === 'login' ? 'Crear cuenta' : 'Iniciar sesión' }}</a
+        >
+      </p>
+    </section>
+    <p class="auth-footer">Un espacio para aprender, a tu ritmo.</p>
+  </main>
+</div>

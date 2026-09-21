@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import {
+  TiledCircle,
   TiledObjectLike,
   TiledPoint,
   TiledPropertyValue,
@@ -132,6 +133,71 @@ export function getTiledRectangle(
 
 
 /* =========================
+   CÍRCULOS
+   ========================= */
+
+/**
+ * Convierte un objeto elíptico de Tiled
+ * en un círculo centrado dentro de sus
+ * límites.
+ *
+ * Arcade Physics no admite elipses. Para
+ * evitar que la colisión sobresalga del
+ * dibujo usamos la dimensión menor como
+ * diámetro.
+ */
+export function getTiledCircle(
+  object: TiledObjectLike
+): TiledCircle | null {
+
+  if (!object.ellipse) {
+    return null;
+  }
+
+
+  const width =
+    object.width ?? 0;
+
+
+  const height =
+    object.height ?? 0;
+
+
+  if (
+    object.x === undefined ||
+    object.y === undefined ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return null;
+  }
+
+
+  const diameter =
+    Math.min(
+      width,
+      height
+    );
+
+
+  return {
+    centerX:
+      object.x +
+      width / 2,
+
+    centerY:
+      object.y +
+      height / 2,
+
+    radius:
+      diameter / 2,
+
+    diameter
+  };
+}
+
+
+/* =========================
    SPAWN
    ========================= */
 
@@ -184,9 +250,9 @@ export function findSpawnPoint(
    ========================= */
 
 /**
- * Convierte todos los rectángulos
- * de una Object Layer de Tiled en
- * zonas físicas estáticas.
+ * Convierte los rectángulos y círculos
+ * de una Object Layer de Tiled en zonas
+ * físicas estáticas.
  *
  * Principalmente lo utilizaremos
  * para colisiones.
@@ -213,6 +279,47 @@ export function createStaticZonesFromLayer(
     const object
     of objectLayer.objects
   ) {
+
+    const circle =
+      getTiledCircle(
+        object
+      );
+
+
+    if (circle) {
+
+      const zone =
+        scene.add.zone(
+          circle.centerX,
+          circle.centerY,
+          circle.diameter,
+          circle.diameter
+        );
+
+
+      scene.physics.add.existing(
+        zone,
+        true
+      );
+
+
+      const body =
+        zone.body as
+          Phaser.Physics.Arcade.StaticBody;
+
+
+      body.setCircle(
+        circle.radius
+      );
+
+
+      zones.push(
+        zone
+      );
+
+
+      continue;
+    }
 
     const rectangle =
       getTiledRectangle(

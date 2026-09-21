@@ -1,0 +1,162 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+* {
+  box-sizing: border-box;
+}
+button:focus-visible {
+  outline: 3px solid #b67439;
+  outline-offset: 4px;
+}
+.workbook {
+  background: #fff;
+  border: 1px solid #cdd4c8;
+  box-shadow: 8px 8px 0 #e6e9df;
+  transform: rotate(1deg);
+}
+.workbook-top,
+.workbook-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 22px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  background: #f1f3eb;
+  border-bottom: 1px solid #d7dcd3;
+}
+.workbook-bottom {
+  justify-content: flex-start;
+  border-top: 1px solid #d7dcd3;
+  border-bottom: 0;
+  letter-spacing: 0.4px;
+  font-size: 8px;
+}
+.workbook-bottom > span:last-child {
+  margin-left: auto;
+}
+.dot {
+  background: #79916b;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  align-self: center;
+}
+.exercise {
+  padding: 25px 30px 18px;
+}
+.exercise-label {
+  font-size: 10px;
+  color: #a16a39;
+  margin: 0 0 10px;
+}
+.exercise h2 {
+  font-size: 30px;
+  letter-spacing: -0.8px;
+  margin-bottom: 12px;
+}
+.exercise > p:not(.feedback):not(.exercise-label) {
+  font-size: 12px;
+  color: #647168;
+  line-height: 1.6;
+  margin: 0;
+}
+.plot {
+  margin: 20px 0;
+}
+.axis {
+  font-size: 9px;
+  color: #788277;
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  border-bottom: 1px solid #bdc9b9;
+  padding: 16px 10px 0;
+  background: repeating-linear-gradient(to top, transparent 0 41px, #edf0e8 42px);
+}
+.bars > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 25%;
+}
+.bars strong {
+  font-size: 10px;
+  font-weight: 500;
+}
+.bars i {
+  width: 70%;
+  background: #91a87c;
+  border: 1px solid #7f9a6b;
+}
+.bars > div:last-child i {
+  background: #375c45;
+}
+.bars span {
+  font-size: 9px;
+  background: white;
+  padding: 5px;
+}
+fieldset {
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+legend {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.answers {
+  display: flex;
+  gap: 10px;
+}
+.answers button {
+  flex: 1;
+  min-height: 39px;
+  background: white;
+  border: 1px solid #bac5b3;
+  color: #244d3a;
+  border-radius: 3px;
+  cursor: pointer;
+  font:
+    500 12px Inter,
+    sans-serif;
+}
+.answers button:hover {
+  background: #eef2e7;
+}
+.answers button.chosen {
+  background: #244d3a;
+  color: white;
+  border-color: #244d3a;
+}
+.feedback {
+  font-size: 10px;
+  color: #52664f;
+  min-height: 32px;
+  margin: 12px 0 0;
+}
+
+.exercise h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  line-height: 1.15;
+}
+@media (max-width: 1100px) {
+  .workbook-bottom > span:last-child {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .workbook {
+    transform: none;
+  }
+  .exercise {
+    padding: 22px;
+  }
+}

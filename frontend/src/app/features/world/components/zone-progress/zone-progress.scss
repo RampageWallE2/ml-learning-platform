@@ -1,10 +1,10 @@
+:host {
+  display: block;
+}
+
+
 .zone-progress {
-  position: absolute;
-
-  top: 20px;
-  right: 20px;
-
-  z-index: 50;
+  position: relative;
 
   width: 310px;
 
@@ -326,12 +326,9 @@
 @media (max-width: 750px) {
 
   .zone-progress {
-    top: 12px;
-    right: 12px;
-
     width: min(
       230px,
-      calc(100% - 24px)
+      calc(100vw - 92px)
     );
   }
 
@@ -434,7 +431,7 @@
   .zone-progress {
     width: min(
       220px,
-      calc(100% - 24px)
+      calc(100vw - 92px)
     );
   }
 

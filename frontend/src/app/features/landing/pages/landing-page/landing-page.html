@@ -1,0 +1,122 @@
+<div class="landing" (keydown.escape)="menuOpen.set(false)">
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <header class="header">
+    <a class="brand" routerLink="/" aria-label="ML Learning, inicio"
+      ><span class="mark" aria-hidden="true">m<span>l</span></span> ML Learning<span
+        class="edition"
+      >
+        / Aprender haciendo</span
+      ></a
+    >
+    <button
+      class="menu-toggle"
+      type="button"
+      aria-controls="main-nav"
+      [attr.aria-expanded]="menuOpen()"
+      (click)="menuOpen.set(!menuOpen())"
+    >
+      {{ menuOpen() ? 'Cerrar menú' : 'Menú' }}
+    </button>
+    <nav id="main-nav" aria-label="Navegación principal" [class.open]="menuOpen()">
+      <a href="#experiencia" (click)="menuOpen.set(false)">La experiencia</a
+      ><a href="#metodologia" (click)="menuOpen.set(false)">Cómo aprendemos</a
+      ><a routerLink="/login">Iniciar sesión</a
+      ><a class="button small" routerLink="/register"
+        >Crear cuenta <span aria-hidden="true">↗</span></a
+      >
+    </nav>
+  </header>
+  <main id="contenido" tabindex="-1">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">UN MUNDO PARA HACERTE PREGUNTAS</p>
+        <h1>Los datos se entienden<br /><em>cuando los exploras.</em></h1>
+        <p class="lead">
+          Descubre las bases de Machine Learning a través de problemas concretos. Explora un mundo
+          minero, prueba tus ideas y encuentra sentido a lo que aprendes.
+        </p>
+        <a class="button" routerLink="/register"
+          >Empieza tu recorrido <span aria-hidden="true">↗</span></a
+        >
+        <p class="quiet">A tu ritmo. Con tu progreso guardado.</p>
+      </div>
+      <app-learning-preview />
+    </section>
+    <section id="experiencia" class="experience">
+      <div class="scene">
+        <span class="scene-label">EL ESCENARIO · MINERÍA</span>
+        <div class="landscape" aria-hidden="true"><span></span></div>
+        <img
+          class="hero-scene__truck"
+          src="assets/game/tilesets/vehicles/dump_truck_2.png"
+          alt="Camión minero del mundo interactivo"
+          loading="lazy"
+          width="224"
+          height="160"
+        />
+        <p>Un contexto real.<br /><em>Muchas formas de aprender.</em></p>
+      </div>
+      <div class="experience-copy">
+        <p class="eyebrow">01 — LA EXPERIENCIA</p>
+        <h2>Antes de una fórmula,<br />una buena pregunta.</h2>
+        <p>
+          ¿Cuánta carga puede transportar un camión? ¿Cómo influye una pendiente en una ruta? El
+          escenario da contexto a las matemáticas y convierte cada idea en algo que puedes observar.
+        </p>
+        <p>
+          Recorre el mundo, conversa con sus personajes y resuelve las actividades. Tus lecciones
+          completadas se guardan en tu cuenta.
+        </p>
+        <a class="text-link" routerLink="/world"
+          >Conocer el mundo <span aria-hidden="true">↗</span></a
+        >
+      </div>
+    </section>
+    <section id="metodologia" class="method">
+      <div class="method-heading">
+        <p class="eyebrow">02 — CÓMO APRENDEMOS</p>
+        <h2>Menos memorizar.<br /><em>Más encontrar sentido.</em></h2>
+      </div>
+      <div id="como-funciona" class="principles">
+        <article>
+          <span>01</span>
+          <div>
+            <h3>Observa antes de responder</h3>
+            <p>
+              Explora una situación, identifica sus datos y descubre qué pregunta necesitas
+              resolver.
+            </p>
+          </div>
+        </article>
+        <article>
+          <span>02</span>
+          <div>
+            <h3>Pon a prueba tu intuición</h3>
+            <p>
+              Interactúa con los ejercicios y usa la retroalimentación para ajustar tu razonamiento.
+            </p>
+          </div>
+        </article>
+        <article>
+          <span>03</span>
+          <div>
+            <h3>Construye sobre lo aprendido</h3>
+            <p>Completa las lecciones y vuelve cuando quieras para continuar tu recorrido.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+    <section class="invitation">
+      <div>
+        <p class="eyebrow">EL SIGUIENTE PASO ES TUYO</p>
+        <h2>La curiosidad es un buen comienzo.</h2>
+      </div>
+      <a class="button" routerLink="/register">Crear mi cuenta <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+  <footer>
+    <a class="brand" routerLink="/">ML Learning</a>
+    <p>Matemáticas, datos y aprendizaje interactivo.</p>
+    <a href="#contenido">Volver arriba ↑</a>
+  </footer>
+</div>

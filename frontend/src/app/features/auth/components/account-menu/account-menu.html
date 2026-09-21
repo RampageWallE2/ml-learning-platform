@@ -1,0 +1,60 @@
+@if (auth.user(); as user) {
+  <div class="account-menu">
+    <button
+      class="account-menu__trigger"
+      type="button"
+      [attr.aria-label]="'Abrir menú de ' + user.displayName"
+      [attr.aria-expanded]="menuOpen()"
+      aria-haspopup="menu"
+      [title]="user.displayName"
+      (click)="toggleMenu()"
+    >
+      @if (user.avatarUrl && !avatarFailed()) {
+        <img
+          class="account-menu__avatar"
+          [src]="user.avatarUrl"
+          alt=""
+          referrerpolicy="no-referrer"
+          (error)="markAvatarAsFailed()"
+        />
+      } @else {
+        <span class="account-menu__initials" aria-hidden="true">
+          {{ initials() }}
+        </span>
+      }
+
+      <span class="account-menu__name">
+        {{ user.displayName }}
+      </span>
+
+      <span class="account-menu__arrow" aria-hidden="true">
+        {{ menuOpen() ? '▲' : '▼' }}
+      </span>
+    </button>
+
+    @if (menuOpen()) {
+      <div class="account-menu__panel" role="menu">
+        <div class="account-menu__identity">
+          <strong>{{ user.displayName }}</strong>
+          <span>{{ user.email }}</span>
+        </div>
+
+        <button
+          class="account-menu__logout"
+          type="button"
+          role="menuitem"
+          [disabled]="loggingOut()"
+          (click)="logout()"
+        >
+          {{ loggingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+        </button>
+
+        @if (logoutError(); as message) {
+          <p class="account-menu__error" role="alert">
+            {{ message }}
+          </p>
+        }
+      </div>
+    }
+  </div>
+}

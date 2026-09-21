@@ -19,6 +19,8 @@ export type TiledObjectLike = {
   width?: number;
   height?: number;
 
+  ellipse?: boolean;
+
   properties?: TiledProperty[];
 };
 
@@ -38,4 +40,13 @@ export type TiledRectangle = {
 export type TiledPoint = {
   x: number;
   y: number;
+};
+
+
+export type TiledCircle = {
+  centerX: number;
+  centerY: number;
+
+  radius: number;
+  diameter: number;
 };
