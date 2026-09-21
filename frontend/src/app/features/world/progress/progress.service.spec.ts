@@ -52,12 +52,12 @@ describe('ProgressService — Open Pit MVP', () => {
 
   afterEach(() => http.verify());
 
-  it('keeps every registered class available during development', () => {
+  it('unlocks lessons in pedagogical order', () => {
     expect(progress.zoneProgress()[0].totalLessons).toBe(3);
     expect(progress.currentObjective()).toContain('encargado del carguío');
     expect(progress.isLessonAvailable('lesson-01')).toBe(true);
-    expect(progress.isLessonAvailable('lesson-02')).toBe(true);
-    expect(progress.isLessonAvailable('lesson-03')).toBe(true);
+    expect(progress.isLessonAvailable('lesson-02')).toBe(false);
+    expect(progress.isLessonAvailable('lesson-03')).toBe(false);
     expect(progress.isLessonAvailable('unknown-lesson')).toBe(false);
   });
 
@@ -83,7 +83,30 @@ describe('ProgressService — Open Pit MVP', () => {
     expect(progress.isLessonCompleted('lesson-01')).toBe(true);
     expect(progress.isLessonCompleted('lesson-02')).toBe(false);
     expect(progress.isLessonCompleted('removed-lesson')).toBe(false);
+    expect(progress.isLessonAvailable('lesson-02')).toBe(true);
+    expect(progress.isLessonAvailable('lesson-03')).toBe(false);
     expect(progress.currentObjective()).toContain('encargado del control');
+  });
+
+  it('clears stale progress before requesting the current user progress', () => {
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'profile-id',
+      lessons: [storedLesson('lesson-01', 'completed')]
+    });
+
+    expect(progress.isLessonCompleted('lesson-01')).toBe(true);
+
+    progress.loadProgress().subscribe({ error: () => undefined });
+
+    expect(progress.isLessonCompleted('lesson-01')).toBe(false);
+
+    http.expectOne('http://api.test/api/v1/me/progress').flush(
+      { error: 'Database unavailable' },
+      { status: 503, statusText: 'Service Unavailable' }
+    );
+
+    expect(progress.isLessonCompleted('lesson-01')).toBe(false);
   });
 
   it('updates local progress only after backend confirmation', () => {

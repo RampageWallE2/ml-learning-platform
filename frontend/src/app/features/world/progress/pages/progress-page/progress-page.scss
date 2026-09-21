@@ -1,6 +1,6 @@
 :host {
   display: block;
-  min-height: 100%;
+  height: 100%;
 }
 
 * {
@@ -19,29 +19,23 @@ button:focus-visible {
 }
 
 .progress-page {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-bottom: 70px;
   color: #f1f3ee;
   background: #050914;
-  font: 14px/1.65 Inter, sans-serif;
+  font:
+    14px/1.65 Inter,
+    sans-serif;
 }
 
-.progress-header,
 main {
   width: min(1100px, calc(100% - 80px));
   margin: auto;
 }
 
-.progress-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 92px;
-  border-bottom: 1px solid #202b40;
-}
-
-.brand,
 .back,
 .eyebrow,
 .world-link,
@@ -49,19 +43,6 @@ main {
 .lesson-status,
 button {
   font-family: Consolas, monospace;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  font-weight: 700;
-}
-
-.brand span {
-  color: #f4c44e;
-  font-size: 25px;
-  letter-spacing: -4px;
 }
 
 main {
@@ -155,7 +136,9 @@ button:hover {
 
 .percentage {
   color: #f4c44e;
-  font: 400 clamp(42px, 6vw, 70px)/1 Georgia, serif;
+  font:
+    400 clamp(42px, 6vw, 70px)/1 Georgia,
+    serif;
 }
 
 .progress-track {
@@ -261,17 +244,14 @@ button:hover {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 700px) {
-  .progress-header,
   main {
     width: calc(100% - 32px);
-  }
-
-  .progress-header {
-    min-height: 76px;
   }
 
   .heading,

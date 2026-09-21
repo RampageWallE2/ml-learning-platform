@@ -1,0 +1,55 @@
+<header class="site-header" (keydown.escape)="closeMenu()">
+  <a class="brand" routerLink="/" aria-label="ExploraLab, inicio" (click)="closeMenu()">
+    <img
+      class="brand-logo"
+      src="assets/branding/exploralab-logo.png"
+      alt=""
+      width="2073"
+      height="758"
+    />
+  </a>
+
+  <button
+    class="menu-toggle"
+    type="button"
+    aria-controls="site-navigation"
+    [attr.aria-expanded]="menuOpen()"
+    (click)="menuOpen.set(!menuOpen())"
+  >
+    {{ menuOpen() ? 'Cerrar menú' : 'Menú' }}
+  </button>
+
+  <nav id="site-navigation" aria-label="Navegación principal" [class.open]="menuOpen()">
+    <a
+      [href]="sectionHref('experiencia')"
+      (click)="navigateToSection($event, 'experiencia')"
+    >
+      La experiencia
+    </a>
+    <a
+      [href]="sectionHref('metodologia')"
+      (click)="navigateToSection($event, 'metodologia')"
+    >
+      Cómo aprendemos
+    </a>
+
+    @if (auth.user()) {
+      <a routerLink="/progress" (click)="closeMenu()">Mi progreso</a>
+      <app-account-menu appearance="landing" />
+    } @else if (auth.status() === 'anonymous' || auth.status() === 'unavailable') {
+      <a routerLink="/login" [queryParams]="{ returnUrl: '/progress' }" (click)="closeMenu()">
+        Iniciar sesión
+      </a>
+      <a
+        class="button"
+        routerLink="/register"
+        [queryParams]="{ returnUrl: '/progress' }"
+        (click)="closeMenu()"
+      >
+        Crear cuenta <span aria-hidden="true">↗</span>
+      </a>
+    } @else {
+      <span class="quiet" role="status">Comprobando sesión…</span>
+    }
+  </nav>
+</header>

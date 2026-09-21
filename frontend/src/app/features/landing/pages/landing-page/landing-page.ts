@@ -1,22 +1,16 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnInit,
-  inject,
-  signal
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { RevealOnScrollDirective } from '../../../../shared/ui/reveal-on-scroll.directive';
+import { SiteHeader } from '../../../../shared/ui/site-header/site-header';
 import { TypewriterTextDirective } from '../../../../shared/ui/typewriter-text.directive';
-import { AccountMenu } from '../../../auth/components/account-menu/account-menu';
 import { LearningScene } from './learning-scene';
 
 @Component({
   selector: 'app-landing-page',
   imports: [
     RouterLink,
-    AccountMenu,
+    SiteHeader,
     LearningScene,
     RevealOnScrollDirective,
     TypewriterTextDirective,
@@ -25,12 +19,6 @@ import { LearningScene } from './learning-scene';
   styleUrl: './landing-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LandingPage implements OnInit {
+export class LandingPage {
   readonly auth = inject(AuthService);
-
-  readonly menuOpen = signal(false);
-
-  ngOnInit(): void {
-    this.auth.restoreSession().subscribe();
-  }
 }

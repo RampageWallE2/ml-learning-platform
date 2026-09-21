@@ -29,6 +29,7 @@ export type AuthSessionStatus =
   | 'unknown'
   | 'checking'
   | 'authenticated'
+  | 'unavailable'
   | 'anonymous';
 
 export type GoogleCredentialResponse = Readonly<{

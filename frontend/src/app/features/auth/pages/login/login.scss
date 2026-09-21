@@ -2,10 +2,14 @@
   display: block;
   height: 100%;
 }
-.auth-page {
+.auth-shell {
   height: 100%;
   height: 100dvh;
   overflow: auto;
+  background: #050914;
+}
+.auth-page {
+  min-height: calc(100dvh - 101px);
   display: grid;
   grid-template-columns: minmax(330px, 0.9fr) minmax(0, 1.1fr);
   background: #050914;
@@ -21,11 +25,9 @@ a {
   color: inherit;
   text-decoration: none;
 }
-.wordmark,
 .eyebrow,
 .diagram span,
 .story-footer,
-.back,
 .divider,
 label,
 .password-field button {
@@ -44,18 +46,9 @@ button:focus-visible {
   padding: 45px clamp(30px, 5vw, 80px);
   position: sticky;
   top: 0;
-  height: 100dvh;
+  height: calc(100dvh - 101px);
   min-height: 550px;
   overflow: hidden;
-}
-.wordmark {
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: -0.4px;
-}
-.wordmark span {
-  color: #f4c44e;
-  margin: 0 9px;
 }
 .story-copy {
   margin: auto 0;
@@ -116,14 +109,6 @@ em {
   display: flex;
   flex-direction: column;
   min-width: 0;
-}
-.back {
-  font-size: 11px;
-  color: #8f9db0;
-  align-self: flex-start;
-}
-.back:hover {
-  text-decoration: underline;
 }
 .auth-card {
   width: 100%;
@@ -298,7 +283,7 @@ fieldset:disabled {
     display: none;
   }
   .auth-main {
-    min-height: 100%;
+    min-height: calc(100dvh - 77px);
     padding: 24px;
   }
   .auth-card {

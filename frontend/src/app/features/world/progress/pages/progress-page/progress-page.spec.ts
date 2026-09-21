@@ -4,25 +4,25 @@ import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { AuthService } from '../../../../../core/auth/auth.service';
-import { AuthenticatedUser } from '../../../../../core/auth/auth.types';
+import { AuthenticatedUser, AuthSessionStatus } from '../../../../../core/auth/auth.types';
 import { ProgressService } from '../../progress.service';
 import { ZoneProgress } from '../../progress.types';
 import { ProgressPage } from './progress-page';
-
 
 describe('ProgressPage', () => {
   const user: AuthenticatedUser = {
     id: 'user-id',
     email: 'ana.torres@example.com',
     displayName: 'Ana Torres',
-    avatarUrl: null
+    avatarUrl: null,
   };
 
-  const userState =
-    signal<AuthenticatedUser | null>(user);
+  const userState = signal<AuthenticatedUser | null>(user);
 
-  const zoneState =
-    signal<ZoneProgress[]>([{
+  const statusState = signal<AuthSessionStatus>('authenticated');
+
+  const zoneState = signal<ZoneProgress[]>([
+    {
       id: 'zone-01',
       name: 'Open Pit',
       topic: 'Dispersión',
@@ -35,31 +35,33 @@ describe('ProgressPage', () => {
           lessonId: 'lesson-01',
           name: 'Carguío en el fondo del tajo',
           objective: 'Objetivo 1',
-          status: 'completed'
+          status: 'completed',
         },
         {
           lessonId: 'lesson-02',
           name: 'Control de turnos en la rampa',
           objective: 'Ve a la rampa.',
-          status: 'current'
+          status: 'current',
         },
         {
           lessonId: 'lesson-03',
           name: 'Puesto de control de acarreo',
           objective: 'Objetivo 3',
-          status: 'pending'
-        }
-      ]
-    }]);
+          status: 'pending',
+        },
+      ],
+    },
+  ]);
 
   const progress = {
     zoneProgress: zoneState.asReadonly(),
-    loadProgress: vi.fn(() => of(undefined))
+    loadProgress: vi.fn(() => of(undefined)),
   };
 
   const auth = {
     user: userState.asReadonly(),
-    logout: vi.fn(() => of(undefined))
+    status: statusState.asReadonly(),
+    logout: vi.fn(() => of(undefined)),
   };
 
   let fixture: ComponentFixture<ProgressPage>;
@@ -76,19 +78,19 @@ describe('ProgressPage', () => {
       providers: [
         provideRouter([]),
         { provide: ProgressService, useValue: progress },
-        { provide: AuthService, useValue: auth }
-      ]
+        { provide: AuthService, useValue: auth },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ProgressPage);
   });
-
 
   it('loads and presents the Open Pit progress', () => {
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
 
     expect(progress.loadProgress).toHaveBeenCalledOnce();
+    expect(element.querySelector('app-site-header')).not.toBeNull();
     expect(element.textContent).toContain('Dispersión');
     expect(element.textContent).toContain('1 de 3 clases completadas');
     expect(element.textContent).toContain('33%');
@@ -97,23 +99,15 @@ describe('ProgressPage', () => {
     expect(element.textContent).toContain('Ve a la rampa.');
   });
 
-
   it('shows an error and retries loading progress', () => {
-    progress.loadProgress.mockReturnValueOnce(
-      throwError(() => new Error('Network error'))
-    );
+    progress.loadProgress.mockReturnValueOnce(throwError(() => new Error('Network error')));
 
     fixture.detectChanges();
     let element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('[role="alert"]')?.textContent)
-      .toContain('No se pudo cargar');
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('No se pudo cargar');
 
-    element
-      .querySelector<HTMLButtonElement>(
-        '.state-card--error button'
-      )
-      ?.click();
+    element.querySelector<HTMLButtonElement>('.state-card--error button')?.click();
     fixture.detectChanges();
     element = fixture.nativeElement as HTMLElement;
 

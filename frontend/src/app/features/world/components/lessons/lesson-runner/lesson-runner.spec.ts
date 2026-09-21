@@ -19,7 +19,7 @@ describe('LessonRunner — loading lesson', () => {
     expect(
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
     ).toBe('dialogue');
-    expect(intro.currentMessage().text).toContain('Estamos terminando de cargar');
+    expect(intro.currentMessage()!.text).toContain('Estamos terminando de cargar');
     expect(intro.dialogue().messages.map(message => message.text).join(' ')).not.toMatch(/dispersión|promedio|rango/i);
     for (let i = 0; i < 5; i++) intro.next();
     fixture.detectChanges();
@@ -46,7 +46,7 @@ describe('LessonRunner — loading lesson', () => {
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
     ).toBe('dialogue');
     expect(end.currentIndex()).toBe(0);
-    expect(end.currentMessage().text).toContain('El Grupo B');
+    expect(end.currentMessage()!.text).toContain('El Grupo B');
     expect(end.dialogue().messages.at(-1)?.text).toContain('encargado del control');
     for (let i = 0; i < 4; i++) end.next();
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-01');
@@ -65,7 +65,7 @@ describe('LessonRunner — ramp lesson', () => {
     expect(
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
     ).toBe('dialogue');
-    expect(intro.currentMessage().text).toContain('camiones que viste abajo');
+    expect(intro.currentMessage()!.text).toContain('camiones que viste abajo');
     expect(intro.dialogue().messages.map(message => message.text).join(' ')).not.toMatch(/rango|mínimo|máximo/i);
     for (let i = 0; i < 5; i++) intro.next();
     fixture.detectChanges();
@@ -86,7 +86,7 @@ describe('LessonRunner — ramp lesson', () => {
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
     ).toBe('dialogue');
     expect(end.currentIndex()).toBe(0);
-    expect(end.currentMessage().text).toContain('Turno A');
+    expect(end.currentMessage()!.text).toContain('Turno A');
     expect(end.dialogue().messages.at(-1)?.text).toContain('encargado del acarreo');
     for (let i = 0; i < 5; i++) end.next();
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-02');
@@ -105,7 +105,7 @@ describe('LessonRunner — haulage lesson', () => {
     expect(
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
     ).toBe('dialogue');
-    expect(intro.currentMessage().text).toContain('puesto de control');
+    expect(intro.currentMessage()!.text).toContain('puesto de control');
     expect(intro.dialogue().messages.at(-1)?.text).toContain('más rápido y el más lento');
     for (let i = 0; i < 5; i++) intro.next();
     fixture.detectChanges();
@@ -131,7 +131,7 @@ describe('LessonRunner — haulage lesson', () => {
     expect(
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
     ).toBe('dialogue');
-    expect(end.currentMessage().text).toContain('diferencia de 7 minutos');
+    expect(end.currentMessage()!.text).toContain('diferencia de 7 minutos');
     expect(end.dialogue().messages.at(-1)?.text).toContain('ROM y chancado');
     for (let i = 0; i < 6; i++) end.next();
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-03');

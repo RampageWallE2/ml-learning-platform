@@ -26,8 +26,8 @@ export class Dialogue {
 
   currentIndex = signal(0);
 
-  currentMessage = computed(() =>
-    this.dialogue().messages[this.currentIndex()]
+  currentMessage = computed<DialogueMessage | null>(() =>
+    this.dialogue().messages[this.currentIndex()] ?? null
   );
 
   npcMessage = computed<DialogueMessage | null>(() => {

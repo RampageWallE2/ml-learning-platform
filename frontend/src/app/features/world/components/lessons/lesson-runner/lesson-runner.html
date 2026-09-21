@@ -28,28 +28,8 @@
           <app-lesson-02-ramp (completed)="nextStep()" />
         }
 
-        @case ('farm-stability') {
-          <app-lesson-02-farm
-          (completed)="nextStep()"
-          />
-        }
-
-
-        @case ('granary-distance') {
-          <app-lesson-03-granary
-            (completed)="nextStep()"
-          />
-        }
-
         @case ('haulage-range') {
           <app-lesson-03-haulage
-            (completed)="nextStep()"
-          />
-        }
-
-
-        @case ('plaza-challenge') {
-          <app-lesson-04-plaza
             (completed)="nextStep()"
           />
         }

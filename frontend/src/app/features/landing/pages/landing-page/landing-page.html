@@ -1,42 +1,6 @@
-<div class="landing" (keydown.escape)="menuOpen.set(false)">
+<div class="landing">
   <a class="skip" href="#contenido">Saltar al contenido</a>
-  <header class="header">
-    <a class="brand" routerLink="/" aria-label="ML Learning, inicio"
-      ><span class="mark" aria-hidden="true">m<span>l</span></span> ML Learning<span
-        class="edition"
-      >
-        / Aprender haciendo</span
-      ></a
-    >
-    <button
-      class="menu-toggle"
-      type="button"
-      aria-controls="main-nav"
-      [attr.aria-expanded]="menuOpen()"
-      (click)="menuOpen.set(!menuOpen())"
-    >
-      {{ menuOpen() ? 'Cerrar menú' : 'Menú' }}
-    </button>
-    <nav id="main-nav" aria-label="Navegación principal" [class.open]="menuOpen()">
-      <a href="#experiencia" (click)="menuOpen.set(false)">La experiencia</a
-      ><a href="#metodologia" (click)="menuOpen.set(false)">Cómo aprendemos</a
-      >
-      @if (auth.user()) {
-        <a routerLink="/progress" (click)="menuOpen.set(false)">Mi progreso</a>
-        <app-account-menu appearance="landing" />
-      } @else if (auth.status() === 'anonymous') {
-        <a routerLink="/login" [queryParams]="{ returnUrl: '/progress' }">Iniciar sesión</a
-        ><a
-          class="button small"
-          routerLink="/register"
-          [queryParams]="{ returnUrl: '/progress' }"
-          >Crear cuenta <span aria-hidden="true">↗</span></a
-        >
-      } @else {
-        <span class="quiet" role="status">Comprobando sesión…</span>
-      }
-    </nav>
-  </header>
+  <app-site-header />
   <main id="contenido" tabindex="-1">
     <section class="hero">
       <div class="hero-copy" appRevealOnScroll>
@@ -50,11 +14,8 @@
           <a class="button" routerLink="/progress"
             >Ver mi progreso <span aria-hidden="true">↗</span></a
           >
-        } @else if (auth.status() === 'anonymous') {
-          <a
-            class="button"
-            routerLink="/register"
-            [queryParams]="{ returnUrl: '/progress' }"
+        } @else if (auth.status() === 'anonymous' || auth.status() === 'unavailable') {
+          <a class="button" routerLink="/register" [queryParams]="{ returnUrl: '/progress' }"
             >Empieza tu recorrido <span aria-hidden="true">↗</span></a
           >
         } @else {
@@ -62,6 +23,15 @@
         }
         <p class="quiet">A tu ritmo. Con tu progreso guardado.</p>
       </div>
+      <figure class="hero-visual" appRevealOnScroll [revealDelay]="120">
+        <img
+          src="assets/branding/exploralab-mining-world.png"
+          alt="Mundo minero de ExploraLab con un tajo abierto, maquinaria y exploradores analizando datos"
+          width="1536"
+          height="1024"
+          fetchpriority="high"
+        />
+      </figure>
     </section>
     <section id="experiencia" class="experience">
       <app-learning-scene appRevealOnScroll />
@@ -124,11 +94,8 @@
         <a class="button" routerLink="/progress"
           >Ver mi progreso <span aria-hidden="true">↗</span></a
         >
-      } @else if (auth.status() === 'anonymous') {
-        <a
-          class="button"
-          routerLink="/register"
-          [queryParams]="{ returnUrl: '/progress' }"
+      } @else if (auth.status() === 'anonymous' || auth.status() === 'unavailable') {
+        <a class="button" routerLink="/register" [queryParams]="{ returnUrl: '/progress' }"
           >Crear mi cuenta <span aria-hidden="true">↗</span></a
         >
       } @else {
@@ -137,7 +104,14 @@
     </section>
   </main>
   <footer>
-    <a class="brand" routerLink="/">ML Learning</a>
+    <a class="brand" routerLink="/" aria-label="ExploraLab, inicio">
+      <img
+        src="assets/branding/exploralab-logo.png"
+        alt=""
+        width="2073"
+        height="758"
+      />
+    </a>
     <p>Matemáticas, datos y aprendizaje interactivo.</p>
     <a href="#contenido">Volver arriba ↑</a>
   </footer>

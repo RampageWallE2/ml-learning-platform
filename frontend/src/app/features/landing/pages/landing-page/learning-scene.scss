@@ -6,61 +6,17 @@
   box-sizing: border-box;
 }
 .scene {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  position: relative;
-  overflow: hidden;
-  background: #0b1322;
-  border: 1px solid #2a3851;
-  min-height: 410px;
-  padding: 26px 30px;
-}
-.scene-label {
-  position: relative;
-  z-index: 1;
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: #77d4ae;
-  font-family: Consolas, monospace;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: transparent;
+  border: 0;
 }
 img {
-  position: relative;
-  align-self: center;
-  width: 224px;
+  display: block;
+  width: min(100%, 540px);
   max-width: 100%;
-  height: 160px;
+  height: auto;
   object-fit: contain;
   image-rendering: pixelated;
-}
-.landscape {
-  position: absolute;
-  inset: 50px 0 95px;
-  background:
-    repeating-linear-gradient(0deg, transparent 0 59px, #172338 60px),
-    repeating-linear-gradient(90deg, transparent 0 59px, #172338 60px);
-}
-.landscape span {
-  position: absolute;
-  bottom: 35px;
-  left: 10%;
-  right: 10%;
-  height: 80px;
-  border: 1px solid #34445d;
-  border-radius: 50%;
-  transform: rotate(-10deg);
-}
-p {
-  position: relative;
-  margin: auto 0 0;
-  font: 27px/1.25 Georgia;
-  letter-spacing: -0.5px;
-}
-em {
-  color: #77d4ae;
-}
-@media (max-width: 760px) {
-  .scene {
-    min-height: 360px;
-  }
 }

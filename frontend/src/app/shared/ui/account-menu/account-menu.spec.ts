@@ -3,8 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
-import { AuthService } from '../../../../core/auth/auth.service';
-import { AuthenticatedUser } from '../../../../core/auth/auth.types';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuthenticatedUser } from '../../../core/auth/auth.types';
 import { AccountMenu } from './account-menu';
 
 describe('AccountMenu', () => {

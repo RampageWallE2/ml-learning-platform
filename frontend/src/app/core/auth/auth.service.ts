@@ -60,8 +60,21 @@ export class AuthService {
     ).pipe(
       tap(({ user }) => this.setAuthenticated(user)),
       map(() => true),
-      catchError(() => {
-        this.setAnonymous();
+      catchError((error: unknown) => {
+        if (
+          error instanceof HttpErrorResponse &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          this.setAnonymous();
+        } else {
+          /*
+           * Una caída temporal del backend no equivale a cerrar la sesión.
+           * El estado "unavailable" permite que una navegación posterior reintente
+           * la comprobación en lugar de memorizar un falso usuario anónimo.
+           */
+          this.statusState.set('unavailable');
+        }
+
         return of(false);
       }),
       finalize(() => {

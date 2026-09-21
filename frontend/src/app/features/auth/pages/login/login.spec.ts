@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -15,11 +16,16 @@ describe('Login', () => {
     displayName: 'Test Student',
     avatarUrl: null,
   };
+  const userState = signal(null);
+  const statusState = signal<'anonymous'>('anonymous');
   const auth = {
+    user: userState.asReadonly(),
+    status: statusState.asReadonly(),
     restoreSession: vi.fn(() => of(false)),
     loginWithGoogle: vi.fn(() => of(user)),
     loginWithEmail: vi.fn(() => of(user)),
     register: vi.fn(() => of(user)),
+    logout: vi.fn(() => of(undefined)),
   };
   const router = {
     navigateByUrl: vi.fn(() => Promise.resolve(true)),
@@ -42,6 +48,7 @@ describe('Login', () => {
     auth.loginWithGoogle.mockClear();
     auth.loginWithEmail.mockClear();
     auth.register.mockClear();
+    auth.logout.mockClear();
     router.navigateByUrl.mockClear();
     queryParams = {};
 
@@ -77,6 +84,7 @@ describe('Login', () => {
 
   afterEach(() => {
     delete window.google;
+    document.querySelector('#google-identity-service')?.remove();
   });
 
   it('renders the official Google button', async () => {
@@ -85,12 +93,25 @@ describe('Login', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-site-header')).not.toBeNull();
     expect(initialize).toHaveBeenCalledWith(
       expect.objectContaining({
         client_id: 'test-client-id',
       }),
     );
     expect(renderButton).toHaveBeenCalledOnce();
+  });
+
+  it('loads Google Identity only when the authentication page needs it', () => {
+    delete window.google;
+    const fixture = TestBed.createComponent(Login);
+
+    fixture.detectChanges();
+
+    const script = document.querySelector<HTMLScriptElement>('#google-identity-service');
+    expect(script).not.toBeNull();
+    expect(script?.src).toBe('https://accounts.google.com/gsi/client?hl=es');
+    expect(script?.async).toBe(true);
   });
 
   it('shows confirmation after a successful logout', () => {

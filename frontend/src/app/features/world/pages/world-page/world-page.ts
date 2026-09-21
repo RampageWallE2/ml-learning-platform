@@ -60,7 +60,7 @@ import {
 
 import {
   AccountMenu
-} from '../../../auth/components/account-menu/account-menu';
+} from '../../../../shared/ui/account-menu/account-menu';
 
 
 type SceneZoneMetadata = {

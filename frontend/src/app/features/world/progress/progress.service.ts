@@ -1,5 +1,6 @@
 import {
   computed,
+  effect,
   Injectable,
   inject,
   signal
@@ -19,6 +20,10 @@ import {
 import {
   AUTH_CONFIG
 } from '../../../core/auth/auth.config';
+
+import { AuthService } from '../../../core/auth/auth.service';
+
+import { LEARNING_ZONES } from '../lessons/lesson-catalog';
 
 import {
   LessonProgressItem,
@@ -56,82 +61,24 @@ export class ProgressService {
   private readonly authConfig =
     inject(AUTH_CONFIG);
 
+
+  private readonly auth =
+    inject(AuthService);
+
   /* =========================
      DEFINICIÓN DEL RECORRIDO
      ========================= */
 
-  private readonly zones: ZoneDefinition[] = [
-
-    /* =========================
-       ZONA 1
-       ========================= */
-
-    {
-      id: 'zone-01',
-      name: 'Open Pit',
-      topic: 'Dispersión',
-
-      lessons: [
-        {
-          lessonId: 'lesson-01',
-          name: 'Carguío en el fondo del tajo',
-          objective:
-            'Ve al fondo del tajo y habla con el encargado del carguío.'
-        },
-        {
-          lessonId: 'lesson-02',
-          name: 'Control de turnos en la rampa',
-          objective:
-            'Ve a la rampa y habla con el encargado del control.'
-        },
-        {
-          lessonId: 'lesson-03',
-          name: 'Puesto de control de acarreo',
-          objective:
-            'Sigue la ruta hacia ROM/chancado y habla con el encargado del acarreo.'
-        }
-      ]
-    },
-
-
-    /* =========================
-       ZONA 2
-       ========================= */
-
-    {
-      id: 'zone-02',
-      name: 'Zona 2',
-      topic: 'Medición de la variabilidad',
-
-      lessons: [
-        {
-          lessonId: 'lesson-05',
-          name: 'Patio de Inspección',
-          objective:
-            'Ve al Patio de Inspección y habla con el encargado.'
-        },
-        {
-          lessonId: 'lesson-06',
-          name: 'Estación Técnica',
-          objective:
-            'Ve a la Estación Técnica y habla con el encargado.'
-        },
-        {
-          lessonId: 'lesson-07',
-          name: 'Taller',
-          objective:
-            'Ve al Taller y habla con el encargado.'
-        },
-        {
-          lessonId: 'lesson-08',
-          name: 'Centro de Control',
-          objective:
-            'Ve al Centro de Control y habla con el encargado.'
-        }
-      ]
-    }
-
-  ];
+  private readonly zones: ZoneDefinition[] = LEARNING_ZONES.map(zone => ({
+    id: zone.id,
+    name: zone.name,
+    topic: zone.topic,
+    lessons: zone.lessons.map(({ lessonId, name, objective }) => ({
+      lessonId,
+      name,
+      objective,
+    })),
+  }));
 
 
   /* =========================
@@ -153,11 +100,33 @@ export class ProgressService {
     signal<string[]>([]);
 
 
+  private activeUserId =
+    this.auth.user()?.id ?? null;
+
+
+  constructor() {
+    effect(() => {
+      const userId = this.auth.user()?.id ?? null;
+
+      if (userId !== this.activeUserId) {
+        this.reset();
+        this.activeUserId = userId;
+      }
+    });
+  }
+
+
   /* =========================
      CARGAR PROGRESO
      ========================= */
 
   loadProgress(): Observable<void> {
+
+    /*
+     * Nunca se muestran datos conservados de una sesión anterior mientras
+     * se consulta el progreso del usuario actual.
+     */
+    this.reset();
 
     return this.http.get<ProgressApiResponse>(
       `${this.authConfig.apiBaseUrl}/me/progress`,
@@ -441,12 +410,27 @@ export class ProgressService {
     }
 
 
-    /*
-     * Durante el desarrollo todas las lecciones registradas
-     * permanecen disponibles para facilitar las pruebas.
-     * El objetivo actual conserva el orden pedagógico normal.
-     */
-    return true;
+    if (lessonIndex === 0) {
+      return true;
+    }
+
+
+    const previousLesson =
+      this.orderedLessons[
+        lessonIndex - 1
+      ];
+
+
+    return previousLesson
+      ? this.isLessonCompleted(
+          previousLesson.lessonId
+        )
+      : false;
+  }
+
+
+  reset(): void {
+    this.completedLessonIds.set([]);
   }
 
 

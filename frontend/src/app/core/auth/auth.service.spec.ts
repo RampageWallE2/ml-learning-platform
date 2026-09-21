@@ -76,6 +76,24 @@ describe('AuthService', () => {
     expect(auth.status()).toBe('anonymous');
   });
 
+  it('allows retrying session restoration after a temporary backend failure', () => {
+    auth.restoreSession().subscribe();
+
+    http.expectOne('http://api.test/api/v1/me').flush(
+      { error: 'Server unavailable' },
+      { status: 503, statusText: 'Service Unavailable' }
+    );
+
+    expect(auth.user()).toBeNull();
+    expect(auth.status()).toBe('unavailable');
+
+    auth.restoreSession().subscribe();
+    http.expectOne('http://api.test/api/v1/me').flush({ user });
+
+    expect(auth.user()).toEqual(user);
+    expect(auth.status()).toBe('authenticated');
+  });
+
   it('sends the Google credential and stores the authenticated user', () => {
     auth.loginWithGoogle('google-id-token').subscribe();
 

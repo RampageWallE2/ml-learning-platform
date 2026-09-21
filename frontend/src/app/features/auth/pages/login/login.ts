@@ -18,14 +18,15 @@ import { finalize } from 'rxjs';
 import { AUTH_CONFIG } from '../../../../core/auth/auth.config';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { AuthApiError, GoogleCredentialResponse } from '../../../../core/auth/auth.types';
+import { SiteHeader } from '../../../../shared/ui/site-header/site-header';
 
-
-const SAFE_RETURN_URL_PATTERN =
-  /^\/(?:world|progress)(?:[/?#]|$)/;
+const SAFE_RETURN_URL_PATTERN = /^\/(?:world|progress)(?:[/?#]|$)/;
+const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-service';
+const GOOGLE_IDENTITY_SCRIPT_URL = 'https://accounts.google.com/gsi/client?hl=es';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, SiteHeader],
   templateUrl: './login.html',
   styleUrl: './login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -119,16 +120,24 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.googleScript =
-      document.querySelector<HTMLScriptElement>('#google-identity-service') ?? undefined;
+    this.googleScript = document.querySelector<HTMLScriptElement>(
+      `#${GOOGLE_IDENTITY_SCRIPT_ID}`,
+    ) ?? undefined;
 
     if (!this.googleScript) {
-      this.handleGoogleScriptError();
-      return;
+      this.googleScript = document.createElement('script');
+      this.googleScript.id = GOOGLE_IDENTITY_SCRIPT_ID;
+      this.googleScript.src = GOOGLE_IDENTITY_SCRIPT_URL;
+      this.googleScript.async = true;
+      this.googleScript.defer = true;
     }
 
     this.googleScript.addEventListener('load', this.handleGoogleScriptLoad, { once: true });
     this.googleScript.addEventListener('error', this.handleGoogleScriptError, { once: true });
+
+    if (!this.googleScript.isConnected) {
+      document.head.appendChild(this.googleScript);
+    }
   }
 
   ngOnDestroy(): void {
@@ -247,9 +256,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   private getSafeReturnUrl(): string {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
-    return returnUrl &&
-      SAFE_RETURN_URL_PATTERN.test(returnUrl) &&
-      !returnUrl.includes('\\')
+    return returnUrl && SAFE_RETURN_URL_PATTERN.test(returnUrl) && !returnUrl.includes('\\')
       ? returnUrl
       : '/world';
   }

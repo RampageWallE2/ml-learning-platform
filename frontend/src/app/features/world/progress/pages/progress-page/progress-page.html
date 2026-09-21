@@ -1,14 +1,5 @@
 <div class="progress-page">
-
-  <header class="progress-header">
-    <a class="brand" routerLink="/">
-      <span aria-hidden="true">ml</span>
-      ML Learning
-    </a>
-
-    <app-account-menu appearance="landing" />
-  </header>
-
+  <app-site-header />
 
   <main>
     <a class="back" routerLink="/">← Volver al inicio</a>
@@ -24,7 +15,6 @@
         Continuar en el mundo <span aria-hidden="true">↗</span>
       </a>
     </div>
-
 
     @if (loading()) {
       <section class="state-card" role="status">
@@ -81,16 +71,21 @@
 
               <span class="lesson-status">
                 @switch (lesson.status) {
-                  @case ('completed') { ✓ Completada }
-                  @case ('current') { ● Siguiente }
-                  @default { ○ Pendiente }
+                  @case ('completed') {
+                    ✓ Completada
+                  }
+                  @case ('current') {
+                    ● Siguiente
+                  }
+                  @default {
+                    ○ Pendiente
+                  }
                 }
               </span>
             </article>
           }
         </div>
       </section>
-
 
       @if (nextLesson(); as lesson) {
         <section class="next-step">
@@ -119,5 +114,4 @@
       }
     }
   </main>
-
 </div>

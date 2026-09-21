@@ -20,15 +20,12 @@ describe('LandingPage', () => {
   const auth = {
     user: userState.asReadonly(),
     status: statusState.asReadonly(),
-    restoreSession: vi.fn(() => of(false)),
     logout: vi.fn(() => of(undefined))
   };
 
   beforeEach(async () => {
     userState.set(null);
     statusState.set('anonymous');
-    auth.restoreSession.mockReset();
-    auth.restoreSession.mockReturnValue(of(false));
     auth.logout.mockReset();
     auth.logout.mockReturnValue(of(undefined));
 
@@ -47,9 +44,14 @@ describe('LandingPage', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelector('h1')?.textContent).toContain('Los datos se entienden');
+    expect(element.querySelector('app-site-header')).not.toBeNull();
+    expect(element.querySelector<HTMLImageElement>('.hero-visual img')?.src)
+      .toContain('assets/branding/exploralab-mining-world.png');
     expect(element.querySelector('a[href^="/login"]')?.textContent).toContain('Iniciar sesión');
     expect(element.querySelector('#como-funciona')).not.toBeNull();
     expect(element.querySelector('#experiencia')).not.toBeNull();
+    expect(element.querySelector<HTMLImageElement>('app-learning-scene img')?.src)
+      .toContain('assets/branding/exploralab-experience.png');
     expect(element.querySelector('#metodologia')).not.toBeNull();
     expect(element.querySelector('app-learning-preview')).toBeNull();
     expect(element.querySelector('a[href="/world"]')).toBeNull();
@@ -63,8 +65,6 @@ describe('LandingPage', () => {
       avatarUrl: null
     });
     statusState.set('authenticated');
-    auth.restoreSession.mockReturnValue(of(true));
-
     const fixture = TestBed.createComponent(LandingPage);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
