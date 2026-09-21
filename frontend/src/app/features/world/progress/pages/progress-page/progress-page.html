@@ -1,0 +1,123 @@
+<div class="progress-page">
+
+  <header class="progress-header">
+    <a class="brand" routerLink="/">
+      <span aria-hidden="true">ml</span>
+      ML Learning
+    </a>
+
+    <app-account-menu appearance="landing" />
+  </header>
+
+
+  <main>
+    <a class="back" routerLink="/">← Volver al inicio</a>
+
+    <div class="heading">
+      <div>
+        <p class="eyebrow">TU RECORRIDO</p>
+        <h1>Progreso de aprendizaje</h1>
+        <p>Revisa lo que completaste y descubre cuál es tu siguiente paso.</p>
+      </div>
+
+      <a class="world-link" routerLink="/world">
+        Continuar en el mundo <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+
+
+    @if (loading()) {
+      <section class="state-card" role="status">
+        <span class="state-marker" aria-hidden="true"></span>
+        <div>
+          <strong>Consultando tu recorrido</strong>
+          <p>Estamos recuperando tus clases completadas.</p>
+        </div>
+      </section>
+    } @else if (loadError(); as message) {
+      <section class="state-card state-card--error" role="alert">
+        <div>
+          <strong>No se pudo cargar el progreso</strong>
+          <p>{{ message }}</p>
+        </div>
+        <button type="button" (click)="retry()">Reintentar</button>
+      </section>
+    } @else if (openPit(); as zone) {
+      <section class="zone-card" aria-labelledby="open-pit-title">
+        <div class="zone-summary">
+          <div>
+            <p class="eyebrow">OPEN PIT</p>
+            <h2 id="open-pit-title">{{ zone.topic }}</h2>
+            <p>{{ zone.completedLessons }} de {{ zone.totalLessons }} clases completadas</p>
+          </div>
+
+          <strong class="percentage">{{ zone.percentage }}%</strong>
+        </div>
+
+        <div
+          class="progress-track"
+          role="progressbar"
+          aria-label="Progreso de Open Pit"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="zone.percentage"
+        >
+          <span [style.width.%]="zone.percentage"></span>
+        </div>
+
+        <div class="lesson-list">
+          @for (lesson of zone.lessons; track lesson.lessonId; let position = $index) {
+            <article
+              class="lesson"
+              [class.lesson--completed]="lesson.status === 'completed'"
+              [class.lesson--current]="lesson.status === 'current'"
+            >
+              <span class="lesson-number">{{ position + 1 }}</span>
+
+              <div>
+                <span class="lesson-label">Clase {{ position + 1 }}</span>
+                <h3>{{ lesson.name }}</h3>
+              </div>
+
+              <span class="lesson-status">
+                @switch (lesson.status) {
+                  @case ('completed') { ✓ Completada }
+                  @case ('current') { ● Siguiente }
+                  @default { ○ Pendiente }
+                }
+              </span>
+            </article>
+          }
+        </div>
+      </section>
+
+
+      @if (nextLesson(); as lesson) {
+        <section class="next-step">
+          <div>
+            <p class="eyebrow">SIGUIENTE OBJETIVO</p>
+            <h2>{{ lesson.name }}</h2>
+            <p>{{ lesson.objective }}</p>
+          </div>
+
+          <a class="world-link" routerLink="/world">
+            Ir a la clase <span aria-hidden="true">→</span>
+          </a>
+        </section>
+      } @else {
+        <section class="next-step next-step--completed">
+          <div>
+            <p class="eyebrow">OPEN PIT COMPLETADO</p>
+            <h2>Completaste el recorrido disponible.</h2>
+            <p>Ya terminaste las tres clases del MVP de esta zona.</p>
+          </div>
+
+          <a class="world-link" routerLink="/world">
+            Volver al mundo <span aria-hidden="true">→</span>
+          </a>
+        </section>
+      }
+    }
+  </main>
+
+</div>

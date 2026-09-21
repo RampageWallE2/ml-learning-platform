@@ -128,8 +128,122 @@
   line-height: 1.4;
 }
 
+
+/* =========================
+   LANDING
+   ========================= */
+
+.account-menu--landing {
+  width: auto;
+
+  .account-menu__trigger {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    place-items: center stretch;
+
+    width: min(230px, 28vw);
+    height: 42px;
+    gap: 9px;
+    padding: 4px 9px;
+
+    color: #f1f3ee;
+    border: 1px solid #34425b;
+    border-radius: 2px;
+    background: #0b1322;
+    box-shadow: none;
+  }
+
+  .account-menu__avatar,
+  .account-menu__initials {
+    width: 30px;
+    height: 30px;
+    border-radius: 2px;
+  }
+
+  .account-menu__initials {
+    color: #050914;
+    background: #77d4ae;
+    font-family: Consolas, monospace;
+  }
+
+  .account-menu__name {
+    position: static;
+
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+
+    overflow: hidden;
+    clip: auto;
+
+    font: 600 11px/1.2 Consolas, monospace;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .account-menu__arrow {
+    display: block;
+    color: #77d4ae;
+    font-size: 8px;
+  }
+
+  .account-menu__panel {
+    right: 0;
+    left: auto;
+
+    color: #f1f3ee;
+    border: 1px solid #34425b;
+    border-radius: 2px;
+    background: #0b1322;
+    box-shadow: 0 16px 35px rgba(0, 0, 0, 0.4);
+  }
+
+  .account-menu__identity {
+    border-color: #27344b;
+
+    strong {
+      color: #f1f3ee;
+    }
+
+    span {
+      color: #8290a5;
+    }
+  }
+
+  .account-menu__logout {
+    color: #050914;
+    border-radius: 2px;
+    background: #f4c44e;
+    font-family: Consolas, monospace;
+
+    &:hover {
+      background: #ffd96f;
+    }
+  }
+
+  .account-menu__error {
+    color: #ff927c;
+  }
+}
+
 @media (max-width: 750px) {
   .account-menu__panel {
     width: min(270px, calc(100vw - 24px));
+  }
+
+  .account-menu--landing {
+    width: 100%;
+
+    .account-menu__trigger {
+      width: 100%;
+      max-width: none;
+    }
+
+    .account-menu__panel {
+      position: static;
+      width: 100%;
+      margin-top: 8px;
+    }
   }
 }

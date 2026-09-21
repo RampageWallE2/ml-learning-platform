@@ -33,11 +33,13 @@ describe('authGuard', () => {
     router = TestBed.inject(Router);
   });
 
-  async function runGuard(): Promise<boolean | UrlTree> {
+  async function runGuard(
+    url: string = '/world'
+  ): Promise<boolean | UrlTree> {
     const result = TestBed.runInInjectionContext(() =>
       authGuard(
         {} as ActivatedRouteSnapshot,
-        { url: '/world' } as RouterStateSnapshot
+        { url } as RouterStateSnapshot
       )
     ) as Observable<boolean | UrlTree>;
 
@@ -56,6 +58,15 @@ describe('authGuard', () => {
     expect(result).toBeInstanceOf(UrlTree);
     expect(router.serializeUrl(result as UrlTree)).toBe(
       '/login?returnUrl=%2Fworld'
+    );
+  });
+
+  it('preserves progress as the return destination for an anonymous user', async () => {
+    const result = await runGuard('/progress');
+
+    expect(result).toBeInstanceOf(UrlTree);
+    expect(router.serializeUrl(result as UrlTree)).toBe(
+      '/login?returnUrl=%2Fprogress'
     );
   });
 });

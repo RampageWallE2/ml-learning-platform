@@ -51,6 +51,17 @@ describe('AccountMenu', () => {
       .toContain('AT');
   });
 
+  it('supports the expanded landing appearance', () => {
+    fixture.componentRef.setInput('appearance', 'landing');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('.account-menu--landing')).not.toBeNull();
+    expect(element.querySelector('.account-menu__name')?.textContent)
+      .toContain('Ana Torres');
+  });
+
   it('logs out and redirects to login with a confirmation flag', () => {
     const element = fixture.nativeElement as HTMLElement;
 

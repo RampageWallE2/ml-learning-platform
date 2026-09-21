@@ -216,4 +216,32 @@ describe('Login', () => {
     fixture.componentInstance.loginWithEmail();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/world');
   });
+
+  it('returns to progress after authentication when requested by the guard', () => {
+    queryParams = { returnUrl: '/progress' };
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    fixture.componentInstance.loginForm.setValue({
+      email: 'student@example.com',
+      password: 'secure-password',
+    });
+
+    fixture.componentInstance.loginWithEmail();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/progress');
+  });
+
+  it('rejects an external return URL after authentication', () => {
+    queryParams = { returnUrl: 'https://example.com/progress' };
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    fixture.componentInstance.loginForm.setValue({
+      email: 'student@example.com',
+      password: 'secure-password',
+    });
+
+    fixture.componentInstance.loginWithEmail();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/world');
+  });
 });

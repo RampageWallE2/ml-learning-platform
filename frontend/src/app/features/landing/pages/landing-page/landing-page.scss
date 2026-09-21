@@ -119,11 +119,10 @@ nav a:hover,
   display: none;
 }
 .hero {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 70px;
-  align-items: center;
   padding: 85px 0 100px;
+}
+.hero-copy {
+  max-width: 760px;
 }
 .eyebrow {
   font-size: 10px;
@@ -247,7 +246,6 @@ footer .brand {
   .edition {
     display: none;
   }
-  .hero,
   .experience,
   .method {
     gap: 40px;
@@ -285,7 +283,6 @@ footer .brand {
   nav.open {
     display: flex;
   }
-  .hero,
   .experience,
   .method {
     grid-template-columns: 1fr;
@@ -293,7 +290,7 @@ footer .brand {
     padding-block: 45px;
   }
   .hero {
-    padding-bottom: 65px;
+    padding: 45px 0 65px;
   }
   h1 {
     font-size: 44px;

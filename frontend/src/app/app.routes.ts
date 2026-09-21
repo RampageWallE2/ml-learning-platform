@@ -27,6 +27,14 @@ export const routes: Routes = [
       import('./features/world/pages/world-page/world-page').then((module) => module.WorldPage),
   },
   {
+    path: 'progress',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/world/progress/pages/progress-page/progress-page').then(
+        (module) => module.ProgressPage,
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

@@ -19,6 +19,10 @@ import { AUTH_CONFIG } from '../../../../core/auth/auth.config';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { AuthApiError, GoogleCredentialResponse } from '../../../../core/auth/auth.types';
 
+
+const SAFE_RETURN_URL_PATTERN =
+  /^\/(?:world|progress)(?:[/?#]|$)/;
+
 @Component({
   selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink],
@@ -243,7 +247,9 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   private getSafeReturnUrl(): string {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
-    return returnUrl && /^\/world(?:[/?#]|$)/.test(returnUrl) && !returnUrl.includes('\\')
+    return returnUrl &&
+      SAFE_RETURN_URL_PATTERN.test(returnUrl) &&
+      !returnUrl.includes('\\')
       ? returnUrl
       : '/world';
   }

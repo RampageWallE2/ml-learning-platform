@@ -1,13 +1,43 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
+import { AuthService } from '../../../../core/auth/auth.service';
+import {
+  AuthenticatedUser,
+  AuthSessionStatus
+} from '../../../../core/auth/auth.types';
 import { LandingPage } from './landing-page';
 
 describe('LandingPage', () => {
+  const userState =
+    signal<AuthenticatedUser | null>(null);
+
+  const statusState =
+    signal<AuthSessionStatus>('anonymous');
+
+  const auth = {
+    user: userState.asReadonly(),
+    status: statusState.asReadonly(),
+    restoreSession: vi.fn(() => of(false)),
+    logout: vi.fn(() => of(undefined))
+  };
+
   beforeEach(async () => {
+    userState.set(null);
+    statusState.set('anonymous');
+    auth.restoreSession.mockReset();
+    auth.restoreSession.mockReturnValue(of(false));
+    auth.logout.mockReset();
+    auth.logout.mockReturnValue(of(undefined));
+
     await TestBed.configureTestingModule({
       imports: [LandingPage],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: auth }
+      ],
     }).compileComponents();
   });
 
@@ -17,36 +47,50 @@ describe('LandingPage', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelector('h1')?.textContent).toContain('Los datos se entienden');
-    expect(element.querySelector('a[href="/login"]')?.textContent).toContain('Iniciar sesión');
+    expect(element.querySelector('a[href^="/login"]')?.textContent).toContain('Iniciar sesión');
     expect(element.querySelector('#como-funciona')).not.toBeNull();
     expect(element.querySelector('#experiencia')).not.toBeNull();
     expect(element.querySelector('#metodologia')).not.toBeNull();
+    expect(element.querySelector('app-learning-preview')).toBeNull();
+    expect(element.querySelector('a[href="/world"]')).toBeNull();
   });
 
-  it('uses an existing game asset in the hero scene', () => {
-    const fixture = TestBed.createComponent(LandingPage);
-    fixture.detectChanges();
-    const image = (fixture.nativeElement as HTMLElement).querySelector<HTMLImageElement>(
-      '.hero-scene__truck',
-    );
+  it('shows the profile and continuation actions for an authenticated user', () => {
+    userState.set({
+      id: 'user-id',
+      email: 'ana.torres@example.com',
+      displayName: 'Ana Torres',
+      avatarUrl: null
+    });
+    statusState.set('authenticated');
+    auth.restoreSession.mockReturnValue(of(true));
 
-    expect(image?.getAttribute('src')).toBe('assets/game/tilesets/vehicles/dump_truck_2.png');
-    expect(image?.alt).toContain('Camión minero');
-  });
-
-  it('lets visitors retry the exercise and explains the correct answer', () => {
     const fixture = TestBed.createComponent(LandingPage);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
-    const buttons = element.querySelectorAll<HTMLButtonElement>('.answers button');
-    buttons[0].click();
+
+    expect(element.querySelector('app-account-menu')?.textContent)
+      .toContain('Ana Torres');
+    expect(element.querySelector('a[href="/login"]')).toBeNull();
+    expect(element.querySelector('a[href="/register"]')).toBeNull();
+    expect(element.textContent).not.toContain('Continuar');
+    expect(element.querySelector('a[href="/progress"]')?.textContent)
+      .toContain('Mi progreso');
+    expect(element.querySelectorAll('a[href="/progress"]').length)
+      .toBeGreaterThan(2);
+    expect(element.querySelector('a[href="/world"]')).toBeNull();
+  });
+
+  it('does not flash anonymous actions while checking the session', () => {
+    statusState.set('checking');
+
+    const fixture = TestBed.createComponent(LandingPage);
     fixture.detectChanges();
-    expect(element.querySelector('.feedback')?.textContent).toContain('Casi.');
-    buttons[1].click();
-    fixture.detectChanges();
-    expect(element.querySelector('.feedback')?.textContent).toContain('100 toneladas');
-    expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
-    expect(element.querySelector('a.button[href="/register"]')).not.toBeNull();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('a[href="/login"]')).toBeNull();
+    expect(element.querySelector('a[href="/register"]')).toBeNull();
+    expect(element.textContent).toContain('Comprobando sesión');
   });
 
   it('marks sections for scroll reveal and preserves accessible title text', () => {

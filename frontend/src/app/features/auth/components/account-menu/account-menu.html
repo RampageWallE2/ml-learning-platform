@@ -1,5 +1,8 @@
 @if (auth.user(); as user) {
-  <div class="account-menu">
+  <div
+    class="account-menu"
+    [class.account-menu--landing]="appearance() === 'landing'"
+  >
     <button
       class="account-menu__trigger"
       type="button"

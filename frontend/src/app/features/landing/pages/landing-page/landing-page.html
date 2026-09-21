@@ -20,10 +20,21 @@
     <nav id="main-nav" aria-label="Navegación principal" [class.open]="menuOpen()">
       <a href="#experiencia" (click)="menuOpen.set(false)">La experiencia</a
       ><a href="#metodologia" (click)="menuOpen.set(false)">Cómo aprendemos</a
-      ><a routerLink="/login">Iniciar sesión</a
-      ><a class="button small" routerLink="/register"
-        >Crear cuenta <span aria-hidden="true">↗</span></a
       >
+      @if (auth.user()) {
+        <a routerLink="/progress" (click)="menuOpen.set(false)">Mi progreso</a>
+        <app-account-menu appearance="landing" />
+      } @else if (auth.status() === 'anonymous') {
+        <a routerLink="/login" [queryParams]="{ returnUrl: '/progress' }">Iniciar sesión</a
+        ><a
+          class="button small"
+          routerLink="/register"
+          [queryParams]="{ returnUrl: '/progress' }"
+          >Crear cuenta <span aria-hidden="true">↗</span></a
+        >
+      } @else {
+        <span class="quiet" role="status">Comprobando sesión…</span>
+      }
     </nav>
   </header>
   <main id="contenido" tabindex="-1">
@@ -35,12 +46,22 @@
           Descubre las bases de Machine Learning a través de problemas concretos. Explora un mundo
           minero, prueba tus ideas y encuentra sentido a lo que aprendes.
         </p>
-        <a class="button" routerLink="/register"
-          >Empieza tu recorrido <span aria-hidden="true">↗</span></a
-        >
+        @if (auth.user()) {
+          <a class="button" routerLink="/progress"
+            >Ver mi progreso <span aria-hidden="true">↗</span></a
+          >
+        } @else if (auth.status() === 'anonymous') {
+          <a
+            class="button"
+            routerLink="/register"
+            [queryParams]="{ returnUrl: '/progress' }"
+            >Empieza tu recorrido <span aria-hidden="true">↗</span></a
+          >
+        } @else {
+          <span class="quiet" role="status">Comprobando sesión…</span>
+        }
         <p class="quiet">A tu ritmo. Con tu progreso guardado.</p>
       </div>
-      <app-learning-preview appRevealOnScroll [revealDelay]="120" />
     </section>
     <section id="experiencia" class="experience">
       <app-learning-scene appRevealOnScroll />
@@ -55,8 +76,8 @@
           Recorre el mundo, conversa con sus personajes y resuelve las actividades. Tus lecciones
           completadas se guardan en tu cuenta.
         </p>
-        <a class="text-link" routerLink="/world"
-          >Conocer el mundo <span aria-hidden="true">↗</span></a
+        <a class="text-link" routerLink="/progress"
+          >Ver mi progreso <span aria-hidden="true">↗</span></a
         >
       </div>
     </section>
@@ -99,7 +120,20 @@
         <p class="eyebrow">EL SIGUIENTE PASO ES TUYO</p>
         <h2 appTypewriterText>La curiosidad es un buen comienzo.</h2>
       </div>
-      <a class="button" routerLink="/register">Crear mi cuenta <span aria-hidden="true">↗</span></a>
+      @if (auth.user()) {
+        <a class="button" routerLink="/progress"
+          >Ver mi progreso <span aria-hidden="true">↗</span></a
+        >
+      } @else if (auth.status() === 'anonymous') {
+        <a
+          class="button"
+          routerLink="/register"
+          [queryParams]="{ returnUrl: '/progress' }"
+          >Crear mi cuenta <span aria-hidden="true">↗</span></a
+        >
+      } @else {
+        <span class="quiet" role="status">Comprobando sesión…</span>
+      }
     </section>
   </main>
   <footer>

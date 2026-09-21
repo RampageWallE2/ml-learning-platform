@@ -4,6 +4,7 @@ import {
   HostListener,
   computed,
   inject,
+  input,
   signal
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -18,6 +19,9 @@ import { AuthService } from '../../../../core/auth/auth.service';
 })
 export class AccountMenu {
   readonly auth = inject(AuthService);
+
+  readonly appearance =
+    input<'game' | 'landing'>('game');
 
   private readonly router = inject(Router);
   private readonly element = inject(ElementRef<HTMLElement>);
