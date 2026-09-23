@@ -19,8 +19,19 @@ import {
 import Phaser from 'phaser';
 
 import {
-  gameConfig
+  createGameConfig
 } from '../../game/config/game.config';
+
+import { BaseWorldScene } from '../../../../core/base-world.scene';
+
+import {
+  clearWorldSession,
+  loadWorldSession,
+} from '../../../../core/world-session/world-session.storage';
+
+import {
+  WorldSessionLifecycle,
+} from '../../../../core/world-session/world-session.lifecycle';
 
 import {
   gameEvents,
@@ -118,6 +129,10 @@ export class WorldPage
 
 
   private game?: Phaser.Game;
+
+
+  private worldSessionLifecycle?:
+    WorldSessionLifecycle;
 
 
   /* =========================
@@ -725,10 +740,28 @@ export class WorldPage
     );
 
 
+    const restoredSession =
+      loadWorldSession();
+
+
+    clearWorldSession();
+
+
     this.game =
       new Phaser.Game(
-        gameConfig
+        createGameConfig(
+          restoredSession
+        )
       );
+
+
+    this.worldSessionLifecycle =
+      new WorldSessionLifecycle(
+        this.captureWorldSession
+      );
+
+
+    this.worldSessionLifecycle.start();
 
 
     this.loadProgress();
@@ -740,6 +773,8 @@ export class WorldPage
      ========================= */
 
   ngOnDestroy(): void {
+
+    this.worldSessionLifecycle?.stop();
 
     gameEvents.off(
       GameEvents.OPEN_LESSON,
@@ -773,5 +808,26 @@ export class WorldPage
       true
     );
   }
+
+
+  private readonly captureWorldSession = () => {
+
+    const activeWorldScene =
+      this.game?.scene
+        .getScenes(true)
+        .find(
+          scene =>
+            scene instanceof
+            BaseWorldScene
+        );
+
+
+    const snapshot =
+      activeWorldScene
+        ?.getSessionSnapshot();
+
+
+    return snapshot ?? null;
+  };
 
 }

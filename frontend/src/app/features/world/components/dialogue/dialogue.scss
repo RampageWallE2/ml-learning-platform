@@ -97,6 +97,38 @@
   }
 }
 
+.dialogue-copy__text {
+  position: relative;
+}
+
+.dialogue-copy__reserve {
+  visibility: hidden;
+}
+
+.dialogue-copy__typed {
+  position: absolute;
+  inset: 0;
+}
+
+.dialogue-copy__typed--active::after {
+  content: '▌';
+  margin-inline-start: 0.12em;
+  color: #d4aa4b;
+  animation: dialogue-cursor 650ms steps(1, end) infinite;
+}
+
+@keyframes dialogue-cursor {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialogue-copy__typed--active::after {
+    animation: none;
+  }
+}
+
 .dialogue-band--player .dialogue-copy {
   justify-self: end;
   text-align: right;

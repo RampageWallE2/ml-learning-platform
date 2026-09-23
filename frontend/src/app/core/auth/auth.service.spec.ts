@@ -10,6 +10,10 @@ import { TestBed } from '@angular/core/testing';
 import { AUTH_CONFIG } from './auth.config';
 import { AuthService } from './auth.service';
 import { AuthenticatedUser } from './auth.types';
+import {
+  loadWorldSession,
+  saveWorldSession,
+} from '../world-session/world-session.storage';
 
 describe('AuthService', () => {
   const user: AuthenticatedUser = {
@@ -23,6 +27,8 @@ describe('AuthService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    sessionStorage.clear();
+
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -160,6 +166,16 @@ describe('AuthService', () => {
   });
 
   it('clears the local session after logout', () => {
+    const savedAt = Date.now();
+
+    saveWorldSession({
+      version: 1,
+      sceneKey: 'OpenPitScene',
+      playerX: 640,
+      playerY: 384,
+      savedAt,
+    });
+
     auth.loginWithGoogle('google-id-token').subscribe();
     http.expectOne('http://api.test/api/v1/auth/google').flush({ user });
 
@@ -174,6 +190,7 @@ describe('AuthService', () => {
 
     expect(auth.user()).toBeNull();
     expect(auth.status()).toBe('anonymous');
+    expect(loadWorldSession(sessionStorage, savedAt)).toBeNull();
   });
 
   it('keeps the local session when logout fails', () => {

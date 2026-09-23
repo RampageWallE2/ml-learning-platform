@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
 
+import {
+  calculateMobileControlLayout,
+  type MobileVisibleViewport,
+} from './mobile-control-layout';
+
 
 export class InputController {
 
@@ -64,6 +69,9 @@ export class InputController {
    */
   private mobileInteractRequested =
     false;
+
+
+  private viewportResizeFrame?: number;
 
 
   constructor(
@@ -309,6 +317,25 @@ export class InputController {
     );
 
 
+    window.visualViewport?.removeEventListener(
+      'resize',
+      this.handleViewportResize
+    );
+
+
+    if (
+      this.viewportResizeFrame !==
+      undefined
+    ) {
+      cancelAnimationFrame(
+        this.viewportResizeFrame
+      );
+
+      this.viewportResizeFrame =
+        undefined;
+    }
+
+
     this.joystickZone?.off(
       'pointerdown',
       this.handleJoystickPointerDown
@@ -465,6 +492,12 @@ export class InputController {
     );
 
 
+    window.visualViewport?.addEventListener(
+      'resize',
+      this.handleViewportResize
+    );
+
+
     this.repositionMobileControls();
   }
 
@@ -579,6 +612,9 @@ export class InputController {
 
 
       this.resetMobileJoystick();
+
+
+      this.repositionMobileControls();
     };
 
 
@@ -593,6 +629,27 @@ export class InputController {
 
       this.repositionMobileControls();
     };
+
+
+  private readonly handleViewportResize = (): void => {
+    if (
+      this.viewportResizeFrame !==
+      undefined
+    ) {
+      cancelAnimationFrame(
+        this.viewportResizeFrame
+      );
+    }
+
+
+    this.viewportResizeFrame =
+      requestAnimationFrame(() => {
+        this.viewportResizeFrame =
+          undefined;
+
+        this.repositionMobileControls();
+      });
+  };
 
 
   /* =========================
@@ -733,6 +790,17 @@ export class InputController {
       this.scene.scale.gameSize.height;
 
 
+    const layout =
+      calculateMobileControlLayout(
+        width,
+        height,
+        this.getVisibleViewport(
+          width,
+          height
+        )
+      );
+
+
     /* =========================
        JOYSTICK
        ========================= */
@@ -743,39 +811,24 @@ export class InputController {
       this.joystickZone
     ) {
 
-      const joystickX =
-        90;
-
-      const joystickY =
-        height - 90;
-
-
-      this.joystickBase.setPosition(
-        joystickX,
-        joystickY
-      );
+      if (this.joystickPointerId === null) {
+        this.joystickBase.setPosition(
+          layout.joystickX,
+          layout.controlsY
+        );
 
 
-      this.joystickKnob.setPosition(
-        joystickX,
-        joystickY
-      );
+        this.joystickKnob.setPosition(
+          layout.joystickX,
+          layout.controlsY
+        );
 
 
-      this.joystickZone.setPosition(
-        joystickX,
-        joystickY
-      );
-
-
-      this.mobileDirection.set(
-        0,
-        0
-      );
-
-
-      this.joystickPointerId =
-        null;
+        this.joystickZone.setPosition(
+          layout.joystickX,
+          layout.controlsY
+        );
+      }
     }
 
 
@@ -788,26 +841,62 @@ export class InputController {
       this.mobileInteractText
     ) {
 
-      const buttonX =
-        width - 90;
-
-      const buttonY =
-        height - 90;
-
-
       this.mobileInteractButton
         .setPosition(
-          buttonX,
-          buttonY
+          layout.interactButtonX,
+          layout.controlsY
         );
 
 
       this.mobileInteractText
         .setPosition(
-          buttonX,
-          buttonY
+          layout.interactButtonX,
+          layout.controlsY
         );
     }
+  }
+
+
+  private getVisibleViewport(
+    gameWidth: number,
+    gameHeight: number
+  ): MobileVisibleViewport | undefined {
+
+    const viewport =
+      window.visualViewport;
+
+
+    if (!viewport) {
+      return undefined;
+    }
+
+
+    const widthScale =
+      window.innerWidth > 0
+        ? gameWidth / window.innerWidth
+        : 1;
+
+
+    const heightScale =
+      window.innerHeight > 0
+        ? gameHeight / window.innerHeight
+        : 1;
+
+
+    return {
+      width:
+        viewport.width *
+        widthScale,
+      height:
+        viewport.height *
+        heightScale,
+      offsetLeft:
+        viewport.offsetLeft *
+        widthScale,
+      offsetTop:
+        viewport.offsetTop *
+        heightScale
+    };
   }
 
 

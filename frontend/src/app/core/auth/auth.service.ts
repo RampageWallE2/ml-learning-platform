@@ -19,6 +19,7 @@ import {
   EmailLoginCredentials,
   RegistrationCredentials
 } from './auth.types';
+import { clearWorldSession } from '../world-session/world-session.storage';
 
 @Injectable({
   providedIn: 'root'
@@ -158,6 +159,7 @@ export class AuthService {
   }
 
   private setAnonymous(): void {
+    clearWorldSession();
     this.userState.set(null);
     this.statusState.set('anonymous');
   }

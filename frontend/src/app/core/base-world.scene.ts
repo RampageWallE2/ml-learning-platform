@@ -20,6 +20,11 @@ import { PlayerController } from './player/player.controller';
 import { createStaticZonesFromLayer, findSpawnPoint } from './tiled/tiled.utils';
 
 import { RetroSceneTransition } from './transitions/retro-scene-transition';
+import {
+  isWorldSceneKey,
+  type WorldSessionSnapshot,
+} from './world-session/world-session.types';
+import { takeWorldSessionRecovery } from './world-session/world-session.registry';
 
 type SceneStartData = {
   spawnId?: string;
@@ -153,8 +158,28 @@ export abstract class BaseWorldScene extends Phaser.Scene {
    */
   protected onSceneShutdown(): void {}
 
+  getSessionSnapshot(): WorldSessionSnapshot | null {
+    if (!isWorldSceneKey(this.scene.key) || !this.playerController?.sprite) {
+      return null;
+    }
+
+    return {
+      version: 1,
+      sceneKey: this.scene.key,
+      playerX: this.playerController.sprite.x,
+      playerY: this.playerController.sprite.y,
+      savedAt: Date.now(),
+    };
+  }
+
   private createPlayerController(map: Phaser.Tilemaps.Tilemap): void {
-    const spawn = findSpawnPoint(map, this.spawnId);
+    const restoredSession = this.takeRestoredSession();
+    const spawn = restoredSession
+      ? {
+          x: Phaser.Math.Clamp(restoredSession.playerX, 0, map.widthInPixels),
+          y: Phaser.Math.Clamp(restoredSession.playerY, 0, map.heightInPixels),
+        }
+      : findSpawnPoint(map, this.spawnId);
 
     this.playerController = new PlayerController(this, {
       x: spawn.x,
@@ -163,6 +188,13 @@ export abstract class BaseWorldScene extends Phaser.Scene {
       speed: 250,
       depth: 12,
     });
+  }
+
+  private takeRestoredSession(): WorldSessionSnapshot | null {
+    return takeWorldSessionRecovery(
+      this.registry,
+      this.scene.key,
+    );
   }
 
   private setupCollisions(map: Phaser.Tilemaps.Tilemap): void {

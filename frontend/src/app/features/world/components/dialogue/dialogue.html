@@ -25,15 +25,32 @@
     @if (currentMessage()?.speaker === 'npc') {
       <div class="dialogue-copy" aria-live="polite" aria-atomic="true">
         <strong>{{ currentMessage()?.name }}</strong>
-        <p>{{ currentMessage()?.text }}</p>
+        <p
+          class="dialogue-copy__text"
+          [attr.aria-label]="currentMessage()?.text"
+        >
+          <span class="dialogue-copy__reserve" aria-hidden="true">
+            {{ currentMessage()?.text }}
+          </span>
+          <span
+            class="dialogue-copy__typed"
+            [class.dialogue-copy__typed--active]="isTyping()"
+            aria-hidden="true"
+          >{{ displayedText() }}</span>
+        </p>
       </div>
     }
   </div>
 
   <div class="dialogue-stage">
     <button type="button" class="continue-button" autofocus (click)="next()">
-      <span>{{ isLastMessage() ? 'Continuar' : 'Siguiente' }}</span>
-      <small>clic para avanzar · {{ progressLabel() }}</small>
+      <span>
+        {{ isTyping() ? 'Mostrar texto' : (isLastMessage() ? 'Continuar' : 'Siguiente') }}
+      </span>
+      <small>
+        {{ isTyping() ? 'clic para completar el mensaje' : 'clic para avanzar' }}
+        · {{ progressLabel() }}
+      </small>
     </button>
   </div>
 
@@ -44,7 +61,19 @@
     @if (currentMessage()?.speaker === 'player') {
       <div class="dialogue-copy" aria-live="polite" aria-atomic="true">
         <strong>{{ currentMessage()?.name }}</strong>
-        <p>{{ currentMessage()?.text }}</p>
+        <p
+          class="dialogue-copy__text"
+          [attr.aria-label]="currentMessage()?.text"
+        >
+          <span class="dialogue-copy__reserve" aria-hidden="true">
+            {{ currentMessage()?.text }}
+          </span>
+          <span
+            class="dialogue-copy__typed"
+            [class.dialogue-copy__typed--active]="isTyping()"
+            aria-hidden="true"
+          >{{ displayedText() }}</span>
+        </p>
       </div>
     }
 

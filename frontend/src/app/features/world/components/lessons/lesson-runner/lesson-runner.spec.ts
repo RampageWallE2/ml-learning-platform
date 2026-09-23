@@ -7,6 +7,18 @@ import { Lesson02Ramp } from '../../../lessons/lesson-02-ramp/lesson-02-ramp';
 import { Lesson03Haulage } from '../../../lessons/lesson-03-haulage/lesson-03-haulage';
 import { LessonRunner } from './lesson-runner';
 
+function completeDialogue(dialogue: Dialogue): void {
+  const messageCount = dialogue.dialogue().messages.length;
+
+  for (let index = 0; index < messageCount; index += 1) {
+    if (dialogue.isTyping()) {
+      dialogue.next();
+    }
+
+    dialogue.next();
+  }
+}
+
 describe('LessonRunner — loading lesson', () => {
   it('plays the planned intro, activity and closing dialogue before completing lesson-01', () => {
     const fixture = TestBed.createComponent(LessonRunner);
@@ -21,7 +33,7 @@ describe('LessonRunner — loading lesson', () => {
     ).toBe('dialogue');
     expect(intro.currentMessage()!.text).toContain('Estamos terminando de cargar');
     expect(intro.dialogue().messages.map(message => message.text).join(' ')).not.toMatch(/dispersión|promedio|rango/i);
-    for (let i = 0; i < 5; i++) intro.next();
+    completeDialogue(intro);
     fixture.detectChanges();
 
     const game = fixture.debugElement.query(By.directive(Lesson01Loading)).componentInstance as Lesson01Loading;
@@ -48,7 +60,7 @@ describe('LessonRunner — loading lesson', () => {
     expect(end.currentIndex()).toBe(0);
     expect(end.currentMessage()!.text).toContain('El Grupo B');
     expect(end.dialogue().messages.at(-1)?.text).toContain('encargado del control');
-    for (let i = 0; i < 4; i++) end.next();
+    completeDialogue(end);
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-01');
   });
 });
@@ -67,7 +79,7 @@ describe('LessonRunner — ramp lesson', () => {
     ).toBe('dialogue');
     expect(intro.currentMessage()!.text).toContain('camiones que viste abajo');
     expect(intro.dialogue().messages.map(message => message.text).join(' ')).not.toMatch(/rango|mínimo|máximo/i);
-    for (let i = 0; i < 5; i++) intro.next();
+    completeDialogue(intro);
     fixture.detectChanges();
 
     const game = fixture.debugElement.query(By.directive(Lesson02Ramp)).componentInstance as Lesson02Ramp;
@@ -88,7 +100,7 @@ describe('LessonRunner — ramp lesson', () => {
     expect(end.currentIndex()).toBe(0);
     expect(end.currentMessage()!.text).toContain('Turno A');
     expect(end.dialogue().messages.at(-1)?.text).toContain('encargado del acarreo');
-    for (let i = 0; i < 5; i++) end.next();
+    completeDialogue(end);
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-02');
   });
 });
@@ -107,7 +119,7 @@ describe('LessonRunner — haulage lesson', () => {
     ).toBe('dialogue');
     expect(intro.currentMessage()!.text).toContain('puesto de control');
     expect(intro.dialogue().messages.at(-1)?.text).toContain('más rápido y el más lento');
-    for (let i = 0; i < 5; i++) intro.next();
+    completeDialogue(intro);
     fixture.detectChanges();
 
     const game = fixture.debugElement.query(By.directive(Lesson03Haulage)).componentInstance as Lesson03Haulage;
@@ -133,7 +145,7 @@ describe('LessonRunner — haulage lesson', () => {
     ).toBe('dialogue');
     expect(end.currentMessage()!.text).toContain('diferencia de 7 minutos');
     expect(end.dialogue().messages.at(-1)?.text).toContain('ROM y chancado');
-    for (let i = 0; i < 6; i++) end.next();
+    completeDialogue(end);
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-03');
   });
 });

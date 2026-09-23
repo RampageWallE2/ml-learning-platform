@@ -11,10 +11,27 @@ describe('Dialogue', () => {
     ]
   };
 
-  function create(dialogue: DialogueData = data) {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function create(
+    dialogue: DialogueData = data,
+    finishTyping = true
+  ) {
     const fixture = TestBed.createComponent(Dialogue);
     fixture.componentRef.setInput('dialogue', dialogue);
     fixture.detectChanges();
+
+    if (finishTyping) {
+      vi.runAllTimers();
+      fixture.detectChanges();
+    }
+
     return fixture;
   }
 
@@ -27,6 +44,8 @@ describe('Dialogue', () => {
 
     root.querySelector<HTMLButtonElement>('.continue-button')!.click();
     fixture.detectChanges();
+    vi.runAllTimers();
+    fixture.detectChanges();
     expect(root.textContent).not.toContain('Primer mensaje.');
     expect(root.textContent).toContain('Respuesta.');
     expect(root.querySelector('.dialogue-band--player')?.classList).toContain('dialogue-band--active');
@@ -38,8 +57,62 @@ describe('Dialogue', () => {
     fixture.componentInstance.completed.subscribe(completed);
     fixture.componentInstance.next();
     expect(completed).not.toHaveBeenCalled();
+    vi.runAllTimers();
     fixture.componentInstance.next();
     expect(completed).toHaveBeenCalledOnce();
+  });
+
+  it('types each message and uses the first click to reveal it completely', () => {
+    const fixture = create(data, false);
+    const page = fixture.componentInstance;
+
+    expect(page.isTyping()).toBe(true);
+    expect(page.displayedText()).toBe('P');
+
+    vi.advanceTimersByTime(66);
+    expect(page.displayedText()).toBe('Prim');
+
+    page.next();
+    expect(page.currentIndex()).toBe(0);
+    expect(page.displayedText()).toBe('Primer mensaje.');
+    expect(page.isTyping()).toBe(false);
+
+    page.next();
+    expect(page.currentIndex()).toBe(1);
+    expect(page.displayedText()).toBe('R');
+    expect(page.isTyping()).toBe(true);
+  });
+
+  it('restarts from the first message when the dialogue input changes', () => {
+    const fixture = create(data, false);
+    const replacement: DialogueData = {
+      id: 'replacement-dialogue',
+      messages: [
+        { speaker: 'npc', name: 'Operador', text: 'Nuevo diálogo.' }
+      ]
+    };
+
+    fixture.componentInstance.next();
+    fixture.componentInstance.next();
+    expect(fixture.componentInstance.currentIndex()).toBe(1);
+
+    fixture.componentRef.setInput('dialogue', replacement);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.currentIndex()).toBe(0);
+    expect(fixture.componentInstance.displayedText()).toBe('N');
+    expect(fixture.componentInstance.isTyping()).toBe(true);
+  });
+
+  it('does not split Unicode characters while typing', () => {
+    const fixture = create({
+      id: 'unicode-dialogue',
+      messages: [
+        { speaker: 'npc', name: 'Operador', text: '👷 listo' }
+      ]
+    }, false);
+
+    expect(fixture.componentInstance.displayedText()).toBe('👷');
   });
 
   it('resolves stable character ids through the central portrait registry', () => {

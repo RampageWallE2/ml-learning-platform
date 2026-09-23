@@ -62,7 +62,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
 
-    command: npm start -- --host 0.0.0.0 --poll 2000
+    command: npm start -- --host 0.0.0.0 --poll 2000 --proxy-config proxy.docker.json
 
     restart: unless-stopped
 
