@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { screenToFixedCameraPoint } from '../camera/camera-zoom';
 
 const TRANSITION_COLOR = 0x090712;
 const TRANSITION_DEPTH = 10_000;
@@ -91,6 +92,10 @@ export class RetroSceneTransition {
   private draw(): void {
     const width = this.scene.scale.gameSize.width;
     const height = this.scene.scale.gameSize.height;
+    const zoom = this.scene.cameras.main.zoom;
+    const origin = screenToFixedCameraPoint(0, 0, width, height, zoom);
+
+    this.graphics.setPosition(origin.x, origin.y).setScale(1 / zoom);
 
     const clampedProgress = Phaser.Math.Clamp(this.progress.value, 0, 1);
     const steppedProgress = Math.round(clampedProgress * ANIMATION_STEPS) / ANIMATION_STEPS;

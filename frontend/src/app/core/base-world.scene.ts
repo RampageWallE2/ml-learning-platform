@@ -10,8 +10,10 @@ import {
 } from '../features/world/game/tiled/tilemap-config.types';
 
 import { AmbientAudioManager, preloadAmbientSounds } from './audio/ambient-audio.manager';
+import { MOBILE_WORLD_ZOOM } from './camera/camera-zoom';
 
 import { InputController } from './input/input.controller';
+import { usesTouchControls } from './input/touch-controls';
 
 import { InteractionManager } from './interactions/interaction.manager';
 
@@ -95,6 +97,8 @@ export abstract class BaseWorldScene extends Phaser.Scene {
       this.mapConfig.ambientSounds,
     );
 
+    this.setupCamera(buildResult.map);
+
     this.inputController = new InputController(this);
 
     this.sceneTransition = new RetroSceneTransition(this);
@@ -107,8 +111,6 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     );
 
     this.setupCollisions(buildResult.map);
-
-    this.setupCamera(buildResult.map);
 
     this.onSceneCreated(buildResult);
 
@@ -208,6 +210,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   private setupCamera(map: Phaser.Tilemaps.Tilemap): void {
     const camera = this.cameras.main;
 
+    camera.setZoom(usesTouchControls(this) ? MOBILE_WORLD_ZOOM : 1);
     camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     camera.startFollow(
       this.playerController.sprite,

@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
+import { screenToFixedCameraPoint } from '../camera/camera-zoom';
 
 import {
   calculateMobileControlLayout,
   type MobileVisibleViewport,
 } from './mobile-control-layout';
+import { usesTouchControls } from './touch-controls';
 
 
 export class InputController {
@@ -82,9 +84,7 @@ export class InputController {
     this.setupKeyboard();
 
 
-    if (
-      this.isMobileDevice()
-    ) {
+    if (usesTouchControls(this.scene)) {
 
       this.createMobileJoystick();
 
@@ -668,14 +668,20 @@ export class InputController {
     }
 
 
-    const dx =
-      pointer.x -
-      this.joystickBase.x;
+    const zoom = this.scene.cameras.main.zoom;
+    const point = screenToFixedCameraPoint(
+      pointer.x,
+      pointer.y,
+      this.scene.scale.gameSize.width,
+      this.scene.scale.gameSize.height,
+      zoom
+    );
 
 
-    const dy =
-      pointer.y -
-      this.joystickBase.y;
+    const dx = point.x - this.joystickBase.x;
+
+
+    const dy = point.y - this.joystickBase.y;
 
 
     const distance =
@@ -689,7 +695,7 @@ export class InputController {
      * Zona muerta.
      */
     if (
-      distance < 8
+      distance < 8 / zoom
     ) {
 
       this.mobileDirection.set(
@@ -725,7 +731,7 @@ export class InputController {
     const knobDistance =
       Math.min(
         distance,
-        this.joystickRadius
+        this.joystickRadius / zoom
       );
 
 
@@ -801,6 +807,23 @@ export class InputController {
       );
 
 
+    const zoom = this.scene.cameras.main.zoom;
+    const joystickPosition = screenToFixedCameraPoint(
+      layout.joystickX,
+      layout.controlsY,
+      width,
+      height,
+      zoom
+    );
+    const interactPosition = screenToFixedCameraPoint(
+      layout.interactButtonX,
+      layout.controlsY,
+      width,
+      height,
+      zoom
+    );
+
+
     /* =========================
        JOYSTICK
        ========================= */
@@ -813,22 +836,27 @@ export class InputController {
 
       if (this.joystickPointerId === null) {
         this.joystickBase.setPosition(
-          layout.joystickX,
-          layout.controlsY
+          joystickPosition.x,
+          joystickPosition.y
         );
 
 
         this.joystickKnob.setPosition(
-          layout.joystickX,
-          layout.controlsY
+          joystickPosition.x,
+          joystickPosition.y
         );
 
 
         this.joystickZone.setPosition(
-          layout.joystickX,
-          layout.controlsY
+          joystickPosition.x,
+          joystickPosition.y
         );
       }
+
+
+      this.joystickBase.setScale(1 / zoom);
+      this.joystickKnob.setScale(1 / zoom);
+      this.joystickZone.setScale(1 / zoom);
     }
 
 
@@ -843,16 +871,20 @@ export class InputController {
 
       this.mobileInteractButton
         .setPosition(
-          layout.interactButtonX,
-          layout.controlsY
+          interactPosition.x,
+          interactPosition.y
         );
 
 
       this.mobileInteractText
         .setPosition(
-          layout.interactButtonX,
-          layout.controlsY
+          interactPosition.x,
+          interactPosition.y
         );
+
+
+      this.mobileInteractButton.setScale(1 / zoom);
+      this.mobileInteractText.setScale(1 / zoom);
     }
   }
 
@@ -899,32 +931,5 @@ export class InputController {
     };
   }
 
-
-  /* =========================
-     DETECTAR MÓVIL
-     ========================= */
-
-  private isMobileDevice():
-    boolean {
-
-    const hasTouch =
-      this.scene.sys.game
-        .device.input.touch ||
-      navigator.maxTouchPoints > 0;
-
-
-    const coarsePointer =
-      window
-        .matchMedia(
-          '(pointer: coarse)'
-        )
-        .matches;
-
-
-    return (
-      hasTouch &&
-      coarsePointer
-    );
-  }
 
 }
