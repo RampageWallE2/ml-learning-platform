@@ -13,12 +13,13 @@ describe('lesson catalog', () => {
     }
   });
 
-  it('registers only the three implemented Open Pit MVP lessons', () => {
+  it('registers only the four implemented Open Pit lessons', () => {
     expect(LEARNING_ZONES).toHaveLength(1);
     expect(LEARNING_ZONES[0]?.lessons.map(lesson => lesson.lessonId)).toEqual([
       'lesson-01',
       'lesson-02',
       'lesson-03',
+      'lesson-04',
     ]);
   });
 });

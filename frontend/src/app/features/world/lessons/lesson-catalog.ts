@@ -1,6 +1,7 @@
 import { LESSON_01_LOADING } from './data/lesson-01-loading.data';
 import { LESSON_02_RAMP } from './data/lesson-02-ramp.data';
 import { LESSON_03_HAULAGE } from './data/lesson-03-haulage.data';
+import { LESSON_04_WORKSHOP } from './data/lesson-04-workshop.data';
 import { LessonDefinition } from './lesson.types';
 
 export type LessonCatalogEntry = Readonly<{
@@ -42,9 +43,15 @@ export const LEARNING_ZONES: readonly ZoneCatalogEntry[] = [
       },
       {
         lessonId: 'lesson-03',
-        name: 'Puesto de control de acarreo',
-        objective: 'Sigue la ruta hacia ROM/chancado y habla con el encargado del acarreo.',
+        name: 'Tiempos de descarga en el botadero',
+        objective: 'Ve al botadero de desmonte y habla con su encargado.',
         definition: LESSON_03_HAULAGE,
+      },
+      {
+        lessonId: 'lesson-04',
+        name: 'Mismo rango, ¿mismos datos?',
+        objective: 'Ve al taller de mantenimiento y habla con su encargado.',
+        definition: LESSON_04_WORKSHOP,
       },
     ],
   },

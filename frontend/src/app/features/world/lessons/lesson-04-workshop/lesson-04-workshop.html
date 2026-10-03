@@ -1,0 +1,95 @@
+<section class="lesson" aria-labelledby="workshop-title">
+  <header class="lesson-header">
+    <span class="lesson-tag">Clase 4 · Taller de mantenimiento</span>
+    <h2 id="workshop-title">Mismo rango, ¿mismos datos?</h2>
+    <p>Revisa las duraciones de una misma tarea de mantenimiento en dos equipos.</p>
+    <small>Datos simulados · Duraciones en minutos</small>
+  </header>
+  @if (stage() !== 'success') {
+    <div class="plots">
+      @for (plot of plots(); track plot.name) {
+        <article class="plot">
+          <h3>{{ plot.name }}</h3>
+          <svg viewBox="0 0 540 185" role="img" [attr.aria-label]="plot.name + ': ' + plot.values.join(', ') + ' minutos. Escala común de 6 a 14.'">
+            <line x1="30" y1="140" x2="510" y2="140" class="axis" />
+            @for (tick of ticks; track tick) {
+              <line [attr.x1]="position(tick)" y1="136" [attr.x2]="position(tick)" y2="147" class="axis" />
+              <text [attr.x]="position(tick)" y="172">{{ tick }}</text>
+            }
+            @for (point of plot.points; track $index) {
+              <line [attr.x1]="point.x" [attr.y1]="point.y + 5" [attr.x2]="point.x" y2="140" class="guide" />
+              <text [attr.x]="point.x" [attr.y]="point.y">{{ point.value }}</text>
+              <circle [attr.cx]="point.x" [attr.cy]="point.y + 9" r="3" />
+            }
+          </svg>
+          <p>{{ plot.values.join(' · ') }} min</p>
+        </article>
+      }
+    </div>
+  }
+  @if (stage() === 'ranges') {
+    <div class="lesson-card"><strong>Conclusión del informe:</strong> «Ambos equipos se comportaron igual porque tienen el mismo rango».</div>
+    <form (submit)="$event.preventDefault(); checkRanges()">
+      <label for="range-a">Rango de A, en minutos</label>
+      <input id="range-a" type="number" step="any" [value]="rangeA()" (input)="rangeA.set($any($event.target).value)">
+      <label for="range-b">Rango de B, en minutos</label>
+      <input id="range-b" type="number" step="any" [value]="rangeB()" (input)="rangeB.set($any($event.target).value)">
+      <button type="submit" class="btn btn--primary">Comprobar rangos</button>
+    </form>
+  }
+  @if (stage() === 'compare') {
+    <h3>¿Qué muestran los registros, además de compartir el rango?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="compare('identical')">Sus distribuciones son idénticas.</button>
+      <button type="button" class="btn btn--answer" (click)="compare('concentrated')">A concentra más registros en 10 minutos.</button>
+    </div>
+  }
+  @if (stage() === 'simulation' || stage() === 'explain') {
+    <div class="lesson-card">
+      <h3>Simulación · Los registros originales permanecen intactos</h3>
+      <p>El control mueve dos registros simétricamente alrededor de 10. Los extremos permanecen en 8 y 12 y el registro central en 10.</p>
+      <label for="interior">Separación de los dos registros respecto a 10</label>
+      <input id="interior" type="range" min="0" max="2" step="1" [value]="distance()" [disabled]="stage() === 'explain'"
+             [attr.aria-valuetext]="distance() + ' minutos a cada lado de 10'" (input)="moveInterior($any($event.target).value)">
+      <p aria-live="polite">Copia: {{ simulated().join(' · ') }} min. Rango: {{ simulatedRange() }} min. Media: {{ simulatedMean() }} min.</p>
+      @if (stage() === 'simulation') {
+        <button type="button" class="btn btn--primary" (click)="confirmSimulation()">Revisar lo que cambió</button>
+      }
+    </div>
+  }
+  @if (stage() === 'explain') {
+    <h3>¿Por qué el rango no cambió?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="explain('unchanged')">Porque ningún registro cambió.</button>
+      <button type="button" class="btn btn--answer" (click)="explain('extremes')">Porque el mínimo y el máximo siguen siendo los mismos.</button>
+      <button type="button" class="btn btn--answer" (click)="explain('useless')">Porque el rango no aporta ninguna información.</button>
+    </div>
+  }
+  @if (stage() === 'practice') {
+    <form (submit)="$event.preventDefault(); checkPractice()">
+      <h3>Comprueba con nuevos registros</h3>
+      <label for="range-c">Rango de C, en minutos</label>
+      <input id="range-c" type="number" step="any" [value]="practiceC()" (input)="practiceC.set($any($event.target).value)">
+      <label for="range-d">Rango de D, en minutos</label>
+      <input id="range-d" type="number" step="any" [value]="practiceD()" (input)="practiceD.set($any($event.target).value)">
+      <fieldset>
+        <legend>¿Qué conclusión respaldan estos registros?</legend>
+        <label><input type="radio" name="claim" [checked]="practiceClaim() === 'same'" (change)="practiceClaim.set('same')"> Tienen el mismo rango y distribuciones idénticas.</label>
+        <label><input type="radio" name="claim" [checked]="practiceClaim() === 'different'" (change)="practiceClaim.set('different')"> Tienen el mismo rango, pero distinta distribución interior.</label>
+        <label><input type="radio" name="claim" [checked]="practiceClaim() === 'unknown'" (change)="practiceClaim.set('unknown')"> No podemos comparar sus distribuciones aunque tengamos todos los registros.</label>
+      </fieldset>
+      <button type="submit" class="btn btn--primary">Comprobar conclusión</button>
+    </form>
+  }
+  <div aria-live="polite" aria-atomic="true">
+    @if (feedback()) { <div class="feedback"><p>{{ feedback() }}</p></div> }
+  </div>
+  @if (stage() === 'success') {
+    <div class="lesson-card">
+      <h3>Observación para el relevo</h3>
+      <p><strong>Hallazgo:</strong> A y B tienen rango de 4 minutos, pero A concentra más duraciones en 10 minutos.</p>
+      <p><strong>Aprendizaje:</strong> el rango describe los extremos y no distingue todos los cambios interiores.</p>
+    </div>
+    <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+  }
+</section>

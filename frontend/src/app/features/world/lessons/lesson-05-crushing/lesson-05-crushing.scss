@@ -1,0 +1,19 @@
+:host { display: block; min-width: 0; }
+svg { display: block; width: 100%; max-height: 230px; overflow: visible; }
+svg text { text-anchor: middle; font-size: 16px; fill: var(--color-text); }
+.axis { stroke: var(--color-text-muted); stroke-width: 1.5; }
+.guide { stroke: var(--color-primary); opacity: .4; }
+.mean { stroke: var(--color-text); stroke-dasharray: 5 4; stroke-width: 2; }
+circle { fill: var(--color-primary); }
+.selected circle { stroke: var(--color-text); stroke-width: 3; }
+.selected .guide { opacity: 1; stroke-width: 3; }
+.segment { stroke: var(--color-warning); stroke-width: 5; }
+.arrow { fill: none; stroke: var(--color-text); stroke-width: 3; }
+.record-choices, .choices { display: grid; gap: 10px; }
+.btn--answer { white-space: normal; min-height: 44px; }
+input[type='number'] { display: block; box-sizing: border-box; width: 100%; min-height: 44px; margin: 6px 0 12px; padding: 8px; font: inherit; }
+fieldset { margin-block: 12px; border: 1px solid var(--color-earth); }
+fieldset label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid #146d9a; outline-offset: 3px; }
+summary { cursor: pointer; }
+@media (max-width: 600px) { svg text { font-size: 20px; } }

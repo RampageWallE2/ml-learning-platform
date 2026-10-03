@@ -53,12 +53,28 @@ describe('ProgressService — Open Pit MVP', () => {
   afterEach(() => http.verify());
 
   it('unlocks lessons in pedagogical order', () => {
-    expect(progress.zoneProgress()[0].totalLessons).toBe(3);
+    expect(progress.zoneProgress()[0].totalLessons).toBe(4);
     expect(progress.currentObjective()).toContain('encargado del carguío');
     expect(progress.isLessonAvailable('lesson-01')).toBe(true);
     expect(progress.isLessonAvailable('lesson-02')).toBe(false);
     expect(progress.isLessonAvailable('lesson-03')).toBe(false);
     expect(progress.isLessonAvailable('unknown-lesson')).toBe(false);
+    expect(progress.isLessonAvailable('lesson-04')).toBe(false);
+  });
+
+  it('unlocks the workshop after C3 and counts it toward zone completion', () => {
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'profile-id',
+      lessons: ['lesson-01', 'lesson-02', 'lesson-03'].map(id => storedLesson(id, 'completed'))
+    });
+    expect(progress.isLessonAvailable('lesson-04')).toBe(true);
+    expect(progress.currentObjective()).toContain('taller');
+    expect(progress.zoneProgress()[0].percentage).toBe(75);
+    expect(progress.zoneProgress()[0].completed).toBe(false);
+    progress.completeLesson('lesson-04').subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress/lesson-04').flush({ progress: storedLesson('lesson-04', 'completed') });
+    expect(progress.zoneProgress()[0].completed).toBe(true);
   });
 
   it('loads only completed and registered lessons from the API', () => {

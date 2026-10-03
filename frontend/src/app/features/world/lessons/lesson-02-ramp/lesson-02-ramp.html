@@ -1,28 +1,53 @@
 <section class="lesson ramp-lesson" aria-labelledby="ramp-title">
   <header class="lesson-header">
-    <span class="lesson-tag">Clase 2 · Control de turnos en la rampa</span>
-    <h2 id="ramp-title">¿Con qué turno te quedarías?</h2>
-    <p>Compara las cargas de dos turnos y busca el comportamiento más regular.</p>
+    <span class="lesson-tag">Clase 2 · Control de acarreo</span>
+    <h2 id="ramp-title">¿Alcanza con el promedio?</h2>
+    <p>Revisa si el informe del relevo contiene suficiente información para comparar las cargas.</p>
   </header>
-
-  @if (stage() === 'choose-turn' || stage() === 'turn-confirmed') {
-    <div class="target-card" aria-label="Objetivo operativo: 100 toneladas por camión">
-      <span>Objetivo operativo</span>
-      <strong>100 t</strong>
-      <small>por camión</small>
+  <div class="average-grid" aria-label="Informes de carga media">
+    @for (turn of turns; track turn.id; let index = $index) {
+      <article>
+        <span>{{ practicing() ? (round() === 0 ? 'Turno ' + (index === 0 ? 'C' : 'D') : 'Nuevo informe ' + (index + 1)) : 'Turno ' + turn.id }}</span>
+        <strong>{{ practicing() ? practiceMean() : average(turn.values) }} t</strong>
+        <small>Carga media por camión</small>
+      </article>
+    }
+  </div>
+  <small>Datos simulados.</small>
+  @if (stage() === 'report' || stage() === 'request') {
+    <details class="lesson-card">
+      <summary>Recordar qué significa la media</summary>
+      <p>La media se obtiene sumando las cargas y dividiendo entre el número de camiones. Es un valor que resume el centro del conjunto.</p>
+    </details>
+  }
+  @if (stage() === 'report') {
+    <h3>Con estos informes, ¿qué podemos concluir sobre la dispersión?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="assess('same')">Fue igual en ambos turnos.</button>
+      <button type="button" class="btn btn--answer" (click)="assess('b')">Fue mayor en el turno B.</button>
+      <button type="button" class="btn btn--answer" (click)="assess('unknown')">Todavía no podemos determinarlo.</button>
     </div>
-
+  }
+  @if (stage() === 'request') {
+    <h3>¿Qué información pedirías para comparar la dispersión?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="request('records')">Las cargas individuales de ambos turnos.</button>
+      <button type="button" class="btn btn--answer" (click)="request('drivers')">El nombre de los conductores.</button>
+      <button type="button" class="btn btn--answer" (click)="request('decimals')">Los mismos promedios con más decimales.</button>
+    </div>
+  }
+  @if (showRecords()) {
+    <p>Ambas escalas van de 80 a 120 t. La línea central señala la <strong>media observada de 100 t</strong>.</p>
     <div class="turn-grid">
       @for (turn of turns; track turn.id) {
-        <article class="turn-card" [class.turn-card--selected]="selectedTurn() === turn.id">
+        <article class="turn-card">
           <h3>Turno {{ turn.id }}</h3>
-          <div class="records" [attr.aria-label]="'Turno ' + turn.id + ': ' + turn.values.join(', ') + ' toneladas'">
+          <div class="records" [attr.aria-label]="'Cargas del turno ' + turn.id">
             @for (value of turn.values; track $index) {
               <div class="record">
                 <strong>{{ value }} t</strong>
                 <div class="record-track" aria-hidden="true">
-                  <span class="target-line"></span>
-                  <span class="deviation" [style.left.%]="deviationLeft(value)" [style.width.%]="deviationWidth(value)"></span>
+                  <span class="mean-line"></span>
                   <span class="record-marker" [style.left.%]="position(value)"></span>
                 </div>
               </div>
@@ -32,89 +57,47 @@
         </article>
       }
     </div>
-
-    @if (stage() === 'choose-turn') {
-      <div class="question-section">
-        <span class="lesson-tag">Decisión operativa</span>
-        <h3>Si buscas cargas próximas al objetivo, ¿qué turno elegirías?</h3>
-        <div class="turn-choices">
-          <button type="button" class="btn btn--answer" (click)="chooseTurn('A')">Elegir Turno A</button>
-          <button type="button" class="btn btn--answer" (click)="chooseTurn('B')">Elegir Turno B</button>
-        </div>
-      </div>
-    }
-
+  }
+  @if (stage() === 'records') {
+    <h3>Ahora que tienes los registros, ¿qué puedes afirmar?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="compare('same')">Tienen la misma media y la misma dispersión.</button>
+      <button type="button" class="btn btn--answer" (click)="compare('spread')">Tienen la misma media, pero B presenta mayor dispersión.</button>
+      <button type="button" class="btn btn--answer" (click)="compare('mean')">B tiene una media mayor.</button>
+    </div>
+  }
+  @if (stage() === 'practice') {
+    <h3>¿Estos dos turnos necesariamente tienen distinta dispersión?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="answerPractice('yes')">Sí.</button>
+      <button type="button" class="btn btn--answer" (click)="answerPractice('unknown')">No podemos determinarlo con esas medias.</button>
+    </div>
+  }
+  @if (stage() === 'reason') {
+    <h3>¿Por qué?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="explain('always-different')">Si las medias son iguales, la dispersión siempre es diferente.</button>
+      <button type="button" class="btn btn--answer" (click)="explain('center')">Conocer el centro no me dice cuánto se separan los registros.</button>
+      <button type="button" class="btn btn--answer" (click)="explain('always-same')">Si las medias son iguales, las cargas también son iguales.</button>
+    </div>
+  }
+  <div aria-live="polite" aria-atomic="true">
     @if (feedback()) {
-      <div class="feedback" [class.feedback--success]="stage() === 'turn-confirmed'"
-           [class.feedback--hint]="stage() === 'choose-turn'" aria-live="polite">
-        <p>{{ feedback() }}</p>
-      </div>
+      <div class="feedback" [class.feedback--success]="stage() === 'success' || stage() === 'discovery'"><p>{{ feedback() }}</p></div>
     }
-
-    @if (stage() === 'turn-confirmed') {
-      <div class="lesson-actions">
-        <button type="button" class="btn btn--primary" (click)="revealAverages()">Comparar los promedios</button>
-      </div>
-    }
-  }
-
-  @if (stage() === 'compare-averages') {
-    <div class="discovery">
-      <span class="lesson-tag">El giro</span>
-      <h3>Ambos turnos tienen el mismo promedio</h3>
-      <div class="average-grid">
-        @for (turn of turns; track turn.id) {
-          <article>
-            <span>Turno {{ turn.id }}</span>
-            <strong>{{ average(turn.values) }} t</strong>
-            <small>por camión</small>
-          </article>
-        }
-      </div>
-    </div>
-
-    <div class="common-scale" aria-label="Ambos turnos tienen centro en 100, pero distinta dispersión">
-      <div class="scale-ticks" aria-hidden="true">
-        @for (tick of scaleTicks; track tick) { <span [style.left.%]="position(tick)">{{ tick }}</span> }
-      </div>
-      @for (turn of turns; track turn.id) {
-        <div class="scale-row">
-          <strong>Turno {{ turn.id }}</strong>
-          <div class="scale-line">
-            <span class="average-line" aria-hidden="true"></span>
-            @for (value of turn.values; track $index) {
-              <span class="scale-point" [style.left.%]="position(value)" [attr.title]="value + ' t'"></span>
-            }
-          </div>
-        </div>
-      }
-      <p><strong>Mismo centro:</strong> 100 t · <strong>Distinta separación</strong></p>
-    </div>
-
-    <div class="question-section">
-      <span class="lesson-tag">Piensa en el comportamiento</span>
-      <h3>Si ambos tienen el mismo promedio, ¿podemos decir que se comportaron igual?</h3>
-      <div class="turn-choices">
-        <button type="button" class="btn btn--answer" (click)="answerBehavior('yes')">Sí</button>
-        <button type="button" class="btn btn--answer" (click)="answerBehavior('no')">No</button>
-      </div>
-      @if (feedback()) {
-        <div class="feedback feedback--hint" aria-live="polite"><p>{{ feedback() }}</p></div>
-      }
-    </div>
-  }
-
+  </div>
   @if (stage() === 'success') {
-    <div class="lesson-completion">
-      <span class="success-label">Descubrimiento</span>
-      <h3>El promedio no cuenta toda la historia</h3>
-      <div class="result-comparison">
-        <p><strong>Turno A</strong><span>Promedio 100 t</span><small>Cargas más regulares</small></p>
-        <p><strong>Turno B</strong><span>Promedio 100 t</span><small>Mayor dispersión</small></p>
-      </div>
-      <p>El promedio muestra el centro de los datos, pero no cuánto se separan alrededor de ese centro.</p>
-      <div class="feedback feedback--success"><p>{{ feedback() }}</p></div>
-      <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+    <div class="lesson-card">
+      <h3>Observación para el relevo</h3>
+      <p><strong>Hallazgo:</strong> los turnos A y B promediaron 100 toneladas, pero B presentó mayor dispersión.</p>
+      <p><strong>Aprendizaje:</strong> medias iguales no garantizan dispersiones iguales ni diferentes. Necesitamos información adicional.</p>
     </div>
   }
+  <div class="lesson-actions">
+    @if (stage() === 'discovery' || stage() === 'hint') {
+      <button type="button" class="btn btn--primary" (click)="startPractice()">Revisar nuevos informes</button>
+    } @else if (stage() === 'success') {
+      <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+    }
+  </div>
 </section>

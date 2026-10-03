@@ -1,134 +1,101 @@
 import { ChangeDetectionStrategy, Component, computed, output, signal } from '@angular/core';
 
-type LoadingStage = 'order-a' | 'order-b' | 'compare' | 'success';
-type Load = { id: string; tonnes: number };
-
-const GROUPS = [
+type Stage = 'compare' | 'justify' | 'discovery' | 'practice' | 'practice-hint' | 'practice-justify' | 'success';
+type Group = { name: string; loads: readonly number[] };
+type Reason = 'spread' | 'maximum' | 'count';
+const INITIAL: readonly Group[] = [
   { name: 'A', loads: [98, 102, 100, 101, 99] },
-  { name: 'B', loads: [82, 116, 95, 111, 96] }
-] as const;
-
-function initialLoads(group: 0 | 1): Load[] {
-  return GROUPS[group].loads.map((tonnes, index) => ({
-    id: `${GROUPS[group].name}${index + 1}`, tonnes
-  }));
-}
+  { name: 'B', loads: [82, 116, 95, 111, 96] },
+];
 
 @Component({
   selector: 'app-lesson-01-loading',
   templateUrl: './lesson-01-loading.html',
   styleUrl: './lesson-01-loading.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson01Loading {
   readonly completed = output<void>();
-  readonly stage = signal<LoadingStage>('order-a');
-  readonly loads = signal(initialLoads(0));
-  readonly orderAccepted = signal(false);
+  readonly stage = signal<Stage>('compare');
   readonly feedback = signal('');
-  readonly draggedId = signal<string | null>(null);
-  readonly dropIndex = signal<number | null>(null);
-  readonly ordering = computed(() => this.stage() === 'order-a' || this.stage() === 'order-b');
-  readonly groupName = computed(() => this.stage() === 'order-a' ? 'A' : 'B');
+  readonly selectedLoad = signal<string | null>(null);
+  readonly practiceRound = signal(0);
   readonly ticks = [80, 90, 100, 110, 120];
-
-  // Every position uses the same 80–120 t scale. Stagger only the labels vertically.
-  readonly plots = GROUPS.map(group => ({
+  readonly practicing = computed(() => ['practice', 'practice-hint', 'practice-justify'].includes(this.stage()));
+  readonly groups = computed<readonly Group[]>(() => {
+    if (!this.practicing()) return INITIAL;
+    if (this.practiceRound() === 0) return [
+      { name: 'C', loads: [110, 111, 112] }, { name: 'D', loads: [90, 100, 110] },
+    ];
+    if (this.practiceRound() === 1) return [
+      { name: 'E', loads: [85, 100, 115] }, { name: 'F', loads: [105, 106, 107] },
+    ];
+    // New comparisons after further hints, always within the same 80–120 t scale.
+    const offset = (this.practiceRound() - 2) % 9;
+    const wide = { name: 'G', loads: [81 + offset, 95 + offset, 109 + offset] };
+    const narrow = { name: 'H', loads: [110 + offset, 111 + offset, 112 + offset] };
+    return this.practiceRound() % 2 === 0 ? [narrow, wide] : [wide, narrow];
+  });
+  readonly correctGroup = computed(() => this.practiceRound() === 0 ? 'D' : this.practiceRound() === 1 ? 'E' : 'G');
+  readonly plots = computed(() => this.groups().map(group => ({
     name: group.name,
-    values: [...group.loads].sort((a, b) => a - b),
-    points: [...group.loads].sort((a, b) => a - b).map((tonnes, index) => ({
-      tonnes, x: this.scaleX(tonnes), labelY: 30 + index * 21
-    }))
-  }));
-
-  private pointerId: number | null = null;
+    points: group.loads.map((tonnes, index) => ({
+      id: `${group.name}${index + 1}`, tonnes, x: this.scaleX(tonnes), labelY: 25 + index * 22,
+    })),
+  })));
   private finished = false;
 
-  scaleX(tonnes: number): number {
-    return 30 + (tonnes - 80) * 12;
-  }
+  scaleX(tonnes: number): number { return 30 + (tonnes - 80) * 12; }
 
-  moveLoad(from: number, to: number): void {
-    if (!this.ordering() || this.orderAccepted() || from === to ||
-        from < 0 || to < 0 || from >= this.loads().length || to >= this.loads().length) return;
-
-    const next = [...this.loads()];
-    const [load] = next.splice(from, 1);
-    next.splice(to, 0, load);
-    this.loads.set(next);
-    this.feedback.set('');
-  }
-
-  startDrag(event: PointerEvent, id: string): void {
-    if (event.button !== 0 || !event.isPrimary || this.pointerId !== null ||
-        !this.ordering() || this.orderAccepted()) return;
-
-    event.preventDefault();
-    const handle = event.currentTarget as HTMLElement;
-    handle.focus();
-    handle.setPointerCapture(event.pointerId);
-    this.pointerId = event.pointerId;
-    this.draggedId.set(id);
-    this.dropIndex.set(this.loads().findIndex(load => load.id === id));
-  }
-
-  drag(event: PointerEvent): void {
-    if (event.pointerId !== this.pointerId) return;
-
-    const handle = event.currentTarget as HTMLElement;
-    const list = handle.closest('.load-list');
-    const target = handle.ownerDocument.elementFromPoint(event.clientX, event.clientY)
-      ?.closest<HTMLElement>('[data-load-index]');
-    this.dropIndex.set(target && list?.contains(target) ? Number(target.dataset['loadIndex']) : null);
-  }
-
-  endDrag(event: PointerEvent): void {
-    if (event.pointerId !== this.pointerId) return;
-    this.drag(event);
-    const from = this.loads().findIndex(load => load.id === this.draggedId());
-    const to = this.dropIndex();
-    this.cancelDrag();
-    if (to !== null) this.moveLoad(from, to);
-  }
-
-  cancelDrag(): void {
-    this.pointerId = null;
-    this.draggedId.set(null);
-    this.dropIndex.set(null);
-  }
-
-  checkOrder(): void {
-    if (!this.ordering() || this.orderAccepted()) return;
-    this.cancelDrag();
-    const loads = this.loads();
-    const sorted = loads.every((load, index) => index === 0 || loads[index - 1].tonnes <= load.tonnes);
-    this.orderAccepted.set(sorted);
-    this.feedback.set(sorted
-      ? `Correcto. El Grupo ${this.groupName()} está ordenado de menor a mayor carga.`
-      : 'Inténtalo nuevamente. Revisa cada par: la carga de la izquierda debe ser menor que la siguiente. En móvil, lee de arriba hacia abajo.');
-  }
-
-  continueOrder(): void {
-    if (!this.orderAccepted() || !this.ordering()) return;
-    this.cancelDrag();
-    if (this.stage() === 'order-a') {
-      this.loads.set(initialLoads(1));
-      this.stage.set('order-b');
-    } else {
-      this.stage.set('compare');
+  chooseGroup(name: string): void {
+    if (this.stage() === 'compare') {
+      if (name !== 'A' && name !== 'B') return;
+      if (name === 'B') {
+        this.stage.set('justify');
+        this.feedback.set('Elegiste el grupo B. ¿Qué observación respalda tu decisión?');
+      } else {
+        this.feedback.set('Observa el espacio que ocupa cada grupo en la misma escala. ¿Cuál reúne sus cargas en una zona más estrecha?');
+      }
+    } else if (this.stage() === 'practice') {
+      if (!this.groups().some(group => group.name === name)) return;
+      if (name === this.correctGroup()) {
+        this.stage.set('practice-justify');
+        this.feedback.set('Ahora elige la observación que respalda tu respuesta.');
+      } else {
+        this.practiceHint('Las cargas más altas pueden estar muy próximas entre sí. Compara la separación del conjunto completo. Practiquemos con otros registros.');
+      }
     }
-    this.orderAccepted.set(false);
-    this.feedback.set('');
   }
 
-  chooseGroup(group: 'A' | 'B'): void {
-    if (this.stage() !== 'compare') return;
-    if (group === 'B') {
-      this.stage.set('success');
-      this.feedback.set('Correcto. Los valores del Grupo B están mucho más extendidos.');
-    } else {
-      this.feedback.set('Inténtalo nuevamente. Observa en cuál grupo las cargas ocupan una parte más amplia de la escala.');
+  chooseReason(reason: Reason): void {
+    if (this.stage() !== 'justify' && this.stage() !== 'practice-justify') return;
+    if (reason === 'spread') {
+      const initial = this.stage() === 'justify';
+      this.stage.set(initial ? 'discovery' : 'success');
+      this.selectedLoad.set(null);
+      this.feedback.set(initial
+        ? 'Exacto. En A las cargas están próximas entre sí; en B están más separadas. A esa separación de los datos la llamamos dispersión.'
+        : 'Correcto. Reconociste la dispersión en nuevos registros y la distinguiste del tamaño de las cargas.');
+      return;
     }
+    const hint = reason === 'maximum'
+      ? 'Ese camión es una parte del grupo. Para comparar la dispersión, observa también cómo se distribuyen los demás.'
+      : `Ambos grupos tienen ${this.practicing() ? 'tres' : 'cinco'} registros. La diferencia está en sus cargas.`;
+    if (this.stage() === 'practice-justify') this.practiceHint(`${hint} Revisaremos otros registros para comprobarlo.`);
+    else this.feedback.set(hint);
+  }
+
+  startPractice(): void {
+    if (this.stage() !== 'discovery' && this.stage() !== 'practice-hint') return;
+    if (this.stage() === 'practice-hint') this.practiceRound.update(round => round + 1);
+    this.selectedLoad.set(null);
+    this.feedback.set('');
+    this.stage.set('practice');
+  }
+
+  private practiceHint(message: string): void {
+    this.stage.set('practice-hint');
+    this.feedback.set(message);
   }
 
   finish(): void {

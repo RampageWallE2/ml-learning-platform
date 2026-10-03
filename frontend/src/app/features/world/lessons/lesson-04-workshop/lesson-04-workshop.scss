@@ -1,0 +1,17 @@
+:host { display: block; min-width: 0; }
+.plots, .choices { display: grid; gap: 12px; }
+.plot { padding: 12px; border: 2px solid var(--color-earth); border-radius: 8px; background: var(--color-surface-alt); }
+.plot h3, .plot p { margin: 0; }
+.plot p { text-align: center; }
+svg { display: block; width: 100%; max-height: 200px; }
+svg text { text-anchor: middle; font-size: 16px; fill: var(--color-text); }
+.axis { stroke: var(--color-text-muted); stroke-width: 1.5; }
+.guide { stroke: var(--color-primary); opacity: .5; }
+circle { fill: var(--color-primary); }
+input[type='number'] { display: block; box-sizing: border-box; width: 100%; min-height: 44px; margin: 6px 0 12px; padding: 8px; font: inherit; }
+input[type='range'] { display: block; width: 100%; min-height: 44px; }
+fieldset { margin: 12px 0; border: 1px solid var(--color-earth); }
+fieldset label { display: flex; align-items: center; gap: 8px; min-height: 44px; padding-block: 6px; }
+.btn--answer { white-space: normal; min-height: 44px; }
+button:focus-visible, input:focus-visible { outline: 3px solid #146d9a; outline-offset: 3px; }
+@media (max-width: 600px) { .plot { padding: 8px 4px; } svg text { font-size: 20px; } }

@@ -8,11 +8,9 @@ export const LESSON_01_LOADING: LessonDefinition = {
       dialogue: {
         id: 'lesson-01-loading-intro',
         messages: [
-          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Estamos terminando de cargar estos camiones antes de enviarlos por la rampa.' },
-          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Revisé las toneladas que recibió cada unidad y algo me llama la atención.' },
-          { speaker: 'player', characterId: 'player', name: 'Tú', text: '¿Hay algún camión con poca carga?' },
-          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'No quiero que mires solamente un camión. Compara los dos grupos completos.' },
-          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Observa las toneladas cargadas y dime en cuál grupo las cargas son más irregulares.' }
+          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Estoy preparando estos registros para el relevo. Aquí están las cargas de dos grupos de camiones.' },
+          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Necesito señalar en cuál las cargas fueron más parecidas y en cuál hubo mayores diferencias.' },
+          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Ayúdame a compararlas.' }
         ]
       }
     },
@@ -22,10 +20,9 @@ export const LESSON_01_LOADING: LessonDefinition = {
       dialogue: {
         id: 'lesson-01-loading-end',
         messages: [
-          { speaker: 'player', characterId: 'player', name: 'Tú', text: 'El Grupo B tiene cargas mucho más separadas entre sí.' },
-          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Exacto. En el Grupo A las cargas se mantienen bastante próximas. En el B cambian mucho más de un camión a otro.' },
-          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Cuando los valores de un conjunto están más extendidos, decimos que existe mayor dispersión.' },
-          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Los camiones seguirán ahora por la rampa. Allí están comparando los resultados de dos turnos. Ve a hablar con el encargado del control.' }
+          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Añadiré esa observación al registro. El grupo B tuvo cargas más dispersas.' },
+          { speaker: 'player', characterId: 'player', name: 'Tú', text: 'Y tener cargas mayores no significa que estén más dispersas.' },
+          { speaker: 'npc', characterId: 'loading-supervisor', name: 'Encargado del carguío', text: 'Exacto. Ahora pasa por control de acarreo: están comparando dos turnos y necesitan revisar si su informe contiene suficiente información.' }
         ]
       }
     }

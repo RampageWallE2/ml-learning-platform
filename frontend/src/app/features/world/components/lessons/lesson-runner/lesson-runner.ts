@@ -14,6 +14,7 @@ import { Lesson01Loading } from '../../../lessons/lesson-01-loading/lesson-01-lo
 import { Lesson02Ramp } from '../../../lessons/lesson-02-ramp/lesson-02-ramp';
 
 import { Lesson03Haulage } from '../../../lessons/lesson-03-haulage/lesson-03-haulage';
+import { Lesson04Workshop } from '../../../lessons/lesson-04-workshop/lesson-04-workshop';
 
 @Component({
   selector: 'app-lesson-runner',
@@ -23,7 +24,8 @@ import { Lesson03Haulage } from '../../../lessons/lesson-03-haulage/lesson-03-ha
     InteractionPanel,
     Lesson01Loading,
     Lesson02Ramp,
-    Lesson03Haulage
+    Lesson03Haulage,
+    Lesson04Workshop
   ],
 
   templateUrl: './lesson-runner.html'

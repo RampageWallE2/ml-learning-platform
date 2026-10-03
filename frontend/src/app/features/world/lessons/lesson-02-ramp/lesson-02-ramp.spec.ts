@@ -7,43 +7,65 @@ describe('Lesson02Ramp', () => {
     fixture.detectChanges();
     return fixture;
   }
-
-  it('keeps the player in the first decision after choosing the irregular turn', () => {
-    const game = create().componentInstance;
-    game.chooseTurn('B');
-    expect(game.stage()).toBe('choose-turn');
-    expect(game.selectedTurn()).toBe('B');
-    expect(game.feedback()).toContain('Inténtalo nuevamente');
+  function practice(game: Lesson02Ramp) {
+    game.assess('unknown'); game.request('records'); game.compare('spread'); game.startPractice();
+  }
+  it('shows only means until the player identifies missing information and requests records', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.records')).toBeNull();
+    expect(root.textContent).not.toContain('Objetivo operativo');
+    game.request('records');
+    game.assess('same'); game.assess('b');
+    expect(game.stage()).toBe('report');
+    game.assess('unknown');
+    game.request('drivers'); game.request('decimals');
+    fixture.detectChanges();
+    expect(root.querySelector('.records')).toBeNull();
+    game.request('records');
+    fixture.detectChanges();
+    expect(root.querySelectorAll('.record')).toHaveLength(10);
+    expect(game.turns.map(turn => game.average(turn.values))).toEqual([100, 100]);
   });
-
-  it('reveals equal averages only after choosing Turn A', () => {
+  it('requires interpreting the records before independent practice', () => {
     const game = create().componentInstance;
-    expect(game.stage()).toBe('choose-turn');
-    expect(game.average(game.turns[0].values)).toBe(100);
-    expect(game.average(game.turns[1].values)).toBe(100);
-    game.revealAverages();
-    expect(game.stage()).toBe('choose-turn');
-    game.chooseTurn('A');
-    expect(game.stage()).toBe('turn-confirmed');
-    game.revealAverages();
-    expect(game.stage()).toBe('compare-averages');
+    game.startPractice(); game.compare('spread');
+    expect(game.stage()).toBe('report');
+    game.assess('unknown'); game.request('records');
+    game.compare('same'); game.compare('mean');
+    expect(game.stage()).toBe('records');
+    game.compare('spread'); game.startPractice();
+    expect(game.practiceMean()).toBe(90);
+    expect(game.showRecords()).toBe(false);
   });
-
-  it('requires No in the conceptual question and emits completion once', () => {
+  it('requires fresh reports after a hinted answer or explanation', () => {
     const game = create().componentInstance;
-    const done = vi.fn();
-    game.completed.subscribe(done);
-    game.chooseTurn('A');
-    game.revealAverages();
-    game.answerBehavior('yes');
-    expect(game.stage()).toBe('compare-averages');
-    expect(game.feedback()).toContain('Inténtalo nuevamente');
-    game.finish();
+    practice(game);
+    game.answerPractice('yes');
+    game.answerPractice('unknown'); game.explain('center');
+    expect(game.stage()).toBe('hint');
+    game.startPractice();
+    expect(game.practiceMean()).toBe(95);
+    game.answerPractice('unknown'); game.explain('always-same');
+    expect(game.stage()).toBe('hint');
+    game.startPractice();
+    expect(game.practiceMean()).toBe(100);
+    game.answerPractice('unknown'); game.explain('always-different');
+    expect(game.stage()).toBe('hint');
+  });
+  it('emits once only after the independent answer and explanation', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const done = vi.fn(); game.completed.subscribe(done);
+    game.finish(); practice(game); game.answerPractice('unknown'); game.finish();
     expect(done).not.toHaveBeenCalled();
-    game.answerBehavior('no');
-    expect(game.stage()).toBe('success');
-    game.finish();
-    game.finish();
+    game.explain('center'); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Hallazgo:');
+    game.finish(); game.finish();
     expect(done).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+    const replay = create().componentInstance;
+    expect(replay.stage()).toBe('report'); expect(replay.feedback()).toBe(''); expect(replay.round()).toBe(0);
   });
 });

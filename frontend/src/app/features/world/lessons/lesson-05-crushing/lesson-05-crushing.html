@@ -1,0 +1,101 @@
+<section class="lesson" aria-labelledby="crushing-title">
+  <header class="lesson-header">
+    <span class="lesson-tag">Clase 5 · ROM / chancado</span>
+    <h2 id="crushing-title">¿Cuánto se aleja cada registro?</h2>
+    <p>Compara cada registro de alimentación con su media.</p>
+    <small>Datos simulados · Toneladas por hora (t/h)</small>
+  </header>
+  @if (stage() !== 'success') {
+    <div class="lesson-card">
+      <h3>{{ practicing() ? 'Nuevos registros' : 'Registros de alimentación' }}</h3>
+      <p>{{ values().join(' · ') }} t/h</p>
+      <svg viewBox="0 0 540 210" role="img" [attr.aria-label]="'Registros: ' + values().join(', ') + ' toneladas por hora. Escala de 80 a 120.'">
+        <line x1="30" y1="150" x2="510" y2="150" class="axis" />
+        @for (tick of ticks; track tick) {
+          <line [attr.x1]="position(tick)" y1="146" [attr.x2]="position(tick)" y2="156" class="axis" />
+          <text [attr.x]="position(tick)" y="178">{{ tick }}</text>
+        }
+        @if (stage() !== 'mean') {
+          <line x1="270" y1="20" x2="270" y2="150" class="mean" />
+          <text x="270" y="202">Media 100</text>
+        }
+        @for (value of values(); track $index; let i = $index) {
+          <g [class.selected]="selected() === i">
+            <line [attr.x1]="position(value)" [attr.y1]="30 + i * 26" [attr.x2]="position(value)" y2="150" class="guide" />
+            <circle [attr.cx]="position(value)" [attr.cy]="30 + i * 26" r="5" />
+            <text [attr.x]="position(value)" [attr.y]="22 + i * 26">{{ value }}</text>
+          </g>
+        }
+        @if (current() !== null) {
+          <line [attr.x1]="segmentLeft()" y1="135" [attr.x2]="segmentLeft() + segmentWidth()" y2="135" class="segment" />
+        }
+      </svg>
+    </div>
+  }
+  @if (stage() === 'mean') {
+    <details class="lesson-card"><summary>Ayuda para calcular la media</summary><p>Suma 80 + 80 + 120 + 120 y divide el total entre los cuatro registros.</p></details>
+    <form (submit)="$event.preventDefault(); checkMean()">
+      <label for="mean-input">¿Dónde está la media? Escribe su valor en t/h.</label>
+      <input id="mean-input" type="number" step="any" [value]="meanInput()" (input)="meanInput.set($any($event.target).value)">
+      <button type="submit" class="btn btn--primary">Situar la media en la escala</button>
+    </form>
+  }
+  @if (stage() === 'records' || stage() === 'practice') {
+    @if (stage() === 'records') {
+      <div class="lesson-card"><p><strong>Desviación = dato − media.</strong> El signo indica el lado de la media.</p><p><strong>Distancia:</strong> longitud de la separación, sin signo negativo.</p></div>
+    }
+    <div class="record-choices">
+      @for (value of values(); track $index; let i = $index) {
+        <button type="button" class="btn btn--answer" [disabled]="solved().includes(i)" [attr.aria-pressed]="selected() === i" (click)="select(i)">
+          Registro {{ i + 1 }}: {{ value }} t/h {{ solved().includes(i) ? '✓ Revisado' : '' }}
+        </button>
+      }
+    </div>
+    @if (current() !== null) {
+      <form (submit)="$event.preventDefault(); checkRecord()">
+        <h3>Registro {{ selected()! + 1 }} · {{ current() }} t/h</h3>
+        <fieldset><legend>Respecto a la media de 100 t/h, este registro…</legend>
+          <label><input type="radio" name="side" [checked]="side() === 'below'" (change)="side.set('below')"> Está por debajo.</label>
+          <label><input type="radio" name="side" [checked]="side() === 'equal'" (change)="side.set('equal')"> Coincide con la media.</label>
+          <label><input type="radio" name="side" [checked]="side() === 'above'" (change)="side.set('above')"> Está por encima.</label>
+        </fieldset>
+        <label for="deviation">Desviación, en t/h</label>
+        <input id="deviation" type="number" step="any" [value]="deviation()" (input)="deviation.set($any($event.target).value)">
+        <label for="distance">Distancia, en t/h</label>
+        <input id="distance" type="number" step="any" [value]="distance()" (input)="distance.set($any($event.target).value)">
+        <button type="submit" class="btn btn--primary">Comprobar registro</button>
+      </form>
+    }
+    @if (allSolved()) { <button type="button" class="btn btn--primary" (click)="continueRecords()">Comparar las separaciones</button> }
+  }
+  @if (stage() === 'compare') {
+    <div class="lesson-card"><p>80 → desviación −20; distancia 20 t/h.</p><p>120 → desviación +20; distancia 20 t/h.</p>
+      <svg viewBox="0 0 540 70" role="img" aria-label="Dos segmentos de igual longitud: de 80 a 100 hacia la izquierda y de 100 a 120 hacia la derecha.">
+        <line x1="30" y1="30" x2="270" y2="30" class="segment" /><line x1="270" y1="30" x2="510" y2="30" class="segment" />
+        <path d="M 42 20 L 30 30 L 42 40 M 498 20 L 510 30 L 498 40" class="arrow" />
+        <text x="35" y="65">80</text><text x="270" y="65">100</text><text x="505" y="65">120</text>
+      </svg>
+    </div>
+    <h3>¿Cómo se comparan esas separaciones?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="compare('negative-shorter')">−20 indica una distancia menor que +20.</button>
+      <button type="button" class="btn btn--answer" (click)="compare('same-distance')">Tienen la misma distancia, en lados contrarios de la media.</button>
+    </div>
+  }
+  @if (stage() === 'interpret') {
+    <h3>¿Por qué −10 y +10 representan la misma distancia?</h3>
+    <div class="choices">
+      <button type="button" class="btn btn--answer" (click)="interpret('negative-distance')">Porque una distancia es −10 y la otra +10.</button>
+      <button type="button" class="btn btn--answer" (click)="interpret('direction')">El signo indica el lado; ambos registros están a 10 de la media.</button>
+      <button type="button" class="btn btn--answer" (click)="interpret('different-distance')">No representan la misma distancia: 110 es un valor mayor.</button>
+    </div>
+  }
+  <div aria-live="polite" aria-atomic="true">@if (feedback()) { <div class="feedback"><p>{{ feedback() }}</p></div> }</div>
+  @if (stage() === 'success') {
+    <div class="lesson-card"><h3>Observación para el relevo</h3>
+      <p><strong>Hallazgo:</strong> los cuatro registros iniciales están a 20 t/h de su media de 100 t/h; dos por debajo y dos por encima.</p>
+      <p><strong>Aprendizaje:</strong> la desviación indica dirección y magnitud. La distancia no tiene signo negativo. Si el registro coincide con la media, ambas son cero.</p>
+    </div>
+    <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+  }
+</section>

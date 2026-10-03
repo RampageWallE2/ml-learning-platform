@@ -1,78 +1,89 @@
-import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, output, signal } from '@angular/core';
 
-type RampStage = 'choose-turn' | 'turn-confirmed' | 'compare-averages' | 'success';
-type RampTurn = 'A' | 'B';
-type BehaviorAnswer = 'yes' | 'no';
-
-const TURNS = [
-  { id: 'A' as const, values: [98, 101, 100, 99, 102] },
-  { id: 'B' as const, values: [80, 120, 90, 110, 100] }
-] as const;
-
+type Stage = 'report' | 'request' | 'records' | 'discovery' | 'practice' | 'reason' | 'hint' | 'success';
 @Component({
   selector: 'app-lesson-02-ramp',
   templateUrl: './lesson-02-ramp.html',
   styleUrl: './lesson-02-ramp.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson02Ramp {
   readonly completed = output<void>();
-  readonly stage = signal<RampStage>('choose-turn');
-  readonly selectedTurn = signal<RampTurn | null>(null);
-  readonly behaviorAnswer = signal<BehaviorAnswer | null>(null);
+  readonly stage = signal<Stage>('report');
   readonly feedback = signal('');
-  readonly turns = TURNS;
-  readonly scaleTicks = [80, 90, 100, 110, 120];
-  readonly target = 100;
-
+  readonly round = signal(0);
+  readonly turns = [
+    { id: 'A', values: [98, 101, 100, 99, 102] },
+    { id: 'B', values: [80, 120, 90, 110, 100] },
+  ];
+  readonly practicing = computed(() => ['practice', 'reason', 'hint'].includes(this.stage()));
+  readonly practiceMean = computed(() => 90 + this.round() * 5);
+  readonly showRecords = computed(() => ['records', 'discovery'].includes(this.stage()));
   private finished = false;
 
-  chooseTurn(turn: RampTurn): void {
-    if (this.stage() !== 'choose-turn') return;
+  average(values: readonly number[]): number { return values.reduce((sum, value) => sum + value, 0) / values.length; }
+  position(value: number): number { return (value - 80) * 2.5; }
 
-    this.selectedTurn.set(turn);
-    if (turn === 'A') {
-      this.stage.set('turn-confirmed');
-      this.feedback.set('Correcto. Las cargas del Turno A permanecieron mucho más próximas entre sí.');
-      return;
+  assess(answer: 'same' | 'b' | 'unknown'): void {
+    if (this.stage() !== 'report') return;
+    if (answer === 'unknown') {
+      this.stage.set('request');
+      this.feedback.set('El informe todavía no permite comparar la dispersión. Decide qué información necesitas.');
+    } else {
+      this.feedback.set('El informe muestra el promedio, pero no las cargas individuales. ¿Qué información respalda tu conclusión sobre su separación?');
     }
-
-    this.feedback.set('Inténtalo nuevamente. Observa qué turno mantiene todas sus cargas más cerca del objetivo de 100 t.');
   }
 
-  revealAverages(): void {
-    if (this.stage() !== 'turn-confirmed') return;
-    this.stage.set('compare-averages');
+  request(answer: 'records' | 'drivers' | 'decimals'): void {
+    if (this.stage() !== 'request') return;
+    if (answer === 'records') {
+      this.stage.set('records');
+      this.feedback.set('Registros recibidos. Compara las cargas de los dos turnos.');
+    } else {
+      this.feedback.set(answer === 'drivers'
+        ? 'Los nombres identifican a los conductores, pero no muestran cuánto se separan las cargas.'
+        : 'Escribir estos mismos promedios con más decimales no muestra las diferencias entre las cargas.');
+    }
+  }
+
+  compare(answer: 'same' | 'spread' | 'mean'): void {
+    if (this.stage() !== 'records') return;
+    if (answer === 'spread') {
+      this.stage.set('discovery');
+      this.feedback.set('Los promedios coinciden, pero las cargas del turno B están más separadas. Los registros aportaron información que faltaba en el informe.');
+    } else {
+      this.feedback.set(answer === 'mean'
+        ? 'Ambas medias son 100 t. Observa la separación de las cargas, no solo la mayor carga.'
+        : 'Las medias coinciden. ¿También coincide el espacio que ocupan las cargas en las escalas?');
+    }
+  }
+
+  startPractice(): void {
+    if (this.stage() !== 'discovery' && this.stage() !== 'hint') return;
+    if (this.stage() === 'hint') this.round.update(value => value + 1);
+    this.stage.set('practice');
     this.feedback.set('');
   }
 
-  answerBehavior(answer: BehaviorAnswer): void {
-    if (this.stage() !== 'compare-averages') return;
+  answerPractice(answer: 'yes' | 'unknown'): void {
+    if (this.stage() !== 'practice') return;
+    if (answer === 'unknown') {
+      this.stage.set('reason');
+      this.feedback.set('Elige la razón que respalda esa conclusión.');
+    } else this.hint();
+  }
 
-    this.behaviorAnswer.set(answer);
-    if (answer === 'no') {
+  explain(answer: 'center' | 'always-different' | 'always-same'): void {
+    if (this.stage() !== 'reason') return;
+    if (answer === 'center') {
       this.stage.set('success');
-      this.feedback.set('Correcto. Comparten el mismo promedio, pero el Turno B presenta mayor dispersión.');
-      return;
-    }
-
-    this.feedback.set('Inténtalo nuevamente. El promedio coincide, pero compara cuánto se separan las cargas alrededor de 100 t.');
+      this.feedback.set('Correcto. Medias iguales no garantizan dispersiones iguales ni diferentes. Necesitamos información adicional.');
+    } else this.hint();
   }
 
-  average(values: readonly number[]): number {
-    return values.reduce((sum, value) => sum + value, 0) / values.length;
-  }
-
-  position(value: number): number {
-    return (value - 80) * 2.5;
-  }
-
-  deviationLeft(value: number): number {
-    return Math.min(this.position(value), this.position(this.target));
-  }
-
-  deviationWidth(value: number): number {
-    return Math.abs(this.position(value) - this.position(this.target));
+  private hint(): void {
+    this.stage.set('hint');
+    this.feedback.set('Dos conjuntos con la misma media pueden tener igual o distinta dispersión. La media por sí sola no permite decidirlo. Compruébalo con otros informes.');
   }
 
   finish(): void {

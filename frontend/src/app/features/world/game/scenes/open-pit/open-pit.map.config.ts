@@ -22,6 +22,24 @@ export const OPEN_PIT_MAP_CONFIG = {
 
   tilesets: [
     {
+      id: 'water_1',
+      tiledName: 'water_1',
+      textureKey: 'water_1',
+      imagePath: 'assets/game/tilesets/terrain/water/water_1.png',
+    },
+    {
+      id: 'city_terrain2',
+      tiledName: 'city_terrain2',
+      textureKey: 'city_terrain2',
+      imagePath: 'assets/game/tilesets/terrain/city_terrain2.png',
+    },
+    {
+      id: 'vehicles',
+      tiledName: 'vehicles',
+      textureKey: 'vehicles',
+      imagePath: 'assets/game/tilesets/vehicles/vehicles.png',
+    },
+    {
       id: 'worksite_props',
       tiledName: 'worksite_props',
       textureKey: 'worksite_props',
@@ -186,6 +204,26 @@ export const OPEN_PIT_MAP_CONFIG = {
       depth: 0,
     },
     {
+      name: 'Terrain/Details',
+      tilesets: ['water_1'],
+      depth: 0.01,
+    },
+    {
+      name: 'Water/Ground',
+      tilesets: ['water_1'],
+      depth: 1.61,
+    },
+    {
+      name: 'Water/Buildings',
+      tilesets: ['city_props'],
+      depth: 1.62,
+    },
+    {
+      name: 'Water/NPC',
+      tilesets: ['character_postman_3'],
+      depth: 1.63,
+    },
+    {
       name: 'Pit/Pit_Floor',
       tilesets: ['beach_3'],
       depth: 0.1,
@@ -279,6 +317,61 @@ export const OPEN_PIT_MAP_CONFIG = {
       name: 'Electrical_Substation/Buildings',
       tilesets: ['electrical_substation', 'modular_camp'],
       depth: 1.7,
+    },
+    {
+      name: 'Electrical_Substation/Ground',
+      tilesets: ['city_terrain'],
+      depth: 1.69,
+    },
+    {
+      name: 'Campament/Ground',
+      tilesets: ['city_terrain'],
+      depth: 1.76,
+    },
+    {
+      name: 'Campament/Buildings',
+      tilesets: ['modular_camp'],
+      depth: 1.77,
+    },
+    {
+      name: 'Gas_Station/Ground',
+      tilesets: ['city_terrain', 'city_terrain2'],
+      depth: 1.78,
+    },
+    {
+      name: 'Gas_Station/Buildings',
+      tilesets: ['vehicles'],
+      depth: 1.781,
+    },
+    {
+      name: 'Gas_Station/NPC',
+      tilesets: ['character_postman_3'],
+      depth: 1.782,
+    },
+    {
+      name: 'Gas_Station/Props',
+      tilesets: ['vehicles'],
+      depth: 1.783,
+    },
+    {
+      name: 'Repair_Shop/Ground',
+      tilesets: ['city_terrain'],
+      depth: 1.79,
+    },
+    {
+      name: 'Parking/Ground',
+      tilesets: ['city_terrain', 'city_terrain2'],
+      depth: 1.96,
+    },
+    {
+      name: 'Parking/Sites',
+      tilesets: ['city_terrain2'],
+      depth: 1.97,
+    },
+    {
+      name: 'Parking/Vehicles',
+      tilesets: ['heavy_machinery'],
+      depth: 1.98,
     },
     {
       name: 'Electrical_Substation/NPC',
@@ -392,7 +485,7 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Processing_Area/Props',
-      tilesets: ['worksite_props', 'city_props'],
+      tilesets: ['worksite_props', 'city_props', 'military_base'],
       depth: 3.5,
     },
     {
