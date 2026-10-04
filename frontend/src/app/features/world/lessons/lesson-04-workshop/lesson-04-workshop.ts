@@ -1,6 +1,36 @@
-import { ChangeDetectionStrategy, Component, computed, output, signal } from '@angular/core';
+import {
+  afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
+  inject, Injector, output, signal, viewChild,
+} from '@angular/core';
 
-type Stage = 'ranges' | 'compare' | 'simulation' | 'explain' | 'practice' | 'success';
+type Stage = 'compare' | 'predict' | 'experiment' | 'explain' | 'discovery' | 'practice' | 'evidence' | 'review' | 'success';
+type Comparison = 'a' | 'b' | 'same';
+type Explanation = 'extremes' | 'unchanged' | 'useless';
+type Claim = 'same' | 'different' | 'unknown';
+type Evidence = 'a' | 'b' | 'range';
+type ExperimentMode = 'together' | 'apart';
+type RangePrediction = 'increase' | 'same' | 'decrease';
+type RecordGroup = Readonly<{ id: string; name: string; values: readonly number[] }>;
+
+const RECORDS: readonly RecordGroup[] = [
+  { id: 'A', name: 'Equipo A', values: [8, 10, 10, 10, 12] },
+  { id: 'B', name: 'Equipo B', values: [8, 8, 10, 12, 12] },
+];
+const PRACTICE_SETS: readonly (readonly RecordGroup[])[] = [
+  [
+    { id: 'C', name: 'Equipo C', values: [6, 8, 8, 8, 10] },
+    { id: 'D', name: 'Equipo D', values: [6, 6, 8, 10, 10] },
+  ],
+  [
+    { id: 'E', name: 'Equipo E', values: [8, 8, 11, 14, 14] },
+    { id: 'F', name: 'Equipo F', values: [8, 11, 11, 11, 14] },
+  ],
+  [
+    { id: 'G', name: 'Equipo G', values: [6, 7, 7, 7, 8] },
+    { id: 'H', name: 'Equipo H', values: [6, 6, 7, 8, 8] },
+  ],
+];
+
 @Component({
   selector: 'app-lesson-04-workshop',
   templateUrl: './lesson-04-workshop.html',
@@ -9,92 +39,173 @@ type Stage = 'ranges' | 'compare' | 'simulation' | 'explain' | 'practice' | 'suc
 })
 export class Lesson04Workshop {
   readonly completed = output<void>();
-  readonly stage = signal<Stage>('ranges');
+  readonly stage = signal<Stage>('compare');
   readonly feedback = signal('');
-  readonly rangeA = signal('');
-  readonly rangeB = signal('');
-  readonly distance = signal(0);
-  readonly practiceC = signal('');
-  readonly practiceD = signal('');
-  readonly practiceClaim = signal<'same' | 'different' | 'unknown' | null>(null);
-  readonly records = [
-    { name: 'Equipo A', values: [8, 10, 10, 10, 12] },
-    { name: 'Equipo B', values: [8, 8, 10, 12, 12] },
-  ];
-  readonly practiceRecords = [
-    { name: 'C', values: [6, 8, 8, 8, 10] },
-    { name: 'D', values: [6, 6, 8, 10, 10] },
-  ];
-  readonly simulated = computed(() => [8, 10 - this.distance(), 10, 10 + this.distance(), 12]);
-  readonly simulatedRange = computed(() => Math.max(...this.simulated()) - Math.min(...this.simulated()));
-  readonly simulatedMean = computed(() => this.simulated().reduce((sum, value) => sum + value, 0) / 5);
+  readonly experimentMode = signal<ExperimentMode>('together');
+  readonly rangePrediction = signal<RangePrediction | null>(null);
+  readonly separatedViewed = signal(false);
+  readonly round = signal(0);
+  readonly practiceHelped = signal(false);
+  readonly records = RECORDS;
   readonly ticks = [6, 7, 8, 9, 10, 11, 12, 13, 14];
-  readonly plots = computed(() => {
-    const groups = this.stage() === 'practice' ? this.practiceRecords : this.records;
-    const visible = this.stage() === 'simulation' || this.stage() === 'explain'
-      ? [...groups, { name: 'Copia de simulación de A', values: this.simulated() }] : groups;
-    return visible.map(group => ({ ...group, points: group.values.map((value, index) => ({
-      value, x: this.position(value), y: 24 + index * 22,
-    })) }));
+  readonly practicing = computed(() => ['practice', 'evidence', 'review'].includes(this.stage()));
+  readonly experimentVisible = computed(() => ['predict', 'experiment', 'explain', 'discovery'].includes(this.stage()));
+  readonly practiceRecords = computed(() => PRACTICE_SETS[this.round() % PRACTICE_SETS.length]);
+  readonly simulated = computed(() => this.experimentMode() === 'together' ? [8, 10, 10, 10, 12] : [8, 8, 10, 12, 12]);
+  readonly simulatedRange = computed(() => this.range(this.simulated()));
+  readonly step = computed(() => this.stage() === 'compare' ? 1 : this.experimentVisible() ? 2 : 3);
+  readonly groups = computed<readonly RecordGroup[]>(() => this.practicing() ? this.practiceRecords() : this.experimentVisible() ? [
+    { ...this.records[0], name: 'Original de A' },
+    { id: 'copy', name: 'Copia de A · experimento', values: this.simulated() },
+  ] : this.records);
+  readonly plots = computed(() => this.groups().map(group => {
+    // Keep unchanged copy records anchored; stack the two moving records above them.
+    const stackOrder = group.id === 'copy' ? [0, 4, 2, 1, 3] : group.values.map((_, index) => index);
+    return {
+      ...group,
+      minimum: Math.min(...group.values),
+      maximum: Math.max(...group.values),
+      range: this.range(group.values),
+      description: group.name + ': ' + group.values.join(', ') + ' minutos. Cada punto es una revisión; los puntos apilados tienen el mismo tiempo. Escala común de 6 a 14 minutos. Rango de ' + this.range(group.values) + ' minutos.',
+      points: group.values.map((value, index) => ({
+        id: group.id + '-' + (index + 1), value, x: this.position(value),
+        bottom: 14 + stackOrder.slice(0, stackOrder.indexOf(index)).filter(previous => group.values[previous] === value).length * 20,
+        movable: group.id === 'copy' && (index === 1 || index === 3),
+        pinned: this.experimentVisible() && (index === 0 || index === 4),
+      })),
+    };
+  }));
+  readonly center = computed(() => {
+    const values = this.practiceRecords()[0].values;
+    return (Math.min(...values) + Math.max(...values)) / 2;
   });
+  readonly centerCounts = computed(() => this.practiceRecords().map(group => group.values.filter(value => value === this.center()).length));
+  readonly concentratedSide = computed<Evidence>(() => this.centerCounts()[0] > this.centerCounts()[1] ? 'a' : 'b');
+  readonly concentratedGroup = computed(() => this.practiceRecords()[this.concentratedSide() === 'a' ? 0 : 1]);
+  readonly compareChoices: readonly { id: Comparison; text: string }[] = [
+    { id: 'same', text: 'Los tiempos se reparten igual en ambos.' },
+    { id: 'a', text: 'A tiene más revisiones de 10 minutos.' },
+    { id: 'b', text: 'B tiene más revisiones de 10 minutos.' },
+  ];
+  readonly predictions: readonly { id: RangePrediction; text: string }[] = [
+    { id: 'increase', text: 'Será mayor' },
+    { id: 'same', text: 'Seguirá igual' },
+    { id: 'decrease', text: 'Será menor' },
+  ];
+  readonly predictionText = computed(() => this.predictions.find(choice => choice.id === this.rangePrediction())?.text ?? '');
+  readonly predictionOutcome = computed(() => {
+    if (this.experimentMode() !== 'apart' || !this.rangePrediction()) return '';
+    const result = 'El rango sigue siendo ' + this.simulatedRange() + ' minutos.';
+    return this.rangePrediction() === 'same' ? 'Tu predicción coincide con lo observado. ' + result
+      : 'Pensabas que sería ' + (this.rangePrediction() === 'increase' ? 'mayor' : 'menor') + '. ' + result;
+  });
+  readonly explanations: readonly { id: Explanation; text: string }[] = [
+    { id: 'unchanged', text: 'Porque ningún tiempo cambió.' },
+    { id: 'extremes', text: 'Porque el tiempo menor y el mayor siguen siendo 8 y 12.' },
+    { id: 'useless', text: 'Porque el rango no sirve para nada.' },
+  ];
+  readonly claims: readonly { id: Claim; text: string }[] = [
+    { id: 'same', text: 'Mantener: el mismo rango significa que los tiempos se reparten igual.' },
+    { id: 'different', text: 'Corregir: mismo rango, pero tiempos repartidos de forma distinta.' },
+    { id: 'unknown', text: 'No se pueden comparar, aunque tenemos todos los registros.' },
+  ];
+  readonly evidenceChoices = computed<readonly { id: Evidence; text: string }[]>(() => [
+    { id: 'a', text: 'En ' + this.practiceRecords()[0].id + ' hay más revisiones de ' + this.center() + ' minutos.' },
+    { id: 'b', text: 'En ' + this.practiceRecords()[1].id + ' hay más revisiones de ' + this.center() + ' minutos.' },
+    { id: 'range', text: 'Los dos equipos tienen el mismo rango.' },
+  ]);
+  private readonly injector = inject(Injector);
+  private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
+  private readonly separateButton = viewChild<ElementRef<HTMLButtonElement>>('separateButton');
   private finished = false;
 
-  position(value: number): number { return 30 + (value - 6) * 60; }
+  position(value: number): number { return (value - 6) / 8 * 100; }
+  range(values: readonly number[]): number { return Math.max(...values) - Math.min(...values); }
 
-  checkRanges(): void {
-    if (this.stage() !== 'ranges') return;
-    if (this.rangeA().trim() && this.rangeB().trim() && Number(this.rangeA()) === 4 && Number(this.rangeB()) === 4) {
-      this.stage.set('compare');
-      this.feedback.set('Ambos rangos son 4 minutos. Ahora contrasta la conclusión del informe con los registros.');
-    } else this.feedback.set('Calcula máximo menos mínimo para cada equipo. Expresa ambas respuestas en minutos.');
+  compare(answer: Comparison): void {
+    if (this.stage() !== 'compare' || !this.compareChoices.some(choice => choice.id === answer)) return;
+    if (answer === 'a') this.moveTo('predict');
+    else this.hint('Mira los puntos de 10 minutos: en A hay tres y en B hay uno. Los extremos coinciden, pero los demás tiempos no se reparten igual.');
   }
 
-  compare(answer: 'identical' | 'concentrated'): void {
-    if (this.stage() !== 'compare') return;
-    if (answer === 'concentrated') {
-      this.stage.set('simulation');
-      this.feedback.set('A tiene tres registros en 10 minutos. Explora una copia para comprobar qué cambios detecta el rango.');
-    } else this.feedback.set('Los extremos coinciden, pero observa cuántos registros hay en 10 minutos en cada equipo.');
+  predictRange(answer: RangePrediction): void {
+    if (this.stage() !== 'predict' || !this.predictions.some(choice => choice.id === answer)) return;
+    this.rangePrediction.set(answer);
+    this.moveTo('experiment');
   }
 
-  moveInterior(raw: string): void {
-    if (this.stage() !== 'simulation') return;
-    const value = Number(raw);
-    if (!Number.isInteger(value) || value < 0 || value > 2) return;
-    this.distance.set(value);
+  setExperiment(mode: ExperimentMode): void {
+    if (this.stage() !== 'experiment' || !this.rangePrediction() || !['together', 'apart'].includes(mode)) return;
+    this.experimentMode.set(mode);
+    if (mode === 'apart') this.separatedViewed.set(true);
     this.feedback.set('');
   }
 
-  confirmSimulation(): void {
-    if (this.stage() !== 'simulation') return;
-    if (this.distance() === 0) {
-      this.feedback.set('Construye una distribución distinta moviendo los registros interiores.');
+  showChanges(): void {
+    if (this.stage() !== 'experiment' || !this.rangePrediction()) return;
+    if (!this.separatedViewed() || this.experimentMode() !== 'apart') {
+      this.hint('Pulsa «Separar tiempos» para ver cómo cambian los dos puntos de la copia.');
       return;
     }
-    this.stage.set('explain');
-    this.feedback.set('Cambiaste la distribución. El rango sigue siendo 4 minutos y la media sigue siendo 10 minutos.');
+    this.moveTo('explain');
   }
 
-  explain(answer: 'extremes' | 'unchanged' | 'useless'): void {
-    if (this.stage() !== 'explain') return;
-    if (answer === 'extremes') {
-      this.stage.set('practice');
-      this.feedback.set('Comprueba la idea con estos nuevos registros de una tarea comparable.');
-    } else this.feedback.set(answer === 'unchanged'
-      ? 'Dos registros cambiaron de posición. ¿Qué valores permanecieron fijos?'
-      : 'El rango sí informa sobre los extremos, aunque no detecte todos los cambios interiores.');
+  explain(answer: Explanation): void {
+    if (this.stage() !== 'explain' || !this.explanations.some(choice => choice.id === answer)) return;
+    if (answer === 'extremes') this.moveTo('discovery');
+    else this.hint(answer === 'unchanged'
+      ? 'Dos tiempos de la copia cambiaron de lugar: de 10 a 8 y a 12. Lo que se mantuvo fue el tiempo menor y el mayor.'
+      : 'El rango sí muestra la separación entre los extremos. Lo que no muestra es cómo se reparten los demás tiempos.');
   }
 
-  checkPractice(): void {
-    if (this.stage() !== 'practice') return;
-    if (!this.practiceC().trim() || !this.practiceD().trim() || Number(this.practiceC()) !== 4 || Number(this.practiceD()) !== 4) {
-      this.feedback.set('Revisa el mínimo y el máximo de cada conjunto para calcular sus rangos.');
-    } else if (this.practiceClaim() !== 'different') {
-      this.feedback.set('Compara también los registros interiores. Un mismo rango no garantiza la misma distribución.');
-    } else {
-      this.stage.set('success');
-      this.feedback.set('Correcto. Ambos rangos son 4 minutos, pero los registros interiores se distribuyen de manera diferente.');
-    }
+  startPractice(): void {
+    if (this.stage() !== 'discovery') return;
+    this.practiceHelped.set(false);
+    this.moveTo('practice');
+  }
+
+  chooseClaim(answer: Claim): void {
+    if (this.stage() !== 'practice' || !this.claims.some(choice => choice.id === answer)) return;
+    if (answer === 'different') this.moveTo('evidence');
+    else this.hint(answer === 'same'
+      ? 'El mismo rango solo confirma que la separación entre los extremos es igual. Mira también los puntos que hay en cada tiempo.'
+      : 'Sí tenemos los registros para comparar. Cuenta los puntos que se apilan en un mismo tiempo.');
+  }
+
+  chooseEvidence(answer: Evidence): void {
+    if (this.stage() !== 'evidence' || !this.evidenceChoices().some(choice => choice.id === answer)) return;
+    if (answer === this.concentratedSide()) this.moveTo(this.practiceHelped() ? 'review' : 'success');
+    else this.hint(answer === 'range'
+      ? 'Eso es cierto, pero no muestra la diferencia entre los demás tiempos. Busca en qué equipo hay más revisiones de ' + this.center() + ' minutos.'
+      : 'Cuenta los puntos en ' + this.center() + ' minutos: hay ' + this.centerCounts()[0] + ' en ' + this.practiceRecords()[0].id + ' y ' + this.centerCounts()[1] + ' en ' + this.practiceRecords()[1].id + '.');
+  }
+
+  continueAfterHelp(): void {
+    if (this.stage() !== 'review') return;
+    this.round.update(round => round + 1);
+    this.practiceHelped.set(false);
+    this.moveTo('practice');
+  }
+
+  private hint(message: string): void {
+    if (this.practicing()) this.practiceHelped.set(true);
+    this.feedback.set(message);
+  }
+
+  private moveTo(stage: Stage): void {
+    this.feedback.set('');
+    this.stage.set(stage);
+    this.focusTask();
+  }
+
+  private focusTask(): void {
+    afterNextRender(() => {
+      const target = this.stage() === 'experiment' ? this.separateButton() : this.taskHeading();
+      target?.nativeElement.focus();
+      if (this.stage() === 'experiment') {
+        target?.nativeElement.scrollIntoView?.({ block: 'center', inline: 'nearest', behavior: 'instant' });
+      }
+    }, { injector: this.injector });
   }
 
   finish(): void {

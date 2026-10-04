@@ -1,101 +1,135 @@
-<section class="lesson" aria-labelledby="crushing-title">
+<section class="lesson crushing-lesson intuitive-crushing" aria-labelledby="crushing-title">
   <header class="lesson-header">
     <span class="lesson-tag">Clase 5 · ROM / chancado</span>
     <h2 id="crushing-title">¿Cuánto se aleja cada registro?</h2>
-    <p>Compara cada registro de alimentación con su media.</p>
-    <small>Datos simulados · Toneladas por hora (t/h)</small>
+    <p>Misión: completar el aviso de alimentación para el siguiente turno.</p>
   </header>
+
+  <ol class="lesson-steps" aria-label="Pasos de la actividad">
+    @for (label of ['Explora', 'Entiende', 'Prepara']; track label; let index = $index) {
+      <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'" [attr.aria-current]="step() === index + 1 ? 'step' : null">
+        <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
+      </li>
+    }
+  </ol>
+
   @if (stage() !== 'success') {
-    <div class="lesson-card">
-      <h3>{{ practicing() ? 'Nuevos registros' : 'Registros de alimentación' }}</h3>
-      <p>{{ values().join(' · ') }} t/h</p>
-      <svg viewBox="0 0 540 210" role="img" [attr.aria-label]="'Registros: ' + values().join(', ') + ' toneladas por hora. Escala de 80 a 120.'">
-        <line x1="30" y1="150" x2="510" y2="150" class="axis" />
-        @for (tick of ticks; track tick) {
-          <line [attr.x1]="position(tick)" y1="146" [attr.x2]="position(tick)" y2="156" class="axis" />
-          <text [attr.x]="position(tick)" y="178">{{ tick }}</text>
+    <div class="workbench">
+      <div class="feed-board">
+        <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: otros registros' : 'Alimentación de cuatro horas' }}</strong><small>Datos de ejemplo</small></div>
+        <div class="mean-summary"><strong>Media (promedio): {{ mean() }} t/h</strong><span>Resume estos registros; no es una meta de producción.</span></div>
+        <div class="shared-scale">
+          <div class="value-track" role="img" [attr.aria-label]="plotDescription()">
+            @for (tick of ticks; track tick) { <span class="grid-line" [style.left.%]="position(tick)" aria-hidden="true"></span> }
+            <span class="track-line" aria-hidden="true"></span>
+            <span class="mean-line" [style.left.%]="position(mean())" aria-hidden="true"></span>
+            <span class="mean-label" [style.left.%]="position(mean())" aria-hidden="true">Media {{ mean() }}</span>
+            @for (segment of segments(); track segment.value) {
+              @if (!segment.zero) {
+                <span class="distance-segment" [class.segment--above]="segment.above"
+                  [style.left.%]="segment.left" [style.width.%]="segment.width" aria-hidden="true">
+                  @if (segment.label) { <span>{{ segment.label }}</span> }
+                </span>
+              }
+            }
+            @for (point of points(); track point.id) {
+              <span class="data-point" [class.point--active]="point.active" [style.left.%]="point.x" [style.bottom.px]="point.bottom" aria-hidden="true"></span>
+            }
+            <div class="shared-axis" aria-hidden="true">
+              @for (tick of ticks; track tick) { <span [style.left.%]="position(tick)">{{ tick }}</span> }
+            </div>
+          </div>
+          <p class="axis-label">Toneladas por hora · t/h = toneladas por hora</p>
+        </div>
+        <p class="chart-key">Cada punto es un registro de una hora. Los puntos apilados tienen el mismo valor. La línea vertical marca la media.</p>
+        <div class="record-cards" [attr.aria-label]="practicing() ? 'Registros del ensayo' : 'Registros originales'">
+          @for (value of values(); track $index; let index = $index) {
+            @if (stage() === 'explore') {
+              <button type="button" class="record-card" [attr.aria-pressed]="selected() === index" [attr.aria-label]="'Hora ' + (index + 1) + ': ' + value + ' toneladas por hora'" (click)="select(index)">
+                <small>Hora {{ index + 1 }}</small><strong>{{ value }} t/h</strong>
+              </button>
+            } @else {
+              <div class="record-card" [class.record--active]="activeIndex() === index">
+                <small>{{ practicing() ? 'Registro' : 'Hora' }} {{ index + 1 }}</small><strong>{{ value }} t/h</strong>
+              </div>
+            }
+          }
+        </div>
+        @if (stage() === 'explore') { <p class="selection-note">Pulsa una hora para ver su separación de la media. Los registros no cambian.</p> }
+        @if (stage() === 'compare' || stage() === 'notation') {
+          <div class="word-pair"><div><strong>80 t/h</strong><span>← 20 por debajo</span></div><div><strong>120 t/h</strong><span>20 por encima →</span></div></div>
         }
-        @if (stage() !== 'mean') {
-          <line x1="270" y1="20" x2="270" y2="150" class="mean" />
-          <text x="270" y="202">Media 100</text>
+      </div>
+
+      <aside class="task-card" aria-labelledby="crushing-task-title">
+        @if (stage() === 'explore') {
+          <span class="task-kicker">Mira una hora de cerca</span>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">{{ delta() < 0 ? '¿Cuánto le falta a ' + current() + ' para llegar a ' + mean() + '?' : '¿Cuánto supera ' + current() + ' a ' + mean() + '?' }}</h3>
+          <p>El segmento muestra la separación. Cada paso de la escala vale 10 t/h.</p>
+          <div class="choices">
+            @for (option of distanceOptions; track option) { <button type="button" class="btn answer-choice" (click)="answerDistance(option)">{{ option }} t/h</button> }
+          </div>
+        } @else if (stage() === 'compare') {
+          <span class="task-kicker">El lado puede cambiar</span>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">¿Cuál está más lejos de 100?</h3>
+          <p>Compara las separaciones de 80 y 120, no solo el tamaño de esos números.</p>
+          <div class="choices">
+            @for (choice of comparisons; track choice.id) { <button type="button" class="btn answer-choice" (click)="compare(choice.id)">{{ choice.text }}</button> }
+          </div>
+        } @else if (stage() === 'notation') {
+          <span class="task-kicker">Ahora ponemos nombre a la idea</span>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">El signo muestra el lado</h3>
+          <p><strong>Desviación:</strong> cuánto y hacia qué lado se separa el registro de la media.</p>
+          <div class="notation-cards">
+            <div><strong>80 está 20 por debajo</strong><span>Desviación: <b>−20 t/h</b></span><span>Distancia: <b>20 t/h</b></span></div>
+            <div><strong>120 está 20 por encima</strong><span>Desviación: <b>+20 t/h</b></span><span>Distancia: <b>20 t/h</b></span></div>
+          </div>
+          <p class="plain-rule">Desviación = registro − media. La distancia mide la separación y nunca es negativa.</p>
+          <button type="button" class="btn btn--primary" (click)="startPractice()">Probar con otros registros →</button>
+        } @else if (stage() === 'practice') {
+          <span class="task-kicker">Ensayo {{ solvedCount() + 1 }} de 3{{ round() > 0 ? ' · otros números' : '' }}</span>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">¿Cómo describirías {{ current() }} t/h?</h3>
+          <p>Compáralo con la media de <strong>{{ mean() }} t/h</strong>. Elige la pareja que describe su lado y su separación.</p>
+          <div class="choices" role="group" aria-label="Desviación y distancia del registro">
+            @for (choice of readingChoices(); track choice.id) {
+              <button type="button" class="btn answer-choice reading-choice" (click)="chooseReading(choice.id)">
+                <span>Desviación: <strong>{{ signed(choice.deviation) }} t/h</strong></span>
+                <span>Distancia: <strong>{{ signed(choice.distance).replace('+', '') }} t/h</strong></span>
+              </button>
+            }
+          </div>
+        } @else if (stage() === 'review') {
+          <span class="task-kicker">Ya lo tienes</span>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">Un lado y una separación</h3>
+          <p>Por debajo, la desviación es negativa; por encima, positiva. Si coincide con la media, la desviación y la distancia son 0.</p>
+          <p>Compruébalo con otros números, sin la pista.</p>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otros registros →</button>
+        } @else if (stage() === 'report') {
+          <span class="task-kicker">Volvemos a las cuatro horas originales</span>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">¿Qué aviso entregarías al relevo?</h3>
+          <p>Describe lo que muestran los registros. No necesitamos inventar una causa.</p>
+          <div class="choices">
+            @for (report of reports; track report.id) { <button type="button" class="btn answer-choice" (click)="chooseReport(report.id)">{{ report.text }}</button> }
+          </div>
         }
-        @for (value of values(); track $index; let i = $index) {
-          <g [class.selected]="selected() === i">
-            <line [attr.x1]="position(value)" [attr.y1]="30 + i * 26" [attr.x2]="position(value)" y2="150" class="guide" />
-            <circle [attr.cx]="position(value)" [attr.cy]="30 + i * 26" r="5" />
-            <text [attr.x]="position(value)" [attr.y]="22 + i * 26">{{ value }}</text>
-          </g>
-        }
-        @if (current() !== null) {
-          <line [attr.x1]="segmentLeft()" y1="135" [attr.x2]="segmentLeft() + segmentWidth()" y2="135" class="segment" />
-        }
-      </svg>
+        <div aria-live="polite" aria-atomic="true">
+          @if (feedback()) { <div class="feedback feedback--hint"><strong>Una pista</strong><p>{{ feedback() }}</p></div> }
+        </div>
+      </aside>
     </div>
-  }
-  @if (stage() === 'mean') {
-    <details class="lesson-card"><summary>Ayuda para calcular la media</summary><p>Suma 80 + 80 + 120 + 120 y divide el total entre los cuatro registros.</p></details>
-    <form (submit)="$event.preventDefault(); checkMean()">
-      <label for="mean-input">¿Dónde está la media? Escribe su valor en t/h.</label>
-      <input id="mean-input" type="number" step="any" [value]="meanInput()" (input)="meanInput.set($any($event.target).value)">
-      <button type="submit" class="btn btn--primary">Situar la media en la escala</button>
-    </form>
-  }
-  @if (stage() === 'records' || stage() === 'practice') {
-    @if (stage() === 'records') {
-      <div class="lesson-card"><p><strong>Desviación = dato − media.</strong> El signo indica el lado de la media.</p><p><strong>Distancia:</strong> longitud de la separación, sin signo negativo.</p></div>
-    }
-    <div class="record-choices">
-      @for (value of values(); track $index; let i = $index) {
-        <button type="button" class="btn btn--answer" [disabled]="solved().includes(i)" [attr.aria-pressed]="selected() === i" (click)="select(i)">
-          Registro {{ i + 1 }}: {{ value }} t/h {{ solved().includes(i) ? '✓ Revisado' : '' }}
-        </button>
-      }
+  } @else {
+    <div class="completion-card">
+      <span class="task-kicker">Aviso listo para el relevo</span>
+      <h3 #taskHeading tabindex="-1">El promedio no cuenta lo que pasó en cada hora</h3>
+      <p>Ahora puedes describir cada registro: cuánto se separa de la media y hacia qué lado.</p>
     </div>
-    @if (current() !== null) {
-      <form (submit)="$event.preventDefault(); checkRecord()">
-        <h3>Registro {{ selected()! + 1 }} · {{ current() }} t/h</h3>
-        <fieldset><legend>Respecto a la media de 100 t/h, este registro…</legend>
-          <label><input type="radio" name="side" [checked]="side() === 'below'" (change)="side.set('below')"> Está por debajo.</label>
-          <label><input type="radio" name="side" [checked]="side() === 'equal'" (change)="side.set('equal')"> Coincide con la media.</label>
-          <label><input type="radio" name="side" [checked]="side() === 'above'" (change)="side.set('above')"> Está por encima.</label>
-        </fieldset>
-        <label for="deviation">Desviación, en t/h</label>
-        <input id="deviation" type="number" step="any" [value]="deviation()" (input)="deviation.set($any($event.target).value)">
-        <label for="distance">Distancia, en t/h</label>
-        <input id="distance" type="number" step="any" [value]="distance()" (input)="distance.set($any($event.target).value)">
-        <button type="submit" class="btn btn--primary">Comprobar registro</button>
-      </form>
-    }
-    @if (allSolved()) { <button type="button" class="btn btn--primary" (click)="continueRecords()">Comparar las separaciones</button> }
-  }
-  @if (stage() === 'compare') {
-    <div class="lesson-card"><p>80 → desviación −20; distancia 20 t/h.</p><p>120 → desviación +20; distancia 20 t/h.</p>
-      <svg viewBox="0 0 540 70" role="img" aria-label="Dos segmentos de igual longitud: de 80 a 100 hacia la izquierda y de 100 a 120 hacia la derecha.">
-        <line x1="30" y1="30" x2="270" y2="30" class="segment" /><line x1="270" y1="30" x2="510" y2="30" class="segment" />
-        <path d="M 42 20 L 30 30 L 42 40 M 498 20 L 510 30 L 498 40" class="arrow" />
-        <text x="35" y="65">80</text><text x="270" y="65">100</text><text x="505" y="65">120</text>
-      </svg>
+    <div class="report-card">
+      <span class="task-kicker">Alimentación de las cuatro horas revisadas</span>
+      <h3>Promedio: 100 t/h · Registros: 80, 80, 120 y 120 t/h</h3>
+      <p>Hubo dos horas <strong>20 t/h por debajo</strong> y dos horas <strong>20 t/h por encima</strong> del promedio.</p>
+      <p>Desviaciones: −20, −20, +20 y +20 t/h. Las cuatro distancias son 20 t/h.</p>
+      <p>Esto no explica por qué cambió la alimentación ni determina si fue adecuada. El promedio es un resumen, no una meta.</p>
     </div>
-    <h3>¿Cómo se comparan esas separaciones?</h3>
-    <div class="choices">
-      <button type="button" class="btn btn--answer" (click)="compare('negative-shorter')">−20 indica una distancia menor que +20.</button>
-      <button type="button" class="btn btn--answer" (click)="compare('same-distance')">Tienen la misma distancia, en lados contrarios de la media.</button>
-    </div>
-  }
-  @if (stage() === 'interpret') {
-    <h3>¿Por qué −10 y +10 representan la misma distancia?</h3>
-    <div class="choices">
-      <button type="button" class="btn btn--answer" (click)="interpret('negative-distance')">Porque una distancia es −10 y la otra +10.</button>
-      <button type="button" class="btn btn--answer" (click)="interpret('direction')">El signo indica el lado; ambos registros están a 10 de la media.</button>
-      <button type="button" class="btn btn--answer" (click)="interpret('different-distance')">No representan la misma distancia: 110 es un valor mayor.</button>
-    </div>
-  }
-  <div aria-live="polite" aria-atomic="true">@if (feedback()) { <div class="feedback"><p>{{ feedback() }}</p></div> }</div>
-  @if (stage() === 'success') {
-    <div class="lesson-card"><h3>Observación para el relevo</h3>
-      <p><strong>Hallazgo:</strong> los cuatro registros iniciales están a 20 t/h de su media de 100 t/h; dos por debajo y dos por encima.</p>
-      <p><strong>Aprendizaje:</strong> la desviación indica dirección y magnitud. La distancia no tiene signo negativo. Si el registro coincide con la media, ambas son cero.</p>
-    </div>
-    <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+    <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar el aviso →</button></div>
   }
 </section>

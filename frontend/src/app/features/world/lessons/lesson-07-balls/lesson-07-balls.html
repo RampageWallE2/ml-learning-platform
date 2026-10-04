@@ -1,0 +1,160 @@
+<section class="lesson intuitive-balls" aria-labelledby="balls-title">
+  <header class="lesson-header">
+    <span class="lesson-tag">Clase 7 · Bolas e hidrociclones</span>
+    <h2 id="balls-title">Comprueba el informe del relevo</h2>
+    <p>Misión: usar la varianza para comparar dos períodos del mismo circuito.</p>
+  </header>
+  <ol class="lesson-steps" aria-label="Pasos de la actividad">
+    @for (label of ['Observa', 'Calcula', 'Concluye']; track label; let index = $index) {
+      <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'"
+        [attr.aria-current]="step() === index + 1 ? 'step' : null">
+        <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
+      </li>
+    }
+  </ol>
+  @if (stage() !== 'success') {
+    <div class="workbench">
+      <div class="data-board">
+        <div class="board-heading"><strong>{{ round() > 0 ? 'Ensayo: otros registros' : 'Alimentación del circuito · Datos de ejemplo' }}</strong></div>
+        <p class="chart-key">Misma variable y punto de medición, en condiciones equivalentes. Cada punto es un registro; los apilados tienen el mismo valor.</p>
+        <div class="comparison-plots">
+          @for (period of periods(); track period.id) {
+            <article class="period-plot" [class.period--active]="['calculate', 'checked'].includes(stage()) && activePeriod().id === period.id">
+              <div class="period-heading"><strong>{{ period.name }}</strong><small>{{ period.values.length }} registros</small></div>
+              <div class="period-summary"><span>Media: <b>{{ period.mean }} t/h</b></span><span>Rango: <b>{{ period.range }} t/h</b></span></div>
+              <div class="shared-scale">
+                <div class="value-track" role="img" [attr.aria-label]="plotDescription(period)">
+                  @for (tick of ticks(); track tick) { <span class="grid-line" [style.left.%]="position(tick)" aria-hidden="true"></span> }
+                  <span class="track-line" aria-hidden="true"></span>
+                  <span class="mean-line" [style.left.%]="position(period.mean)" aria-hidden="true"></span>
+                  <span class="mean-label" [style.left.%]="position(period.mean)" aria-hidden="true">Media {{ period.mean }}</span>
+                  @for (point of points(period); track point.id) {
+                    <span class="data-point" [class.point--below]="point.deviation < 0" [class.point--above]="point.deviation > 0"
+                      [class.point--hint]="period.id === activePeriod().id && isHintRecord(point.deviation)"
+                      [style.left.%]="point.x" [style.bottom.px]="point.bottom" aria-hidden="true"></span>
+                  }
+                  <div class="shared-axis" aria-hidden="true">
+                    @for (tick of ticks(); track tick) { <span [style.left.%]="position(tick)">{{ tick }}</span> }
+                  </div>
+                </div>
+              </div>
+              <p class="record-list">Registros: <strong>{{ period.values.join(', ') }}</strong> t/h</p>
+              <p class="variance-summary" [class.variance--solved]="isSolved(period.id)"
+                [class.variance--hint]="stage() === 'report' && hintLevel() === 1 && hintFocus() === 'variances'">
+                Varianza: <strong>{{ isSolved(period.id) ? period.variance + ' (t/h)²' : 'por calcular' }}</strong>
+              </p>
+            </article>
+          }
+        </div>
+        <p class="axis-label">Toneladas por hora · Ambos gráficos usan la misma escala cercana: {{ bounds().min }} a {{ bounds().max }}.</p>
+        <p class="chart-key">La media es una referencia para comparar, no una meta de producción.</p>
+        @if (stage() === 'calculate' || stage() === 'checked') {
+          <div class="active-records">
+            <h4>{{ activePeriod().name }} · Todos sus registros</h4>
+            <p class="chart-key">Desviación = registro − media</p>
+            <div class="record-cards" [attr.aria-label]="'Registros y desviaciones del ' + activePeriod().name">
+              @for (record of activePeriod().records; track record.id; let index = $index) {
+                <article class="record-card" [class.record--hint]="isHintRecord(record.deviation)">
+                  <small>Registro {{ index + 1 }}</small><strong>{{ record.value }} t/h</strong>
+                  <span>Desviación: {{ signed(record.deviation) }}</span>
+                  @if (isHintRecord(record.deviation)) {
+                    <small class="hint-marker">{{ hintFocus() === 'count' ? record.deviation === 0 ? 'También cuenta' : 'Cuenta este registro' : 'Mira su separación' }}</small>
+                  }
+                  @if (squaresVisible()) {
+                    @if (record.square > 0) {
+                      <div class="square-grid" [style.grid-template-columns]="'repeat(' + record.side + ', 22px)'" role="img"
+                        [attr.aria-label]="'Separación ' + record.side + ': ' + record.side + ' por ' + record.side + ', ' + record.square + ' casillas.'">
+                        @for (cell of record.cells; track cell) { <span class="square-cell" aria-hidden="true"></span> }
+                      </div>
+                    } @else { <div class="empty-square">Sin separación<br>0 casillas</div> }
+                    <span class="square-caption">{{ record.side }} × {{ record.side }} = {{ record.square }}</span>
+                  }
+                </article>
+              }
+            </div>
+            @if (squaresVisible()) {
+              <div class="totals"><span>Registros: <strong>{{ activePeriod().values.length }}</strong></span><span>Suma de cuadrados: <strong>{{ activePeriod().squareSum }}</strong></span></div>
+              <p class="chart-key">Las casillas muestran el cálculo al cuadrado, no toneladas físicas. Los registros con separación 0 también cuentan al promediar.</p>
+            }
+          </div>
+        }
+      </div>
+      <aside class="task-card" aria-labelledby="balls-task-title">
+        @if (stage() === 'observe') {
+          <span class="task-kicker">El operador necesita comprobar el borrador</span>
+          <h3 id="balls-task-title" #taskHeading tabindex="-1">¿Podemos dejar el informe así?</h3>
+          <blockquote class="draft-note">“Los dos períodos variaron igual: sus medias y rangos coinciden.”</blockquote>
+          <p>Antes de entregarlo al siguiente turno, revisa la varianza de cada período. Así podremos comprobar esa afirmación.</p>
+          <button type="button" class="btn btn--primary" (click)="startCalculation()">Revisar con varianza →</button>
+        } @else if (stage() === 'calculate') {
+          <span class="task-kicker">{{ round() > 0 ? 'Otros datos, sin la pista · ' : '' }}Cálculo {{ activeIndex() + 1 }} de 2</span>
+          <h3 id="balls-task-title" #taskHeading tabindex="-1">¿Qué varianza tiene el {{ activePeriod().name }}?</h3>
+          <p>Usa sus registros y la media de referencia. Elige el resultado.</p>
+          <div class="plain-rule"><strong>Varianza = suma de cuadrados ÷ cantidad de registros</strong><span>Cuadra las diferencias respecto a la media, súmalas y divide entre todos los registros.</span></div>
+          <div class="choices" aria-label="Opciones de varianza">
+            @for (option of options(); track option) { <button type="button" class="btn answer-choice" (click)="answerVariance(option)">{{ option }} (t/h)²</button> }
+          </div>
+          @if (hintLevel() < 2) {
+            <button type="button" class="btn hint-button" (click)="requestHint()">{{ hintButtonText() }}</button>
+          }
+        } @else if (stage() === 'checked') {
+          <span class="task-kicker">Resultado comprobado</span>
+          <h3 id="balls-task-title" #taskHeading tabindex="-1">{{ activePeriod().name }}: varianza {{ activePeriod().variance }} (t/h)²</h3>
+          <div class="calculation-card"><span>Cuadrados: {{ activePeriod().squares.join(', ') }}</span><strong>{{ activePeriod().squareSum }} ÷ {{ activePeriod().values.length }} = {{ activePeriod().variance }}</strong></div>
+          <p>Se promedian los aportes de los {{ activePeriod().values.length }} registros@if (activePeriod().zeroCount > 0) {, también los {{ activePeriod().zeroCount }} que aportan 0}.</p>
+          <p class="chart-key">Las unidades están al cuadrado. No es una distancia de {{ activePeriod().variance }} t/h.</p>
+          <button type="button" class="btn btn--primary" (click)="continueCalculation()">{{ activeIndex() === 0 ? 'Calcular el período B →' : 'Revisar el informe →' }}</button>
+        } @else if (stage() === 'report') {
+          <span class="task-kicker">Los dos cálculos ya están comprobados</span>
+          <h3 id="balls-task-title" #taskHeading tabindex="-1">¿Qué conclusión está respaldada por los datos?</h3>
+          <p>La media y el rango coinciden. Usa también las varianzas y lo que ves en los puntos.</p>
+          @if (hintLevel() === 1 && hintFocus() === 'context') {
+            <p class="context-hint">Objetivo operativo: todavía no indicado.</p>
+          }
+          <div class="choices">
+            @for (choice of reportChoices(); track choice.id) { <button type="button" class="btn answer-choice" (click)="chooseReport(choice.id)">{{ choice.text }}</button> }
+          </div>
+          @if (hintLevel() < 2) {
+            <button type="button" class="btn hint-button" (click)="requestHint()">{{ hintButtonText() }}</button>
+          }
+        } @else if (stage() === 'review') {
+          <span class="task-kicker">El ejemplo con ayuda ya está resuelto</span>
+          <h3 id="balls-task-title" #taskHeading tabindex="-1">Ahora prueba con otros registros</h3>
+          <p>La varianza considera todos los aportes al cuadrado. Tener la misma media y el mismo rango no obliga a que las varianzas sean iguales.</p>
+          <p>Comprueba otro par de períodos sin la pista. No se modificará la evidencia del informe original.</p>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otros registros →</button>
+        }
+        <div aria-live="polite" aria-atomic="true">
+          @if (feedback()) {
+            <div class="feedback" #hintMessage tabindex="-1" [class.feedback--explained]="hintLevel() === 2">
+              <strong>{{ hintLevel() === 1 ? 'Primera pista · Dónde mirar' : 'Ejemplo explicado' }}</strong><p>{{ feedback() }}</p>
+            </div>
+          }
+        </div>
+      </aside>
+    </div>
+  } @else {
+    <div class="completion-card">
+      <span class="task-kicker">Tu aporte al informe del relevo</span>
+      <h3 #taskHeading tabindex="-1">El informe ya distingue los períodos</h3>
+      <p>Usaste la varianza con datos nuevos y comprobaste la afirmación del borrador.</p>
+    </div>
+    <div class="report-card">
+      <span class="task-kicker">Evidencia original · Bolas e hidrociclones</span>
+      <h3>Misma media y rango, distinta dispersión</h3>
+      <div class="final-periods">
+        @for (period of originalPeriods; track period.id) {
+          <article><strong>{{ period.name }}</strong><span>{{ period.values.join(', ') }} t/h</span>
+            <span>Media: {{ period.mean }} t/h · Rango: {{ period.range }} t/h</span>
+            <span>Cuadrados: {{ period.squares.join(', ') }}</span>
+            <b>{{ period.squareSum }} ÷ {{ period.values.length }} = {{ period.variance }} (t/h)²</b>
+          </article>
+        }
+      </div>
+      <p>El período B tuvo mayor dispersión en estos registros: su varianza fue 6 frente a 3 (t/h)² y hubo más registros alejados de la media.</p>
+      <p>Esto no explica la causa ni basta para decidir cambios en el equipo. Menor variación no significa automáticamente mejor operación.</p>
+      <p class="chart-key">La varianza no es una distancia en t/h: sus unidades están al cuadrado.</p>
+    </div>
+    <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar el informe corregido →</button></div>
+  }
+</section>

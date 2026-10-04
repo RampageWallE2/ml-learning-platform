@@ -1,163 +1,127 @@
-<section class="lesson haulage-lesson" aria-labelledby="haulage-title">
+<section class="lesson haulage-lesson intuitive-haulage" aria-labelledby="haulage-title">
   <header class="lesson-header">
     <span class="lesson-tag">Clase 3 · Botadero de desmonte</span>
-    <h2 id="haulage-title">Encuentra los extremos</h2>
-    <p>Analiza los tiempos de descarga y descubre una forma de medir la separación entre sus extremos.</p>
+    <h2 id="haulage-title">¿Cuánto cambiaron los tiempos?</h2>
+    <p>Misión: preparar un aviso para el equipo que organiza las llegadas de camiones.</p>
   </header>
 
-  @if (stage() === 'find-min' || stage() === 'min-found' || stage() === 'find-max' || stage() === 'max-found') {
-    <div class="control-card">
-      <span>Registros del botadero</span>
-      <strong>Duración de descarga</strong>
-      <small>Cinco descargas comparables de desmonte · Datos simulados</small>
-    </div>
-
-    <div class="trip-grid" aria-label="Tiempos registrados: 11, 12, 11, 18 y 12 minutos">
-      @for (trip of trips; track trip.id; let index = $index) {
-        <button
-          type="button"
-          class="trip-card"
-          [class.trip-card--selected]="selectedRecordId() === trip.id"
-          [class.trip-card--minimum]="stage() !== 'find-min' && trip.time === 11"
-          [class.trip-card--maximum]="stage() === 'max-found' && trip.time === 18"
-          (click)="stage() === 'find-min' ? selectFastest(trip.id) : selectSlowest(trip.id)"
-          [disabled]="stage() === 'min-found' || stage() === 'max-found'"
-        >
-          <span>Descarga {{ index + 1 }}</span>
-          <b aria-hidden="true">▰</b>
-          <strong>{{ trip.time }} min</strong>
-        </button>
-      }
-    </div>
-
-    <div class="question-section">
-      @if (stage() === 'find-min') {
-        <span class="lesson-tag">Primer extremo</span>
-        <h3>Selecciona la descarga más corta</h3>
-        <p>Busca el registro con menor duración.</p>
-      } @else if (stage() === 'min-found') {
-        <span class="extreme-badge">Mínimo = 11 min</span>
-      } @else if (stage() === 'find-max') {
-        <span class="lesson-tag">Segundo extremo</span>
-        <h3>Ahora selecciona la descarga más larga</h3>
-        <p>Busca el registro con mayor duración.</p>
-      } @else {
-        <div class="extreme-summary">
-          <span>Mínimo <strong>11 min</strong></span>
-          <span>Máximo <strong>18 min</strong></span>
-        </div>
-      }
-    </div>
-
-    @if (feedback()) {
-      <div class="feedback" [class.feedback--success]="stage() === 'min-found' || stage() === 'max-found'" [class.feedback--hint]="stage() === 'find-min' || stage() === 'find-max'" aria-live="polite">
-        <p>{{ feedback() }}</p>
-      </div>
+  <ol class="lesson-steps" aria-label="Pasos de la actividad">
+    @for (label of ['Mira', 'Mide', 'Prueba']; track label; let index = $index) {
+      <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'" [attr.aria-current]="step() === index + 1 ? 'step' : null">
+        <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
+      </li>
     }
+  </ol>
 
-    @if (stage() === 'min-found') {
-      <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="continueToMaximum()">Buscar la descarga más larga</button></div>
-    } @else if (stage() === 'max-found') {
-      <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="continueToRange()">Medir la separación</button></div>
-    }
-  }
-
-  @if (stage() === 'measure-range') {
-    <div class="extreme-summary">
-      <span>Mínimo <strong>11 min</strong></span>
-      <span>Máximo <strong>18 min</strong></span>
-    </div>
-
-    <div class="time-scale" aria-label="Escala desde 10 hasta 19 minutos; los datos se extienden desde 11 hasta 18">
-      <div class="scale-track" aria-hidden="true">
-        <span class="range-line" [style.left.%]="position(11)" [style.width.%]="position(rulerEnd()) - position(11)"></span>
-        @for (point of plotPoints; track point.time) {
-          <span class="plot-point" [style.left.%]="position(point.time)"><b>{{ point.count }}</b></span>
+  @if (stage() !== 'success') {
+    <div class="workbench">
+      <div class="time-board">
+        <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: otras cinco descargas' : 'Cinco descargas de desmonte' }}</strong><small>Datos de ejemplo</small></div>
+        @if (showMeasure()) {
+          <div class="extreme-summary">
+            <div><span>Más corta</span><strong>{{ minimum() }} <small>min</small></strong></div>
+            <div><span>Más larga</span><strong>{{ maximum() }} <small>min</small></strong></div>
+          </div>
+          <svg class="time-bridge" viewBox="0 0 560 150" role="img" [attr.aria-label]="diagramDescription()">
+            <line class="bridge-base" x1="30" y1="74" x2="530" y2="74" />
+            @for (interval of intervals(); track interval; let index = $index) {
+              <rect class="minute-step" [attr.x]="bridgePosition(interval) + 4" y="64" [attr.width]="500 / separation() - 8" height="20" rx="4" />
+              <text class="step-number" [attr.x]="bridgePosition(interval + .5)" y="50">{{ index + 1 }}</text>
+            }
+            @for (tick of axisTicks(); track tick) {
+              <line class="minute-mark" [attr.x1]="bridgePosition(tick)" [attr.x2]="bridgePosition(tick)" y1="88" y2="97" />
+              <text class="minute-label" [attr.x]="bridgePosition(tick)" y="122">{{ tick }}</text>
+            }
+            <text class="bridge-caption" x="280" y="146">Duración de descarga en minutos</text>
+          </svg>
+          <p class="chart-key">Cada tramo verde es <strong>1 minuto</strong>. Cuenta los espacios entre las marcas.</p>
+          <p class="source-records">Registros: @for (record of records(); track record.id; let last = $last) { {{ record.time }}{{ last ? ' minutos.' : ',' }} }</p>
+        } @else {
+          <p class="board-instruction">{{ selecting() ? selectionTask() + '.' : 'Los extremos que encontraste siguen señalados.' }}</p>
+          <div class="trip-grid" role="group" aria-label="Duración de cinco descargas observadas">
+            @for (record of records(); track record.id; let index = $index) {
+              <button type="button" class="trip-card"
+                [class.trip-card--short]="selectedMinId() === record.id" [class.trip-card--long]="selectedMaxId() === record.id"
+                [disabled]="!selecting() || extremesFound()" [attr.aria-pressed]="selectedMinId() === record.id || selectedMaxId() === record.id"
+                [attr.aria-label]="'Descarga ' + (index + 1) + ', ' + record.time + ' minutos.' + (selectedMinId() === record.id ? ' Más corta seleccionada.' : selectedMaxId() === record.id ? ' Más larga seleccionada.' : '')"
+                (click)="selectTrip(record.id)">
+                <span>Descarga {{ index + 1 }}</span>
+                <strong>{{ record.time }} <small>min</small></strong>
+                <div class="bar-track" aria-hidden="true"><span class="time-bar" [style.height.%]="barHeight(record.time)"></span></div>
+                <img src="assets/game/tilesets/vehicles/dump_truck_2.png" alt="">
+                <small class="selection-label">{{ selectedMinId() === record.id ? 'Más corta ✓' : selectedMaxId() === record.id ? 'Más larga ✓' : 'Descarga' }}</small>
+              </button>
+            }
+          </div>
+          <p class="chart-key">Más altura = más minutos. Las barras empiezan en cero y usan la misma escala. <strong>min = minutos.</strong></p>
+          @if (extremesFound()) {
+            <p class="extremes-note">Más corta: <strong>{{ minimum() }} min</strong> · Más larga: <strong>{{ maximum() }} min</strong></p>
+          }
         }
       </div>
-      <div class="scale-labels" aria-hidden="true">
-        @for (tick of axisTicks; track tick) { <span>{{ tick }}</span> }
-      </div>
-      <p>Los números sobre los puntos indican cuántas descargas tuvieron esa duración.</p>
-    </div>
 
-    <div class="lesson-card">
-      <label for="range-ruler">Extiende la regla desde 11 min hasta el máximo observado</label>
-      <input id="range-ruler" type="range" min="11" max="18" step="1" [value]="rulerEnd()"
-             (input)="moveRuler($any($event.target).value)" [attr.aria-valuetext]="rulerEnd() + ' minutos'">
-      <p>Extremo de la regla: {{ rulerEnd() }} min. Puedes arrastrar o usar las flechas del teclado.</p>
-    </div>
-    <div class="question-section">
-      <span class="lesson-tag">Mide la separación</span>
-      <h3>¿Cuánto separa la descarga más corta de la más larga?</h3>
-      <div class="answer-grid">
-        @for (option of rangeOptions; track option) {
-          <button type="button" class="btn btn--answer" (click)="answerRange(option)">{{ option }} min</button>
+      <aside class="task-card" aria-labelledby="haulage-task-title">
+        @if (selecting()) {
+          <span class="task-kicker">{{ stage() === 'extremes' ? 'Prepara el aviso' : round() === 0 ? 'Ahora tú, con otros registros' : 'Otro ensayo, sin la pista' }}</span>
+          <h3 id="haulage-task-title" #taskHeading tabindex="-1">{{ selectionTask() }}</h3>
+          @if (!selectedMinId()) {
+            <p>{{ stage() === 'extremes' ? 'Para organizar las llegadas, necesitamos saber cuánto variaron las descargas.' : 'Encuentra los extremos de este nuevo registro.' }}</p>
+            <p>Toca la tarjeta con menos minutos.</p>
+          } @else if (!selectedMaxId()) {
+            <p>La más corta duró <strong>{{ minimum() }} minutos</strong>. Ahora toca la tarjeta con más minutos.</p>
+          } @else {
+            <p>La más corta duró <strong>{{ minimum() }}</strong> y la más larga <strong>{{ maximum() }} minutos</strong>.</p>
+            <p>Vamos a ver cuánto las separa.</p>
+            <button type="button" class="btn btn--primary" (click)="showSeparation()">Ver la separación →</button>
+          }
+        } @else if (stage() === 'measure' || stage() === 'practice-range') {
+          <span class="task-kicker">{{ stage() === 'measure' ? 'Recorre de un extremo al otro' : 'Mide lo que encontraste' }}</span>
+          <h3 id="haulage-task-title" #taskHeading tabindex="-1">¿Cuántos minutos los separan?</h3>
+          <p>{{ stage() === 'measure' ? 'Cuenta los tramos de un minuto desde la más corta hasta la más larga.' : 'Busca cuánto hay desde ' + minimum() + ' hasta ' + maximum() + ' minutos.' }}</p>
+          <div class="number-choices" role="group" aria-label="Separación en minutos">
+            @for (option of rangeOptions(); track option) {
+              <button type="button" class="btn answer-choice" (click)="answerRange(option)">{{ option }} min</button>
+            }
+          </div>
+        } @else if (stage() === 'discovery') {
+          <span class="task-kicker">Ahora tiene nombre</span>
+          <h3 id="haulage-task-title" #taskHeading tabindex="-1">Esta separación se llama rango</h3>
+          <div class="range-reading"><strong>{{ separation() }} minutos</strong><span>entre la más corta y la más larga</span></div>
+          <p>El <strong>rango</strong> compara solo los dos extremos: el tiempo menor y el mayor.</p>
+          <p>En este registro: {{ maximum() }} menos {{ minimum() }} da {{ separation() }} minutos.</p>
+          <button type="button" class="btn btn--primary" (click)="startPractice()">Probar con otro registro →</button>
+        } @else if (stage() === 'practice-meaning') {
+          <span class="task-kicker">Explica tu hallazgo</span>
+          <h3 id="haulage-task-title" #taskHeading tabindex="-1">¿Qué significa un rango de {{ separation() }} minutos?</h3>
+          <div class="meaning-choices">
+            @for (meaning of meanings(); track meaning.id) {
+              <button type="button" class="btn answer-choice" (click)="explainRange(meaning.id)">{{ meaning.text }}</button>
+            }
+          </div>
+        } @else if (stage() === 'review') {
+          <span class="task-kicker">Ahora se entiende</span>
+          <h3 id="haulage-task-title" #taskHeading tabindex="-1">El rango mide la separación</h3>
+          <p>Entre {{ minimum() }} y {{ maximum() }} hay <strong>{{ separation() }} minutos</strong>. Ese resultado no es lo que duró cada descarga.</p>
+          <p>Ensaya con otro registro para reconocerlo sin la pista.</p>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otro registro →</button>
         }
-      </div>
-      @if (feedback()) { <div class="feedback feedback--hint" aria-live="polite"><p>{{ feedback() }}</p></div> }
-    </div>
-  }
-
-  @if (stage() === 'formula') {
-    <div class="lesson-completion formula-card">
-      <span class="success-label">Nueva herramienta</span>
-      <h3>Esta separación se llama rango</h3>
-      <div class="formula">
-        <span>Rango = máximo − mínimo</span>
-        <strong>18 − 11 = 7 min</strong>
-      </div>
-      <p>Primero encontraste los extremos y mediste su separación. Ahora ya puedes ponerle nombre a esa medida.</p>
-      <div class="feedback feedback--success"><p>{{ feedback() }}</p></div>
-      <button type="button" class="btn btn--primary" (click)="continueToPractice()">Comprobar con otro registro</button>
-    </div>
-  }
-
-  @if (stage() === 'practice-range' || stage() === 'practice-meaning') {
-    <div class="practice-header">
-      <span class="lesson-tag">Comprobación con nuevos registros</span>
-      <h3>Otras cinco descargas</h3>
-      <p>Calcula el rango de estas duraciones en minutos.</p>
-    </div>
-    <div class="trip-grid trip-grid--practice">
-      @for (trip of practiceTrips; track trip.id; let index = $index) {
-        <div class="trip-card">
-          <span>Descarga {{ index + 1 }}</span><strong>{{ trip.time }} min</strong>
+        <div aria-live="polite" aria-atomic="true">
+          @if (feedback()) { <div class="feedback feedback--hint"><strong>Una pista</strong><p>{{ feedback() }}</p></div> }
         </div>
-      }
+      </aside>
     </div>
-    @if (stage() === 'practice-range') {
-      <form class="lesson-card" (submit)="$event.preventDefault(); answerPracticeRange()">
-        <label for="practice-range">Rango, en minutos</label>
-        <input id="practice-range" type="number" min="0" step="any" [value]="practiceAnswer()"
-               (input)="practiceAnswer.set($any($event.target).value)">
-        <button type="submit" class="btn btn--primary">Comprobar rango</button>
-      </form>
-    } @else {
-      <h3>¿Qué significa un rango de 5 minutos?</h3>
-      <div class="meaning-choices">
-        <button type="button" class="btn btn--answer" (click)="explainRange('maximum')">La descarga más larga duró 5 minutos.</button>
-        <button type="button" class="btn btn--answer" (click)="explainRange('separation')">Hay 5 minutos entre la descarga más corta y la más larga.</button>
-        <button type="button" class="btn btn--answer" (click)="explainRange('every')">Todas las descargas duraron 5 minutos.</button>
-      </div>
-    }
-    <div aria-live="polite" aria-atomic="true">
-      @if (feedback()) { <div class="feedback"><p>{{ feedback() }}</p></div> }
+  } @else {
+    <div class="completion-card">
+      <span class="task-kicker">Tu aviso está listo</span>
+      <h3 #taskHeading tabindex="-1">Ya puedes explicar cuánto variaron los extremos</h3>
+      <p>El rango es la separación entre el tiempo más corto y el más largo.</p>
     </div>
-  }
-
-  @if (stage() === 'success') {
-    <div class="lesson-completion">
-      <span class="success-label">Comprobación completada</span>
-      <h3>Ya puedes medir la separación entre extremos</h3>
-      <div class="formula"><span>Rango = 15 − 10</span><strong>5 min</strong></div>
-      <p>El rango permite expresar rápidamente cuánto separa al valor máximo del mínimo.</p>
-      <div class="lesson-card">
-        <h3>Observación para el relevo</h3>
-        <p><strong>Hallazgo:</strong> las primeras descargas observadas estuvieron entre 11 y 18 minutos: una separación de 7 minutos.</p>
-        <p><strong>Aprendizaje:</strong> el rango expresa la separación entre el máximo y el mínimo.</p>
-      </div>
-      <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+    <div class="report-card">
+      <span class="task-kicker">Para organizar las llegadas del siguiente turno</span>
+      <h3>Descargas observadas: de 11 a 18 minutos</h3>
+      <p><strong>Hubo 7 minutos de separación entre la más corta y la más larga.</strong> Ese es el rango de estos registros.</p>
+      <p>Es lo que ocurrió en estas cinco descargas, no una garantía para las siguientes. Los tiempos tampoco explican por qué variaron.</p>
     </div>
+    <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar el aviso →</button></div>
   }
 </section>

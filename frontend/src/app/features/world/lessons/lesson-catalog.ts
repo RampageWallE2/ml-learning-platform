@@ -2,6 +2,11 @@ import { LESSON_01_LOADING } from './data/lesson-01-loading.data';
 import { LESSON_02_RAMP } from './data/lesson-02-ramp.data';
 import { LESSON_03_HAULAGE } from './data/lesson-03-haulage.data';
 import { LESSON_04_WORKSHOP } from './data/lesson-04-workshop.data';
+import { LESSON_05_CRUSHING } from './data/lesson-05-crushing.data';
+import { LESSON_06_SAG } from './data/lesson-06-sag.data';
+import { LESSON_07_BALLS } from './data/lesson-07-balls.data';
+import { LESSON_08_FLOTATION } from './data/lesson-08-flotation.data';
+import { LESSON_09_THICKENERS } from './data/lesson-09-thickeners.data';
 import { LessonDefinition } from './lesson.types';
 
 export type LessonCatalogEntry = Readonly<{
@@ -52,6 +57,36 @@ export const LEARNING_ZONES: readonly ZoneCatalogEntry[] = [
         name: 'Mismo rango, ¿mismos datos?',
         objective: 'Ve al taller de mantenimiento y habla con su encargado.',
         definition: LESSON_04_WORKSHOP,
+      },
+      {
+        lessonId: 'lesson-05',
+        name: 'Distancias respecto a la media',
+        objective: 'Ve a ROM / chancado y habla con el operador.',
+        definition: LESSON_05_CRUSHING,
+      },
+      {
+        lessonId: 'lesson-06',
+        name: 'Construir la varianza en el molino SAG',
+        objective: 'Ve al molino SAG y habla con el operador.',
+        definition: LESSON_06_SAG,
+      },
+      {
+        lessonId: 'lesson-07',
+        name: 'Aplicar la varianza en bolas e hidrociclones',
+        objective: 'Ve al molino de bolas e hidrociclones y habla con el operador.',
+        definition: LESSON_07_BALLS,
+      },
+      {
+        lessonId: 'lesson-08',
+        name: 'Desviación estándar en flotación',
+        objective: 'Ve a flotación y habla con el operador.',
+        definition: LESSON_08_FLOTATION,
+      },
+      {
+        lessonId: 'lesson-09',
+        name: 'Informe final en espesadores',
+        objective: 'Ve a los espesadores y habla con el operador.',
+        definition: LESSON_09_THICKENERS,
       },
     ],
   },

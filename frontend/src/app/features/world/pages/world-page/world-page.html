@@ -1,6 +1,40 @@
-<div class="world-page">
+<div class="world-page" [attr.aria-busy]="loadingScene() && sceneLoading().phase !== 'error'">
 
-  <div class="world-hud">
+  @if (loadingScene()) {
+    <section class="world-loading" aria-label="Carga del escenario">
+      <div class="world-loading__card" [class.world-loading__card--error]="sceneLoading().phase === 'error'">
+        <div class="world-loading__chrome" aria-hidden="true">
+          <span>EXPLORALAB</span>
+          <span class="world-loading__lights"><i></i><i></i><i></i></span>
+        </div>
+        <span class="world-loading__tag">Preparando tu recorrido</span>
+        <div class="world-loading__ring"
+             [attr.role]="sceneLoading().phase === 'error' ? null : 'progressbar'"
+             aria-label="Carga de recursos del escenario"
+             aria-valuemin="0" aria-valuemax="100"
+             [attr.aria-valuenow]="sceneLoadingPercentage()"
+             [attr.aria-valuetext]="sceneLoadingPercentage() + '% de los recursos cargados'">
+          <svg viewBox="0 0 160 160" aria-hidden="true">
+            <circle class="world-loading__ticks" cx="80" cy="80" r="76" pathLength="100" stroke-dasharray="1 4" />
+            <circle class="world-loading__track" cx="80" cy="80" r="66" />
+            <circle class="world-loading__fill" cx="80" cy="80" r="66" pathLength="100"
+                    stroke-dasharray="100" [attr.stroke-dashoffset]="100 - sceneLoadingPercentage()" />
+          </svg>
+          <strong aria-hidden="true">{{ sceneLoading().phase === 'error' ? '!' : sceneLoadingPercentage() + '%' }}</strong>
+        </div>
+        <h1>{{ sceneLoading().phase === 'error' ? 'No se pudo cargar el mapa' : sceneLoading().phase === 'preparing' ? 'Preparando escenario…' : 'Cargando ' + loadingSceneName() + '…' }}</h1>
+        <p [attr.role]="sceneLoading().phase === 'error' ? 'alert' : 'status'" aria-live="polite">
+          {{ sceneLoading().phase === 'error' ? 'Falló la carga de un recurso. Comprueba tu conexión y vuelve a intentarlo.' : sceneLoading().phase === 'preparing' ? 'Los recursos están cargados. Estamos preparando el mapa y sus interacciones.' : 'Cargando mapa, imágenes y sonidos.' }}
+        </p>
+        @if (sceneLoading().phase === 'error') {
+          <button type="button" class="btn btn--primary" (click)="reloadWorld()">Recargar</button>
+        }
+        <div class="world-loading__footer" aria-hidden="true">MAPA · IMÁGENES · SONIDOS</div>
+      </div>
+    </section>
+  }
+
+  <div class="world-hud" [attr.inert]="loadingScene() ? '' : null" [attr.aria-hidden]="loadingScene() ? 'true' : null">
 
     <div class="world-hud__account">
       <app-account-menu />

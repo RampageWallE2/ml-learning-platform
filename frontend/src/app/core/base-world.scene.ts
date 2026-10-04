@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { gameEvents, GameEvents } from '../features/world/game/events/game-events';
+import { gameEvents, GameEvents, type SceneLoadingSnapshot } from '../features/world/game/events/game-events';
 
 import { buildTilemap, preloadTilemap } from '../features/world/game/tiled/tilemap.builder';
 
@@ -57,6 +57,10 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
   private spawnId = 'player-start';
 
+  private loadingFailed = false;
+
+  private sceneCreated = false;
+
   protected constructor(
     sceneKey: string,
     private readonly mapConfig: TilemapSceneConfig,
@@ -69,6 +73,15 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   }
 
   preload(): void {
+    this.loadingFailed = false;
+    this.sceneCreated = false;
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
+    this.load.on(Phaser.Loader.Events.PROGRESS, this.handleLoadProgress);
+    this.load.once(Phaser.Loader.Events.COMPLETE, this.handleLoadComplete);
+    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, this.handleLoadError);
+    this.reportLoading('loading', 0);
+
     if (!this.textures.exists('player')) {
       this.load.spritesheet('player', 'assets/game/characters/character2.png', {
         frameWidth: 32,
@@ -82,6 +95,9 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Keep the error screen visible rather than constructing an incomplete map.
+    if (this.loadingFailed) return;
+
     gameEvents.on(GameEvents.LOCK_PLAYER, this.lockPlayer);
 
     gameEvents.on(GameEvents.UNLOCK_PLAYER, this.unlockPlayer);
@@ -114,16 +130,20 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
     this.onSceneCreated(buildResult);
 
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
-
     gameEvents.emit(GameEvents.SCENE_CHANGED, this.scene.key);
 
     this.lockPlayer();
 
     this.sceneTransition.playIn(this.unlockPlayer);
+
+    this.sceneCreated = true;
+    // Resource completion alone does not mean the map has been built and drawn.
+    this.game.events.once(Phaser.Core.Events.POST_RENDER, this.handleSceneRendered);
   }
 
   override update(_time: number, delta: number): void {
+    if (!this.sceneCreated) return;
+
     this.inputController.getDirection(this.direction);
 
     const interactRequested = this.inputController.consumeInteract();
@@ -161,7 +181,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   protected onSceneShutdown(): void {}
 
   getSessionSnapshot(): WorldSessionSnapshot | null {
-    if (!isWorldSceneKey(this.scene.key) || !this.playerController?.sprite) {
+    if (!this.sceneCreated || !isWorldSceneKey(this.scene.key) || !this.playerController?.sprite) {
       return null;
     }
 
@@ -233,6 +253,28 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.playerController?.unlock();
   };
 
+  private reportLoading(phase: SceneLoadingSnapshot['phase'], progress: number): void {
+    const snapshot: SceneLoadingSnapshot = { sceneKey: this.scene.key, phase, progress };
+    gameEvents.emit(GameEvents.SCENE_LOADING, snapshot);
+  }
+
+  private readonly handleLoadProgress = (progress: number): void => {
+    if (!this.loadingFailed) this.reportLoading('loading', progress);
+  };
+
+  private readonly handleLoadComplete = (): void => {
+    if (!this.loadingFailed) this.reportLoading('preparing', 1);
+  };
+
+  private readonly handleLoadError = (): void => {
+    this.loadingFailed = true;
+    this.reportLoading('error', this.load.progress);
+  };
+
+  private readonly handleSceneRendered = (): void => {
+    if (this.sceneCreated && !this.loadingFailed) this.reportLoading('ready', 1);
+  };
+
   private readonly startSceneTransition = (targetScene: string, targetSpawn?: string): void => {
     if (this.sceneTransition.isPlaying()) {
       return;
@@ -248,6 +290,14 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   };
 
   private handleShutdown(): void {
+    this.sceneCreated = false;
+    this.load.off(Phaser.Loader.Events.PROGRESS, this.handleLoadProgress);
+    this.load.off(Phaser.Loader.Events.COMPLETE, this.handleLoadComplete);
+    this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, this.handleLoadError);
+    this.game.events.off(Phaser.Core.Events.POST_RENDER, this.handleSceneRendered);
+    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
+
     gameEvents.off(GameEvents.LOCK_PLAYER, this.lockPlayer);
 
     gameEvents.off(GameEvents.UNLOCK_PLAYER, this.unlockPlayer);

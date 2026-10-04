@@ -34,6 +34,18 @@ export const OPEN_PIT_MAP_CONFIG = {
       imagePath: 'assets/game/tilesets/terrain/city_terrain2.png',
     },
     {
+      id: 'city_terrains_global',
+      tiledName: 'city_terrains_global',
+      textureKey: 'city_terrains_global',
+      imagePath: 'assets/game/tilesets/terrain/city_terrains_global.png',
+    },
+    {
+      id: 'camping',
+      tiledName: 'camping',
+      textureKey: 'camping',
+      imagePath: 'assets/game/tilesets/props/camping.png',
+    },
+    {
       id: 'vehicles',
       tiledName: 'vehicles',
       textureKey: 'vehicles',
@@ -68,6 +80,12 @@ export const OPEN_PIT_MAP_CONFIG = {
       tiledName: 'beach_3',
       textureKey: 'beach_3',
       imagePath: 'assets/game/tilesets/props/beach_3.png',
+    },
+    {
+      id: 'beach_outside',
+      tiledName: 'beach_outside',
+      textureKey: 'beach_outside',
+      imagePath: 'assets/game/tilesets/props/beach_outside.png',
     },
     {
       id: 'heavy_machinery',
@@ -200,18 +218,33 @@ export const OPEN_PIT_MAP_CONFIG = {
   layers: [
     {
       name: 'Terrain/Ground',
-      tilesets: ['beach'],
+      tilesets: ['terrain'],
       depth: 0,
     },
     {
       name: 'Terrain/Details',
-      tilesets: ['water_1'],
+      tilesets: ['beach', 'worksite_props', 'terrain2', 'city_terrains_global'],
       depth: 0.01,
     },
     {
       name: 'Water/Ground',
-      tilesets: ['water_1'],
+      tilesets: ['camping'],
       depth: 1.61,
+    },
+    {
+      name: 'Water/Ground_2',
+      tilesets: ['camping'],
+      depth: 1.611,
+    },
+    {
+      name: 'Water/Props',
+      tilesets: ['camping'],
+      depth: 1.612,
+    },
+    {
+      name: 'Water/Props_2',
+      tilesets: ['camping'],
+      depth: 1.613,
     },
     {
       name: 'Water/Buildings',
@@ -270,12 +303,12 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Pit/Cliff_01',
-      tilesets: ['beach'],
+      tilesets: ['beach', 'beach_outside'],
       depth: 1,
     },
     {
       name: 'Pit/Details',
-      tilesets: ['beach', 'beach_2', 'beach_3'],
+      tilesets: ['beach', 'beach_2', 'beach_3', 'worksite_props'],
       depth: 1.1,
     },
     {
@@ -322,16 +355,6 @@ export const OPEN_PIT_MAP_CONFIG = {
       name: 'Electrical_Substation/Ground',
       tilesets: ['city_terrain'],
       depth: 1.69,
-    },
-    {
-      name: 'Campament/Ground',
-      tilesets: ['city_terrain'],
-      depth: 1.76,
-    },
-    {
-      name: 'Campament/Buildings',
-      tilesets: ['modular_camp'],
-      depth: 1.77,
     },
     {
       name: 'Gas_Station/Ground',
@@ -405,12 +428,12 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Waste_Dump/Ground',
-      tilesets: ['beach', 'beach_2'],
+      tilesets: ['beach', 'beach_2', 'beach_outside'],
       depth: 2.1,
     },
     {
       name: 'Waste_Dump/Dirt',
-      tilesets: ['beach', 'beach_2'],
+      tilesets: ['beach', 'beach_2', 'beach_outside'],
       depth: 2.2,
     },
     {

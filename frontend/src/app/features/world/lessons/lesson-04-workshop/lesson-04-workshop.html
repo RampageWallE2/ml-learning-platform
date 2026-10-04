@@ -1,95 +1,154 @@
-<section class="lesson" aria-labelledby="workshop-title">
+<section class="lesson workshop-lesson intuitive-workshop" aria-labelledby="workshop-title">
   <header class="lesson-header">
     <span class="lesson-tag">Clase 4 · Taller de mantenimiento</span>
-    <h2 id="workshop-title">Mismo rango, ¿mismos datos?</h2>
-    <p>Revisa las duraciones de una misma tarea de mantenimiento en dos equipos.</p>
-    <small>Datos simulados · Duraciones en minutos</small>
+    <h2 id="workshop-title">Mismo rango, ¿mismos tiempos?</h2>
+    <p>Misión: corregir la comparación antes de organizar las revisiones del siguiente turno.</p>
   </header>
+
+  <ol class="lesson-steps" aria-label="Pasos de la actividad">
+    @for (label of ['Compara', 'Explora', 'Prueba']; track label; let index = $index) {
+      <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'" [attr.aria-current]="step() === index + 1 ? 'step' : null">
+        <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
+      </li>
+    }
+  </ol>
+
   @if (stage() !== 'success') {
-    <div class="plots">
-      @for (plot of plots(); track plot.name) {
-        <article class="plot">
-          <h3>{{ plot.name }}</h3>
-          <svg viewBox="0 0 540 185" role="img" [attr.aria-label]="plot.name + ': ' + plot.values.join(', ') + ' minutos. Escala común de 6 a 14.'">
-            <line x1="30" y1="140" x2="510" y2="140" class="axis" />
-            @for (tick of ticks; track tick) {
-              <line [attr.x1]="position(tick)" y1="136" [attr.x2]="position(tick)" y2="147" class="axis" />
-              <text [attr.x]="position(tick)" y="172">{{ tick }}</text>
+    <div class="workbench">
+      <div class="time-board">
+        <div class="board-heading"><strong>{{ experimentVisible() ? 'Experimento: original y copia' : practicing() ? 'Ensayo: otros dos equipos' : 'Tiempos de la misma revisión' }}</strong><small>Datos de ejemplo</small></div>
+        <div class="shared-scale">
+          @for (plot of plots(); track plot.id; let second = $odd) {
+            <section class="time-row" [class.time-row--second]="second">
+              <div class="group-heading">
+                <h3>{{ plot.name }}</h3>
+                <span class="range-pill">{{ plot.minimum }}–{{ plot.maximum }} min · Rango: {{ plot.range }} min</span>
+              </div>
+              <div class="value-track" role="img" [attr.aria-label]="plot.description">
+                @for (tick of ticks; track tick) {
+                  <span class="grid-line" [style.left.%]="position(tick)" aria-hidden="true"></span>
+                }
+                <span class="track-line" aria-hidden="true"></span>
+                <span class="range-mark" [style.left.%]="position(plot.minimum)" [style.width.%]="position(plot.maximum) - position(plot.minimum)" aria-hidden="true"></span>
+                @for (point of plot.points; track point.id) {
+                  <span class="time-point" [class.point--movable]="point.movable" [class.point--pinned]="point.pinned"
+                    [style.left.%]="point.x" [style.bottom.px]="point.bottom" aria-hidden="true"></span>
+                }
+              </div>
+              <div class="value-chips" [attr.aria-label]="plot.name + ': tiempos de cada revisión'">
+                @for (value of plot.values; track $index) { <span>{{ value }} min</span> }
+              </div>
+            </section>
+          }
+          <div class="shared-axis" aria-hidden="true">
+            @for (tick of ticks; track tick) { <span [style.left.%]="position(tick)">{{ tick }}</span> }
+          </div>
+          <p class="axis-label">Tiempo de revisión en minutos · min = minutos</p>
+        </div>
+        @if (stage() === 'experiment') {
+          <p class="prediction-note"><strong>Tu predicción: {{ predictionText() }}.</strong><br>Pulsa «Separar tiempos» y observa los dos rombos.</p>
+          <div class="experiment-controls" role="group" aria-label="Cambiar dos tiempos de la copia">
+            <button type="button" class="btn answer-choice" [attr.aria-pressed]="experimentMode() === 'together'" (click)="setExperiment('together')">Juntar tiempos</button>
+            <button type="button" class="btn answer-choice" #separateButton [attr.aria-pressed]="experimentMode() === 'apart'" (click)="setExperiment('apart')">Separar tiempos</button>
+          </div>
+          <div class="range-reading" aria-live="polite" aria-atomic="true">
+            <strong>Rango: {{ simulatedRange() }} minutos</strong>
+            @if (experimentMode() === 'apart') {
+              <span>{{ predictionOutcome() }}</span>
+              <span>Los dos rombos se movieron. El menor sigue en 8 y el mayor en 12: 12 − 8 = 4.</span>
+            } @else { <span>La copia tiene los tiempos originales de A.</span> }
+          </div>
+        }
+        <p class="chart-key">Cada punto es una revisión. Los puntos apilados tienen el mismo tiempo. Ambos gráficos usan la misma escala.</p>
+        @if (experimentVisible()) {
+          <p class="experiment-note"><strong>Solo cambia la copia.</strong> Sus dos rombos representan las revisiones que pueden cambiar; los círculos con borde señalan el tiempo menor y el mayor.</p>
+        }
+      </div>
+
+      <aside class="task-card" aria-labelledby="workshop-task-title">
+        @if (stage() === 'compare') {
+          <span class="task-kicker">Antes de organizar las revisiones</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Los tiempos se reparten igual?</h3>
+          <div class="report-claim"><strong>El informe dice:</strong><p>«Los tiempos fueron parecidos porque ambos equipos tienen el mismo rango».</p></div>
+          <p>Mira todos los puntos, no solo los extremos.</p>
+          <div class="choices">
+            @for (choice of compareChoices; track choice.id) {
+              <button type="button" class="btn answer-choice" (click)="compare(choice.id)">{{ choice.text }}</button>
             }
-            @for (point of plot.points; track $index) {
-              <line [attr.x1]="point.x" [attr.y1]="point.y + 5" [attr.x2]="point.x" y2="140" class="guide" />
-              <text [attr.x]="point.x" [attr.y]="point.y">{{ point.value }}</text>
-              <circle [attr.cx]="point.x" [attr.cy]="point.y + 9" r="3" />
+          </div>
+        } @else if (stage() === 'predict') {
+          <span class="task-kicker">Antes de probar</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Cambiará el rango?</h3>
+          <p>En una copia de A, dos revisiones de 10 minutos pasarán a 8 y a 12.</p>
+          <p>El rango actual es 4 minutos. ¿Qué crees que ocurrirá al separar esos dos puntos?</p>
+          <div class="choices" role="group" aria-label="Predicción sobre el rango">
+            @for (prediction of predictions; track prediction.id) {
+              <button type="button" class="btn answer-choice" (click)="predictRange(prediction.id)">{{ prediction.text }}</button>
             }
-          </svg>
-          <p>{{ plot.values.join(' · ') }} min</p>
-        </article>
-      }
+          </div>
+          <p class="chart-key">Elige una idea y luego compruébala. Todavía no cambiamos los datos.</p>
+        } @else if (stage() === 'experiment') {
+          <span class="task-kicker">Pon tu idea a prueba</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">Observa qué cambia</h3>
+          <p>Usa los botones debajo de la copia. Puedes separar y volver a juntar los tiempos.</p>
+          <p>Después, explica el resultado mirando el tiempo menor y el mayor.</p>
+          <button type="button" class="btn btn--primary" [disabled]="experimentMode() !== 'apart'" (click)="showChanges()">Explicar lo que cambió →</button>
+        } @else if (stage() === 'explain') {
+          <span class="task-kicker">Los puntos cambiaron, el rango no</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Por qué sigue siendo 4?</h3>
+          <div class="choices">
+            @for (explanation of explanations; track explanation.id) {
+              <button type="button" class="btn answer-choice" (click)="explain(explanation.id)">{{ explanation.text }}</button>
+            }
+          </div>
+        } @else if (stage() === 'discovery') {
+          <span class="task-kicker">Lo descubriste</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">El rango no muestra todo</h3>
+          <p>La separación entre 8 y 12 sigue siendo <strong>4 minutos</strong>, aunque los otros tiempos cambien.</p>
+          <div class="range-reading"><strong>Mismo rango, tiempos distintos</strong><span>También necesitamos mirar cómo se reparten los demás registros.</span></div>
+          <button type="button" class="btn btn--primary" (click)="startPractice()">Probar con otros equipos →</button>
+        } @else if (stage() === 'practice') {
+          <span class="task-kicker">{{ round() === 0 ? 'Ensaya antes de corregir' : 'Otro ensayo, sin la pista' }}</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Cómo corregirías el informe?</h3>
+          <p>El informe considera iguales los tiempos de {{ practiceRecords()[0].id }} y {{ practiceRecords()[1].id }} porque tienen el mismo rango.</p>
+          <div class="choices">
+            @for (claim of claims; track claim.id) {
+              <button type="button" class="btn answer-choice" (click)="chooseClaim(claim.id)">{{ claim.text }}</button>
+            }
+          </div>
+        } @else if (stage() === 'evidence') {
+          <span class="task-kicker">Respalda tu corrección</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Qué diferencia ves en los puntos?</h3>
+          <div class="choices">
+            @for (evidence of evidenceChoices(); track evidence.id) {
+              <button type="button" class="btn answer-choice" (click)="chooseEvidence(evidence.id)">{{ evidence.text }}</button>
+            }
+          </div>
+        } @else if (stage() === 'review') {
+          <span class="task-kicker">Ahora se entiende</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">Mira también los demás tiempos</h3>
+          <p>Los rangos coinciden, pero {{ concentratedGroup().id }} tiene más revisiones de <strong>{{ center() }} minutos</strong>. Los tiempos no se reparten igual.</p>
+          <p>Prueba otro registro para reconocerlo sin la pista.</p>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otro registro →</button>
+        }
+        <div aria-live="polite" aria-atomic="true">
+          @if (feedback()) { <div class="feedback feedback--hint"><strong>Una pista</strong><p>{{ feedback() }}</p></div> }
+        </div>
+      </aside>
     </div>
-  }
-  @if (stage() === 'ranges') {
-    <div class="lesson-card"><strong>Conclusión del informe:</strong> «Ambos equipos se comportaron igual porque tienen el mismo rango».</div>
-    <form (submit)="$event.preventDefault(); checkRanges()">
-      <label for="range-a">Rango de A, en minutos</label>
-      <input id="range-a" type="number" step="any" [value]="rangeA()" (input)="rangeA.set($any($event.target).value)">
-      <label for="range-b">Rango de B, en minutos</label>
-      <input id="range-b" type="number" step="any" [value]="rangeB()" (input)="rangeB.set($any($event.target).value)">
-      <button type="submit" class="btn btn--primary">Comprobar rangos</button>
-    </form>
-  }
-  @if (stage() === 'compare') {
-    <h3>¿Qué muestran los registros, además de compartir el rango?</h3>
-    <div class="choices">
-      <button type="button" class="btn btn--answer" (click)="compare('identical')">Sus distribuciones son idénticas.</button>
-      <button type="button" class="btn btn--answer" (click)="compare('concentrated')">A concentra más registros en 10 minutos.</button>
+  } @else {
+    <div class="completion-card">
+      <span class="task-kicker">Tu corrección está lista</span>
+      <h3 #taskHeading tabindex="-1">El mismo rango puede esconder diferencias</h3>
+      <p>El rango describe los extremos. Para comparar los tiempos, necesitamos mirar también los demás registros.</p>
     </div>
-  }
-  @if (stage() === 'simulation' || stage() === 'explain') {
-    <div class="lesson-card">
-      <h3>Simulación · Los registros originales permanecen intactos</h3>
-      <p>El control mueve dos registros simétricamente alrededor de 10. Los extremos permanecen en 8 y 12 y el registro central en 10.</p>
-      <label for="interior">Separación de los dos registros respecto a 10</label>
-      <input id="interior" type="range" min="0" max="2" step="1" [value]="distance()" [disabled]="stage() === 'explain'"
-             [attr.aria-valuetext]="distance() + ' minutos a cada lado de 10'" (input)="moveInterior($any($event.target).value)">
-      <p aria-live="polite">Copia: {{ simulated().join(' · ') }} min. Rango: {{ simulatedRange() }} min. Media: {{ simulatedMean() }} min.</p>
-      @if (stage() === 'simulation') {
-        <button type="button" class="btn btn--primary" (click)="confirmSimulation()">Revisar lo que cambió</button>
-      }
+    <div class="report-card">
+      <span class="task-kicker">Para organizar las revisiones del siguiente turno</span>
+      <h3>A y B tienen rango de 4 minutos, pero sus tiempos no se reparten igual</h3>
+      <p>En A hubo tres revisiones de 10 minutos; en B, solo una.</p>
+      <p><strong>Corrección:</strong> no considerar iguales los tiempos solo porque sus rangos coinciden.</p>
+      <p>Esto no dice qué equipo trabaja mejor ni explica la causa de las diferencias.</p>
     </div>
-  }
-  @if (stage() === 'explain') {
-    <h3>¿Por qué el rango no cambió?</h3>
-    <div class="choices">
-      <button type="button" class="btn btn--answer" (click)="explain('unchanged')">Porque ningún registro cambió.</button>
-      <button type="button" class="btn btn--answer" (click)="explain('extremes')">Porque el mínimo y el máximo siguen siendo los mismos.</button>
-      <button type="button" class="btn btn--answer" (click)="explain('useless')">Porque el rango no aporta ninguna información.</button>
-    </div>
-  }
-  @if (stage() === 'practice') {
-    <form (submit)="$event.preventDefault(); checkPractice()">
-      <h3>Comprueba con nuevos registros</h3>
-      <label for="range-c">Rango de C, en minutos</label>
-      <input id="range-c" type="number" step="any" [value]="practiceC()" (input)="practiceC.set($any($event.target).value)">
-      <label for="range-d">Rango de D, en minutos</label>
-      <input id="range-d" type="number" step="any" [value]="practiceD()" (input)="practiceD.set($any($event.target).value)">
-      <fieldset>
-        <legend>¿Qué conclusión respaldan estos registros?</legend>
-        <label><input type="radio" name="claim" [checked]="practiceClaim() === 'same'" (change)="practiceClaim.set('same')"> Tienen el mismo rango y distribuciones idénticas.</label>
-        <label><input type="radio" name="claim" [checked]="practiceClaim() === 'different'" (change)="practiceClaim.set('different')"> Tienen el mismo rango, pero distinta distribución interior.</label>
-        <label><input type="radio" name="claim" [checked]="practiceClaim() === 'unknown'" (change)="practiceClaim.set('unknown')"> No podemos comparar sus distribuciones aunque tengamos todos los registros.</label>
-      </fieldset>
-      <button type="submit" class="btn btn--primary">Comprobar conclusión</button>
-    </form>
-  }
-  <div aria-live="polite" aria-atomic="true">
-    @if (feedback()) { <div class="feedback"><p>{{ feedback() }}</p></div> }
-  </div>
-  @if (stage() === 'success') {
-    <div class="lesson-card">
-      <h3>Observación para el relevo</h3>
-      <p><strong>Hallazgo:</strong> A y B tienen rango de 4 minutos, pero A concentra más duraciones en 10 minutos.</p>
-      <p><strong>Aprendizaje:</strong> el rango describe los extremos y no distingue todos los cambios interiores.</p>
-    </div>
-    <button type="button" class="btn btn--primary" (click)="finish()">Continuar con el encargado</button>
+    <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar la corrección →</button></div>
   }
 </section>

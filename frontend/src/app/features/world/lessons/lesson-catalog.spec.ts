@@ -13,13 +13,31 @@ describe('lesson catalog', () => {
     }
   });
 
-  it('registers only the four implemented Open Pit lessons', () => {
+  it('registers the nine implemented Open Pit lessons in order', () => {
     expect(LEARNING_ZONES).toHaveLength(1);
     expect(LEARNING_ZONES[0]?.lessons.map(lesson => lesson.lessonId)).toEqual([
       'lesson-01',
       'lesson-02',
       'lesson-03',
       'lesson-04',
+      'lesson-05',
+      'lesson-06',
+      'lesson-07',
+      'lesson-08',
+      'lesson-09',
     ]);
+    expect(LESSON_DEFINITIONS['lesson-10']).toBeUndefined();
+    expect(LESSON_DEFINITIONS['lesson-09'].steps[1]).toEqual({
+      type: 'exercise', exerciseId: 'thickeners-final-report',
+    });
+    expect(LESSON_DEFINITIONS['lesson-08'].steps[1]).toEqual({
+      type: 'exercise', exerciseId: 'flotation-standard-deviation',
+    });
+    expect(LESSON_DEFINITIONS['lesson-06'].steps[1]).toEqual({
+      type: 'exercise', exerciseId: 'sag-build-variance',
+    });
+    expect(LESSON_DEFINITIONS['lesson-07'].steps[1]).toEqual({
+      type: 'exercise', exerciseId: 'balls-apply-variance',
+    });
   });
 });

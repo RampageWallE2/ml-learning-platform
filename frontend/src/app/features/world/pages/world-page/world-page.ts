@@ -37,7 +37,8 @@ import {
   gameEvents,
   GameEvents,
   LessonProgressSnapshot,
-  OpenLessonRequest
+  OpenLessonRequest,
+  type SceneLoadingSnapshot
 } from '../../game/events/game-events';
 
 import {
@@ -133,6 +134,34 @@ export class WorldPage
 
   private worldSessionLifecycle?:
     WorldSessionLifecycle;
+
+  private readonly restoredSession = loadWorldSession();
+
+  readonly sceneLoading = signal<SceneLoadingSnapshot>({
+    sceneKey: this.restoredSession?.sceneKey ?? 'HubScene', phase: 'loading', progress: 0,
+  });
+
+  readonly loadingScene = computed(() => this.sceneLoading().phase !== 'ready');
+  readonly sceneLoadingPercentage = computed(() => Math.round(this.sceneLoading().progress * 100));
+  readonly loadingSceneName = computed(() => {
+    const key = this.sceneLoading().sceneKey;
+    if (key === 'HubScene') return 'HUB';
+    if (key === 'SurfaceSelectionScene') return 'Minería de Superficie';
+    if (key === 'QuarriesScene') return 'Canteras';
+    return SCENE_ZONES[key]?.name ?? 'escenario';
+  });
+
+  reloadWorld(): void {
+    window.location.reload();
+  }
+
+  private readonly handlerSceneLoading = (snapshot: SceneLoadingSnapshot): void => {
+    this.sceneLoading.set({
+      ...snapshot,
+      progress: Number.isFinite(snapshot.progress)
+        ? Math.min(1, Math.max(0, snapshot.progress)) : 0,
+    });
+  };
 
 
   /* =========================
@@ -721,6 +750,7 @@ export class WorldPage
      ========================= */
 
   ngAfterViewInit(): void {
+    gameEvents.on(GameEvents.SCENE_LOADING, this.handlerSceneLoading);
 
     gameEvents.on(
       GameEvents.OPEN_LESSON,
@@ -741,7 +771,7 @@ export class WorldPage
 
 
     const restoredSession =
-      loadWorldSession();
+      this.restoredSession;
 
 
     clearWorldSession();
@@ -773,6 +803,7 @@ export class WorldPage
      ========================= */
 
   ngOnDestroy(): void {
+    gameEvents.off(GameEvents.SCENE_LOADING, this.handlerSceneLoading);
 
     this.worldSessionLifecycle?.stop();
 

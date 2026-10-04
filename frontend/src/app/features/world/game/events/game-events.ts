@@ -9,6 +9,13 @@ export type OpenLessonRequest = Readonly<{
     lessonId: string;
 }>;
 
+export type SceneLoadingSnapshot = Readonly<{
+    sceneKey: string;
+    phase: 'loading' | 'preparing' | 'ready' | 'error';
+    /** Progress of Phaser's resource queue, from 0 to 1; not elapsed time. */
+    progress: number;
+}>;
+
 export const gameEvents = new Phaser.Events.EventEmitter();
 
 export const GameEvents = {
@@ -16,6 +23,7 @@ export const GameEvents = {
     OPEN_DIALOGUE: 'open-dialogue',
 
     SCENE_CHANGED: 'scene-changed',
+    SCENE_LOADING: 'scene-loading',
     LESSON_PROGRESS_CHANGED: 'lesson-progress-changed',
 
     LOCK_PLAYER: 'lock-player',
