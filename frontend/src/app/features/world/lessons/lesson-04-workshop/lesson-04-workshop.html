@@ -46,7 +46,7 @@
           <p class="axis-label">Tiempo de revisión en minutos · min = minutos</p>
         </div>
         @if (stage() === 'experiment') {
-          <p class="prediction-note"><strong>Tu predicción: {{ predictionText() }}.</strong><br>Pulsa «Separar tiempos» y observa los dos rombos.</p>
+          <p class="prediction-note"><strong>Tu idea: {{ predictionText() }}.</strong><br>Pulsa «Separar tiempos» y mira los dos rombos.</p>
           <div class="experiment-controls" role="group" aria-label="Cambiar dos tiempos de la copia">
             <button type="button" class="btn answer-choice" [attr.aria-pressed]="experimentMode() === 'together'" (click)="setExperiment('together')">Juntar tiempos</button>
             <button type="button" class="btn answer-choice" #separateButton [attr.aria-pressed]="experimentMode() === 'apart'" (click)="setExperiment('apart')">Separar tiempos</button>
@@ -81,7 +81,7 @@
           <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Cambiará el rango?</h3>
           <p>En una copia de A, dos revisiones de 10 minutos pasarán a 8 y a 12.</p>
           <p>El rango actual es 4 minutos. ¿Qué crees que ocurrirá al separar esos dos puntos?</p>
-          <div class="choices" role="group" aria-label="Predicción sobre el rango">
+          <div class="choices" role="group" aria-label="Tu idea sobre el rango">
             @for (prediction of predictions; track prediction.id) {
               <button type="button" class="btn answer-choice" (click)="predictRange(prediction.id)">{{ prediction.text }}</button>
             }
@@ -117,7 +117,7 @@
             }
           </div>
         } @else if (stage() === 'evidence') {
-          <span class="task-kicker">Respalda tu corrección</span>
+          <span class="task-kicker">Explica tu corrección</span>
           <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Qué diferencia ves en los puntos?</h3>
           <div class="choices">
             @for (evidence of evidenceChoices(); track evidence.id) {

@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  effect,
   input,
   signal
 } from '@angular/core';
@@ -17,6 +18,10 @@ import {
   styleUrl: './zone-progress.scss',
 })
 export class ZoneProgress {
+
+  private static nextPanelId = 0;
+
+  readonly lessonsId = `zone-progress-lessons-${++ZoneProgress.nextPanelId}`;
 
   zone =
     input<ZoneProgressData | null>(
@@ -52,6 +57,29 @@ export class ZoneProgress {
     this.zone()?.completed ??
     false
   );
+
+
+  readonly nextLessonNumber = computed(() => {
+    const index = this.zone()?.lessons.findIndex(
+      lesson => lesson.status !== 'completed'
+    ) ?? -1;
+
+    return index >= 0 ? index + 1 : null;
+  });
+
+
+  constructor() {
+    let previousZoneId: string | null | undefined;
+
+    effect(() => {
+      const zoneId = this.zone()?.id ?? null;
+
+      if (zoneId !== previousZoneId) {
+        this.expanded.set(false);
+        previousZoneId = zoneId;
+      }
+    });
+  }
 
 
   /* =========================

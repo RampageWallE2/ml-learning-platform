@@ -15,6 +15,17 @@ function reachReport(game: Lesson08Flotation): void {
   reachBand(game);
   const stats = game.stats();
   game.selectRecord(game.records().findIndex(value => Math.abs(value - stats.mean) > stats.standardDeviation));
+  completeComparison(game);
+}
+function reachComparison(game: Lesson08Flotation): void {
+  reachBand(game);
+  const stats = game.stats();
+  game.selectRecord(game.records().findIndex(value => Math.abs(value - stats.mean) > stats.standardDeviation));
+  game.continueToReport();
+}
+function completeComparison(game: Lesson08Flotation): void {
+  game.continueToReport();
+  game.answerComparison('inside');
   game.continueToReport();
 }
 function click(root: HTMLElement, label: string): void {
@@ -73,10 +84,11 @@ describe('Lesson08Flotation', () => {
   it('rejects invalid and premature actions without moving, helping or completing', () => {
     const game = create().componentInstance; const done = vi.fn(); game.completed.subscribe(done);
     game.answerRoot(2); game.requestHint(); game.continueToBand(); game.selectRecord(0); game.continueToReport();
-    game.chooseReport('observed'); game.continueAfterHelp(); game.finish();
+    game.chooseReport('observed'); game.answerComparison('inside'); game.answerComparison('outside');
+    game.continueAfterHelp(); game.finish();
     expect(game.stage()).toBe('observe'); expect(game.helped()).toBe(false);
     game.startRoot(); game.answerRoot(0); game.answerRoot(-2); game.answerRoot(NaN); game.answerRoot(99);
-    game.chooseReport('observed'); game.continueToBand(); game.selectRecord(0);
+    game.chooseReport('observed'); game.continueToBand(); game.selectRecord(0); game.answerComparison('inside');
     game.continueToReport(); game.continueAfterHelp();
     expect(game.stage()).toBe('root'); expect(game.feedback()).toBe('');
     expect(game.helped()).toBe(false); expect(done).not.toHaveBeenCalled();
@@ -173,7 +185,20 @@ describe('Lesson08Flotation', () => {
     expect(game.stage()).toBe('located'); expect(game.selectedRecord()).toBe(0);
     expect(game.helped()).toBe(false); expect(done).not.toHaveBeenCalled();
     game.continueToReport(); fixture.detectChanges();
+    expect(game.stage()).toBe('locate'); expect(game.comparing()).toBe(true);
+    expect(game.selectedRecord()).toBe(0); expect(game.helped()).toBe(false);
+    expect(root.querySelectorAll('.comparison-choice')).toHaveLength(2);
+    expect(root.querySelector('.record-choice, .report-choice')).toBeNull();
+    game.chooseReport('observed'); game.finish(); game.continueToReport();
+    expect(game.stage()).toBe('locate'); expect(done).not.toHaveBeenCalled();
+    game.answerComparison('inside'); fixture.detectChanges();
+    expect(game.stage()).toBe('located'); expect(game.comparing()).toBe(true);
+    expect(root.textContent).toContain('Aquí sí están todos dentro');
+    game.chooseReport('observed'); game.finish();
+    expect(done).not.toHaveBeenCalled();
+    game.continueToReport(); fixture.detectChanges();
     expect(game.stage()).toBe('report'); expect(root.querySelectorAll('.report-choice')).toHaveLength(3);
+    expect(game.comparing()).toBe(false); expect(game.records()).toBe(records);
     expect(game.selectedRecord()).toBe(0); expect(done).not.toHaveBeenCalled();
     game.chooseReport('observed'); game.finish(); expect(done).toHaveBeenCalledTimes(1);
   });
@@ -186,7 +211,7 @@ describe('Lesson08Flotation', () => {
     expect(game.helped()).toBe(true); expect(game.records()).toBe(original);
     game.selectRecord(0);
     expect(game.stage()).toBe('located'); expect(game.records()[game.selectedRecord()!]).toBeLessThan(game.stats().lower);
-    game.continueToReport(); game.chooseReport('observed'); game.continueAfterHelp(); reachBand(game);
+    completeComparison(game); game.chooseReport('observed'); game.continueAfterHelp(); reachBand(game);
     expect(game.stats().lower).toBe(97); expect(game.records()[0]).toBe(game.stats().lower);
     expect(game.records()[1]).toBe(game.stats().lower);
     game.selectRecord(0); game.selectRecord(1);
@@ -196,17 +221,128 @@ describe('Lesson08Flotation', () => {
     expect(game.records()[5]).toBeGreaterThan(game.stats().upper);
   });
 
+  it('contrasts another distribution with the same mean and standard deviation, with every endpoint inside', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    const source = game.records(); const sourceStats = game.stats();
+    reachComparison(game); fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(game.stage()).toBe('locate'); expect(game.comparing()).toBe(true);
+    expect(game.records()).toEqual([98, 98, 98, 102, 102, 102]);
+    expect(game.sourceRecords()).toBe(source); expect(game.selectedRecord()).toBe(0);
+    expect(game.stats().mean).toBe(sourceStats.mean);
+    expect(game.stats().variance).toBe(sourceStats.variance);
+    expect(game.stats().standardDeviation).toBe(sourceStats.standardDeviation);
+    expect(game.stats().squareSum).toBe(sourceStats.squareSum);
+    expect(game.stats().outside).toEqual([]);
+    expect(game.points().map(point => point.bottom)).toEqual([28, 50, 72, 28, 50, 72]);
+    expect(game.points().every(point => !point.outside)).toBe(true);
+    expect(root.querySelectorAll('.data-point')).toHaveLength(6);
+    expect(root.querySelectorAll('.comparison-choice')).toHaveLength(2);
+    expect(root.querySelectorAll('.comparison-choice:not([type="button"])')).toHaveLength(0);
+    expect(root.querySelector('.record-choice, .report-choice, .band-explanation')).toBeNull();
+    expect(root.querySelectorAll('.plot')).toHaveLength(1);
+    expect(root.querySelector('.task-card .plot')).toBe(root.querySelector('.plot'));
+    expect(root.querySelector('.plot')?.getAttribute('aria-label')).toContain('Ejemplo de comparación');
+    expect(root.querySelector('.plot')?.getAttribute('aria-label')).toContain('incluidos sus bordes');
+    expect(root.querySelector('.plot')?.getAttribute('aria-label')).not.toMatch(/registros fuera/i);
+    expect(root.textContent).toContain('Otros datos, el mismo promedio y la misma desviación estándar');
+    expect(root.textContent).not.toContain('undefined');
+    expect(game.helped()).toBe(false);
+    click(root, 'Todos están dentro.'); fixture.detectChanges();
+    expect(game.stage()).toBe('located'); expect(game.comparing()).toBe(true);
+    expect(root.querySelector('.band-explanation')?.textContent).toContain('todos los registros están dentro');
+    expect(root.querySelector('.root-proof')?.textContent).toContain('98 y 102 t/h están en los bordes');
+    expect(root.querySelectorAll('.point--outside')).toHaveLength(0);
+    expect(game.plotDescription()).toContain('Registros fuera: ninguno');
+    click(root, 'Preparar el aviso →'); fixture.detectChanges();
+    expect(game.stage()).toBe('report'); expect(game.comparing()).toBe(false);
+    expect(game.records()).toBe(source); expect(game.selectedRecord()).toBe(0);
+    expect(game.stats().outside).toEqual([96]);
+    expect(root.querySelectorAll('.point--outside')).toHaveLength(1);
+    expect(root.querySelector('.records')?.textContent).toContain('96 · 100 · 100 · 100 · 102 · 102');
+    expect(root.querySelector('.records')?.textContent).not.toContain('98 · 98 · 98');
+  });
+
+  it('requires an independent fresh example after a wrong comparison rather than accepting a habitual outside answer', () => {
+    const fixture = create(); const game = fixture.componentInstance; reachComparison(game);
+    const comparison = game.records(); const source = game.sourceRecords();
+    const done = vi.fn(); game.completed.subscribe(done);
+    game.answerComparison('outside'); fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(game.stage()).toBe('locate'); expect(game.comparing()).toBe(true);
+    expect(game.records()).toBe(comparison); expect(game.sourceRecords()).toBe(source);
+    expect(game.selectedRecord()).toBe(0); expect(game.helped()).toBe(true);
+    expect(game.feedback()).toContain('98 y 102 t/h');
+    expect(game.feedback()).toContain('también cuentan como dentro');
+    expect(root.querySelectorAll('.comparison-choice')).toHaveLength(2);
+    expect(root.querySelector('.feedback')?.getAttribute('aria-live')).toBe('polite');
+    expect(root.textContent).not.toContain('undefined');
+    game.continueToReport(); game.chooseReport('observed'); game.continueAfterHelp(); game.finish();
+    expect(game.stage()).toBe('locate'); expect(game.records()).toBe(comparison);
+    expect(done).not.toHaveBeenCalled();
+    game.answerComparison('inside'); game.continueToReport(); game.chooseReport('observed');
+    expect(game.stage()).toBe('review'); expect(game.records()).toBe(source);
+    expect(game.comparing()).toBe(false); expect(game.selectedRecord()).toBe(0);
+    game.finish(); expect(done).not.toHaveBeenCalled();
+    game.continueAfterHelp();
+    expect(game.round()).toBe(1); expect(game.stage()).toBe('root');
+    expect(game.records()).toEqual([97, 97, 100, 100, 100, 106]);
+    expect(game.comparing()).toBe(false); expect(game.selectedRecord()).toBeNull();
+    expect(game.helped()).toBe(false); expect(game.feedback()).toBe('');
+    reachComparison(game);
+    expect(game.records()).toEqual([97, 97, 97, 103, 103, 103]);
+    expect(game.stats().outside).toEqual([]); expect(game.selectedRecord()).toBe(5);
+    game.answerComparison('inside'); game.continueToReport();
+    expect(game.records()).toEqual([97, 97, 100, 100, 100, 106]);
+    expect(game.stats().outside).toEqual([106]); expect(game.selectedRecord()).toBe(5);
+    game.chooseReport('observed'); fixture.detectChanges();
+    expect(game.stage()).toBe('success'); expect(game.helped()).toBe(false);
+    expect(game.records()).toEqual(game.originalStats.values);
+    expect(root.querySelector('.report-card')?.textContent).toContain('96 · 100 · 100 · 100 · 102 · 102');
+    expect(root.querySelector('.report-card')?.textContent).toContain('todos estaban dentro');
+    expect(root.querySelector('.report-card')?.textContent).not.toContain('97 · 97 · 97');
+    expect(root.querySelector('.report-card')?.textContent).not.toContain('undefined');
+    game.finish(); game.finish(); expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the same-franja comparison accurate across different source means and standard deviations', () => {
+    const game = create().componentInstance;
+    const expected = [[98, 102], [97, 103], [102, 110], [102, 106]];
+    for (let round = 0; round < 7; round += 1) {
+      const index = round === 0 ? 0 : 1 + (round - 1) % 3;
+      const source = game.records(); const sourceStats = game.stats();
+      reachComparison(game);
+      const comparison = game.stats();
+      expect([comparison.lower, comparison.upper]).toEqual(expected[index]);
+      expect(game.records()).toEqual([comparison.lower, comparison.lower, comparison.lower,
+        comparison.upper, comparison.upper, comparison.upper]);
+      expect(comparison.mean).toBe(sourceStats.mean);
+      expect(comparison.variance).toBe(sourceStats.variance);
+      expect(comparison.standardDeviation).toBe(sourceStats.standardDeviation);
+      expect(comparison.outside).toHaveLength(0);
+      expect(game.sourceRecords()).toBe(source);
+      const selected = game.selectedRecord();
+      game.selectRecord(0); game.selectRecord(5);
+      expect(game.selectedRecord()).toBe(selected); expect(game.helped()).toBe(false);
+      game.answerComparison('inside'); game.continueToReport();
+      expect(game.records()).toBe(source); expect(game.stats().outside).toHaveLength(1);
+      expect(game.selectedRecord()).toBe(selected); expect(game.comparing()).toBe(false);
+      game.chooseReport('units'); game.chooseReport('observed'); game.continueAfterHelp();
+    }
+  });
+
   it('ignores invalid record indices and out-of-order or repeated actions without adding help', () => {
     const game = create().componentInstance; const done = vi.fn(); game.completed.subscribe(done);
-    game.selectRecord(0); game.continueToBand(); game.continueToReport();
+    game.selectRecord(0); game.continueToBand(); game.continueToReport(); game.answerComparison('inside');
     expect(game.stage()).toBe('observe'); expect(game.selectedRecord()).toBeNull();
-    game.startRoot(); game.selectRecord(0); game.continueToBand();
+    game.startRoot(); game.selectRecord(0); game.continueToBand(); game.answerComparison('inside');
     expect(game.stage()).toBe('root'); expect(game.selectedRecord()).toBeNull();
-    game.answerRoot(2); game.selectRecord(0); game.continueToReport();
+    game.answerRoot(2); game.selectRecord(0); game.continueToReport(); game.answerComparison('inside');
     expect(game.stage()).toBe('checked'); expect(game.selectedRecord()).toBeNull();
     game.continueToBand(); const records = game.records();
     for (const index of [-1, 6, 99, 1.5, NaN, Infinity, '0' as unknown as number]) game.selectRecord(index);
     game.requestHint(); game.answerRoot(4); game.continueToBand(); game.continueToReport(); game.continueAfterHelp();
+    game.answerComparison('inside'); game.answerComparison('outside');
     expect(game.stage()).toBe('locate'); expect(game.records()).toBe(records);
     expect(game.selectedRecord()).toBeNull(); expect(game.feedback()).toBe(''); expect(game.helped()).toBe(false);
     game.selectRecord(0); game.selectRecord(4); game.continueToBand(); game.finish();
@@ -214,7 +350,20 @@ describe('Lesson08Flotation', () => {
     expect(game.helped()).toBe(false); expect(done).not.toHaveBeenCalled();
     game.continueToReport(); game.selectRecord(1); game.continueToBand(); game.continueToReport();
     game.chooseReport('invalid' as 'observed');
+    expect(game.stage()).toBe('locate'); expect(game.comparing()).toBe(true);
+    expect(game.selectedRecord()).toBe(0); expect(game.helped()).toBe(false);
+    const comparison = game.records();
+    for (const answer of ['fake', '', null, undefined, 0] as unknown as ('inside' | 'outside')[]) game.answerComparison(answer);
+    for (let index = 0; index < 6; index += 1) game.selectRecord(index);
+    game.chooseReport('observed'); game.finish();
+    expect(game.stage()).toBe('locate'); expect(game.records()).toBe(comparison);
+    expect(game.selectedRecord()).toBe(0); expect(game.feedback()).toBe('');
+    expect(game.helped()).toBe(false); expect(done).not.toHaveBeenCalled();
+    game.answerComparison('inside'); game.answerComparison('outside'); game.selectRecord(0);
+    expect(game.stage()).toBe('located'); expect(game.feedback()).toBe(''); expect(game.helped()).toBe(false);
+    game.continueToReport(); game.answerComparison('outside');
     expect(game.stage()).toBe('report'); expect(game.selectedRecord()).toBe(0);
+    expect(game.records()).toBe(records); expect(game.comparing()).toBe(false);
     expect(game.feedback()).toBe(''); expect(game.helped()).toBe(false);
     game.chooseReport('observed'); game.selectRecord(4); game.continueToBand(); game.continueToReport();
     expect(game.stage()).toBe('success'); expect(game.helped()).toBe(false);
@@ -234,7 +383,7 @@ describe('Lesson08Flotation', () => {
     expect(game.plotDescription()).not.toMatch(/registros fuera/i);
     game.continueToReport(); game.continueAfterHelp(); game.finish();
     expect(game.stage()).toBe('locate'); expect(game.records()).toBe(records); expect(done).not.toHaveBeenCalled();
-    game.selectRecord(0); game.continueToReport(); game.chooseReport('observed'); fixture.detectChanges();
+    game.selectRecord(0); completeComparison(game); game.chooseReport('observed'); fixture.detectChanges();
     expect(game.stage()).toBe('review'); expect(game.records()).toBe(records); expect(game.selectedRecord()).toBe(0);
     game.finish(); expect(done).not.toHaveBeenCalled();
     click(root, 'Probar otros registros →'); fixture.detectChanges();
@@ -267,7 +416,21 @@ describe('Lesson08Flotation', () => {
     expect(root.contains(outsideRecord)).toBe(false);
     expect(document.activeElement).toBe(root.querySelector('#flotation-task-title'));
     expect(game.stage()).toBe('located'); expect(root.querySelector('.feedback')).toBeNull();
-    game.continueToReport(); fixture.detectChanges(); await fixture.whenStable();
+    click(root, 'Comparar otro ejemplo →'); fixture.detectChanges(); await fixture.whenStable();
+    expect(document.activeElement).toBe(root.querySelector('#flotation-task-title'));
+    expect(document.activeElement?.textContent).toContain('¿Aquí también hay alguno fuera?');
+    click(root, 'Hay alguno fuera.'); fixture.detectChanges(); await fixture.whenStable();
+    expect(game.stage()).toBe('locate'); expect(game.comparing()).toBe(true);
+    expect(document.activeElement).toBe(root.querySelector('.feedback'));
+    expect(document.activeElement?.getAttribute('role')).toBe('status');
+    expect(document.activeElement?.textContent).toContain('bordes de la franja');
+    click(root, 'Todos están dentro.'); fixture.detectChanges(); await fixture.whenStable();
+    expect(game.stage()).toBe('located'); expect(root.querySelector('.feedback')).toBeNull();
+    expect(document.activeElement).toBe(root.querySelector('#flotation-task-title'));
+    expect(document.activeElement?.textContent).toContain('Aquí sí están todos dentro');
+    click(root, 'Preparar el aviso →'); fixture.detectChanges(); await fixture.whenStable();
+    expect(document.activeElement).toBe(root.querySelector('#flotation-task-title'));
+    expect(game.comparing()).toBe(false); expect(game.records()).toEqual(game.originalStats.values);
     click(root, game.reportChoices().find(choice => choice.id === 'units')!.text);
     fixture.detectChanges(); await fixture.whenStable();
     expect(document.activeElement).toBe(root.querySelector('.feedback')); expect(game.stage()).toBe('report');
@@ -335,7 +498,7 @@ describe('Lesson08Flotation', () => {
     game.chooseReport('inside');
     expect(game.stage()).toBe('report'); expect(game.records()).toBe(records);
     expect(game.feedback()).toContain('registro de 96 t/h');
-    expect(game.feedback()).toContain('no tiene que contener todos los registros');
+    expect(game.feedback()).toContain('puede contener todos los registros o dejar alguno fuera');
     game.chooseReport('fake' as 'observed'); expect(game.stage()).toBe('report');
     game.chooseReport('observed'); expect(game.stage()).toBe('review');
   });
@@ -358,6 +521,7 @@ describe('Lesson08Flotation', () => {
     expect(game.feedback()).toBe(''); expect(game.helped()).toBe(false); expect(game.rootKnown()).toBe(false);
     expect(game.bandVisible()).toBe(false); expect(game.bandExplained()).toBe(false);
     expect(game.selectedRecord()).toBeNull();
+    expect(game.comparing()).toBe(false);
   });
 
   it('keeps fresh squares, units, options and counterexamples accurate across repeated practice', () => {
@@ -388,8 +552,11 @@ describe('Lesson08Flotation', () => {
     const root: HTMLElement = fixture.nativeElement;
     expect(game.stats().mean).toBe(100); expect(game.stats().standardDeviation).toBe(2);
     expect(root.querySelector('.report-card')?.textContent).toContain('96 · 100 · 100 · 100 · 102 · 102');
-    expect(root.textContent).toContain('98 a 102 t/h');
-    expect(root.textContent).toContain('Menor dispersión no significa automáticamente mejor operación');
+    expect(root.textContent).toContain('fuera de la franja de 98 a 102');
+    expect(root.textContent).toContain('Menos cambios no significa siempre un mejor resultado');
+    expect(root.textContent).toContain('En el ejemplo de comparación, todos estaban dentro');
+    expect(root.textContent).toContain('Hay que revisar cada grupo de datos');
+    expect(root.textContent).not.toContain('undefined');
     expect(root.textContent).not.toContain('114');
   });
 
@@ -410,8 +577,13 @@ describe('Lesson08Flotation', () => {
     expect(game.stage()).toBe('locate'); expect(done).not.toHaveBeenCalled();
     click(root, 'Registro 1 · 96 t/h'); fixture.detectChanges();
     expect(game.stage()).toBe('located'); expect(done).not.toHaveBeenCalled();
+    click(root, 'Comparar otro ejemplo →'); fixture.detectChanges();
+    expect(game.stage()).toBe('locate'); expect(game.comparing()).toBe(true);
+    expect(done).not.toHaveBeenCalled(); expect(root.querySelector('.record-choice')).toBeNull();
+    click(root, 'Todos están dentro.'); fixture.detectChanges();
+    expect(game.stage()).toBe('located'); expect(game.comparing()).toBe(true);
     click(root, 'Preparar el aviso →'); fixture.detectChanges();
-    expect(game.stage()).toBe('report'); expect(done).not.toHaveBeenCalled();
+    expect(game.stage()).toBe('report'); expect(game.comparing()).toBe(false); expect(done).not.toHaveBeenCalled();
     click(root, game.reportChoices().find(choice => choice.id === 'observed')!.text); fixture.detectChanges();
     click(root, 'Entregar la explicación →'); fixture.detectChanges();
     expect(done).toHaveBeenCalledTimes(1); expect(root.querySelector('input, textarea, form, select')).toBeNull();
@@ -434,5 +606,6 @@ describe('Lesson08Flotation', () => {
     expect(replay.stage()).toBe('observe'); expect(replay.round()).toBe(0);
     expect(replay.helped()).toBe(false); expect(replay.feedback()).toBe('');
     expect(replay.stats().variance).toBe(4); expect(replay.rootKnown()).toBe(false);
+    expect(replay.comparing()).toBe(false); expect(replay.selectedRecord()).toBeNull();
   });
 });

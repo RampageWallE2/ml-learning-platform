@@ -65,7 +65,7 @@
           <span class="task-kicker">{{ stage() === 'extremes' ? 'Prepara el aviso' : round() === 0 ? 'Ahora tú, con otros registros' : 'Otro ensayo, sin la pista' }}</span>
           <h3 id="haulage-task-title" #taskHeading tabindex="-1">{{ selectionTask() }}</h3>
           @if (!selectedMinId()) {
-            <p>{{ stage() === 'extremes' ? 'Para organizar las llegadas, necesitamos saber cuánto variaron las descargas.' : 'Encuentra los extremos de este nuevo registro.' }}</p>
+            <p>{{ stage() === 'extremes' ? 'Para organizar las llegadas, necesitamos saber cuánto cambiaron los tiempos.' : 'Busca el tiempo más corto y el más largo.' }}</p>
             <p>Toca la tarjeta con menos minutos.</p>
           } @else if (!selectedMaxId()) {
             <p>La más corta duró <strong>{{ minimum() }} minutos</strong>. Ahora toca la tarjeta con más minutos.</p>
@@ -91,7 +91,7 @@
           <p>En este registro: {{ maximum() }} menos {{ minimum() }} da {{ separation() }} minutos.</p>
           <button type="button" class="btn btn--primary" (click)="startPractice()">Probar con otro registro →</button>
         } @else if (stage() === 'practice-meaning') {
-          <span class="task-kicker">Explica tu hallazgo</span>
+          <span class="task-kicker">Explica tu respuesta</span>
           <h3 id="haulage-task-title" #taskHeading tabindex="-1">¿Qué significa un rango de {{ separation() }} minutos?</h3>
           <div class="meaning-choices">
             @for (meaning of meanings(); track meaning.id) {
@@ -113,7 +113,7 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu aviso está listo</span>
-      <h3 #taskHeading tabindex="-1">Ya puedes explicar cuánto variaron los extremos</h3>
+      <h3 #taskHeading tabindex="-1">Ya sabes comparar el tiempo más corto y el más largo</h3>
       <p>El rango es la separación entre el tiempo más corto y el más largo.</p>
     </div>
     <div class="report-card">

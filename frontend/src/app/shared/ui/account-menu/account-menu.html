@@ -6,9 +6,9 @@
     <button
       class="account-menu__trigger"
       type="button"
-      [attr.aria-label]="'Abrir menú de ' + user.displayName"
+      [attr.aria-label]="(menuOpen() ? 'Cerrar cuenta de ' : 'Abrir cuenta de ') + user.displayName"
       [attr.aria-expanded]="menuOpen()"
-      aria-haspopup="menu"
+      [attr.aria-controls]="menuOpen() ? panelId : null"
       [title]="user.displayName"
       (click)="toggleMenu()"
     >
@@ -26,9 +26,11 @@
         </span>
       }
 
-      <span class="account-menu__name">
-        {{ user.displayName }}
-      </span>
+      @if (appearance() === 'game') {
+        <span class="account-menu__label">Cuenta</span>
+      } @else {
+        <span class="account-menu__name">{{ user.displayName }}</span>
+      }
 
       <span class="account-menu__arrow" aria-hidden="true">
         {{ menuOpen() ? '▲' : '▼' }}
@@ -36,16 +38,21 @@
     </button>
 
     @if (menuOpen()) {
-      <div class="account-menu__panel" role="menu">
+      <div class="account-menu__panel" [id]="panelId">
         <div class="account-menu__identity">
           <strong>{{ user.displayName }}</strong>
           <span>{{ user.email }}</span>
         </div>
 
+        @if (appearance() === 'game') {
+          <a class="account-menu__progress" routerLink="/progress" (click)="closeMenu()">
+            Mi progreso <span aria-hidden="true">→</span>
+          </a>
+        }
+
         <button
           class="account-menu__logout"
           type="button"
-          role="menuitem"
           [disabled]="loggingOut()"
           (click)="logout()"
         >

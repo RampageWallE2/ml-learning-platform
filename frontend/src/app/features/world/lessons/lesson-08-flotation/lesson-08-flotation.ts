@@ -41,8 +41,15 @@ export class Lesson08Flotation {
   readonly round = signal(0);
   readonly helped = signal(false);
   readonly selectedRecord = signal<number | null>(null);
-  readonly records = computed<readonly number[]>(() => this.stage() === 'success' || this.round() === 0
+  readonly comparing = signal(false);
+  readonly sourceRecords = computed<readonly number[]>(() => this.stage() === 'success' || this.round() === 0
     ? ORIGINAL : PRACTICE[(this.round() - 1) % PRACTICE.length]);
+  readonly comparisonRecords = computed(() => {
+    const stats = describe(this.sourceRecords());
+    return [stats.lower, stats.lower, stats.lower, stats.upper, stats.upper, stats.upper];
+  });
+  readonly records = computed<readonly number[]>(() => this.comparing()
+    ? this.comparisonRecords() : this.sourceRecords());
   readonly stats = computed(() => describe(this.records()));
   readonly originalStats = describe(ORIGINAL);
   readonly rootKnown = computed(() => ['checked', 'locate', 'located', 'report', 'review', 'success'].includes(this.stage()));
@@ -68,9 +75,9 @@ export class Lesson08Flotation {
   readonly reportChoices = computed<readonly { id: ReportChoice; text: string }[]>(() => {
     const stats = this.stats();
     const choices: { id: ReportChoice; text: string }[] = [
-      { id: 'units', text: 'La dispersión es ' + stats.variance + ' t/h: uso la varianza sin cambiarla.' },
-      { id: 'inside', text: 'La dispersión es ' + stats.standardDeviation + ' t/h: ningún registro queda fuera.' },
-      { id: 'observed', text: 'La dispersión es ' + stats.standardDeviation + ' t/h: algún registro queda fuera.' },
+      { id: 'units', text: 'La desviación estándar es ' + stats.variance + ' t/h: uso la varianza sin cambiarla.' },
+      { id: 'inside', text: 'La desviación estándar es ' + stats.standardDeviation + ' t/h: todos los registros están dentro.' },
+      { id: 'observed', text: 'La desviación estándar es ' + stats.standardDeviation + ' t/h: hay un registro fuera de la franja.' },
     ];
     const offset = (this.choiceOffset + this.round()) % choices.length;
     return choices.map((_, index) => choices[(index + offset) % choices.length]);
@@ -92,11 +99,12 @@ export class Lesson08Flotation {
 
   plotDescription(): string {
     const stats = this.stats();
-    return 'Alimentación de flotación: ' + this.records().join(', ') + ' toneladas por hora. Media '
+    return (this.comparing() ? 'Ejemplo de comparación. ' : 'Alimentación de flotación: ')
+      + this.records().join(', ') + ' toneladas por hora. Promedio '
       + stats.mean + '. Cada punto es un registro; los apilados tienen el mismo valor.'
       + (this.bandVisible() ? ' Franja de ' + stats.lower + ' a ' + stats.upper
-        + ' toneladas por hora, incluidos sus bordes. No es un límite operativo.' : '')
-      + (this.bandExplained() ? ' Registros fuera: ' + stats.outside.join(', ') + '.' : '');
+        + ' toneladas por hora, incluidos sus bordes. No indica si el trabajo está bien o mal.' : '')
+      + (this.bandExplained() ? ' Registros fuera: ' + (stats.outside.join(', ') || 'ninguno') + '.' : '');
   }
 
   startRoot(): void {
@@ -126,7 +134,7 @@ export class Lesson08Flotation {
   }
 
   selectRecord(index: number): void {
-    if (this.stage() !== 'locate' || !Number.isInteger(index) || index < 0 || index >= this.records().length) return;
+    if (this.stage() !== 'locate' || this.comparing() || !Number.isInteger(index) || index < 0 || index >= this.records().length) return;
     const value = this.records()[index];
     const stats = this.stats();
     if (Math.abs(value - stats.mean) > stats.standardDeviation) {
@@ -142,7 +150,25 @@ export class Lesson08Flotation {
   }
 
   continueToReport(): void {
-    if (this.stage() === 'located') this.moveTo('report');
+    if (this.stage() !== 'located') return;
+    if (!this.comparing()) {
+      this.comparing.set(true);
+      this.moveTo('locate');
+    } else {
+      this.comparing.set(false);
+      this.moveTo('report');
+    }
+  }
+
+  answerComparison(answer: 'inside' | 'outside'): void {
+    if (this.stage() !== 'locate' || !this.comparing() || !['inside', 'outside'].includes(answer)) return;
+    if (answer === 'inside') {
+      this.moveTo('located');
+    } else {
+      const stats = this.stats();
+      this.hint('Los puntos están en ' + stats.lower + ' y ' + stats.upper
+        + ' t/h. Son los bordes de la franja y también cuentan como dentro. Aquí no hay ninguno fuera.');
+    }
   }
 
   chooseReport(answer: ReportChoice): void {
@@ -157,7 +183,7 @@ export class Lesson08Flotation {
         + ' t/h: cambia el valor y vuelven las unidades originales.'
       : 'Mira el registro de ' + stats.outside[0] + ' t/h: está fuera de '
         + stats.lower + ' a ' + stats.upper
-        + '. La desviación estándar resume la dispersión, pero esa franja no tiene que contener todos los registros.');
+        + '. La franja puede contener todos los registros o dejar alguno fuera: hay que mirar los datos.');
   }
 
   continueAfterHelp(): void {
@@ -165,6 +191,7 @@ export class Lesson08Flotation {
     this.round.update(round => round + 1);
     this.helped.set(false);
     this.selectedRecord.set(null);
+    this.comparing.set(false);
     this.moveTo('root');
   }
 

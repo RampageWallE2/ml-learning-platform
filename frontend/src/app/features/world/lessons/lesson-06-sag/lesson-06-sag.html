@@ -2,7 +2,7 @@
   <header class="lesson-header">
     <span class="lesson-tag">Clase 6 · Molino SAG</span>
     <h2 id="sag-title">Un resumen que no esconda los cambios</h2>
-    <p>Misión: construir una medida para comparar la variación de la alimentación.</p>
+    <p>Misión: resumir cuánto cambió la cantidad de material que recibió el molino.</p>
   </header>
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
     @for (label of ['Detecta', 'Construye', 'Promedia']; track label; let index = $index) {
@@ -15,13 +15,13 @@
     <div class="workbench">
       <div class="data-board">
         <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: otros registros' : comparingCopy() && duplicated() ? 'Copia de experimento · 8 registros' : 'Registros originales · 4 horas' }}</strong><small>Datos de ejemplo</small></div>
-        <div class="mean-summary"><strong>Media (promedio): {{ mean() }} t/h</strong><span>Es una referencia para comparar, no una meta de producción.</span></div>
+        <div class="mean-summary"><strong>Promedio: {{ mean() }} t/h</strong><span>Es una referencia para comparar, no una meta de producción.</span></div>
         <div class="shared-scale">
           <div class="value-track" role="img" [attr.aria-label]="plotDescription()">
             @for (tick of ticks; track tick) { <span class="grid-line" [style.left.%]="position(tick)" aria-hidden="true"></span> }
             <span class="track-line" aria-hidden="true"></span>
             <span class="mean-line" [style.left.%]="position(mean())" aria-hidden="true"></span>
-            <span class="mean-label" [style.left.%]="position(mean())" aria-hidden="true">Media {{ mean() }}</span>
+            <span class="mean-label" [style.left.%]="position(mean())" aria-hidden="true">Promedio {{ mean() }}</span>
             @for (point of points(); track point.id) {
               <span class="data-point" [class.point--below]="point.deviation < 0" [class.point--above]="point.deviation > 0" [style.left.%]="point.x" [style.bottom.px]="point.bottom" aria-hidden="true"></span>
             }
@@ -32,7 +32,7 @@
           <p class="axis-label">Toneladas por hora · Escala cercana: 98 a 102</p>
         </div>
         <p class="chart-key">Cada punto es un registro. Los puntos apilados tienen el mismo valor. Los registros permanecen a la vista.</p>
-        @if (comparingCopy() && duplicated()) { <p class="copy-note"><strong>Solo una copia.</strong> Repetimos cada registro dos veces; no son nuevas mediciones. Los valores conservan las mismas proporciones.</p> }
+        @if (comparingCopy() && duplicated()) { <p class="copy-note"><strong>Solo una copia.</strong> Repetimos cada registro dos veces; no son nuevas mediciones. Ningún valor cambió.</p> }
         <div class="record-cards" aria-label="Cada registro y su desviación">
           @for (point of points(); track point.id; let index = $index) {
             <article class="record-card">
@@ -66,14 +66,14 @@
               @if (comparisonSolved()) { <b>{{ sourceSquareSum() * 2 }} ÷ {{ records().length * 2 }} = {{ variance() }}</b> }
             </div>
           </div>
-          @if (practicing()) { <p class="chart-key">La segunda columna describe una copia hipotética de estos registros, no nuevas mediciones.</p> }
+          @if (practicing()) { <p class="chart-key">La segunda columna repite estos mismos datos. No son nuevas mediciones.</p> }
         }
       </div>
-      <aside class="task-card" aria-labelledby="sag-task-title">
+      <aside class="task-card" [class.task-card--variance]="stage() === 'practice-checked'" aria-labelledby="sag-task-title">
         @if (stage() === 'observe') {
           <span class="task-kicker">Retomamos lo aprendido en chancado</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">¿Cómo juntamos las diferencias?</h3>
-          <p>Hay registros por debajo, en la media y por encima. Probemos sumar sus desviaciones.</p>
+          <p>Hay registros por debajo del promedio, justo en él y por encima. La desviación es registro menos promedio. Probemos sumar esas diferencias.</p>
           <button type="button" class="btn btn--primary" (click)="sumChanges()">Sumar desviaciones →</button>
         } @else if (stage() === 'cancel') {
           <span class="task-kicker">La suma dio 0</span>
@@ -87,10 +87,10 @@
           <h3 id="sag-task-title" #taskHeading tabindex="-1">{{ squaresFormed() ? '¿Cuánto aporta la desviación −2?' : 'Dibujemos las separaciones como cuadrados' }}</h3>
           @if (!squaresFormed()) {
             <p>Tomamos cada separación como el lado de un cuadrado. Una separación de 2 forma dos filas de dos casillas.</p>
-            <p class="plain-rule">Usar distancias sin signo también evita la compensación. Aquí exploraremos cuadrados para dar más peso a separaciones grandes.</p>
+            <p class="plain-rule">Las distancias sin signo también evitan que un menos borre un más. Aquí usamos cuadrados: las separaciones grandes cuentan más.</p>
             <button type="button" class="btn btn--primary" (click)="formSquares()">Formar los cuadrados →</button>
           } @else {
-            <p>El signo indica el lado de la media. Cuenta las casillas del cuadrado de 2 por 2.</p>
+            <p>El signo indica si está por debajo o por encima del promedio. Cuenta las casillas del cuadrado de 2 por 2.</p>
             <div class="choices">
               @for (option of squareOptions; track option) { <button type="button" class="btn answer-choice" (click)="answerSquare(option)">{{ cellCount(option) }}</button> }
             </div>
@@ -117,7 +117,7 @@
           <p class="copy-note">Original: 4 registros, suma 8.<br>{{ duplicated() ? 'Copia: 8 registros, suma 16.' : 'Todavía estás viendo el original.' }}</p>
           <button type="button" class="btn btn--primary" [disabled]="!duplicated()" (click)="compareCopy()">Comparar los resúmenes →</button>
         } @else if (stage() === 'average') {
-          <span class="task-kicker">Mismos valores, mismas proporciones</span>
+          <span class="task-kicker">Repetimos los mismos valores</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">¿Qué resumen permite comparar?</h3>
           <p>La suma pasó de 8 a 16 solo por repetir los datos. Necesitamos un resumen que no crezca por ese motivo.</p>
           <div class="choices">
@@ -133,7 +133,7 @@
         } @else if (stage() === 'practice-square') {
           <span class="task-kicker">{{ round() > 0 ? 'Otros datos, sin la pista' : 'Una comprobación breve' }}</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">¿Cuánto aporta {{ signed(practiceDeviation()) }} al cuadrado?</h3>
-          <p>El registro {{ records()[0] }} se compara con la media {{ mean() }}. Elige cuántas casillas aporta su separación al cuadrado.</p>
+          <p>Compara el registro {{ records()[0] }} con el promedio {{ mean() }}. Elige cuántas casillas tiene el cuadrado de esa separación.</p>
           <div class="choices">
             @for (option of practiceSquareOptions(); track option) { <button type="button" class="btn answer-choice" (click)="answerPracticeSquare(option)">{{ cellCount(option) }}</button> }
           </div>
@@ -145,37 +145,43 @@
             @for (choice of practiceSummaries(); track choice.id) { <button type="button" class="btn answer-choice" (click)="choosePracticeSummary(choice.id)">{{ choice.text }}</button> }
           </div>
         } @else if (stage() === 'practice-checked') {
-          <span class="task-kicker">Respuesta comprobada</span>
-          <h3 id="sag-task-title" #taskHeading tabindex="-1">Se mantiene igual</h3>
-          <p>La suma de cuadrados y la cantidad de registros se duplican juntas. Al dividirlas, obtenemos el mismo promedio.</p>
-          <div class="calculation-card"><strong>Original: {{ sourceSquareSum() }} ÷ {{ records().length }} = {{ variance() }}</strong><strong>Copia: {{ sourceSquareSum() * 2 }} ÷ {{ records().length * 2 }} = {{ variance() }}</strong></div>
-          <p>En ambos casos, la varianza es {{ variance() }} (t/h)². Repetimos los mismos valores, no añadimos nuevas mediciones.</p>
-          <button type="button" class="btn btn--primary" (click)="continuePractice()">Continuar →</button>
+          <span class="task-kicker">El resumen para el siguiente turno</span>
+          @if (!practiceVarianceAnswered()) {
+            <h3 id="sag-task-title" #taskHeading tabindex="-1">¿Cuál es el promedio de estos aportes?</h3>
+            <p>El operador necesita el resumen para el siguiente turno. Los aportes al cuadrado suman <strong>{{ sourceSquareSum() }}</strong> y tenemos <strong>{{ records().length }} registros</strong>.</p>
+            <div class="choices variance-choices" role="group" aria-label="Elige el promedio de los aportes al cuadrado">
+              @for (option of practiceVarianceOptions(); track option) { <button type="button" class="btn answer-choice" (click)="answerPracticeVariance(option)">{{ option }}</button> }
+            </div>
+          } @else {
+            <h3 id="sag-task-title" #taskHeading tabindex="-1">Exacto: {{ sourceSquareSum() }} ÷ {{ records().length }} = {{ variance() }}</h3>
+            <p>La varianza de estos registros es <strong>{{ variance() }} (t/h)²</strong>.</p>
+            <button type="button" class="btn btn--primary" (click)="continuePractice()">Continuar →</button>
+          }
         } @else if (stage() === 'review') {
           <span class="task-kicker">Ahora se entiende</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">Cuadrados y promedio trabajan juntos</h3>
-          <p>Los cuadrados conservan las separaciones sin que los signos se compensen. El promedio evita confundir repetir datos con más dispersión.</p>
+          <p>Los cuadrados evitan que un menos borre un más. Al dividir entre todos los registros, repetir los mismos datos no cambia el resultado.</p>
           <p>Prueba otro ejemplo para reconocerlo sin la pista.</p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otros registros →</button>
         }
-        <div aria-live="polite" aria-atomic="true">
+        <div class="feedback-region" aria-live="polite" aria-atomic="true">
           @if (feedback()) { <div class="feedback feedback--hint" #practiceFeedback tabindex="-1"><strong>Una pista</strong><p>{{ feedback() }}</p></div> }
         </div>
       </aside>
     </div>
   } @else {
     <div class="completion-card">
-      <span class="task-kicker">Tu aporte al informe del relevo</span>
+      <span class="task-kicker">Tu aporte al informe del siguiente turno</span>
       <h3 #taskHeading tabindex="-1">Ya sabes cómo construir la varianza</h3>
-      <p>Considera cada registro, eleva su desviación al cuadrado y promedia esos aportes.</p>
+      <p>Resta el promedio a cada registro. Multiplica cada resultado por sí mismo, suma y divide entre todos los registros.</p>
     </div>
     <div class="report-card">
       <span class="task-kicker">Registros originales del SAG: 98, 100, 100 y 102 t/h</span>
-      <h3>Media: 100 t/h · Varianza: 2 (t/h)²</h3>
+      <h3>Promedio: 100 t/h · Varianza: 2 (t/h)²</h3>
       <p>Desviaciones: −2, 0, 0 y +2. Su suma da 0, pero sí hubo diferencias.</p>
       <p>Cuadrados: 4, 0, 0 y 4. Sumamos 8 y dividimos entre los <strong>4 registros</strong>, también los de separación 0.</p>
       <p>Al duplicar los mismos datos en una copia: 16 ÷ 8 = 2. La varianza no cambia.</p>
-      <p>Es una descripción de estos registros. No explica por qué varió la alimentación ni determina si fue adecuada. Las unidades están al cuadrado: no es una distancia de 2 t/h.</p>
+      <p>Esto resume los registros. No explica por qué cambió la cantidad de material ni dice si fue la adecuada. Las unidades están al cuadrado: no es una distancia de 2 t/h.</p>
     </div>
     <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar el hallazgo →</button></div>
   }

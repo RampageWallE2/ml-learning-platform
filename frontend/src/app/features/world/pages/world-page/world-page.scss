@@ -149,12 +149,16 @@
   right: 20px;
   left: 20px;
 
-  display: flex;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: minmax(0, 355px) minmax(0, 1fr);
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 
   pointer-events: none;
+
+  &[inert] { visibility: hidden; }
 }
 
 
@@ -167,36 +171,42 @@
 
 .world-hud__account {
   position: relative;
-  z-index: 160;
+  z-index: 2;
+  justify-self: end;
 }
 
 
 .world-hud__progress {
   position: relative;
-  z-index: 50;
-
-  margin-left: auto;
+  z-index: 1;
+  max-height: calc(100dvh - 40px);
 }
 
 /* =========================
    ACTIVIDAD BLOQUEADA
    ========================= */
 
-.lesson-locked-toast {
+.world-notices {
   position: fixed;
+  right: 20px;
+  bottom: 116px;
+  z-index: 120;
+  display: grid;
+  gap: 12px;
+  width: min(390px, calc(100% - 40px));
+  max-height: calc(100dvh - 140px);
+  overflow-y: auto;
+  pointer-events: none;
 
-  top: 84px;
-  left: 20px;
+  > * { pointer-events: auto; }
+}
 
-  z-index: 80;
+.lesson-locked-toast {
 
   display: flex;
   align-items: center;
 
-  width: min(
-    360px,
-    calc(100% - 40px)
-  );
+  width: 100%;
 
   gap: 12px;
 
@@ -267,16 +277,12 @@
    ========================= */
 
 .progress-sync-toast {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 120;
 
   display: flex;
   align-items: center;
   gap: 14px;
 
-  width: min(390px, calc(100% - 40px));
+  width: 100%;
   padding: 14px 16px;
   box-sizing: border-box;
 
@@ -341,14 +347,18 @@
     gap: 12px;
   }
 
-  .lesson-locked-toast {
-    top: 145px;
+  .world-hud__progress {
+    max-height: calc(100dvh - 24px);
+  }
 
+  .world-notices {
     left: 12px;
     right: 12px;
-
+    bottom: 112px;
     width: auto;
+  }
 
+  .lesson-locked-toast {
     padding: 12px;
   }
 
@@ -361,12 +371,32 @@
   }
 
 
-  .progress-sync-toast {
-    right: 12px;
-    bottom: 12px;
-    left: 12px;
+}
 
-    width: auto;
+@media (max-width: 600px) {
+  .world-hud {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    grid-template-columns: minmax(0, 240px) auto;
+    gap: 8px;
   }
+  .world-hud__account { grid-column: 2; grid-row: 1; }
+  .world-hud__progress {
+    grid-column: 1;
+    grid-row: 1;
+    width: min(240px, 100%);
+    max-height: min(320px, calc(100dvh - 20px));
+  }
+}
 
+@media (max-width: 1024px) and (max-height: 480px) and (min-width: 601px) {
+  .world-hud {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+    gap: 8px;
+  }
+  .world-hud__progress { max-height: calc(100dvh - 20px); }
 }

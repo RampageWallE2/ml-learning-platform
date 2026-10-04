@@ -2,7 +2,7 @@
   <header class="lesson-header">
     <span class="eyebrow">C8 · Flotación · Informe del relevo</span>
     <h2 id="flotation-title">Volvamos a las unidades que conocemos</h2>
-    <p>Tu misión: explicar la dispersión en <strong>toneladas por hora (t/h)</strong> para el siguiente turno.</p>
+    <p>Tu misión: explicar cuánto cambian los registros usando <strong>toneladas por hora (t/h)</strong>.</p>
     <ol class="steps" aria-label="Pasos de la misión">
       <li [class.active]="step() === 1" [attr.aria-current]="step() === 1 ? 'step' : null">1 · Observa</li>
       <li [class.active]="step() === 2" [attr.aria-current]="step() === 2 ? 'step' : null">2 · Del cuadrado al lado</li>
@@ -18,7 +18,7 @@
           <span class="spread-band" [style.left.%]="position(stats().lower)"
             [style.width.%]="position(stats().upper) - position(stats().lower)"></span>
         }
-        <span class="mean-line" [style.left.%]="position(stats().mean)"><span>Media {{ stats().mean }}</span></span>
+        <span class="mean-line" [style.left.%]="position(stats().mean)"><span>Promedio {{ stats().mean }}</span></span>
         @for (point of points(); track point.id) {
           <span class="data-point" [class.point--outside]="bandExplained() && point.outside"
             [style.left.%]="point.x" [style.bottom.px]="point.bottom"></span>
@@ -33,7 +33,7 @@
       <p class="band-caption">Franja verde: <strong>{{ stats().lower }} a {{ stats().upper }} t/h</strong>, incluidos los bordes.</p>
     }
     <p class="records"><span>Registros:</span> {{ records().join(' · ') }} <span>t/h</span></p>
-    <p class="muted">Cada punto es un registro. Los apilados tienen el mismo valor. La media es una referencia, no una meta.</p>
+    <p class="muted">Cada punto es un registro. Si están uno encima de otro, tienen el mismo valor. El promedio no es una meta.</p>
   </ng-template>
 
   @if (stage() !== 'success') {
@@ -43,8 +43,8 @@
     <div class="workbench" [class.workbench--locate]="stage() === 'locate'">
       @if (stage() !== 'locate') {
       <section class="data-board" aria-label="Registros de alimentación de flotación">
-        <div class="board-heading"><h3>Una sola zona, seis registros</h3><span class="badge">t/h</span></div>
-        <p class="muted">Medidos en el mismo punto y a intervalos iguales. No los comparamos con los del molino.</p>
+        <div class="board-heading"><h3>{{ comparing() ? 'Otros datos, la misma franja' : 'Una sola zona, seis registros' }}</h3><span class="badge">t/h</span></div>
+        <p class="muted">{{ comparing() ? 'Este ejemplo sirve para comparar. No cambia los datos del informe.' : 'Medidos en el mismo lugar y cada cierto tiempo. No son los datos del molino.' }}</p>
         <ng-container [ngTemplateOutlet]="recordsPlot" />
 
         <div class="measure-row">
@@ -53,16 +53,20 @@
           <div class="measure measure--linear"><span>Desviación estándar</span><strong>{{ rootKnown() ? stats().standardDeviation : '?' }} <small>t/h</small></strong></div>
         </div>
         <details class="variance-detail"><summary>¿De dónde sale la varianza?</summary>
-          <p>Los cuadrados de las desviaciones son {{ stats().squares.join(' + ') }}. Su suma es {{ stats().squareSum }}.</p>
-          <p>Promediamos los seis aportes: {{ stats().squareSum }} ÷ 6 = {{ stats().variance }} (t/h)².</p>
+          <p>Restamos el promedio a cada registro y multiplicamos cada resultado por sí mismo: {{ stats().squares.join(' + ') }}. La suma es {{ stats().squareSum }}.</p>
+          <p>Dividimos entre los seis registros: {{ stats().squareSum }} ÷ 6 = {{ stats().variance }} (t/h)².</p>
         </details>
 
         @if (bandExplained()) {
           <div class="band-explanation">
-            <strong>Una desviación estándar a cada lado de la media</strong>
+            <strong>Una desviación estándar a cada lado del promedio</strong>
             <span>{{ stats().mean }} − {{ stats().standardDeviation }} = {{ stats().lower }} · {{ stats().mean }} + {{ stats().standardDeviation }} = {{ stats().upper }} t/h</span>
-            <p>La franja va de {{ stats().lower }} a {{ stats().upper }} t/h. El registro de <strong>{{ stats().outside[0] }} t/h</strong> está fuera y sigue siendo parte de los datos.</p>
-            <p>No es una zona de «bien o mal», un límite operativo ni una garantía sobre registros futuros.</p>
+            @if (stats().outside.length) {
+              <p>La franja va de {{ stats().lower }} a {{ stats().upper }} t/h. El registro de <strong>{{ stats().outside[0] }} t/h</strong> está fuera y sigue siendo parte de los datos.</p>
+            } @else {
+              <p>En este ejemplo, todos los registros están dentro. Los bordes también cuentan.</p>
+            }
+            <p>No es una zona de «bien o mal». Tampoco asegura cómo serán los próximos registros.</p>
           </div>
         }
       </section>
@@ -113,35 +117,51 @@
             </figure>
             <div class="root-proof"><span>√{{ stats().variance }} = {{ stats().standardDeviation }}</span><strong>Desviación estándar: {{ stats().standardDeviation }} t/h</strong></div>
             <p>La varianza tiene unidades al cuadrado. Su raíz vuelve a las unidades originales.</p>
-            <p class="muted">Sale de la varianza; no es el promedio simple de las distancias a la media.</p>
+            <p class="muted">Sale de la varianza; no es el promedio simple de las distancias al promedio.</p>
             <button type="button" class="btn btn--primary" (click)="continueToBand()">Revisar la franja →</button>
           }
           @case ('locate') {
-            <span class="eyebrow">Comprueba los registros</span>
-            <h3 id="flotation-task-title" #taskHeading tabindex="-1">¿Qué registro queda fuera?</h3>
-            <p>Mira el gráfico y elige un registro fuera de la franja verde: de <strong>{{ stats().lower }} a {{ stats().upper }} t/h</strong>. Los bordes también están dentro.</p>
+            <span class="eyebrow">{{ comparing() ? 'Un ejemplo para comparar' : 'Comprueba los registros' }}</span>
+            <h3 id="flotation-task-title" #taskHeading tabindex="-1">{{ comparing() ? '¿Aquí también hay alguno fuera?' : '¿Qué registro queda fuera?' }}</h3>
+            @if (comparing()) {
+              <p>Otros datos, el mismo promedio y la misma desviación estándar. Mira los puntos: ¿están todos dentro de la franja?</p>
+            } @else {
+              <p>Elige un registro fuera de la franja verde: de <strong>{{ stats().lower }} a {{ stats().upper }} t/h</strong>. Los bordes también están dentro.</p>
+            }
             <ng-container [ngTemplateOutlet]="recordsPlot" />
-            <div class="record-choices" role="group" aria-label="Selecciona un registro">
-              @for (value of records(); track $index) {
-                <button type="button" class="btn record-choice" (click)="selectRecord($index)">
-                  <span>Registro {{ $index + 1 }} · </span><strong>{{ value }} t/h</strong>
-                </button>
-              }
-            </div>
+            @if (comparing()) {
+              <div class="report-choices" role="group" aria-label="Revisa el ejemplo">
+                <button type="button" class="btn comparison-choice" (click)="answerComparison('inside')">Todos están dentro.</button>
+                <button type="button" class="btn comparison-choice" (click)="answerComparison('outside')">Hay alguno fuera.</button>
+              </div>
+            } @else {
+              <div class="record-choices" role="group" aria-label="Selecciona un registro">
+                @for (value of records(); track $index) {
+                  <button type="button" class="btn record-choice" (click)="selectRecord($index)">
+                    <span>Registro {{ $index + 1 }} · </span><strong>{{ value }} t/h</strong>
+                  </button>
+                }
+              </div>
+            }
           }
           @case ('located') {
             <span class="eyebrow">Lo comprobaste en los datos</span>
-            <h3 id="flotation-task-title" #taskHeading tabindex="-1">El registro {{ (selectedRecord() ?? 0) + 1 }} queda fuera</h3>
+            <h3 id="flotation-task-title" #taskHeading tabindex="-1">{{ comparing() ? 'Aquí sí están todos dentro' : 'El registro ' + ((selectedRecord() ?? 0) + 1) + ' queda fuera' }}</h3>
             <div class="root-proof">
-              <strong>{{ stats().outside[0] }} t/h está {{ stats().outside[0] < stats().lower ? 'por debajo de ' + stats().lower : 'por encima de ' + stats().upper }} t/h.</strong>
-              <p>Lo marcamos en violeta. Sigue siendo parte de los datos.</p>
+              @if (comparing()) {
+                <strong>{{ stats().lower }} y {{ stats().upper }} t/h están en los bordes. Ningún punto queda fuera.</strong>
+                <p>No hemos cambiado el promedio ni la desviación estándar.</p>
+              } @else {
+                <strong>{{ stats().outside[0] }} t/h está {{ stats().outside[0] < stats().lower ? 'por debajo de ' + stats().lower : 'por encima de ' + stats().upper }} t/h.</strong>
+                <p>Lo marcamos en violeta. Sigue siendo parte de los datos.</p>
+              }
             </div>
-            <p>La franja muestra una desviación estándar a cada lado de la media. <strong>No tiene que contener todos los registros.</strong></p>
-            <p class="muted">Estar fuera no significa que la operación esté mal: necesitaríamos un límite operativo para decidirlo.</p>
-            <button type="button" class="btn btn--primary" (click)="continueToReport()">Preparar el aviso →</button>
+            <p>La franja puede contener todos los puntos o dejar alguno fuera. <strong>Hay que mirar los datos.</strong></p>
+            <p class="muted">Estar fuera no significa que el trabajo esté mal. Haría falta conocer los límites permitidos.</p>
+            <button type="button" class="btn btn--primary" (click)="continueToReport()">{{ comparing() ? 'Preparar el aviso →' : 'Comparar otro ejemplo →' }}</button>
           }
           @case ('report') {
-            <span class="eyebrow">Prepara el relevo</span>
+            <span class="eyebrow">Volvamos a los datos del informe</span>
             <h3 id="flotation-task-title" #taskHeading tabindex="-1">¿Qué aviso enviarías al siguiente turno?</h3>
             <p>Indica la desviación estándar y si la franja contiene todos los registros.</p>
             <div class="report-choices">
@@ -162,17 +182,17 @@
     </div>
   } @else {
     <section class="report-card" aria-labelledby="flotation-task-title">
-      <span class="eyebrow">Evidencia para el informe · Registros originales</span>
-      <h3 id="flotation-task-title" #taskHeading tabindex="-1">La dispersión ya está en t/h</h3>
+      <span class="eyebrow">Para el informe · Datos originales</span>
+      <h3 id="flotation-task-title" #taskHeading tabindex="-1">Ya podemos explicar los cambios en t/h</h3>
       <p>Registros de flotación: {{ originalStats.values.join(' · ') }} t/h.</p>
       <div class="final-measures">
-        <div class="measure"><span>Media</span><strong>100 <small>t/h</small></strong></div>
+        <div class="measure"><span>Promedio</span><strong>100 <small>t/h</small></strong></div>
         <div class="measure"><span>Varianza</span><strong>4 <small>(t/h)²</small></strong></div>
         <div class="measure measure--linear"><span>Desviación estándar</span><strong>2 <small>t/h</small></strong></div>
       </div>
-      <p><strong>√4 = 2.</strong> La desviación estándar resume la dispersión en las mismas unidades que los registros.</p>
-      <p>La franja de 98 a 102 t/h no contiene todos los datos: el registro de 96 t/h queda fuera. No es un límite operativo ni una predicción.</p>
-      <p>Estos datos no explican la causa de las diferencias. Menor dispersión no significa automáticamente mejor operación.</p>
+      <p><strong>√4 = 2.</strong> La desviación estándar resume cuánto se separan los registros del promedio. Aquí se expresa en t/h.</p>
+      <p>En los datos originales, 96 t/h queda fuera de la franja de 98 a 102. En el ejemplo de comparación, todos estaban dentro. Hay que revisar cada grupo de datos.</p>
+      <p>La franja no indica si el trabajo está bien o mal, ni cómo serán los próximos registros. Menos cambios no significa siempre un mejor resultado.</p>
       <button type="button" class="btn btn--primary" (click)="finish()">Entregar la explicación →</button>
     </section>
   }

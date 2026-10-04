@@ -34,13 +34,13 @@
     </section>
   }
 
-  <div class="world-hud" [attr.inert]="loadingScene() ? '' : null" [attr.aria-hidden]="loadingScene() ? 'true' : null">
+  <div class="world-hud"
+       [attr.inert]="loadingScene() || lessonActive() || activeDialogue() ? '' : null"
+       [attr.aria-hidden]="loadingScene() || lessonActive() || activeDialogue() ? 'true' : null"
+       (keydown)="$event.key !== 'Escape' && $event.stopPropagation()"
+       (keyup)="$event.key === ' ' && $event.stopPropagation()">
 
-    <div class="world-hud__account">
-      <app-account-menu />
-    </div>
-
-
+    <!-- Let Phaser receive movement-key releases; keep Space native on HUD buttons. -->
     <!-- =========================
          PROGRESO
          ========================= -->
@@ -63,6 +63,10 @@
 
     }
 
+    <div class="world-hud__account">
+      <app-account-menu />
+    </div>
+
   </div>
 
 
@@ -78,6 +82,8 @@
   <!-- =========================
        ACTIVIDAD BLOQUEADA
        ========================= -->
+
+  <div class="world-notices">
 
   @if (
     blockedLessonMessage();
@@ -153,6 +159,8 @@
 
   }
 
+
+  </div>
 
   <!-- =========================
        LECCIONES

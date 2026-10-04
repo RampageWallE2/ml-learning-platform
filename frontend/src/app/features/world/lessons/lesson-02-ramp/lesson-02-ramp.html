@@ -1,6 +1,6 @@
 <section class="lesson ramp-lesson intuitive-ramp" aria-labelledby="ramp-title">
   <header class="lesson-header">
-    <span class="lesson-tag">Clase 2 · Control de acarreo</span>
+    <span class="lesson-tag">Clase 2 · Control de camiones</span>
     <h2 id="ramp-title">¿Un número cuenta toda la historia?</h2>
     <p>Misión: ayudar a preparar el plan de carga del siguiente turno.</p>
   </header>
@@ -34,7 +34,7 @@
             <p class="example-note">Es un reparto imaginario. Las cargas originales eran 90, 100 y 110 t.</p>
           }
         } @else if (showRecords()) {
-          <div class="board-heading"><strong>Las cargas de cada camión</strong><small>Datos de ejemplo</small></div>
+          <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: informe con todas las cargas' : 'Las cargas de cada camión' }}</strong><small>Datos de ejemplo</small></div>
           <div class="shared-scale">
             @for (plot of plots(); track plot.id; let second = $odd) {
               <section class="cargo-row" [class.cargo-row--second]="second">
@@ -69,7 +69,7 @@
           </div>
           <p class="chart-key">Cada punto es una carga. La línea azul punteada marca el promedio.</p>
         } @else {
-          <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: otro pedido de cargas' : 'El informe para decidir el plan' }}</strong><small>Datos de ejemplo</small></div>
+          <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: informe con solo promedios' : 'El informe para decidir el plan' }}</strong><small>Datos de ejemplo</small></div>
           <div class="report-grid" aria-label="Promedios de carga por turno">
             @for (report of reports(); track report.id; let second = $odd) {
               <article class="report-sheet" [class.report-sheet--second]="second">
@@ -100,13 +100,22 @@
             <p>Ese es el <strong>promedio</strong>: resume las cargas con un solo número.</p>
             <button type="button" class="btn btn--primary" (click)="startReport()">Revisar el plan →</button>
           }
-        } @else if (stage() === 'report' || stage() === 'practice') {
-          <span class="task-kicker">{{ stage() === 'report' ? 'Antes de cerrar el plan' : round() === 0 ? 'Ensaya antes de recomendar' : 'Otro ensayo, sin la pista' }}</span>
+        } @else if (stage() === 'report') {
+          <span class="task-kicker">Antes de cerrar el plan</span>
           <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Qué harías con este informe?</h3>
-          <p>{{ stage() === 'report' ? 'Para organizar las entregas, se piden' : 'En este ensayo, se piden' }} cargas cercanas a <strong>{{ reports()[0].mean }} toneladas.</strong></p>
+          <p>Para organizar las entregas, se piden cargas cercanas a <strong>{{ reports()[0].mean }} toneladas.</strong></p>
           <div class="choices">
             @for (choice of reportChoices(); track choice.id) {
-              <button type="button" class="btn answer-choice" (click)="stage() === 'report' ? assess(choice.id) : answerPractice(choice.id)">{{ choice.text }}</button>
+              <button type="button" class="btn answer-choice" (click)="assess(choice.id)">{{ choice.text }}</button>
+            }
+          </div>
+        } @else if (stage() === 'practice') {
+          <span class="task-kicker">{{ practiceCase() === 0 ? 'Prueba 1 de 2' : 'Prueba 2 de 2' }}{{ round() > 0 ? ' · Con otros datos' : '' }}</span>
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿En qué turno fueron más diferentes las cargas?</h3>
+          <p>Ayuda a preparar el siguiente turno. Usa la información que tienes aquí.</p>
+          <div class="choices">
+            @for (choice of practiceChoices(); track choice.id) {
+              <button type="button" class="btn answer-choice" (click)="answerPractice(choice.id)">{{ choice.text }}</button>
             }
           </div>
         } @else if (stage() === 'request') {
@@ -135,12 +144,12 @@
             <p><strong>En A:</strong> las cargas se parecen.</p>
             <p><strong>En B:</strong> las cargas son más diferentes.</p>
           </div>
-          <p>En A, las cargas están cerca de las 100 toneladas pedidas. En B, van de 80 a 120. El promedio ocultaba esa diferencia.</p>
-          <p>Conviene revisar qué ocurrió en B antes de mantener el plan. Estos datos no explican la causa.</p>
+          <p>En A, las cargas están cerca de las 100 toneladas pedidas. En B, van de 80 a 120. El promedio no mostraba esa diferencia.</p>
+          <p>Hay que revisar qué pasó en B antes de decidir. Las cargas no nos dicen por qué pasó.</p>
           <button type="button" class="btn btn--primary" (click)="startPractice()">Ensayar mi decisión →</button>
         } @else if (stage() === 'reason') {
-          <span class="task-kicker">Decidiste pedir las cargas</span>
-          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Por qué no basta el promedio?</h3>
+          <span class="task-kicker">Ya comparaste las cargas</span>
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Por qué ahora sí podemos comparar?</h3>
           <div class="choices">
             @for (reason of reasons; track reason.id) {
               <button type="button" class="btn answer-choice" (click)="explain(reason.id)">{{ reason.text }}</button>
@@ -148,14 +157,14 @@
           </div>
         } @else if (stage() === 'review') {
           <span class="task-kicker">Ahora se entiende</span>
-          <h3 id="ramp-task-title" #taskHeading tabindex="-1">Nos faltan las cargas</h3>
-          <p>Para decidir sobre el plan, necesitamos ver cuánto llevó cada camión. El promedio no muestra si las cargas se parecen entre sí.</p>
-          <p>Ensaya con otro pedido para decidir sin la pista.</p>
-          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Ensayar con otro pedido →</button>
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">Pide solo lo que falta</h3>
+          <p>Si solo ves promedios, faltan las cargas. Si ya están todas, puedes compararlas sin pedirlas otra vez.</p>
+          <p>Prueba con otros datos, sin la pista.</p>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar con otros datos →</button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
           @if (feedback()) {
-            <div class="feedback feedback--hint"><strong>Una pista</strong><p>{{ feedback() }}</p></div>
+            <div class="feedback feedback--hint" #practiceFeedback tabindex="-1"><strong>Una pista</strong><p>{{ feedback() }}</p></div>
           }
         </div>
       </aside>
@@ -163,13 +172,13 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu recomendación está lista</span>
-      <h3 #taskHeading tabindex="-1">No cerrar el plan solo con promedios</h3>
-      <p>Un promedio puede ocultar cargas muy distintas. Para decidir, necesitamos ver cuánto llevó cada camión.</p>
+      <h3 #taskHeading tabindex="-1">Pide solo la información que falta</h3>
+      <p>El promedio no cuenta todo. Cuando ya ves las cargas de cada camión, puedes comparar si se parecen o son diferentes.</p>
     </div>
     <div class="report-card">
       <span class="task-kicker">Para el plan del siguiente turno</span>
       <h3>Mismo promedio: 100 t. En B, las cargas fueron más diferentes.</h3>
-      <p><strong>Recomendación:</strong> revisar qué ocurrió en B antes de mantener el plan. Las cargas no explican la causa.</p>
+      <p><strong>Recomendación:</strong> revisar qué pasó en B antes de decidir sobre el plan. Las cargas no nos dicen por qué pasó.</p>
       <p>El encargado añadirá estos registros al informe y consultará al equipo antes de decidir cambios.</p>
     </div>
     <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar recomendación →</button></div>

@@ -106,3 +106,49 @@ h3:focus { outline: none; }
   .compact-context { display: block; }
   .steps li { padding: 7px 9px; font-size: .74rem; }
 }
+@media (max-width: 600px), (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .thickeners-lesson { padding: 10px; border-radius: 12px; }
+  p { line-height: 1.4; }
+  .goal-banner { gap: 4px 8px; margin-bottom: 10px; padding: 8px 10px; }
+  .goal-banner > span, .goal-banner p { font-size: 12px; }
+  .goal-banner strong { font-size: 16px; }
+  .workbench { gap: 8px; padding: 8px; }
+  .data-board { padding: 0; }
+  .periods { gap: 8px; margin: 8px 0; }
+  .period { padding: 6px; }
+  .board-heading { gap: 4px; }
+  .board-heading h3 { font-size: 14px; }
+  .badge { padding: 3px 5px; font-size: 12px; }
+  .muted { font-size: 12px; }
+  .legend { gap: 4px 8px; margin-top: 8px; font-size: 12px; }
+  .plot-area { height: 154px; }
+  .tick { font-size: 12px; }
+  .records { margin: 6px 0; font-size: 12px; }
+  .measures > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; padding: 5px; }
+  .measures dt { max-width: none; font-size: 12px; }
+  .measures dd { margin: 0; font-size: 16px; white-space: normal; }
+  .measures small { font-size: 12px; }
+  .additional-measures { margin-bottom: 8px; font-size: 12px; }
+  .additional-measures summary, .route-report summary { min-height: 44px; box-sizing: border-box; padding: 8px 0; }
+  .task-card h3 { margin: 6px 0 8px; }
+  .next { margin-top: 8px; }
+  .practice-note { margin-bottom: 8px; font-size: 14px; }
+  .report-card h3, .report-card > p { margin-bottom: 8px; }
+  .final-periods { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+  .final-period { padding: 8px; font-size: 12px; overflow-wrap: anywhere; }
+  .final-period p { margin-top: 6px; }
+  .conclusion { padding: 10px; margin-bottom: 8px; }
+  .route-report { margin: 8px 0; font-size: 14px; }
+}
+@media (min-width: 700px) and (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .workbench {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr);
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .data-board { order: 0; padding: 10px; border: 1px solid #d5e4df; }
+  .task-card { display: block; }
+}

@@ -52,6 +52,7 @@
 .choices { display: grid; gap: 10px; margin-top: 18px; }
 .answer-choice { justify-content: flex-start; padding: 12px; border: 1px solid #cbd8ce; background: #fff; color: #2c4234; text-align: left; }
 .answer-choice:hover { background: #edf3e9; }
+.variance-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); .answer-choice { justify-content: center; text-align: center; font-weight: 700; } }
 .answer-choice[aria-pressed='true'] { border-color: #315b48; background: #eaf3e8; box-shadow: inset 0 0 0 1px #315b48; }
 .plain-rule { font-size: 13px; }
 .copy-note { padding: 12px; border-radius: 10px; background: #fbf1df; font-size: 13px; }
@@ -61,10 +62,45 @@
 .report-card { border-left: 5px solid #bd8640; }
 @media (max-width: 860px) { .workbench { grid-template-columns: 1fr; gap: 14px; } }
 @media (max-width: 600px) {
+  :host .intuitive-sag .workbench > .task-card--variance {
+    > .variance-choices, > .feedback-region, > .btn { order: -1; }
+  }
   .data-board, .task-card { padding: 16px; }
   .board-heading small { display: none; }
   .record-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lesson-steps { justify-content: space-between; gap: 6px; li { font-size: 12px; gap: 5px; } }
   .shared-scale { margin-inline: 10px; }
+}
+@media (max-width: 600px), (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .workbench { gap: 10px; }
+  .board-heading { margin-bottom: 8px; }
+  .mean-summary, .calculation-card { gap: 4px; padding: 8px; }
+  .shared-scale { margin-inline: 10px; }
+  .value-track { height: 132px; margin-top: 8px; }
+  .mean-label { padding: 3px 6px; font-size: 12px; }
+  .shared-axis span { font-size: 12px; }
+  .chart-key { margin-block: 8px; font-size: 12px; line-height: 1.4; }
+  .record-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .record-card {
+    min-width: 0; grid-template-columns: auto minmax(0, 1fr); gap: 2px; padding: 8px; line-height: 1.25;
+    > small { grid-column: 1; }
+    > strong { grid-column: 2; text-align: right; white-space: nowrap; font-size: 14px; }
+    > span:not(.square-caption) { grid-column: 1 / -1; }
+    .square-grid { grid-column: 1; grid-row: 3; margin-block: 0; }
+    .square-grid + .square-caption { grid-column: 2; grid-row: 3; align-self: center; }
+    .empty-square { grid-column: 1 / -1; grid-row: 3; min-height: 30px; }
+    .empty-square + .square-caption { grid-column: 1 / -1; grid-row: 4; }
+  }
+  .totals, .comparison-box, .weight-demo { gap: 6px; margin-top: 8px; }
+  .totals { padding: 8px; font-size: 13px; }
+  .comparison-box > div, .weight-demo > div { gap: 4px; padding: 8px; }
+  .comparison-box b { font-size: 15px; }
+  .choices[aria-label='Experimento de duplicación'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .copy-note { padding: 8px; }
+  .calculation-card { margin-top: 8px; }
+}
+@media (min-width: 700px) and (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .workbench { grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr); gap: 10px; }
+  .task-card { position: static; }
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; &:hover, &:active { transform: none; } } }

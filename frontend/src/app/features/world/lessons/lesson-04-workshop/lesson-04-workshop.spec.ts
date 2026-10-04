@@ -142,7 +142,7 @@ describe('Lesson04Workshop', () => {
     const result = fixture.nativeElement.querySelector('.range-reading').textContent;
     expect(result).toContain('El rango sigue siendo 4 minutos');
     expect(result).toContain('12 − 8 = 4');
-    expect(result).toContain(prediction === 'same' ? 'Tu predicción coincide' : 'Pensabas que sería');
+    expect(result).toContain(prediction === 'same' ? 'Tu idea coincide' : 'Pensabas que sería');
     expect(game.practiceHelped()).toBe(false); expect(done).not.toHaveBeenCalled();
     game.setExperiment('together'); expect(game.predictionOutcome()).toBe('');
     expect(game.rangePrediction()).toBe(prediction); expect(game.simulated()).toEqual(game.records[0].values);
@@ -248,7 +248,7 @@ describe('Lesson04Workshop', () => {
     expect(game.experimentMode()).toBe('apart');
     expect(controls[1].getAttribute('aria-pressed')).toBe('true');
     expect(primary.disabled).toBe(false);
-    expect(root.querySelector('.range-reading')!.textContent).toContain('Tu predicción coincide con lo observado');
+    expect(root.querySelector('.range-reading')!.textContent).toContain('Tu idea coincide con lo que pasó');
     expect(root.querySelector('.range-reading')!.textContent).toContain('El rango sigue siendo 4 minutos');
     controls[0].click();
     fixture.detectChanges();

@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 
 type Stage = 'learn' | 'report' | 'request' | 'records' | 'discovery' | 'practice' | 'reason' | 'review' | 'success';
-type ReportAnswer = 'same' | 'b' | 'unknown';
+type ReportAnswer = 'same' | 'a' | 'b' | 'unknown';
 type RequestAnswer = 'records' | 'drivers' | 'copy';
 type Reason = 'summary' | 'always-same' | 'largest';
 
@@ -13,9 +13,9 @@ const TURNS = [
   { id: 'B', values: [80, 120, 90, 110, 100] },
 ] as const;
 const PRACTICE_REPORTS = [
-  { ids: ['C', 'D'], mean: 90 },
-  { ids: ['E', 'F'], mean: 95 },
-  { ids: ['G', 'H'], mean: 105 },
+  { ids: ['C', 'D'], values: [[88, 89, 90, 91, 92], [80, 85, 90, 95, 100]], different: 'b' },
+  { ids: ['E', 'F'], values: [[85, 90, 95, 100, 105], [93, 94, 95, 96, 97]], different: 'a' },
+  { ids: ['G', 'H'], values: [[103, 104, 105, 106, 107], [95, 100, 105, 110, 115]], different: 'b' },
 ] as const;
 
 @Component({
@@ -30,6 +30,7 @@ export class Lesson02Ramp {
   readonly feedback = signal('');
   readonly redistributed = signal(false);
   readonly round = signal(0);
+  readonly practiceCase = signal(0);
   readonly practiceHelped = signal(false);
   readonly selectedLoad = signal<string | null>(null);
   readonly turns = TURNS;
@@ -40,34 +41,46 @@ export class Lesson02Ramp {
   readonly ticks = [80, 90, 100, 110, 120];
   readonly step = computed(() => this.stage() === 'learn' ? 1 : ['report', 'request', 'records', 'discovery'].includes(this.stage()) ? 2 : 3);
   readonly practicing = computed(() => ['practice', 'reason', 'review'].includes(this.stage()));
-  readonly showRecords = computed(() => ['records', 'discovery'].includes(this.stage()));
+  readonly showRecords = computed(() => ['records', 'discovery'].includes(this.stage()) || this.practicing() && this.practiceCase() === 1);
+  readonly practiceTurns = computed(() => {
+    const report = PRACTICE_REPORTS[this.round() % PRACTICE_REPORTS.length];
+    return report.ids.map((id, index) => ({ id, values: report.values[index] }));
+  });
   readonly reports = computed(() => {
     if (!this.practicing()) return this.turns.map(turn => ({ id: turn.id, mean: this.average(turn.values) }));
-    const report = PRACTICE_REPORTS[this.round() % PRACTICE_REPORTS.length];
-    return report.ids.map(id => ({ id, mean: report.mean }));
+    return this.practiceTurns().map(turn => ({ id: turn.id, mean: this.average(turn.values) }));
   });
   readonly reportChoices = computed<readonly { id: ReportAnswer; text: string }[]>(() => [
-    { id: 'same', text: 'Mantener el plan: las cargas fueron parecidas.' },
-    { id: 'b', text: 'Cambiar el plan de ' + this.reports()[1].id + ': sus cargas variaron más.' },
-    { id: 'unknown', text: 'Pedir las cargas antes de decidir.' },
+    { id: 'same', text: 'Las cargas se parecen igual en los dos turnos.' },
+    { id: 'b', text: 'En ' + this.reports()[1].id + ', las cargas son más diferentes.' },
+    { id: 'unknown', text: 'Falta ver la carga de cada camión.' },
   ]);
+  readonly practiceChoices = computed<readonly { id: ReportAnswer; text: string }[]>(() => [
+    { id: 'a', text: 'En el turno ' + this.reports()[0].id + '.' },
+    { id: 'b', text: 'En el turno ' + this.reports()[1].id + '.' },
+    { id: 'unknown', text: 'Todavía falta ver las cargas.' },
+  ]);
+  readonly correctPracticeAnswer = computed<ReportAnswer>(() => this.practiceCase() === 0
+    ? 'unknown'
+    : PRACTICE_REPORTS[this.round() % PRACTICE_REPORTS.length].different);
   readonly requests: readonly { id: RequestAnswer; text: string }[] = [
     { id: 'drivers', text: 'Los nombres de los conductores.' },
     { id: 'records', text: 'Cuánto llevó cada camión.' },
     { id: 'copy', text: 'Otra copia del mismo informe.' },
   ];
   readonly reasons: readonly { id: Reason; text: string }[] = [
-    { id: 'always-same', text: 'El mismo promedio significa que las cargas se parecen igual.' },
-    { id: 'summary', text: 'El promedio no muestra la carga de cada camión.' },
-    { id: 'largest', text: 'El promedio es la carga del camión que llevó más.' },
+    { id: 'always-same', text: 'Porque los dos promedios son iguales.' },
+    { id: 'summary', text: 'Porque vemos cuánto llevó cada camión.' },
+    { id: 'largest', text: 'Porque basta con mirar el camión más cargado.' },
   ];
-  readonly plots = computed(() => this.turns.map(turn => ({
+  readonly plots = computed(() => (this.practicing() ? this.practiceTurns() : this.turns).map(turn => ({
     id: turn.id, mean: this.average(turn.values),
     description: 'Turno ' + turn.id + ': cargas de ' + turn.values.join(', ') + ' toneladas. Promedio de ' + this.average(turn.values) + ' toneladas. Escala de 80 a 120.',
     points: turn.values.map((value, index) => ({ id: turn.id + (index + 1), value, x: this.position(value) })),
   })));
   private readonly injector = inject(Injector);
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
+  private readonly practiceFeedback = viewChild<ElementRef<HTMLDivElement>>('practiceFeedback');
   private finished = false;
 
   average(values: readonly number[]): number { return values.reduce((sum, value) => sum + value, 0) / values.length; }
@@ -87,7 +100,7 @@ export class Lesson02Ramp {
   assess(answer: ReportAnswer): void {
     if (this.stage() !== 'report' || !this.reportChoices().some(choice => choice.id === answer)) return;
     if (answer === 'unknown') this.moveTo('request');
-    else this.feedback.set('Los dos promedios son iguales, pero no vemos cuánto llevó cada camión. Para mantener o cambiar el plan, necesitamos esas cargas.');
+    else this.feedback.set('Los dos promedios son iguales. ¿Eso nos dice cuánto llevó cada camión? Mira qué información falta antes de decidir.');
   }
 
   request(answer: RequestAnswer): void {
@@ -117,11 +130,18 @@ export class Lesson02Ramp {
   }
 
   answerPractice(answer: ReportAnswer): void {
-    if (this.stage() !== 'practice' || !this.reportChoices().some(choice => choice.id === answer)) return;
-    if (answer === 'unknown') this.moveTo('reason');
-    else {
-      this.practiceHelped.set(true);
-      this.feedback.set('El promedio puede venir de cargas parecidas o de cargas muy diferentes. Antes de decidir sobre el plan, pide cuánto llevó cada camión.');
+    if (this.stage() !== 'practice' || !this.practiceChoices().some(choice => choice.id === answer)) return;
+    if (answer === this.correctPracticeAnswer()) {
+      if (this.practiceCase() === 0) {
+        this.practiceCase.set(1);
+        this.moveTo('practice');
+      } else this.moveTo('reason');
+    } else {
+      this.hint(this.practiceCase() === 0
+        ? 'Solo ves los promedios. ¿Puedes saber con eso cuánto llevó cada camión?'
+        : answer === 'unknown'
+          ? 'Aquí ya están todas las cargas. Mira los puntos: ¿en qué turno están más separados?'
+          : 'Compara los dos grupos de puntos en la misma escala. Busca las cargas que están más separadas.');
     }
   }
 
@@ -129,10 +149,9 @@ export class Lesson02Ramp {
     if (this.stage() !== 'reason' || !this.reasons.some(choice => choice.id === answer)) return;
     if (answer === 'summary') this.moveTo(this.practiceHelped() ? 'review' : 'success');
     else {
-      this.practiceHelped.set(true);
-      this.feedback.set(answer === 'largest'
-        ? 'El promedio resume todas las cargas, no solo la más grande. Pero no muestra cuánto llevó cada camión.'
-        : 'Recuerda los turnos A y B: tenían el mismo promedio, pero sus cargas no se parecían igual. Necesitamos ver las cargas.');
+      this.hint(answer === 'largest'
+        ? 'Una sola carga no muestra cómo fue todo el turno. Mira todos los camiones.'
+        : 'Los promedios ya eran iguales antes. ¿Qué información nueva muestran ahora las hojas?');
     }
   }
 
@@ -146,6 +165,13 @@ export class Lesson02Ramp {
   private clearPractice(): void {
     this.selectedLoad.set(null);
     this.practiceHelped.set(false);
+    this.practiceCase.set(0);
+  }
+
+  private hint(message: string): void {
+    this.practiceHelped.set(true);
+    this.feedback.set(message);
+    afterNextRender(() => this.practiceFeedback()?.nativeElement.focus(), { injector: this.injector });
   }
 
   private moveTo(stage: Stage): void {

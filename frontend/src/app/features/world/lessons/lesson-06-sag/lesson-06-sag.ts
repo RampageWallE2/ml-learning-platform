@@ -30,6 +30,7 @@ export class Lesson06Sag {
   readonly duplicateViewed = signal(false);
   readonly round = signal(0);
   readonly practiceHelped = signal(false);
+  readonly practiceVarianceAnswered = signal(false);
   readonly original = ORIGINAL;
   readonly ticks = [98, 99, 100, 101, 102];
   readonly squareOptions = [-4, 2, 4];
@@ -50,12 +51,12 @@ export class Lesson06Sag {
   readonly squaresVisible = computed(() => this.squaresFormed()
     && !['observe', 'cancel', 'practice-square'].includes(this.stage()));
   readonly comparisonVisible = computed(() => ['average', 'discovery', 'practice-average', 'practice-checked', 'review'].includes(this.stage()));
-  readonly comparisonSolved = computed(() => ['discovery', 'practice-checked', 'review'].includes(this.stage())
-    || this.stage() === 'practice-average' && this.feedback() !== '');
+  readonly comparisonSolved = computed(() => ['discovery', 'review'].includes(this.stage())
+    || this.stage() === 'practice-checked' && this.practiceVarianceAnswered());
   readonly step = computed(() => ['observe', 'cancel'].includes(this.stage()) ? 1
     : ['squares', 'weight'].includes(this.stage()) ? 2 : 3);
   readonly plotDescription = computed(() => (this.comparingCopy() && this.duplicated() ? 'Copia de experimento. ' : '')
-    + 'Registros: ' + this.values().join(', ') + ' toneladas por hora. Media ' + this.mean()
+    + 'Registros: ' + this.values().join(', ') + ' toneladas por hora. Promedio ' + this.mean()
     + '. Cada punto representa un registro; los puntos apilados tienen el mismo valor. Escala de 98 a 102.');
   readonly points = computed(() => this.values().map((value, index) => ({
     id: (this.comparingCopy() && this.duplicated() ? 'copy-' : 'record-') + index,
@@ -83,12 +84,17 @@ export class Lesson06Sag {
     { id: 'unchanged', text: 'Lo mismo: sigue aportando 1 casilla.' },
   ];
   readonly summaries: readonly { id: Summary; text: string }[] = [
-    { id: 'total', text: 'Comparar solo las sumas: 16 significa más dispersión que 8.' },
+    { id: 'total', text: 'Comparar solo las sumas: 16 significa más variación que 8.' },
     { id: 'per-record', text: 'Comparar el promedio de cuadrados por registro.' },
     { id: 'signed', text: 'Volver a la suma de desviaciones: 0 significa que no hubo cambios.' },
   ];
   // Keep the order fixed within a question, but vary it between attempts and rounds.
   private readonly choiceOffset = Math.floor(Math.random() * 3);
+  readonly practiceVarianceOptions = computed(() => {
+    const choices = [0, this.variance(), this.sourceSquareSum()];
+    const offset = (this.choiceOffset + this.round()) % choices.length;
+    return choices.map((_, index) => choices[(index + offset) % choices.length]);
+  });
   readonly practiceSummaries = computed<readonly { id: PracticeSummary; text: string }[]>(() => {
     const choices: { id: PracticeSummary; text: string }[] = [
       { id: 'double', text: 'Se duplica' },
@@ -130,7 +136,7 @@ export class Lesson06Sag {
     if (this.stage() !== 'squares' || !this.squaresFormed() || !this.squareOptions.includes(answer)) return;
     if (answer === 4) this.moveTo('weight');
     else this.hint(answer < 0
-      ? 'El signo − indica el lado de la media. La separación es 2; un cuadrado de 2 por 2 tiene 4 casillas, no un área negativa.'
+      ? 'El signo − indica que está por debajo del promedio. La separación es 2: un cuadrado de 2 por 2 tiene 4 casillas. No puede tener menos de 0 casillas.'
       : 'Cuenta dos filas de dos casillas. Multiplicamos 2 × 2: son 4 casillas, no 2.');
   }
 
@@ -160,13 +166,14 @@ export class Lesson06Sag {
     if (this.stage() !== 'average' || !this.summaries.some(choice => choice.id === answer)) return;
     if (answer === 'per-record') this.moveTo('discovery');
     else this.hint(answer === 'total'
-      ? 'La copia repite los mismos valores en las mismas proporciones. La suma creció porque contamos el doble de registros, no porque se separen más de la media.'
-      : 'Las desviaciones siguen compensándose. Para medir la dispersión, conservamos los cuadrados y los promediamos.');
+      ? 'La copia repite cada valor dos veces. La suma creció porque contamos el doble de registros, no porque se separen más del promedio.'
+      : 'Los signos siguen compensándose: un menos borra un más. Para medir la variación, conservamos los cuadrados y los promediamos.');
   }
 
   startPractice(): void {
     if (this.stage() !== 'discovery') return;
     this.practiceHelped.set(false);
+    this.practiceVarianceAnswered.set(false);
     this.moveTo('practice-square');
   }
 
@@ -183,12 +190,24 @@ export class Lesson06Sag {
     if (this.stage() !== 'practice-average' || !this.practiceSummaries().some(choice => choice.id === answer)) return;
     if (answer === 'same') this.moveTo('practice-checked');
     else this.hint(answer === 'double'
-      ? 'La suma y la cantidad de registros se duplican juntas. El promedio de cuadrados sigue siendo ' + this.variance() + ' (t/h)².'
-      : 'La suma de desviaciones da 0, pero la varianza promedia sus cuadrados. Aquí es ' + this.variance() + ' (t/h)², no 0.');
+      ? 'La suma y la cantidad de registros se duplican juntas. Su promedio no cambia por repetir los mismos datos.'
+      : 'La suma de desviaciones da 0, pero la varianza promedia sus cuadrados. Los cuadrados siguen teniendo aportes, no se vuelven 0.');
+  }
+
+  answerPracticeVariance(answer: number): void {
+    if (this.stage() !== 'practice-checked' || this.practiceVarianceAnswered()
+      || !this.practiceVarianceOptions().includes(answer)) return;
+    if (answer === this.variance()) {
+      this.practiceVarianceAnswered.set(true);
+      this.feedback.set('');
+      this.focusTask();
+    } else this.hint(answer === 0
+      ? '0 sería no tener separación en ningún registro. Aquí hay aportes al cuadrado: promedia su suma entre los ' + this.records().length + ' registros.'
+      : answer + ' es la suma. Para obtener el promedio, divídela entre los ' + this.records().length + ' registros.');
   }
 
   continuePractice(): void {
-    if (this.stage() !== 'practice-checked') return;
+    if (this.stage() !== 'practice-checked' || !this.practiceVarianceAnswered()) return;
     this.moveTo(this.practiceHelped() ? 'review' : 'success');
   }
 
@@ -196,6 +215,7 @@ export class Lesson06Sag {
     if (this.stage() !== 'review') return;
     this.round.update(round => round + 1);
     this.practiceHelped.set(false);
+    this.practiceVarianceAnswered.set(false);
     this.moveTo('practice-square');
   }
 

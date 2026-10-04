@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Lesson05Crushing } from './lesson-05-crushing';
+import { LESSON_05_CRUSHING } from '../data/lesson-05-crushing.data';
 
 describe('Lesson05Crushing', () => {
   function create() {
@@ -39,7 +40,7 @@ describe('Lesson05Crushing', () => {
     const fixture = create();
     const root: HTMLElement = fixture.nativeElement;
     expect(root.textContent).toContain('completar el aviso de alimentación para el siguiente turno');
-    expect(root.textContent).toContain('Media (promedio): 100 t/h');
+    expect(root.textContent).toContain('Promedio: 100 t/h');
     expect(root.textContent).toContain('no es una meta de producción');
     expect(root.textContent).toContain('¿Cuánto le falta a 80 para llegar a 100?');
     expect(root.textContent).not.toContain('Desviación');
@@ -57,7 +58,7 @@ describe('Lesson05Crushing', () => {
     expect(game.points().map(point => point.id)).toEqual([0, 1, 2, 3]);
     expect(game.ticks.map(tick => game.position(tick))).toEqual([0, 25, 50, 75, 100]);
     expect(game.plotDescription()).toContain('80, 80, 120, 120');
-    expect(game.plotDescription()).toContain('Media 100');
+    expect(game.plotDescription()).toContain('Promedio 100');
   });
 
   it('lets the player select any original hour without modifying the data', () => {
@@ -128,9 +129,10 @@ describe('Lesson05Crushing', () => {
     expect(cards).toHaveLength(2);
     expect(cards[0].textContent).toContain('−20 t/h');
     expect(cards[1].textContent).toContain('+20 t/h');
-    expect(cards[0].textContent).toContain('Distancia: 20 t/h');
-    expect(cards[1].textContent).toContain('Distancia: 20 t/h');
-    expect(root.textContent).toContain('Desviación = registro − media');
+    expect(cards[0].textContent).toContain('Separación: 20 t/h');
+    expect(cards[1].textContent).toContain('Separación: 20 t/h');
+    expect(root.textContent).toContain('Desviación = dato − promedio');
+    expect(root.textContent).toContain('La separación no lleva signo negativo');
     expect(root.textContent).not.toMatch(/varianza|cuadrado/i);
   });
 
@@ -139,24 +141,26 @@ describe('Lesson05Crushing', () => {
     game.answerDistance(10); game.answerDistance(20); game.compare('higher-farther');
     game.compare('same'); game.startPractice();
     expect(game.stage()).toBe('practice');
-    expect(game.values()).toEqual([90, 100, 110]);
-    expect(game.current()).toBe(90);
+    expect(game.values()).toEqual([80, 100, 110, 110]);
+    expect(game.current()).toBe(80);
     expect(game.mean()).toBe(100);
     expect(game.solvedCount()).toBe(0);
     expect(game.practiceHelped()).toBe(false);
     expect(game.feedback()).toBe('');
     game.select(2);
-    expect(game.current()).toBe(90);
+    expect(game.current()).toBe(80);
   });
 
   it('requires one below, one above and one equal case before preparing the report', () => {
     const game = create().componentInstance;
     reachPractice(game);
-    expect(game.delta()).toBe(-10);
+    expect(game.delta()).toBe(-20);
+    expect(game.segments()[0]).toMatchObject({ left: 0, width: 50, above: false });
     game.chooseReading(correctReading(game).id);
     expect(game.stage()).toBe('practice');
     expect(game.current()).toBe(110);
     expect(game.delta()).toBe(10);
+    expect(game.segments()[0]).toMatchObject({ left: 50, width: 25, above: true });
     game.chooseReading(correctReading(game).id);
     expect(game.current()).toBe(100);
     expect(game.delta()).toBe(0);
@@ -167,15 +171,36 @@ describe('Lesson05Crushing', () => {
     expect(game.step()).toBe(3);
   });
 
-  it('rejects negative distance while preserving the current example', () => {
+  it('shows an asymmetric practice without hiding duplicate observations or giving the answer', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    reachPractice(game); fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(game.points().map(point => point.x)).toEqual([0, 50, 75, 75]);
+    expect(game.points().map(point => point.bottom)).toEqual([32, 32, 32, 54]);
+    expect(root.querySelectorAll('.record-card')).toHaveLength(4);
+    expect(root.querySelector('.value-track')?.getAttribute('aria-label')).toContain('80, 100, 110, 110');
+    expect(root.querySelector('.value-track')?.getAttribute('aria-label')).toContain('Promedio 100');
+    expect(root.textContent).toContain('Compáralo con el promedio de 100 t/h');
+    expect(root.textContent).not.toContain('Media');
+    expect(root.querySelector('.feedback')).toBeNull();
+    expect(root.querySelectorAll('.reading-choice')).toHaveLength(3);
+    expect(root.querySelector('input, textarea, form, select')).toBeNull();
+    expect(game.readingChoices().filter(choice => choice.deviation === game.delta()
+      && choice.distance === Math.abs(game.delta()))).toHaveLength(1);
+  });
+
+  it('checks the actual separation instead of offering an obviously negative distance', () => {
     const game = create().componentInstance;
     reachPractice(game);
-    const wrong = game.readingChoices().find(choice => choice.distance < 0)!;
+    const wrong = game.readingChoices().find(choice => choice.distance === 10)!;
+    expect(wrong.deviation).toBe(-10);
+    expect(game.readingChoices().every(choice => choice.distance >= 0)).toBe(true);
     game.chooseReading(wrong.id);
-    expect(game.feedback()).toContain('Nunca es negativa');
+    expect(game.feedback()).toContain('Entre 80 y el promedio de 100 hay 20 t/h');
+    expect(game.feedback()).toContain('tramo coloreado');
     expect(game.stage()).toBe('practice');
-    expect(game.current()).toBe(90);
-    expect(game.values()).toEqual([90, 100, 110]);
+    expect(game.current()).toBe(80);
+    expect(game.values()).toEqual([80, 100, 110, 110]);
     expect(game.solvedCount()).toBe(0);
     expect(game.practiceHelped()).toBe(true);
   });
@@ -183,9 +208,9 @@ describe('Lesson05Crushing', () => {
   it('corrects the sign separately from the distance', () => {
     const game = create().componentInstance;
     reachPractice(game);
-    game.chooseReading(game.readingChoices().find(choice => choice.deviation === 10 && choice.distance === 10)!.id);
+    game.chooseReading(game.readingChoices().find(choice => choice.deviation === 20 && choice.distance === 20)!.id);
     expect(game.feedback()).toContain('por debajo de 100');
-    expect(game.feedback()).toContain('−10 t/h');
+    expect(game.feedback()).toContain('−20 t/h');
     game.chooseReading(correctReading(game).id);
     game.chooseReading(game.readingChoices().find(choice => choice.deviation === -10 && choice.distance === 10)!.id);
     expect(game.feedback()).toContain('por encima de 100');
@@ -198,12 +223,12 @@ describe('Lesson05Crushing', () => {
     reachPractice(game);
     game.chooseReading(correctReading(game).id); game.chooseReading(correctReading(game).id);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.data-point')).toHaveLength(3);
+    expect(fixture.nativeElement.querySelectorAll('.data-point')).toHaveLength(4);
     expect(fixture.nativeElement.querySelector('.distance-segment')).toBeNull();
     const unchanged = game.values();
     for (const wrong of game.readingChoices().filter(choice => choice.deviation !== 0 || choice.distance !== 0)) {
       game.chooseReading(wrong.id);
-      expect(game.feedback()).toContain('coincide con la media');
+      expect(game.feedback()).toContain('justo en el promedio');
       expect(game.current()).toBe(100);
       expect(game.solvedCount()).toBe(2);
       expect(game.values()).toBe(unchanged);
@@ -215,7 +240,7 @@ describe('Lesson05Crushing', () => {
   it('offers fresh practice only after a supported example is understood', () => {
     const game = create().componentInstance;
     reachPractice(game);
-    game.chooseReading(game.readingChoices().find(choice => choice.distance < 0)!.id);
+    game.chooseReading(game.readingChoices().find(choice => choice.distance !== Math.abs(game.delta()))!.id);
     const helpedValues = game.values();
     game.continueAfterHelp();
     expect(game.values()).toBe(helpedValues);
@@ -224,10 +249,10 @@ describe('Lesson05Crushing', () => {
     expect(game.values()).toBe(helpedValues);
     game.continueAfterHelp();
     expect(game.stage()).toBe('practice');
-    expect(game.values()).toEqual([100, 110, 120]);
+    expect(game.values()).toEqual([90, 110, 120, 120]);
     expect(game.mean()).toBe(110);
-    expect(game.current()).toBe(100);
-    expect(game.delta()).toBe(-10);
+    expect(game.current()).toBe(90);
+    expect(game.delta()).toBe(-20);
     expect(game.practiceHelped()).toBe(false);
     expect(game.solvedCount()).toBe(0);
     expect(game.feedback()).toBe('');
@@ -238,14 +263,16 @@ describe('Lesson05Crushing', () => {
   it('keeps replacement means and plots accurate over repeated supported rounds', () => {
     const game = create().componentInstance;
     reachPractice(game);
-    const expected = [[90, 100, 110], [100, 110, 120], [80, 100, 120]];
+    const expected = [[80, 100, 110, 110], [90, 110, 120, 120], [90, 100, 120, 90]];
     for (let round = 0; round < 9; round += 1) {
       const values = expected[round % 3];
       expect(game.values()).toEqual(values);
-      expect(game.mean()).toBe(values.reduce((sum, value) => sum + value, 0) / 3);
+      expect(game.mean()).toBe(values.reduce((sum, value) => sum + value, 0) / values.length);
       expect(game.points().map(point => point.x)).toEqual(values.map(value => game.position(value)));
-      expect(game.plotDescription()).toContain('Media ' + game.mean());
-      game.chooseReading(game.readingChoices().find(choice => choice.distance < 0)!.id);
+      expect(game.plotDescription()).toContain('Promedio ' + game.mean());
+      expect(values.some(value => value === game.mean())).toBe(true);
+      expect(Math.abs(values[0] - game.mean())).not.toBe(Math.abs(values[2] - game.mean()));
+      game.chooseReading(game.readingChoices().find(choice => choice.distance !== Math.abs(game.delta()))!.id);
       solvePractice(game);
       expect(game.stage()).toBe('review');
       game.continueAfterHelp();
@@ -261,6 +288,8 @@ describe('Lesson05Crushing', () => {
       const choices = game.readingChoices();
       expect(new Set(choices.map(choice => choice.deviation + '/' + choice.distance)).size).toBe(3);
       expect(choices.map(choice => choice.id)).toEqual(['a', 'b', 'c']);
+      expect(choices.every(choice => choice.distance >= 0)).toBe(true);
+      expect(choices.every(choice => Math.abs(choice.deviation) === choice.distance)).toBe(true);
       const correct = correctReading(game);
       expect(correct.distance).toBeGreaterThanOrEqual(0);
       correctIds.push(correct.id);
@@ -270,6 +299,21 @@ describe('Lesson05Crushing', () => {
     expect(game.signed(-20)).toBe('−20');
     expect(game.signed(20)).toBe('+20');
     expect(game.signed(0)).toBe('0');
+  });
+
+  it('keeps plausible choices stable after a hint rather than changing the current task', () => {
+    const game = create().componentInstance;
+    reachPractice(game);
+    const choices = game.readingChoices();
+    const wrong = choices.find(choice => choice.distance !== Math.abs(game.delta()))!;
+    game.chooseReading(wrong.id);
+    expect(game.readingChoices()).toEqual(choices);
+    expect(game.current()).toBe(80);
+    expect(game.solvedCount()).toBe(0);
+    game.chooseReading(correctReading(game).id);
+    expect(game.current()).toBe(110);
+    expect(game.feedback()).toBe('');
+    expect(game.practiceHelped()).toBe(true);
   });
 
   it('ignores invalid readings without treating them as learning errors', () => {
@@ -288,7 +332,7 @@ describe('Lesson05Crushing', () => {
   it('restores original evidence after practice with another mean', () => {
     const fixture = create(); const game = fixture.componentInstance;
     reachPractice(game);
-    game.chooseReading(game.readingChoices().find(choice => choice.distance < 0)!.id);
+    game.chooseReading(game.readingChoices().find(choice => choice.distance !== Math.abs(game.delta()))!.id);
     solvePractice(game); game.continueAfterHelp();
     expect(game.mean()).toBe(110);
     solvePractice(game); fixture.detectChanges();
@@ -300,7 +344,7 @@ describe('Lesson05Crushing', () => {
     const report = fixture.nativeElement.querySelector('.report-card') as HTMLElement;
     expect(report.textContent).toContain('80, 80, 120 y 120');
     expect(report.textContent).toContain('−20, −20, +20 y +20');
-    expect(report.textContent).toContain('Las cuatro distancias son 20 t/h');
+    expect(report.textContent).toContain('Las cuatro separaciones son 20 t/h');
     expect(report.textContent).not.toContain('110');
   });
 
@@ -312,7 +356,7 @@ describe('Lesson05Crushing', () => {
     expect(game.feedback()).toContain('100 es el promedio');
     game.chooseReport('cause');
     expect(game.stage()).toBe('report');
-    expect(game.feedback()).toContain('no explican su causa');
+    expect(game.feedback()).toContain('no dicen por qué ocurrieron');
     expect(game.values()).toEqual([80, 80, 120, 120]);
     game.chooseReport('invalid' as 'observed');
     expect(game.stage()).toBe('report');
@@ -326,8 +370,8 @@ describe('Lesson05Crushing', () => {
     reachPractice(game); solvePractice(game); game.finish();
     expect(done).not.toHaveBeenCalled();
     game.chooseReport('observed'); fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('no explica por qué cambió');
-    expect(fixture.nativeElement.textContent).toContain('ni determina');
+    expect(fixture.nativeElement.textContent).toContain('no dicen por qué cambió');
+    expect(fixture.nativeElement.textContent).toContain('ni si cumple una meta');
     expect(fixture.nativeElement.textContent).toContain('no una meta');
     game.finish(); game.finish();
     expect(done).toHaveBeenCalledTimes(1);
@@ -338,30 +382,30 @@ describe('Lesson05Crushing', () => {
     const root: HTMLElement = fixture.nativeElement;
     const done = vi.fn(); game.completed.subscribe(done);
     click(root, '20 t/h'); fixture.detectChanges();
-    click(root, 'Ambos están a 20 de la media, en lados contrarios.'); fixture.detectChanges();
-    click(root, 'Probar con otros registros →'); fixture.detectChanges();
+    click(root, 'Los dos están a 20 del promedio: uno debajo y otro encima.'); fixture.detectChanges();
+    click(root, 'Probar con otros datos →'); fixture.detectChanges();
     for (let index = 0; index < 3; index += 1) {
       const correct = correctReading(game);
-      click(root, 'Desviación: ' + game.signed(correct.deviation) + ' t/h Distancia: ' + correct.distance + ' t/h');
+      click(root, 'Desviación: ' + game.signed(correct.deviation) + ' t/h Separación: ' + correct.distance + ' t/h');
       fixture.detectChanges();
     }
     expect(game.stage()).toBe('report');
-    click(root, 'El promedio fue 100 t/h: hubo dos horas 20 por debajo y dos horas 20 por encima.'); fixture.detectChanges();
+    click(root, 'El promedio fue 100 t/h. Dos horas estuvieron 20 por debajo y dos, 20 por encima.'); fixture.detectChanges();
     click(root, 'Entregar el aviso →'); fixture.detectChanges();
     expect(done).toHaveBeenCalledTimes(1);
     expect(root.querySelector('input, textarea, form, select')).toBeNull();
   });
 
-  it('renders feedback and keeps all three practice points visible after a wrong choice', () => {
+  it('renders a short hint and keeps all four practice points visible after a wrong choice', () => {
     const fixture = create(); const game = fixture.componentInstance;
     const root: HTMLElement = fixture.nativeElement;
     reachPractice(game); fixture.detectChanges();
-    click(root, 'Desviación: −10 t/h Distancia: −10 t/h'); fixture.detectChanges();
+    click(root, 'Desviación: −10 t/h Separación: 10 t/h'); fixture.detectChanges();
     expect(root.textContent).toContain('Una pista');
-    expect(root.textContent).toContain('Nunca es negativa');
-    expect(root.querySelectorAll('.data-point')).toHaveLength(3);
-    expect(root.querySelectorAll('.record-card')).toHaveLength(3);
-    expect(root.textContent).toContain('Ensayo 1 de 3');
+    expect(root.textContent).toContain('Entre 80 y el promedio de 100 hay 20 t/h');
+    expect(root.querySelectorAll('.data-point')).toHaveLength(4);
+    expect(root.querySelectorAll('.record-card')).toHaveLength(4);
+    expect(root.textContent).toContain('Práctica 1 de 3');
     expect(root.querySelector('[aria-live="polite"]')).not.toBeNull();
   });
 
@@ -377,5 +421,18 @@ describe('Lesson05Crushing', () => {
     expect(replay.solvedCount()).toBe(0);
     expect(replay.practiceHelped()).toBe(false);
     expect(replay.feedback()).toBe('');
+  });
+
+  it('keeps the narrative focused on the original evidence using explained, everyday wording', () => {
+    const dialogues = LESSON_05_CRUSHING.steps.filter(step => step.type === 'dialogue');
+    const text = dialogues.flatMap(step => step.dialogue.messages).map(message => message.text).join(' ');
+    expect(text).toContain('siguiente turno');
+    expect(text).toContain('80, 80, 120 y 120');
+    expect(text).toContain('por debajo o por encima del promedio');
+    expect(text).toContain('La desviación lleva −');
+    expect(text).toContain('La separación es 20 t/h en ambos lados');
+    expect(text).toContain('no dicen por qué cambió');
+    expect(text).toContain('no una meta de producción');
+    expect(text).not.toMatch(/coincide con la media|mirar los extremos|determina|explican su causa/i);
   });
 });

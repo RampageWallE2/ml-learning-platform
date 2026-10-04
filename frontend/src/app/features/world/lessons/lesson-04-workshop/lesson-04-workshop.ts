@@ -96,7 +96,7 @@ export class Lesson04Workshop {
   readonly predictionOutcome = computed(() => {
     if (this.experimentMode() !== 'apart' || !this.rangePrediction()) return '';
     const result = 'El rango sigue siendo ' + this.simulatedRange() + ' minutos.';
-    return this.rangePrediction() === 'same' ? 'Tu predicción coincide con lo observado. ' + result
+    return this.rangePrediction() === 'same' ? 'Tu idea coincide con lo que pasó. ' + result
       : 'Pensabas que sería ' + (this.rangePrediction() === 'increase' ? 'mayor' : 'menor') + '. ' + result;
   });
   readonly explanations: readonly { id: Explanation; text: string }[] = [

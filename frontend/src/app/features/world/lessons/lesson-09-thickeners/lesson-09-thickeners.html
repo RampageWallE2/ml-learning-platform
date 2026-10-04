@@ -2,7 +2,7 @@
   <header class="lesson-header">
     <span class="eyebrow">C9 · Espesadores · Cierre de la investigación</span>
     <h2 id="thickeners-title">Una meta, dos períodos</h2>
-    <p>Ayuda al operador a preparar el relevo: necesitamos mirar <strong>la media y la variación</strong>, no solo una de ellas.</p>
+    <p>Ayuda al operador a preparar el siguiente turno. Mira <strong>el promedio y cuánto cambiaron los registros</strong>, no solo uno de ellos.</p>
     <ol class="steps" aria-label="Pasos de la misión">
       @for (label of ['Variación', 'Meta', 'Recomendación', 'Comprobación']; track $index) {
         <li [class.active]="step() === $index + 1" [attr.aria-current]="step() === $index + 1 ? 'step' : null">{{ $index + 1 }} · {{ label }}</li>
@@ -12,14 +12,14 @@
 
   @if (stage() !== 'success') {
     @if (isTransfer() || round() > 0) {
-      <p class="practice-note">Ensayo con otros registros. No reemplaza la evidencia original del informe.</p>
+      <p class="practice-note">Práctica con otros registros. No reemplaza los datos originales del informe.</p>
     }
-    <div class="goal-banner"><span>Meta ficticia de este caso</span><strong>Media de {{ records().goal }} t/h</strong><p>No significa que cada registro deba ser {{ records().goal }}.</p></div>
+    <div class="goal-banner"><span>Meta de ejemplo</span><strong>Promedio de {{ records().goal }} t/h</strong><p>No significa que cada registro deba ser {{ records().goal }}. t/h = toneladas por hora.</p></div>
     <div class="workbench">
       <section class="data-board" aria-label="Comparación de alimentación en espesadores">
-        <p class="muted full-context">Una misma zona y punto de medición. Seis registros por período, a intervalos iguales y en condiciones equivalentes.</p>
+        <p class="muted full-context">Misma zona y punto de medición. Seis registros por período, con la misma frecuencia y en condiciones parecidas.</p>
         <p class="muted compact-context">Cada punto = un registro. Misma escala en ambos gráficos.</p>
-        <div class="legend"><span><i class="legend-goal" aria-hidden="true"></i>Meta: lo que buscamos</span><span><i class="legend-mean" aria-hidden="true"></i>Media: lo observado</span></div>
+        <div class="legend"><span><i class="legend-goal" aria-hidden="true"></i>Meta: lo que buscamos</span><span><i class="legend-mean" aria-hidden="true"></i>Promedio: lo que hubo</span></div>
         <div class="periods">
           @for (period of plots(); track period.id) {
             <section class="period" [attr.aria-labelledby]="'period-' + period.id">
@@ -37,7 +37,7 @@
               </div>
               <p class="records">{{ period.values.join(' · ') }} <span>t/h</span></p>
               <dl class="measures">
-                <div class="mean-measure"><dt>Media</dt><dd>{{ period.mean }} <small>t/h</small></dd></div>
+                <div class="mean-measure"><dt>Promedio</dt><dd>{{ period.mean }} <small>t/h</small></dd></div>
                 <div class="additional-measure"><dt>Rango</dt><dd>{{ period.range }} <small>t/h</small></dd></div>
                 <div class="additional-measure"><dt>Varianza</dt><dd>{{ period.variance }} <small>(t/h)²</small></dd></div>
                 <div class="spread-measure"><dt>Desv. estándar</dt><dd>{{ period.standardDeviation }} <small>t/h</small></dd></div>
@@ -47,7 +47,8 @@
         </div>
         <details class="additional-measures"><summary>Ver rango y varianza</summary>
           @for (period of periods(); track period.id) { <p>Período {{ period.id }}: rango {{ period.range }} t/h · varianza {{ period.variance }} (t/h)².</p> }
-          <p>Seis registros por período, en el mismo punto, a intervalos iguales y en condiciones equivalentes. Las medidas ya están calculadas. Los puntos apilados tienen el mismo valor.</p>
+          <p>Seis registros por período, medidos en el mismo punto, con la misma frecuencia y en condiciones parecidas. Las medidas ya están calculadas. Los puntos uno sobre otro tienen el mismo valor.</p>
+          <p>La desviación estándar resume la separación respecto al promedio: un número menor indica menos variación.</p>
         </details>
         <p class="muted full-context">Los dos gráficos usan la misma escala. Cada punto es un registro; apilados = mismo valor. Las medidas ya están calculadas.</p>
       </section>
@@ -57,14 +58,14 @@
         <h3 id="thickeners-task-title" #taskHeading tabindex="-1">{{ question() }}</h3>
         @switch (stage()) {
           @case ('spread') { <p>Mira cuánto se separan los registros. ¿Qué período tuvo menos variación?</p> }
-          @case ('goal') { <p>Ahora mira la media. ¿Cuál estuvo más cerca de <strong>{{ records().goal }} t/h</strong>?</p> }
-          @case ('recommend') { <p>¿Qué recomendación está respaldada por estos datos?</p> }
+          @case ('goal') { <p>Ahora mira el promedio. ¿Cuál estuvo más cerca de <strong>{{ records().goal }} t/h</strong>?</p> }
+          @case ('recommend') { <p>¿Qué consejo podemos dar con estos datos?</p> }
           @case ('transfer-intro') {
-            <p>En este ensayo, <strong>ambas medias cumplen la meta</strong>. Queremos comprobar que menor variación también puede ser útil.</p>
-            <p>Nuevo criterio: si ambas medias cumplen, <strong>preferimos menor variación</strong> como referencia para el relevo.</p>
+            <p>En esta práctica, <strong>ambos promedios cumplen la meta</strong>. Ningún período tiene todos sus registros iguales.</p>
+            <p>Regla para este caso: si ambos cumplen la meta, <strong>preferimos menor variación</strong> como referencia para el siguiente turno.</p>
             <button type="button" class="btn btn--primary" (click)="startTransfer()">Comparar este caso →</button>
           }
-          @case ('transfer') { <p>Ambas medias cumplen. Con el criterio de <strong>preferir menor variación</strong>, ¿qué período usarías como referencia?</p> }
+          @case ('transfer') { <p>Ambos cumplen la meta. Usaremos como referencia el que varió menos: mira los puntos y compara la desviación estándar.</p> }
           @case ('review') {
             <p>Resolviste el caso con ayuda. Ahora comprueba lo aprendido con números distintos, sin pistas.</p>
             <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otros registros →</button>
@@ -88,26 +89,26 @@
     </div>
   } @else {
     <section class="report-card" aria-labelledby="thickeners-task-title">
-      <span class="eyebrow">Informe del relevo · Evidencia original</span>
+      <span class="eyebrow">Informe del siguiente turno · Datos originales</span>
       <h3 id="thickeners-task-title" #taskHeading tabindex="-1">{{ question() }}</h3>
-      <p><strong>Espesadores · Meta ficticia: media de 100 t/h.</strong> Cada período tiene seis registros comparables.</p>
+      <p><strong>Espesadores · Meta de ejemplo: promedio de 100 t/h.</strong> Cada período tiene seis registros tomados en condiciones parecidas.</p>
       <div class="final-periods">
         @for (period of originalPeriods; track period.id) {
-          <div class="final-period"><strong>Período {{ period.id }}</strong><p>{{ period.values.join(' · ') }} t/h</p><p>Media {{ period.mean }} t/h · Rango {{ period.range }} t/h<br>Varianza {{ period.variance }} (t/h)² · Desviación estándar {{ period.standardDeviation }} t/h</p></div>
+          <div class="final-period"><strong>Período {{ period.id }}</strong><p>{{ period.values.join(' · ') }} t/h</p><p>Promedio {{ period.mean }} t/h · Rango {{ period.range }} t/h<br>Varianza {{ period.variance }} (t/h)² · Desviación estándar {{ period.standardDeviation }} t/h</p></div>
         }
       </div>
-      <div class="conclusion"><strong>A varió menos. B cumplió la meta de media.</strong><p>Tomar B como referencia para el relevo e investigar por qué A quedó por debajo. Antes de cambiar ajustes, necesitamos conocer las causas y los límites de variación aceptables.</p></div>
-      <p>Esto describe los registros observados, no garantiza los futuros. Ni menor ni mayor dispersión significan, por sí solas, una mejor operación.</p>
+      <div class="conclusion"><strong>A varió menos. B cumplió la meta de promedio.</strong><p>Usar B como referencia para el siguiente turno y buscar por qué A quedó bajo la meta. Antes de cambiar ajustes, necesitamos saber la causa y cuánto pueden variar los registros.</p></div>
+      <p>Esto muestra lo que pasó, no asegura lo que vendrá. Variar menos o más no significa, por sí solo, trabajar mejor.</p>
       <details class="route-report"><summary>Lo que reunimos durante la ruta</summary>
         <ul>
-          <li><strong>Tajo y acarreo:</strong> la media sola no muestra cómo varían los registros.</li>
+          <li><strong>Tajo y acarreo:</strong> el promedio solo no muestra cuánto cambian los registros.</li>
           <li><strong>Botadero y taller:</strong> el rango compara extremos; no describe los valores interiores.</li>
-          <li><strong>Chancado:</strong> cada registro puede estar por encima o debajo de su media.</li>
+          <li><strong>Chancado:</strong> cada registro puede estar por encima o debajo del promedio.</li>
           <li><strong>SAG y bolas:</strong> la varianza promedia los cuadrados de las desviaciones, incluyendo los ceros.</li>
           <li><strong>Flotación:</strong> la raíz de la varianza da la desviación estándar en las unidades originales.</li>
-          <li><strong>Espesadores:</strong> miramos objetivo y dispersión juntos; los datos no explican las causas.</li>
+          <li><strong>Espesadores:</strong> miramos la meta y la variación juntas; los datos no explican las causas.</li>
         </ul>
-        <p>Son conclusiones de cada zona, no una comparación de sus números entre áreas. Los ensayos no se añaden a esta evidencia.</p>
+        <p>Son conclusiones de cada zona. No comparamos sus números con los de otras zonas. Las prácticas no se añaden a estos datos.</p>
       </details>
       <button type="button" class="btn btn--primary" (click)="finish()">Entregar el informe →</button>
     </section>

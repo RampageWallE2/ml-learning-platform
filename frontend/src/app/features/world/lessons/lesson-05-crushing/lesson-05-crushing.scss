@@ -60,4 +60,25 @@ button.record-card { cursor: pointer; &:hover { background: #edf3e9; } }
   .lesson-steps { justify-content: space-between; gap: 8px; li { font-size: 12px; gap: 6px; } }
   .shared-scale { margin-inline: 10px; }
 }
+@media (max-width: 600px), (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .workbench { gap: 10px; }
+  .board-heading { margin-bottom: 8px; }
+  .mean-summary { gap: 3px; padding: 8px; }
+  .shared-scale { margin-inline: 10px; }
+  .value-track { height: 140px; margin-top: 8px; }
+  .distance-segment { bottom: 66px; }
+  .mean-label { padding: 3px 6px; font-size: 12px; }
+  .distance-segment span { font-size: 12px; }
+  .shared-axis span { font-size: 12px; }
+  .chart-key, .selection-note { margin-block: 8px; font-size: 12px; line-height: 1.4; }
+  .record-cards { gap: 6px; }
+  .record-card { min-height: 44px; gap: 2px; padding: 6px 8px; line-height: 1.2; strong { font-size: 16px; } }
+  .word-pair { gap: 6px; margin-top: 8px; div { gap: 3px; padding: 8px; } }
+  .reading-choice { gap: 3px; }
+  .notation-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; div { gap: 4px; padding: 8px; font-size: 13px; } }
+}
+@media (min-width: 700px) and (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .workbench { grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr); gap: 10px; }
+  .task-card { position: static; }
+}
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; &:hover, &:active { transform: none; } } }

@@ -1,438 +1,220 @@
 :host {
   display: block;
+  width: 100%;
+  max-height: inherit;
 }
-
 
 .zone-progress {
-  position: relative;
-
-  width: 310px;
-
-  overflow: hidden;
-
-  border: 2px solid var(--color-earth);
-  border-radius: 8px;
-
-  background: var(--color-surface);
-
-  box-shadow:
-    0 5px 0 rgba(40, 51, 45, 0.28),
-    0 10px 22px rgba(0, 0, 0, 0.2);
-}
-
-
-/* =========================
-   HEADER
-   ========================= */
-
-.progress-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  width: 100%;
-
-  gap: 12px;
-
-  padding: 14px 16px;
-
-  border: 0;
-
-  color: var(--color-text);
-  background: var(--color-surface);
-
-  text-align: left;
-
-  cursor: pointer;
-
-  transition:
-    background 0.15s ease;
-
-
-  &:hover {
-    background: var(--color-surface-alt);
-  }
-}
-
-
-.progress-header--static {
-  cursor: default;
-
-
-  &:hover {
-    background: var(--color-surface);
-  }
-}
-
-
-.progress-header-info {
   display: flex;
   flex-direction: column;
-
-  min-width: 0;
-
-  gap: 3px;
-
-
-  strong {
-    color: var(--color-primary);
-
-    font-family: var(--font-retro);
-    font-size: 11px;
-
-    line-height: 1.4;
-
-    overflow-wrap: anywhere;
-  }
+  width: 100%;
+  max-height: inherit;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 2px solid var(--color-earth);
+  border-radius: 2px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: 4px 4px 0 var(--color-earth);
 }
 
+.progress-summary { flex-shrink: 0; }
+.progress-overview { min-width: 0; }
+.progress-counter-compact { display: none; }
 
-.progress-zone {
-  color: var(--color-earth);
-
-  font-family: var(--font-retro);
-  font-size: 8px;
-
-  text-transform: uppercase;
-}
-
-
-/* =========================
-   LADO DERECHO HEADER
-   ========================= */
-
-.progress-header-side {
+.progress-context {
   display: flex;
-  align-items: center;
-
-  flex: 0 0 auto;
-
-  gap: 8px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 14px;
+  color: var(--color-text-muted);
+  font: 400 12px/1.5 var(--font-body);
+  overflow-wrap: anywhere;
 }
 
+.progress-topic { margin-left: auto; }
 
-/* =========================
-   CONTADOR
-   ========================= */
+.current-objective h2 {
+  margin: 8px 0 0;
+  color: var(--color-text);
+  font: 600 18px/1.45 var(--font-body);
+  overflow-wrap: anywhere;
+}
+
+.objective-label {
+  display: block;
+  color: var(--color-primary);
+  font: 400 11px/1.8 var(--font-retro);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.current-objective--completed .objective-label { color: var(--color-primary); }
 
 .progress-counter {
-  display: grid;
-  place-items: center;
-
-  min-width: 44px;
-  height: 32px;
-
-  padding: 0 6px;
-
-  box-sizing: border-box;
-
-  border-radius: 6px;
-
-  color: var(--color-surface);
-  background: var(--color-primary);
-
-  font-weight: 700;
+  margin: 16px 0 7px;
+  font: 400 13px/1.5 var(--font-body);
 }
-
-
-/* =========================
-   FLECHA
-   ========================= */
-
-.progress-chevron {
-  color: var(--color-text-muted);
-
-  font-size: 10px;
-
-  transition:
-    transform 0.2s ease;
-}
-
-
-.progress-chevron--expanded {
-  transform: rotate(180deg);
-}
-
-
-/* =========================
-   BARRA
-   ========================= */
 
 .progress-bar {
-  height: 6px;
-
+  height: 7px;
+  flex: 0 0 7px;
   background: var(--color-surface-alt);
 }
 
-
 .progress-bar-value {
   height: 100%;
-
   background: var(--color-primary);
-
-  transition:
-    width 0.25s ease;
+  transition: width 0.25s ease;
 }
 
+.progress-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 2px solid var(--color-earth);
+  border-radius: 2px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: 600 14px/1.4 var(--font-body);
+  text-align: left;
+  cursor: pointer;
 
-/* =========================
-   OBJETIVO ACTUAL
-   ========================= */
-
-.current-objective {
-  padding: 12px 16px 13px;
-
-  border-bottom:
-    1px solid rgba(139, 98, 70, 0.18);
-
-  background:
-    rgba(127, 163, 107, 0.09);
-
-
-  p {
-    margin: 5px 0 0;
-
-    color: var(--color-text);
-
-    font-size: 13px;
-    line-height: 1.45;
-
-    overflow-wrap: break-word;
-  }
+  &:hover { background: var(--color-surface-alt); }
+  &:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
 }
 
-
-.objective-label {
-  color: var(--color-primary);
-
-  font-family: var(--font-retro);
-  font-size: 8px;
-
-  text-transform: uppercase;
-}
-
-
-.current-objective--completed {
-  background:
-    rgba(95, 145, 79, 0.1);
-
-
-  .objective-label {
-    color: var(--color-success);
-  }
-}
-
-
-/* =========================
-   LISTA
-   ========================= */
+.progress-toggle-symbol { font-size: 18px; }
 
 .progress-content {
-  display: grid;
-
-  max-height:
-    min(360px, calc(100vh - 190px));
-
-  gap: 4px;
-
-  padding: 10px;
-
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 340px;
+  margin-top: 12px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 
-  border-top:
-    1px solid rgba(139, 98, 70, 0.12);
+  &[hidden] { display: none; }
+  &:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
 }
 
+.progress-lessons {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
 
 .progress-item {
   display: flex;
-  align-items: center;
-
-  min-width: 0;
-
   gap: 10px;
-
-  padding: 9px 10px;
-
-  border-radius: 6px;
-
-  color: var(--color-text-muted);
-}
-
-
-.progress-item--current {
+  padding: 10px 0;
+  border-top: 1px solid var(--color-surface-alt);
   color: var(--color-text);
-
-  background:
-    rgba(127, 163, 107, 0.15);
-
-  font-weight: 600;
+  font: 400 14px/1.45 var(--font-body);
 }
 
-
-.progress-item--completed {
-  color: var(--color-success);
-}
-
-
-/* =========================
-   ESTADO
-   ========================= */
-
-.progress-status {
+.progress-number {
   width: 20px;
-
-  flex-shrink: 0;
-
-  text-align: center;
-
-  font-weight: 700;
+  flex: 0 0 20px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
-
-
-/* =========================
-   INFO LECCIÓN
-   ========================= */
 
 .progress-item-info {
   display: flex;
   flex-direction: column;
-
   min-width: 0;
-
-  gap: 2px;
-
-
-  > span {
-    overflow-wrap: anywhere;
-  }
-
+  gap: 3px;
+  overflow-wrap: anywhere;
 
   small {
-    color: var(--color-primary);
-
-    font-size: 10px;
-    font-weight: 700;
-
-    text-transform: uppercase;
-  }
-}
-
-
-/* =========================
-   RESPONSIVE
-   ========================= */
-
-@media (max-width: 750px) {
-
-  .zone-progress {
-    width: min(
-      230px,
-      calc(100vw - 92px)
-    );
-  }
-
-
-  .progress-header {
-    gap: 6px;
-
-    padding: 8px 9px;
-  }
-
-
-  .progress-header-info {
-    gap: 2px;
-
-
-    strong {
-      font-size: 9px;
-    }
-  }
-
-
-  .progress-zone {
-    font-size: 7px;
-  }
-
-
-  .progress-header-side {
-    gap: 5px;
-  }
-
-
-  .progress-counter {
-    min-width: 34px;
-    height: 24px;
-
-    padding: 0 4px;
-
-    font-size: 10px;
-  }
-
-
-  .progress-bar {
-    height: 4px;
-  }
-
-
-  .current-objective {
-    padding: 7px 9px 8px;
-
-
-    p {
-      margin-top: 3px;
-
-      font-size: 10px;
-      line-height: 1.35;
-    }
-  }
-
-
-  .current-objective--collapsed {
-
-    p {
-      display: -webkit-box;
-
-      overflow: hidden;
-
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-    }
-  }
-
-
-  .objective-label {
-    font-size: 7px;
-  }
-
-
-  .progress-content {
-    max-height: 40dvh;
-
-    gap: 2px;
-
-    padding: 6px;
-  }
-
-
-  .progress-item {
-    gap: 6px;
-
-    padding: 6px;
-
+    color: var(--color-text-muted);
     font-size: 12px;
   }
-
 }
 
+.progress-item--current {
+  font-weight: 600;
 
-@media (max-width: 400px) {
+  small { color: var(--color-primary); font-weight: 600; }
+}
 
-  .zone-progress {
-    width: min(
-      220px,
-      calc(100vw - 92px)
-    );
+.progress-item--completed small { color: var(--color-primary); }
+
+.progress-context,
+.current-objective,
+.progress-counter,
+.progress-toggle { flex-shrink: 0; }
+
+@media (max-height: 480px) {
+  .zone-progress { padding: 12px; overflow-y: auto; overscroll-behavior: contain; }
+  .progress-context { margin-bottom: 8px; }
+  .current-objective h2 { font-size: 16px; margin-top: 4px; }
+  .objective-label { font: 600 12px/1.5 var(--font-body); }
+  .progress-counter { margin-top: 10px; }
+  .progress-toggle { margin-top: 10px; }
+  .progress-content { flex: 0 0 auto; max-height: none; overflow: visible; scrollbar-gutter: auto; }
+}
+
+// Compact phone HUD, including landscape with the browser controls visible.
+@media (max-width: 600px), (max-width: 1024px) and (max-height: 480px) {
+  .zone-progress { padding: 8px; box-shadow: 3px 3px 0 var(--color-earth); }
+  .progress-summary { display: flex; align-items: flex-start; gap: 6px; }
+  .progress-overview { display: flex; flex: 1 1 auto; flex-direction: column; }
+  .progress-context { display: none; }
+  .current-objective { order: 2; }
+  .current-objective h2 { margin: 0; font-size: 13px; line-height: 1.35; }
+  .current-objective:not(.current-objective--completed) .objective-label,
+  .progress-counter-full,
+  .progress-toggle-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
+  .current-objective--completed {
+    .objective-label { font: 600 11px/1.4 var(--font-body); }
+    h2 { display: none; }
+  }
+  .progress-counter { order: 1; margin: 0 0 4px; font-size: 11px; line-height: 1.4; }
+  .progress-counter-compact { display: inline; }
+  .progress-bar { order: 3; height: 2px; flex-basis: 2px; margin-top: 4px; }
+  .progress-toggle {
+    flex: 0 0 44px;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--color-surface-alt);
+  }
+  .progress-toggle-symbol { font-size: 16px; }
+  .progress-content {
+    flex: 1 1 auto;
+    max-height: 240px;
+    margin-top: 8px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+  .progress-item { gap: 6px; padding: 7px 0; font-size: 12px; }
+  .progress-number { width: 16px; flex-basis: 16px; }
+  .progress-item-info { gap: 2px; small { font-size: 11px; } }
+}
 
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar-value { transition: none; }
 }

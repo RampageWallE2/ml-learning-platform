@@ -7,24 +7,28 @@ import {
   input,
   signal
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-account-menu',
+  imports: [RouterLink],
   templateUrl: './account-menu.html',
   styleUrl: './account-menu.scss'
 })
 export class AccountMenu {
+  private static nextPanelId = 0;
+
   readonly auth = inject(AuthService);
+  readonly panelId = `account-menu-panel-${AccountMenu.nextPanelId++}`;
 
   readonly appearance =
     input<'game' | 'landing'>('game');
 
   private readonly router = inject(Router);
-  private readonly element = inject(ElementRef<HTMLElement>);
+  private readonly element: ElementRef<HTMLElement> = inject(ElementRef);
 
   readonly menuOpen = signal(false);
   readonly loggingOut = signal(false);
@@ -54,6 +58,10 @@ export class AccountMenu {
     this.menuOpen.update(open => !open);
   }
 
+  closeMenu(): void {
+    this.menuOpen.set(false);
+  }
+
   markAvatarAsFailed(): void {
     this.avatarFailed.set(true);
   }
@@ -70,6 +78,7 @@ export class AccountMenu {
       finalize(() => this.loggingOut.set(false))
     ).subscribe({
       next: () => {
+        this.closeMenu();
         void this.router.navigate(['/login'], {
           queryParams: {
             loggedOut: 'true'
@@ -87,12 +96,18 @@ export class AccountMenu {
   @HostListener('document:click', ['$event'])
   closeWhenClickingOutside(event: MouseEvent): void {
     if (!this.element.nativeElement.contains(event.target as Node)) {
-      this.menuOpen.set(false);
+      this.closeMenu();
     }
   }
 
   @HostListener('document:keydown.escape')
   closeWithEscape(): void {
-    this.menuOpen.set(false);
+    if (!this.menuOpen()) {
+      return;
+    }
+
+    this.closeMenu();
+    this.element.nativeElement
+      .querySelector<HTMLButtonElement>('.account-menu__trigger')?.focus();
   }
 }

@@ -5,6 +5,7 @@ import {
 
 type Stage = 'observe' | 'calculate' | 'checked' | 'report' | 'review' | 'success';
 type PeriodId = 'a' | 'b';
+type Prediction = PeriodId | 'equal';
 type ReportChoice = 'equal' | 'spread' | 'better';
 type HintFocus = 'deviations' | 'count' | 'variances' | 'context';
 type Pair = readonly [readonly number[], readonly number[]];
@@ -49,6 +50,13 @@ export class Lesson07Balls {
   readonly stage = signal<Stage>('observe');
   readonly feedback = signal('');
   readonly round = signal(0);
+  readonly prediction = signal<Prediction | null>(null);
+  readonly predictions: readonly { id: Prediction; text: string }[] = [
+    { id: 'a', text: 'Período A' },
+    { id: 'b', text: 'Período B' },
+    { id: 'equal', text: 'Se ven iguales' },
+  ];
+  readonly predictionText = computed(() => this.predictions.find(choice => choice.id === this.prediction())?.text ?? '');
   readonly activeIndex = signal(0);
   readonly solved = signal<readonly PeriodId[]>([]);
   readonly helped = signal(false);
@@ -82,9 +90,9 @@ export class Lesson07Balls {
     ? this.periods()[0] : this.periods()[1]);
   readonly reportChoices = computed<readonly { id: ReportChoice; text: string }[]>(() => {
     const choices: { id: ReportChoice; text: string }[] = [
-      { id: 'equal', text: 'Variaron igual: coinciden la media y el rango.' },
-      { id: 'better', text: this.lowerPeriod().name + ' operó mejor: tiene menor varianza.' },
-      { id: 'spread', text: this.higherPeriod().name + ' varió más: tiene mayor varianza.' },
+      { id: 'equal', text: 'Variaron igual: tienen el mismo promedio y rango.' },
+      { id: 'better', text: 'El período ' + this.lowerPeriod().id.toUpperCase() + ' trabajó mejor: tiene menor varianza.' },
+      { id: 'spread', text: 'El período ' + this.higherPeriod().id.toUpperCase() + ' varió más: hay más puntos lejos del promedio.' },
     ];
     const offset = (this.choiceOffset + this.round()) % choices.length;
     return choices.map((_, index) => choices[(index + offset) % choices.length]);
@@ -112,7 +120,7 @@ export class Lesson07Balls {
   }
 
   plotDescription(period: Period): string {
-    return period.name + ': ' + period.values.join(', ') + ' toneladas por hora. Media '
+    return period.name + ': ' + period.values.join(', ') + ' toneladas por hora. Promedio '
       + period.mean + '. Cada punto es un registro; los apilados tienen el mismo valor. Escala de '
       + this.bounds().min + ' a ' + this.bounds().max + '.';
   }
@@ -124,8 +132,15 @@ export class Lesson07Balls {
       && (this.hintFocus() === 'count' || this.hintFocus() === 'deviations' && deviation !== 0);
   }
 
+  choosePrediction(answer: Prediction): void {
+    if (this.stage() !== 'observe' || this.prediction() !== null
+      || !this.predictions.some(choice => choice.id === answer)) return;
+    this.prediction.set(answer);
+    this.startCalculation();
+  }
+
   startCalculation(): void {
-    if (this.stage() === 'observe') this.moveTo('calculate');
+    if (this.stage() === 'observe' && this.prediction() !== null) this.moveTo('calculate');
   }
 
   answerVariance(answer: number): void {
@@ -170,7 +185,8 @@ export class Lesson07Balls {
     this.activeIndex.set(0);
     this.solved.set([]);
     this.helped.set(false);
-    this.moveTo('calculate');
+    this.prediction.set(null);
+    this.moveTo('observe');
   }
 
   private hint(focus: HintFocus): void {
@@ -180,12 +196,12 @@ export class Lesson07Balls {
     afterNextRender(() => this.hintMessage()?.nativeElement.focus(), { injector: this.injector });
     if (this.hintLevel() === 1) {
       this.feedback.set(focus === 'deviations'
-        ? 'Mira las tarjetas destacadas: sus registros no coinciden con la media. Compara sus separaciones antes de sumar.'
+        ? 'Mira las tarjetas destacadas: sus registros no coinciden con el promedio. Compara sus separaciones antes de sumar.'
         : focus === 'count'
-          ? 'Cuenta todas las tarjetas, también las que coinciden con la media. Estamos buscando un promedio, no solo una suma.'
+          ? 'Cuenta todas las tarjetas, también las que coinciden con el promedio. Estamos buscando un promedio, no solo una suma.'
           : focus === 'variances'
-            ? 'Mira las dos varianzas destacadas. Compara esas medidas, no solo la media y el rango.'
-            : 'Estamos describiendo la variación. Todavía no tenemos un objetivo operativo para decidir qué período fue mejor.');
+            ? 'Mira las dos varianzas destacadas. Compara esas medidas, no solo el promedio y el rango.'
+            : 'Sabemos cuánto varió, pero falta la meta del equipo para decidir qué período fue mejor.');
       return;
     }
     if (this.stage() === 'calculate') {
@@ -194,13 +210,13 @@ export class Lesson07Balls {
         ? 'Los signos se compensan, pero eso no borra las diferencias. Usamos los cuadrados: lado × lado. '
         : period.squareSum + ' es la suma de cuadrados, no su promedio. ')
         + 'Sumamos ' + period.squareSum + ' y dividimos entre los ' + period.values.length + ' registros'
-        + (period.zeroCount > 0 ? ', incluidos los ' + period.zeroCount + ' que coinciden con la media' : '')
+        + (period.zeroCount > 0 ? ', incluidos los ' + period.zeroCount + ' que coinciden con el promedio' : '')
         + '. La varianza es ' + period.squareSum + ' ÷ ' + period.values.length + ' = ' + period.variance + ' (t/h)².');
     } else {
       this.feedback.set(focus === 'context'
-        ? 'Menor dispersión no significa automáticamente mejor operación. Faltan objetivos y contexto para decidir cambios en el equipo. Podemos describir la variación, no evaluar toda la operación.'
+        ? 'Variar menos no significa trabajar mejor. Falta saber qué meta debe cumplir el equipo y en qué condiciones trabaja. Estos datos muestran cambios, no qué ajuste hacer.'
         : this.higherPeriod().name + ' varió más: su varianza fue ' + this.higherPeriod().variance
-          + ' frente a ' + this.lowerPeriod().variance + ' (t/h)². Hubo más registros alejados de la media, aunque la media y el rango coincidan.');
+          + ' frente a ' + this.lowerPeriod().variance + ' (t/h)². Hubo más registros lejos del promedio, aunque el promedio y el rango sean iguales.');
     }
   }
 

@@ -1,11 +1,11 @@
 <section class="lesson intuitive-balls" aria-labelledby="balls-title">
   <header class="lesson-header">
     <span class="lesson-tag">Clase 7 · Bolas e hidrociclones</span>
-    <h2 id="balls-title">Comprueba el informe del relevo</h2>
+    <h2 id="balls-title">Comprueba el informe del siguiente turno</h2>
     <p>Misión: usar la varianza para comparar dos períodos del mismo circuito.</p>
   </header>
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
-    @for (label of ['Observa', 'Calcula', 'Concluye']; track label; let index = $index) {
+    @for (label of ['Mira', 'Calcula', 'Explica']; track label; let index = $index) {
       <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'"
         [attr.aria-current]="step() === index + 1 ? 'step' : null">
         <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
@@ -16,18 +16,18 @@
     <div class="workbench">
       <div class="data-board">
         <div class="board-heading"><strong>{{ round() > 0 ? 'Ensayo: otros registros' : 'Alimentación del circuito · Datos de ejemplo' }}</strong></div>
-        <p class="chart-key">Misma variable y punto de medición, en condiciones equivalentes. Cada punto es un registro; los apilados tienen el mismo valor.</p>
+        <p class="chart-key">Medimos la cantidad de material que entra, en el mismo punto y en condiciones parecidas. Cada punto es un registro; los puntos uno sobre otro tienen el mismo valor.</p>
         <div class="comparison-plots">
           @for (period of periods(); track period.id) {
             <article class="period-plot" [class.period--active]="['calculate', 'checked'].includes(stage()) && activePeriod().id === period.id">
               <div class="period-heading"><strong>{{ period.name }}</strong><small>{{ period.values.length }} registros</small></div>
-              <div class="period-summary"><span>Media: <b>{{ period.mean }} t/h</b></span><span>Rango: <b>{{ period.range }} t/h</b></span></div>
+              <div class="period-summary"><span>Promedio: <b>{{ period.mean }} t/h</b></span><span>Rango: <b>{{ period.range }} t/h</b></span></div>
               <div class="shared-scale">
                 <div class="value-track" role="img" [attr.aria-label]="plotDescription(period)">
                   @for (tick of ticks(); track tick) { <span class="grid-line" [style.left.%]="position(tick)" aria-hidden="true"></span> }
                   <span class="track-line" aria-hidden="true"></span>
                   <span class="mean-line" [style.left.%]="position(period.mean)" aria-hidden="true"></span>
-                  <span class="mean-label" [style.left.%]="position(period.mean)" aria-hidden="true">Media {{ period.mean }}</span>
+                  <span class="mean-label" [style.left.%]="position(period.mean)" aria-hidden="true">Promedio {{ period.mean }}</span>
                   @for (point of points(period); track point.id) {
                     <span class="data-point" [class.point--below]="point.deviation < 0" [class.point--above]="point.deviation > 0"
                       [class.point--hint]="period.id === activePeriod().id && isHintRecord(point.deviation)"
@@ -47,11 +47,11 @@
           }
         </div>
         <p class="axis-label">Toneladas por hora · Ambos gráficos usan la misma escala cercana: {{ bounds().min }} a {{ bounds().max }}.</p>
-        <p class="chart-key">La media es una referencia para comparar, no una meta de producción.</p>
+        <p class="chart-key">El promedio sirve para comparar. No es una meta de producción.</p>
         @if (stage() === 'calculate' || stage() === 'checked') {
           <div class="active-records">
             <h4>{{ activePeriod().name }} · Todos sus registros</h4>
-            <p class="chart-key">Desviación = registro − media</p>
+            <p class="chart-key">Desviación = registro − promedio</p>
             <div class="record-cards" [attr.aria-label]="'Registros y desviaciones del ' + activePeriod().name">
               @for (record of activePeriod().records; track record.id; let index = $index) {
                 <article class="record-card" [class.record--hint]="isHintRecord(record.deviation)">
@@ -81,16 +81,17 @@
       </div>
       <aside class="task-card" aria-labelledby="balls-task-title">
         @if (stage() === 'observe') {
-          <span class="task-kicker">El operador necesita comprobar el borrador</span>
-          <h3 id="balls-task-title" #taskHeading tabindex="-1">¿Podemos dejar el informe así?</h3>
-          <blockquote class="draft-note">“Los dos períodos variaron igual: sus medias y rangos coinciden.”</blockquote>
-          <p>Antes de entregarlo al siguiente turno, revisa la varianza de cada período. Así podremos comprobar esa afirmación.</p>
-          <button type="button" class="btn btn--primary" (click)="startCalculation()">Revisar con varianza →</button>
+          <span class="task-kicker">Primero, mira los puntos</span>
+          <h3 id="balls-task-title" #taskHeading tabindex="-1">¿Dónde ves más registros alejados del promedio?</h3>
+          <p>El borrador dice que variaron igual. Elige tu idea; luego compruébala con la varianza.</p>
+          <div class="choices" role="group" aria-label="Tu idea al mirar los puntos">
+            @for (choice of predictions; track choice.id) { <button type="button" class="btn answer-choice" (click)="choosePrediction(choice.id)">{{ choice.text }}</button> }
+          </div>
         } @else if (stage() === 'calculate') {
           <span class="task-kicker">{{ round() > 0 ? 'Otros datos, sin la pista · ' : '' }}Cálculo {{ activeIndex() + 1 }} de 2</span>
           <h3 id="balls-task-title" #taskHeading tabindex="-1">¿Qué varianza tiene el {{ activePeriod().name }}?</h3>
-          <p>Usa sus registros y la media de referencia. Elige el resultado.</p>
-          <div class="plain-rule"><strong>Varianza = suma de cuadrados ÷ cantidad de registros</strong><span>Cuadra las diferencias respecto a la media, súmalas y divide entre todos los registros.</span></div>
+          <p>Compara cada registro con el promedio. Elige el resultado.</p>
+          <div class="plain-rule"><strong>Varianza = suma de cuadrados ÷ cantidad de registros</strong><span>Multiplica cada diferencia por sí misma. Suma los resultados y divide entre todos los registros.</span></div>
           <div class="choices" aria-label="Opciones de varianza">
             @for (option of options(); track option) { <button type="button" class="btn answer-choice" (click)="answerVariance(option)">{{ option }} (t/h)²</button> }
           </div>
@@ -106,10 +107,11 @@
           <button type="button" class="btn btn--primary" (click)="continueCalculation()">{{ activeIndex() === 0 ? 'Calcular el período B →' : 'Revisar el informe →' }}</button>
         } @else if (stage() === 'report') {
           <span class="task-kicker">Los dos cálculos ya están comprobados</span>
-          <h3 id="balls-task-title" #taskHeading tabindex="-1">¿Qué conclusión está respaldada por los datos?</h3>
-          <p>La media y el rango coinciden. Usa también las varianzas y lo que ves en los puntos.</p>
+          <h3 id="balls-task-title" #taskHeading tabindex="-1">¿Qué aviso explica lo que muestran los datos?</h3>
+          <p>Tu idea inicial: <strong>{{ predictionText() }}</strong>.</p>
+          <p>El promedio y el rango son iguales. Elige un aviso que también explique la diferencia entre los puntos.</p>
           @if (hintLevel() === 1 && hintFocus() === 'context') {
-            <p class="context-hint">Objetivo operativo: todavía no indicado.</p>
+            <p class="context-hint">Todavía no sabemos qué meta debe cumplir el equipo.</p>
           }
           <div class="choices">
             @for (choice of reportChoices(); track choice.id) { <button type="button" class="btn answer-choice" (click)="chooseReport(choice.id)">{{ choice.text }}</button> }
@@ -120,8 +122,8 @@
         } @else if (stage() === 'review') {
           <span class="task-kicker">El ejemplo con ayuda ya está resuelto</span>
           <h3 id="balls-task-title" #taskHeading tabindex="-1">Ahora prueba con otros registros</h3>
-          <p>La varianza considera todos los aportes al cuadrado. Tener la misma media y el mismo rango no obliga a que las varianzas sean iguales.</p>
-          <p>Comprueba otro par de períodos sin la pista. No se modificará la evidencia del informe original.</p>
+          <p>La varianza usa todos los registros. Aunque el promedio y el rango sean iguales, la varianza puede ser distinta.</p>
+          <p>Prueba con otros dos períodos sin la pista. Los datos originales del informe no cambian.</p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otros registros →</button>
         }
         <div aria-live="polite" aria-atomic="true">
@@ -135,24 +137,24 @@
     </div>
   } @else {
     <div class="completion-card">
-      <span class="task-kicker">Tu aporte al informe del relevo</span>
+      <span class="task-kicker">Tu aporte al informe del siguiente turno</span>
       <h3 #taskHeading tabindex="-1">El informe ya distingue los períodos</h3>
-      <p>Usaste la varianza con datos nuevos y comprobaste la afirmación del borrador.</p>
+      <p>Usaste la varianza con datos nuevos y comprobaste lo que decía el borrador.</p>
     </div>
     <div class="report-card">
-      <span class="task-kicker">Evidencia original · Bolas e hidrociclones</span>
-      <h3>Misma media y rango, distinta dispersión</h3>
+      <span class="task-kicker">Datos originales · Bolas e hidrociclones</span>
+      <h3>Mismo promedio y rango, distinta variación</h3>
       <div class="final-periods">
         @for (period of originalPeriods; track period.id) {
           <article><strong>{{ period.name }}</strong><span>{{ period.values.join(', ') }} t/h</span>
-            <span>Media: {{ period.mean }} t/h · Rango: {{ period.range }} t/h</span>
+            <span>Promedio: {{ period.mean }} t/h · Rango: {{ period.range }} t/h</span>
             <span>Cuadrados: {{ period.squares.join(', ') }}</span>
             <b>{{ period.squareSum }} ÷ {{ period.values.length }} = {{ period.variance }} (t/h)²</b>
           </article>
         }
       </div>
-      <p>El período B tuvo mayor dispersión en estos registros: su varianza fue 6 frente a 3 (t/h)² y hubo más registros alejados de la media.</p>
-      <p>Esto no explica la causa ni basta para decidir cambios en el equipo. Menor variación no significa automáticamente mejor operación.</p>
+      <p>El período B varió más: su varianza fue 6 frente a 3 (t/h)². Tuvo más registros lejos del promedio.</p>
+      <p>Esto no explica por qué cambió ni qué ajuste hacer. Variar menos no significa trabajar mejor.</p>
       <p class="chart-key">La varianza no es una distancia en t/h: sus unidades están al cuadrado.</p>
     </div>
     <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar el informe corregido →</button></div>

@@ -60,7 +60,7 @@ export const LEARNING_ZONES: readonly ZoneCatalogEntry[] = [
       },
       {
         lessonId: 'lesson-05',
-        name: 'Distancias respecto a la media',
+        name: 'Separación de cada dato del promedio',
         objective: 'Ve a ROM / chancado y habla con el operador.',
         definition: LESSON_05_CRUSHING,
       },

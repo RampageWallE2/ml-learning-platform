@@ -1,179 +1,77 @@
-<aside class="zone-progress">
+<aside class="zone-progress" aria-label="Objetivo del recorrido">
+  <div class="progress-summary">
+    <div class="progress-overview">
+      <div class="progress-context">
+        <span class="progress-zone">{{ name() }}</span>
+        <span class="progress-topic">{{ topic() }}</span>
+      </div>
 
-  <!-- =========================
-       HEADER
-       ========================= -->
-
-  <button
-    class="progress-header"
-    (click)="toggle()"
-    [class.progress-header--static]="
-      !hasLessons()
-    "
-  >
-
-    <div class="progress-header-info">
-
-      <span class="progress-zone">
-        {{ name() }}
-      </span>
-
-      <strong>
-        {{ topic() }}
-      </strong>
-
-    </div>
-
-
-    <div class="progress-header-side">
-
-      @if (zone(); as zone) {
-
-        <div class="progress-counter">
-
-          {{ zone.completedLessons }}
-          /
-          {{ zone.totalLessons }}
-
-        </div>
-
-
-        <span
-          class="progress-chevron"
-          [class.progress-chevron--expanded]="
-            expanded()
-          "
-        >
-          ▼
+      <div class="current-objective" [class.current-objective--completed]="completed()">
+        <span class="objective-label">
+          @if (completed()) {
+            Recorrido completado
+          } @else {
+            @if (nextLessonNumber(); as number) { C{{ number }} · }
+            Siguiente paso
+          }
         </span>
+        <h2>{{ objective() }}</h2>
+      </div>
 
+      @if (hasLessons()) {
+        @if (zone(); as zone) {
+          <p class="progress-counter">
+            <span class="progress-counter-full">
+              {{ zone.completedLessons }} de {{ zone.totalLessons }} clases completadas
+            </span>
+            <span class="progress-counter-compact" aria-hidden="true">
+              @if (nextLessonNumber(); as number) { C{{ number }} · }
+              {{ zone.completedLessons }}/{{ zone.totalLessons }} clases
+            </span>
+          </p>
+          <div class="progress-bar" role="progressbar" aria-label="Clases completadas"
+               aria-valuemin="0" [attr.aria-valuemax]="zone.totalLessons"
+               [attr.aria-valuenow]="zone.completedLessons"
+               [attr.aria-valuetext]="zone.completedLessons + ' de ' + zone.totalLessons + ' clases completadas'">
+            <div class="progress-bar-value" [style.width.%]="zone.percentage"></div>
+          </div>
+        }
       }
-
     </div>
 
-  </button>
-
-
-  <!-- =========================
-       BARRA
-       ========================= -->
-
-  @if (zone(); as zone) {
-
-    <div class="progress-bar">
-
-      <div
-        class="progress-bar-value"
-        [style.width.%]="zone.percentage"
-      ></div>
-
-    </div>
-
-  }
-
-
-  <!-- =========================
-       OBJETIVO ACTUAL
-       ========================= -->
-
-  <div
-    class="current-objective"
-    [class.current-objective--collapsed]="
-      !expanded()
-    "
-    [class.current-objective--completed]="
-      completed()
-    "
-  >
-
-    <span class="objective-label">
-      Objetivo actual
-    </span>
-
-    <p>
-      {{ objective() }}
-    </p>
-
+    @if (hasLessons()) {
+      <button class="progress-toggle" type="button" (click)="toggle()"
+              [attr.aria-expanded]="expanded()" [attr.aria-controls]="lessonsId">
+        <span class="progress-toggle-label">{{ expanded() ? 'Ocultar recorrido' : 'Ver recorrido' }}</span>
+        <span class="progress-toggle-symbol" aria-hidden="true">{{ expanded() ? '−' : '+' }}</span>
+      </button>
+    }
   </div>
 
-
-  <!-- =========================
-       LISTA DE LECCIONES
-       ========================= -->
-
-  @if (
-    expanded() &&
-    zone();
-    as zone
-  ) {
-
-    <div class="progress-content">
-
-      @for (
-        lesson of zone.lessons;
-        track lesson.lessonId
-      ) {
-
-        <div
-          class="progress-item"
-
-          [class.progress-item--completed]="
-            lesson.status === 'completed'
-          "
-
-          [class.progress-item--current]="
-            lesson.status === 'current'
-          "
-        >
-
-          <span class="progress-status">
-
-            @if (
-              lesson.status === 'completed'
-            ) {
-              ✓
-            }
-
-            @if (
-              lesson.status === 'current'
-            ) {
-              ●
-            }
-
-            @if (
-              lesson.status === 'pending'
-            ) {
-              ○
-            }
-
-          </span>
-
-
-          <div class="progress-item-info">
-
-            <span>
-              {{ lesson.name }}
-            </span>
-
-
-            @if (
-              lesson.status === 'current'
-            ) {
-
-              <small>
-                Actual
-              </small>
-
-            }
-
-          </div>
-
-        </div>
-
-      }
-
-    </div>
-
+  @if (hasLessons()) {
+    @if (zone(); as zone) {
+      <div class="progress-content" [id]="lessonsId" [hidden]="!expanded()"
+           role="region" aria-label="Clases del recorrido" tabindex="0">
+        <ol class="progress-lessons">
+          @for (lesson of zone.lessons; track lesson.lessonId; let index = $index) {
+            <li class="progress-item"
+                [class.progress-item--completed]="lesson.status === 'completed'"
+                [class.progress-item--current]="lesson.status === 'current'">
+              <span class="progress-number" aria-hidden="true">{{ index + 1 }}</span>
+              <div class="progress-item-info">
+                <span>{{ lesson.name }}</span>
+                <small>
+                  @switch (lesson.status) {
+                    @case ('completed') { Completada }
+                    @case ('current') { Siguiente }
+                    @case ('pending') { Pendiente }
+                  }
+                </small>
+              </div>
+            </li>
+          }
+        </ol>
+      </div>
+    }
   }
-
 </aside>

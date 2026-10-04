@@ -15,9 +15,9 @@ const PRACTICE: readonly Records[] = [
   { goal: 90, A: [70, 70, 70, 70, 70, 70], B: [88, 88, 88, 92, 92, 92] },
 ];
 const TRANSFER: readonly Records[] = [
-  { goal: 100, A: [100, 100, 100, 100, 100, 100], B: [98, 98, 98, 102, 102, 102] },
-  { goal: 104, A: [102, 102, 102, 106, 106, 106], B: [104, 104, 104, 104, 104, 104] },
-  { goal: 120, A: [120, 120, 120, 120, 120, 120], B: [117, 117, 120, 120, 120, 126] },
+  { goal: 100, A: [99, 99, 99, 101, 101, 101], B: [98, 98, 98, 102, 102, 102] },
+  { goal: 104, A: [102, 102, 102, 106, 106, 106], B: [103, 103, 103, 105, 105, 105] },
+  { goal: 120, A: [119, 119, 119, 121, 121, 121], B: [117, 117, 120, 120, 120, 126] },
 ];
 
 function describe(id: PeriodId, values: readonly number[], goal: number) {
@@ -70,19 +70,19 @@ export class Lesson09Thickeners {
       bottom: 28 + period.values.slice(0, index).filter(previous => previous === value).length * 20 })),
   })));
   readonly question = computed(() => ({
-    spread: '¿Cuál varió menos?', goal: '¿Cuál se acercó a la meta?', recommend: '¿Qué dejarías al relevo?',
+    spread: '¿Cuál varió menos?', goal: '¿Cuál se acercó a la meta?', recommend: '¿Qué dirías al siguiente turno?',
     'transfer-intro': '¿Y si ambos cumplen?', transfer: 'Elige una referencia',
-    review: 'Prueba con otros registros', success: 'Informe listo para el relevo',
+    review: 'Prueba con otros registros', success: 'Informe listo para el siguiente turno',
   })[this.stage()]);
   readonly choices = computed<readonly { id: PeriodChoice; text: string }[]>(() => [
     { id: 'A', text: this.stage() === 'transfer' ? 'Usar A como referencia' : 'Período A' },
     { id: 'B', text: this.stage() === 'transfer' ? 'Usar B como referencia' : 'Período B' },
-    { id: 'same', text: this.stage() === 'transfer' ? 'Da igual: la misma media basta' : 'Los dos por igual' },
+    { id: 'same', text: this.stage() === 'transfer' ? 'Da igual: el mismo promedio basta' : 'Los dos por igual' },
   ]);
   readonly recommendations = computed<readonly { id: Recommendation; text: string }[]>(() => {
     const choices: { id: Recommendation; text: string }[] = [
-      { id: 'stable', text: 'Elegir ' + (this.closerToGoal() === 'A' ? 'B' : 'A') + ': no cambió, así que necesariamente es mejor.' },
-      { id: 'reference', text: 'Tomar ' + this.closerToGoal() + ' como referencia e investigar por qué el otro quedó bajo la meta.' },
+      { id: 'stable', text: 'Elegir ' + (this.closerToGoal() === 'A' ? 'B' : 'A') + ': no cambió, así que es mejor.' },
+      { id: 'reference', text: 'Usar ' + this.closerToGoal() + ' como referencia y buscar por qué el otro quedó bajo la meta.' },
       { id: 'adjust', text: 'Cambiar los ajustes ya: todos los registros deben ser ' + this.mainRecords().goal + ' t/h.' },
     ];
     return choices.map((_, index) => choices[(index + this.round()) % choices.length]);
@@ -97,8 +97,8 @@ export class Lesson09Thickeners {
 
   plotDescription(id: PeriodId): string {
     const period = this.periods().find(period => period.id === id)!;
-    return 'Período ' + id + ': ' + period.values.join(', ') + ' t/h. Media ' + period.mean
-      + ', meta de media ' + this.records().goal + ', rango ' + period.range
+    return 'Período ' + id + ': ' + period.values.join(', ') + ' t/h. Promedio ' + period.mean
+      + ', meta de promedio ' + this.records().goal + ', rango ' + period.range
       + ', varianza ' + period.variance + ' (t/h) al cuadrado, desviación estándar '
       + period.standardDeviation + ' t/h. Misma escala que el otro período. Cada punto es un registro; los apilados tienen el mismo valor.';
   }
@@ -113,9 +113,9 @@ export class Lesson09Thickeners {
     this.feedback.set(this.stage() === 'spread'
       ? expected + ' no cambió entre registros: su rango y su desviación estándar son 0. Eso no dice si cumple la meta.'
       : this.stage() === 'goal'
-        ? 'La media de ' + expected + ' es ' + period.mean + ' t/h, igual a la meta. La media del otro período quedó por debajo.'
-        : 'Ambas medias cumplen la meta. Con el criterio de este ensayo, elegimos ' + expected
-          + ' porque varió menos. Esto no garantiza lo que pasará en el siguiente turno.');
+        ? 'El promedio de ' + expected + ' es ' + period.mean + ' t/h, igual a la meta. El promedio del otro período quedó por debajo.'
+        : 'Ambos promedios cumplen la meta y ambos períodos tuvieron cambios. Para este caso elegimos ' + expected
+          + ': su desviación estándar es menor (' + period.standardDeviation + ' t/h). Varió menos, pero eso no garantiza el siguiente turno.');
   }
 
   chooseRecommendation(answer: Recommendation): void {
@@ -123,12 +123,12 @@ export class Lesson09Thickeners {
       || !this.recommendations().some(choice => choice.id === answer)) return;
     if (answer !== 'reference') {
       this.requestHint();
-      if (answer === 'adjust') this.feedback.set('La meta es para la media, no para cada registro. Estos datos no indican qué ajuste hacer: investigar viene antes de ajustar.');
+      if (answer === 'adjust') this.feedback.set('La meta es para el promedio, no para cada registro. Estos datos no dicen qué ajuste hacer. Primero hay que buscar las causas.');
       return;
     }
     this.answered.set(true);
     this.feedback.set('La referencia es ' + this.closerToGoal()
-      + ' en estos registros. Antes de cambiar ajustes, faltan las causas y los límites de variación aceptables. No es una garantía para el próximo turno.');
+      + ' en estos registros. Antes de cambiar ajustes, necesitamos saber por qué hubo cambios y qué tanto pueden variar. Esto no asegura el resultado del próximo turno.');
   }
 
   requestHint(): void {
@@ -137,10 +137,10 @@ export class Lesson09Thickeners {
     this.feedback.set(this.stage() === 'spread'
       ? 'Mira los puntos apilados: todos tienen el mismo valor. En ese período, rango y desviación estándar son 0.'
       : this.stage() === 'goal'
-        ? 'Compara la media de cada período con la línea de meta, no solo con la dispersión. ¿Qué media coincide con ' + this.records().goal + ' t/h?'
+        ? 'Compara el promedio de cada período con la línea de meta, no solo cuánto varió. ¿Qué promedio coincide con ' + this.records().goal + ' t/h?'
         : this.stage() === 'recommend'
-          ? 'No cambiar no basta: un período puede ser muy estable, pero estar bajo la meta. Recomienda una referencia basada en los datos; investigar viene antes de ajustar.'
-          : 'Ambas medias cumplen. El criterio indicado es preferir menor variación: compara sus desviaciones estándar, no solo sus medias.');
+          ? 'No cambiar no basta: un período puede variar poco y quedar bajo la meta. Usa los datos para elegir una referencia. Primero hay que buscar las causas, antes de ajustar.'
+          : 'Ambos promedios cumplen y ambos períodos cambian. Compara sus desviaciones estándar: la menor indica menos variación. El mismo promedio no basta.');
   }
 
   continue(): void {

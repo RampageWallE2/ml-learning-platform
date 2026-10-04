@@ -24,6 +24,7 @@ describe('Lesson06Sag', () => {
 
   function solvePractice(game: Lesson06Sag): void {
     game.answerPracticeSquare(game.practiceSquare()); game.choosePracticeSummary('same');
+    game.answerPracticeVariance(game.variance());
     game.continuePractice();
   }
 
@@ -36,8 +37,8 @@ describe('Lesson06Sag', () => {
 
   it('starts with a purpose, all four records and the given mean, without written answers', () => {
     const fixture = create(); const root: HTMLElement = fixture.nativeElement;
-    expect(root.textContent).toContain('comparar la variación de la alimentación');
-    expect(root.textContent).toContain('Media (promedio): 100 t/h');
+    expect(root.textContent).toContain('resumir cuánto cambió la cantidad de material que recibió el molino');
+    expect(root.textContent).toContain('Promedio: 100 t/h');
     expect(root.textContent).toContain('no una meta de producción');
     expect(root.textContent).not.toMatch(/varianza/i);
     expect(root.querySelectorAll('.data-point')).toHaveLength(4);
@@ -65,7 +66,7 @@ describe('Lesson06Sag', () => {
     expect(game.points().map(point => point.bottom)).toEqual([28, 28, 48, 28]);
     expect(new Set(game.points().map(point => point.id)).size).toBe(4);
     expect(game.plotDescription()).toContain('98, 100, 100, 102');
-    expect(game.plotDescription()).toContain('Media 100');
+    expect(game.plotDescription()).toContain('Promedio 100');
     expect(game.plotDescription()).toContain('Escala de 98 a 102');
   });
 
@@ -73,7 +74,8 @@ describe('Lesson06Sag', () => {
     const game = create().componentInstance; const done = vi.fn(); game.completed.subscribe(done);
     game.chooseCancellation('balanced'); game.formSquares(); game.answerSquare(4); game.chooseWeight('four');
     game.setDuplicated(true); game.compareCopy(); game.chooseSummary('per-record'); game.startPractice();
-    game.answerPracticeSquare(1); game.choosePracticeSummary('same'); game.continuePractice();
+    game.answerPracticeSquare(1); game.choosePracticeSummary('same'); game.answerPracticeVariance(1);
+    game.continuePractice();
     game.continueAfterHelp(); game.finish();
     expect(game.stage()).toBe('observe'); expect(game.feedback()).toBe('');
     expect(game.values()).toEqual([98, 100, 100, 102]); expect(done).not.toHaveBeenCalled();
@@ -107,8 +109,8 @@ describe('Lesson06Sag', () => {
   it('accepts unsigned distances as another measure rather than claiming squares are the only solution', () => {
     const fixture = create(); const game = fixture.componentInstance;
     game.sumChanges(); game.chooseCancellation('balanced'); fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Usar distancias sin signo también evita la compensación');
-    expect(fixture.nativeElement.textContent).toContain('dar más peso a separaciones grandes');
+    expect(fixture.nativeElement.textContent).toContain('Las distancias sin signo también evitan que un menos borre un más');
+    expect(fixture.nativeElement.textContent).toContain('las separaciones grandes cuentan más');
     expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(0);
     expect(fixture.nativeElement.textContent).not.toMatch(/varianza/i);
   });
@@ -134,7 +136,7 @@ describe('Lesson06Sag', () => {
     game.sumChanges(); game.chooseCancellation('balanced'); game.formSquares();
     const values = game.values();
     game.answerSquare(-4);
-    expect(game.feedback()).toContain('no un área negativa');
+    expect(game.feedback()).toContain('No puede tener menos de 0 casillas');
     expect(game.stage()).toBe('squares'); expect(game.values()).toBe(values);
     game.answerSquare(2);
     expect(game.feedback()).toContain('dos filas de dos casillas');
@@ -181,7 +183,8 @@ describe('Lesson06Sag', () => {
     expect(game.points().map(point => point.bottom)).toEqual([28, 48, 28, 48, 68, 88, 28, 48]);
     expect(new Set(game.points().map(point => point.id)).size).toBe(8);
     expect(root.textContent).toContain('no son nuevas mediciones');
-    expect(root.textContent).toContain('mismas proporciones');
+    expect(root.textContent).toContain('Repetimos cada registro dos veces');
+    expect(root.textContent).toContain('Ningún valor cambió');
     expect(game.plotDescription()).toContain('Copia de experimento');
   });
 
@@ -266,6 +269,7 @@ describe('Lesson06Sag', () => {
     expect(game.values()).toEqual([99, 99, 101, 101]); expect(game.mean()).toBe(100);
     expect(game.deviations()).toEqual([-1, -1, 1, 1]);
     expect(game.variance()).toBe(1); expect(game.practiceHelped()).toBe(false);
+    expect(game.practiceVarianceAnswered()).toBe(false);
     expect(game.feedback()).toBe(''); expect(game.round()).toBe(0);
     expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(0);
     expect(fixture.nativeElement.textContent).toContain('¿Cuánto aporta −1 al cuadrado?');
@@ -280,7 +284,7 @@ describe('Lesson06Sag', () => {
     expect(root.querySelectorAll('.record-card')).toHaveLength(4);
     expect(Array.from(root.querySelectorAll('.record-card strong'), record => record.textContent))
       .toEqual(['99 t/h', '99 t/h', '101 t/h', '101 t/h']);
-    expect(root.querySelector('.mean-summary')?.textContent).toContain('Media (promedio): 100 t/h');
+    expect(root.querySelector('.mean-summary')?.textContent).toContain('Promedio: 100 t/h');
     expect(comparison.textContent).toContain('4 registros · suma 4');
     expect(comparison.textContent).toContain('8 registros · suma 8');
     expect(comparison.querySelectorAll('b')).toHaveLength(0);
@@ -298,24 +302,41 @@ describe('Lesson06Sag', () => {
     expect(root.textContent).not.toContain('÷');
   });
 
-  it('explains the answered comparison on the same practice data before allowing completion', () => {
+  it('asks for the whole-data average on the same practice board without revealing it first', () => {
     const fixture = create(); const game = fixture.componentInstance;
     const done = vi.fn(); game.completed.subscribe(done);
     reachPractice(game); game.answerPracticeSquare(1); const records = game.records();
     game.choosePracticeSummary('same'); fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
     expect(game.stage()).toBe('practice-checked'); expect(game.practicing()).toBe(true);
-    expect(game.comparisonVisible()).toBe(true); expect(game.comparisonSolved()).toBe(true);
+    expect(game.comparisonVisible()).toBe(true); expect(game.comparisonSolved()).toBe(false);
     expect(game.records()).toBe(records); expect(game.values()).toEqual([99, 99, 101, 101]);
     expect(game.mean()).toBe(100); expect(game.variance()).toBe(1); expect(game.round()).toBe(0);
-    expect(root.querySelector('#sag-task-title')?.textContent?.trim()).toBe('Se mantiene igual');
-    expect(root.querySelector('.task-card')?.textContent).toContain('se duplican juntas');
-    expect(root.querySelector('.task-card')?.textContent).toContain('mismo promedio');
+    expect(game.practiceVarianceAnswered()).toBe(false);
+    expect(root.querySelector('#sag-task-title')?.textContent?.trim()).toBe('¿Cuál es el promedio de estos aportes?');
+    expect(root.querySelector('.task-card')?.textContent).toContain('operador');
+    expect(root.querySelector('.task-card')?.textContent).toContain('suman 4');
+    expect(root.querySelector('.task-card')?.textContent).toContain('4 registros');
+    expect(game.practiceVarianceOptions().slice().sort((a, b) => a - b)).toEqual([0, 1, 4]);
+    expect(Array.from(root.querySelectorAll('.variance-choices button'), choice => choice.textContent?.trim()).sort())
+      .toEqual(['0', '1', '4']);
+    expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
+    expect(root.textContent).not.toContain('÷');
+    expect(root.textContent).not.toContain('1 (t/h)²');
+    expect(root.querySelector('input, textarea, form, select')).toBeNull();
+    expect(root.querySelector('.completion-card, .report-card')).toBeNull();
+    expect(Array.from(root.querySelectorAll('button')).some(button => button.textContent?.includes('Continuar'))).toBe(false);
+    game.continuePractice(); game.finish(); expect(done).not.toHaveBeenCalled();
+    expect(game.stage()).toBe('practice-checked');
+
+    click(root, '1'); fixture.detectChanges();
+    expect(game.stage()).toBe('practice-checked'); expect(game.records()).toBe(records);
+    expect(game.practiceVarianceAnswered()).toBe(true); expect(game.practiceHelped()).toBe(false);
+    expect(game.comparisonSolved()).toBe(true);
+    expect(root.querySelector('#sag-task-title')?.textContent?.trim()).toBe('Exacto: 4 ÷ 4 = 1');
     expect(root.querySelector('.task-card')?.textContent).toContain('1 (t/h)²');
     expect(Array.from(root.querySelectorAll('.comparison-box b'), result => result.textContent))
       .toEqual(['4 ÷ 4 = 1', '8 ÷ 8 = 1']);
-    expect(Array.from(root.querySelectorAll('.task-card .calculation-card strong'), result => result.textContent))
-      .toEqual(['Original: 4 ÷ 4 = 1', 'Copia: 8 ÷ 8 = 1']);
     expect(root.querySelector('.task-card .answer-choice')).toBeNull();
     expect(root.querySelector('.completion-card, .report-card')).toBeNull();
     game.finish(); expect(done).not.toHaveBeenCalled();
@@ -325,7 +346,7 @@ describe('Lesson06Sag', () => {
     expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it('moves keyboard focus to the explanation when the selected practice answer disappears', async () => {
+  it('moves keyboard focus to the numeric question and its checked answer as choices disappear', async () => {
     const fixture = create(); const game = fixture.componentInstance;
     reachPractice(game); game.answerPracticeSquare(1); fixture.detectChanges(); await fixture.whenStable();
     const root: HTMLElement = fixture.nativeElement;
@@ -334,8 +355,57 @@ describe('Lesson06Sag', () => {
     answer.focus(); answer.click(); fixture.detectChanges(); await fixture.whenStable();
     expect(root.contains(answer)).toBe(false);
     expect(document.activeElement).toBe(root.querySelector('#sag-task-title'));
-    expect(document.activeElement?.textContent?.trim()).toBe('Se mantiene igual');
+    expect(document.activeElement?.textContent?.trim()).toBe('¿Cuál es el promedio de estos aportes?');
     expect(game.stage()).toBe('practice-checked');
+    const numericAnswer = Array.from(root.querySelectorAll<HTMLButtonElement>('.variance-choices button'))
+      .find(button => button.textContent?.trim() === '1')!;
+    numericAnswer.focus(); numericAnswer.click(); fixture.detectChanges(); await fixture.whenStable();
+    expect(root.contains(numericAnswer)).toBe(false);
+    expect(document.activeElement).toBe(root.querySelector('#sag-task-title'));
+    expect(document.activeElement?.textContent?.trim()).toBe('Exacto: 4 ÷ 4 = 1');
+    expect(game.stage()).toBe('practice-checked'); expect(game.practiceVarianceAnswered()).toBe(true);
+  });
+
+  it.each([
+    { answer: 0, explanation: '0 sería no tener separación en ningún registro' },
+    { answer: 4, explanation: '4 es la suma. Para obtener el promedio' },
+  ])('corrects numeric answer $answer on the same data and requires an unaided retry', ({ answer, explanation }) => {
+    const fixture = create(); const game = fixture.componentInstance;
+    const done = vi.fn(); game.completed.subscribe(done);
+    reachPractice(game); game.answerPracticeSquare(1); game.choosePracticeSummary('same'); fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement; const records = game.records();
+    const choices = game.practiceVarianceOptions();
+    click(root, String(answer)); fixture.detectChanges();
+    expect(game.stage()).toBe('practice-checked'); expect(game.practiceVarianceAnswered()).toBe(false);
+    expect(game.feedback()).toContain(explanation); expect(game.feedback()).toContain('4 registros');
+    expect(game.practiceHelped()).toBe(true); expect(game.records()).toBe(records);
+    expect(game.values()).toEqual([99, 99, 101, 101]); expect(game.mean()).toBe(100);
+    expect(game.practiceVarianceOptions()).toBe(choices); expect(game.comparisonSolved()).toBe(false);
+    expect(root.querySelectorAll('.variance-choices button')).toHaveLength(3);
+    expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
+    game.continuePractice(); game.continueAfterHelp(); game.finish();
+    expect(game.stage()).toBe('practice-checked'); expect(game.round()).toBe(0); expect(done).not.toHaveBeenCalled();
+
+    click(root, '1'); fixture.detectChanges();
+    expect(game.practiceVarianceAnswered()).toBe(true); expect(game.feedback()).toBe('');
+    expect(game.records()).toBe(records); expect(game.practiceHelped()).toBe(true);
+    click(root, 'Continuar →'); fixture.detectChanges();
+    expect(game.stage()).toBe('review'); expect(game.records()).toBe(records);
+    click(root, 'Probar otros registros →'); fixture.detectChanges();
+    expect(game.stage()).toBe('practice-square'); expect(game.round()).toBe(1);
+    expect(game.values()).toEqual([98, 98, 102, 102]); expect(game.practiceVarianceAnswered()).toBe(false);
+    expect(game.practiceHelped()).toBe(false); expect(game.feedback()).toBe('');
+    game.answerPracticeSquare(4); game.choosePracticeSummary('same'); fixture.detectChanges();
+    expect(root.querySelector('.task-card')?.textContent).toContain('suman 16');
+    expect(game.practiceVarianceOptions().slice().sort((a, b) => a - b)).toEqual([0, 4, 16]);
+    expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
+    click(root, '4'); fixture.detectChanges();
+    expect(root.querySelector('#sag-task-title')?.textContent?.trim()).toBe('Exacto: 16 ÷ 4 = 4');
+    expect(root.querySelector('.task-card')?.textContent).toContain('4 (t/h)²');
+    click(root, 'Continuar →'); fixture.detectChanges();
+    expect(game.stage()).toBe('success'); expect(done).not.toHaveBeenCalled();
+    click(root, 'Entregar el hallazgo →'); fixture.detectChanges();
+    expect(done).toHaveBeenCalledTimes(1);
   });
 
   it('explains a practice mistake without replacing its records', () => {
@@ -350,7 +420,7 @@ describe('Lesson06Sag', () => {
     expect(game.feedback()).toBe('');
   });
 
-  it('focuses practice hints after either mistake while guided hints retain button focus', async () => {
+  it('focuses practice hints after each type of mistake while guided hints retain button focus', async () => {
     const fixture = create(); const game = fixture.componentInstance;
     const root: HTMLElement = fixture.nativeElement;
     game.sumChanges(); fixture.detectChanges(); await fixture.whenStable();
@@ -378,6 +448,15 @@ describe('Lesson06Sag', () => {
     expect(document.activeElement?.getAttribute('tabindex')).toBe('-1');
     expect(document.activeElement?.textContent).toContain('se duplican juntas');
     expect(game.stage()).toBe('practice-average');
+
+    click(root, 'Se mantiene igual'); fixture.detectChanges(); await fixture.whenStable();
+    const varianceAnswer = Array.from(root.querySelectorAll<HTMLButtonElement>('.variance-choices button'))
+      .find(button => button.textContent?.trim() === '4')!;
+    varianceAnswer.focus(); varianceAnswer.click(); fixture.detectChanges(); await fixture.whenStable();
+    expect(document.activeElement).toBe(root.querySelector('.feedback'));
+    expect(document.activeElement?.getAttribute('tabindex')).toBe('-1');
+    expect(document.activeElement?.textContent).toContain('4 es la suma');
+    expect(game.stage()).toBe('practice-checked'); expect(game.practiceVarianceAnswered()).toBe(false);
   });
 
   it('checks both duplication and cancellation misconceptions in practice', () => {
@@ -386,14 +465,15 @@ describe('Lesson06Sag', () => {
     game.choosePracticeSummary('double');
     expect(game.feedback()).toContain('se duplican juntas'); expect(game.stage()).toBe('practice-average');
     game.choosePracticeSummary('zero');
-    expect(game.feedback()).toContain('1 (t/h)², no 0'); expect(game.records()).toBe(records);
+    expect(game.feedback()).toContain('no se vuelven 0'); expect(game.records()).toBe(records);
     game.choosePracticeSummary('same'); expect(game.stage()).toBe('practice-checked');
     expect(game.records()).toBe(records);
+    game.answerPracticeVariance(1);
     game.continuePractice(); expect(game.stage()).toBe('review');
     expect(game.records()).toBe(records);
   });
 
-  it('reveals feedback after a wrong summary without advancing and still requires another unaided round', () => {
+  it('explains a wrong summary without revealing the numeric average and requires another unaided round', () => {
     const fixture = create(); const game = fixture.componentInstance;
     const done = vi.fn(); game.completed.subscribe(done);
     reachPractice(game); game.answerPracticeSquare(1); const records = game.records();
@@ -401,9 +481,10 @@ describe('Lesson06Sag', () => {
     const root: HTMLElement = fixture.nativeElement;
     expect(game.stage()).toBe('practice-average'); expect(game.practiceHelped()).toBe(true);
     expect(game.records()).toBe(records); expect(game.round()).toBe(0);
-    expect(game.comparisonSolved()).toBe(true);
-    expect(Array.from(root.querySelectorAll('.comparison-box b'), result => result.textContent))
-      .toEqual(['4 ÷ 4 = 1', '8 ÷ 8 = 1']);
+    expect(game.comparisonSolved()).toBe(false);
+    expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
+    expect(root.textContent).not.toContain('÷');
+    expect(root.textContent).not.toContain('1 (t/h)²');
     expect(root.querySelector('.task-card .choices')?.querySelectorAll('button')).toHaveLength(3);
     const feedback = game.feedback();
     game.choosePracticeSummary('invalid' as 'same'); game.continuePractice(); game.continueAfterHelp(); game.finish();
@@ -413,6 +494,8 @@ describe('Lesson06Sag', () => {
     expect(game.stage()).toBe('practice-checked'); expect(game.records()).toBe(records);
     expect(game.practiceHelped()).toBe(true); expect(game.feedback()).toBe('');
     game.continueAfterHelp(); game.finish(); expect(game.stage()).toBe('practice-checked');
+    expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
+    click(root, '1'); fixture.detectChanges();
     click(root, 'Continuar →'); fixture.detectChanges();
     expect(game.stage()).toBe('review'); expect(game.records()).toBe(records); expect(game.round()).toBe(0);
     game.continuePractice(); game.finish(); expect(done).not.toHaveBeenCalled();
@@ -421,6 +504,7 @@ describe('Lesson06Sag', () => {
     expect(game.values()).toEqual([98, 98, 102, 102]); expect(game.practiceHelped()).toBe(false);
     game.answerPracticeSquare(4); game.choosePracticeSummary('same');
     expect(game.stage()).toBe('practice-checked'); game.finish(); expect(done).not.toHaveBeenCalled();
+    game.answerPracticeVariance(4);
     game.continuePractice(); expect(game.stage()).toBe('success');
     game.finish(); expect(done).toHaveBeenCalledTimes(1);
   });
@@ -463,7 +547,19 @@ describe('Lesson06Sag', () => {
           .toEqual(choices.map(choice => choice.text));
         game.choosePracticeSummary('invalid' as 'same'); fixture.detectChanges();
         expect(game.practiceSummaries().map(choice => choice.id)).toEqual(order);
-        game.choosePracticeSummary('same'); game.continuePractice(); game.continueAfterHelp();
+        game.choosePracticeSummary('same'); fixture.detectChanges();
+        const numericChoices = game.practiceVarianceOptions();
+        const numericOffset = (Math.floor(random * 3) + round) % 3;
+        const numericSource = [0, game.variance(), game.sourceSquareSum()];
+        expect(numericChoices).toEqual(numericSource.map((_, index) => numericSource[(index + numericOffset) % 3]));
+        expect(Array.from(root.querySelectorAll('.variance-choices button'), choice => Number(choice.textContent?.trim())))
+          .toEqual(numericChoices);
+        game.answerPracticeVariance(game.sourceSquareSum()); fixture.detectChanges();
+        expect(game.practiceVarianceOptions()).toBe(numericChoices);
+        expect(Array.from(root.querySelectorAll('.variance-choices button'), choice => Number(choice.textContent?.trim())))
+          .toEqual(numericChoices);
+        game.answerPracticeVariance(game.variance());
+        game.continuePractice(); game.continueAfterHelp();
       }
       expect(new Set(positions).size).toBe(3);
     } finally {
@@ -480,6 +576,7 @@ describe('Lesson06Sag', () => {
     expect(game.stage()).toBe('practice-square'); expect(game.values()).toEqual([98, 98, 102, 102]);
     expect(game.variance()).toBe(4); expect(game.sourceSquareSum()).toBe(16);
     expect(game.practiceHelped()).toBe(false); expect(game.feedback()).toBe('');
+    expect(game.practiceVarianceAnswered()).toBe(false);
     solvePractice(game); expect(game.stage()).toBe('success');
   });
 
@@ -492,9 +589,13 @@ describe('Lesson06Sag', () => {
       expect(game.values()).toEqual(values); expect(game.mean()).toBe(mean);
       expect(game.sourceSquareSum()).toBe(squareSum); expect(game.variance()).toBe(squareSum / 4);
       expect(game.points().map(point => point.x)).toEqual(values.map(value => game.position(value)));
-      expect(game.plotDescription()).toContain('Media ' + mean);
+      expect(game.plotDescription()).toContain('Promedio ' + mean);
       expect(new Set(game.practiceSquareOptions()).size).toBe(3);
       expect(game.practiceSquareOptions()).toContain(game.practiceSquare());
+      expect(new Set(game.practiceVarianceOptions()).size).toBe(3);
+      expect(game.practiceVarianceOptions().slice().sort((a, b) => a - b))
+        .toEqual([0, squareSum / 4, squareSum].sort((a, b) => a - b));
+      expect(game.practiceVarianceAnswered()).toBe(false);
       game.answerPracticeSquare(-game.practiceSquare()); solvePractice(game);
       expect(game.stage()).toBe('review'); game.continueAfterHelp();
     }
@@ -503,13 +604,19 @@ describe('Lesson06Sag', () => {
 
   it('does not count invalid practice answers as pedagogical mistakes', () => {
     const game = create().componentInstance; reachPractice(game);
+    game.answerPracticeVariance(1);
     game.answerPracticeSquare(99); game.answerPracticeSquare(NaN);
     expect(game.stage()).toBe('practice-square'); expect(game.practiceHelped()).toBe(false);
     game.answerPracticeSquare(1); game.choosePracticeSummary('invalid' as 'same');
     expect(game.stage()).toBe('practice-average'); expect(game.practiceHelped()).toBe(false);
     expect(game.feedback()).toBe(''); game.choosePracticeSummary('same');
     expect(game.stage()).toBe('practice-checked'); expect(game.practiceHelped()).toBe(false);
+    game.answerPracticeVariance(99); game.answerPracticeVariance(NaN); game.answerPracticeVariance(Infinity);
+    expect(game.practiceVarianceAnswered()).toBe(false); expect(game.practiceHelped()).toBe(false);
+    expect(game.feedback()).toBe('');
     game.continuePractice();
+    expect(game.stage()).toBe('practice-checked');
+    game.answerPracticeVariance(1); game.continuePractice();
     expect(game.stage()).toBe('success');
   });
 
@@ -530,6 +637,11 @@ describe('Lesson06Sag', () => {
     expect(game.stage()).toBe('practice-checked'); expect(game.records()).toBe(records);
     expect(game.round()).toBe(0); expect(game.feedback()).toBe('');
     expect(game.practiceHelped()).toBe(false); expect(done).not.toHaveBeenCalled();
+    game.continuePractice();
+    expect(game.stage()).toBe('practice-checked'); expect(game.practiceVarianceAnswered()).toBe(false);
+    game.answerPracticeVariance(1); game.answerPracticeVariance(4); game.answerPracticeVariance(0);
+    expect(game.practiceVarianceAnswered()).toBe(true); expect(game.practiceHelped()).toBe(false);
+    expect(game.feedback()).toBe('');
     game.continuePractice();
     expect(game.stage()).toBe('success'); expect(game.values()).toEqual([98, 100, 100, 102]);
     game.continuePractice(); game.continueAfterHelp(); game.choosePracticeSummary('zero');
@@ -554,7 +666,9 @@ describe('Lesson06Sag', () => {
     expect(game.stage()).toBe('practice-checked'); expect(game.records()).toBe(records);
     expect(game.round()).toBe(2); expect(game.mean()).toBe(101); expect(game.variance()).toBe(1);
     expect(game.values()).toEqual([100, 100, 102, 102]);
-    expect(root.querySelector('.mean-summary')?.textContent).toContain('Media (promedio): 101 t/h');
+    expect(root.querySelector('.mean-summary')?.textContent).toContain('Promedio: 101 t/h');
+    expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
+    game.answerPracticeVariance(1); fixture.detectChanges();
     expect(Array.from(root.querySelectorAll('.comparison-box b'), result => result.textContent))
       .toEqual(['4 ÷ 4 = 1', '8 ÷ 8 = 1']);
     expect(root.querySelector('.report-card')).toBeNull();
@@ -563,10 +677,10 @@ describe('Lesson06Sag', () => {
     expect(game.stage()).toBe('success'); expect(game.mean()).toBe(100);
     expect(game.values()).toEqual([98, 100, 100, 102]); expect(game.variance()).toBe(2);
     expect(report.textContent).toContain('98, 100, 100 y 102');
-    expect(report.textContent).toContain('Media: 100 t/h · Varianza: 2 (t/h)²');
+    expect(report.textContent).toContain('Promedio: 100 t/h · Varianza: 2 (t/h)²');
     expect(report.textContent).toContain('4 registros');
     expect(report.textContent).toContain('No explica por qué');
-    expect(report.textContent).toContain('ni determina si fue adecuada');
+    expect(report.textContent).toContain('ni dice si fue la adecuada');
     expect(report.textContent).toContain('no es una distancia de 2 t/h');
   });
 
@@ -589,7 +703,7 @@ describe('Lesson06Sag', () => {
       'Cuatro veces: pasa de 1 a 4 casillas.', 'Duplicar en una copia',
       'Comparar los resúmenes →', 'Comparar el promedio de cuadrados por registro.',
       'Comprobar con otros datos →', '1 casilla',
-      'Se mantiene igual', 'Continuar →',
+      'Se mantiene igual', '1', 'Continuar →',
       'Entregar el hallazgo →',
     ];
     for (const label of labels) { click(root, label); fixture.detectChanges(); }
@@ -605,6 +719,7 @@ describe('Lesson06Sag', () => {
     click(root, '1 casilla'); fixture.detectChanges();
     click(root, 'Se mantiene igual'); fixture.detectChanges();
     expect(game.stage()).toBe('practice-checked');
+    click(root, '1'); fixture.detectChanges();
     click(root, 'Continuar →');
     fixture.detectChanges();
     expect(root.textContent).toContain('Cuadrados y promedio trabajan juntos');
@@ -613,6 +728,7 @@ describe('Lesson06Sag', () => {
     click(root, '4 casillas'); fixture.detectChanges();
     click(root, 'Se mantiene igual'); fixture.detectChanges();
     expect(game.stage()).toBe('practice-checked');
+    click(root, '4'); fixture.detectChanges();
     click(root, 'Continuar →');
     fixture.detectChanges();
     expect(game.stage()).toBe('success');
@@ -625,6 +741,7 @@ describe('Lesson06Sag', () => {
     expect(replay.stage()).toBe('observe'); expect(replay.values()).toEqual([98, 100, 100, 102]);
     expect(replay.duplicated()).toBe(false); expect(replay.duplicateViewed()).toBe(false);
     expect(replay.squaresFormed()).toBe(false); expect(replay.practiceHelped()).toBe(false);
+    expect(replay.practiceVarianceAnswered()).toBe(false);
     expect(replay.round()).toBe(0); expect(replay.feedback()).toBe('');
     expect(replay.signed(-2)).toBe('−2'); expect(replay.signed(2)).toBe('+2'); expect(replay.signed(0)).toBe('0');
   });

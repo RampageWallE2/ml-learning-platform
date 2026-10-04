@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Lesson02Ramp } from './lesson-02-ramp';
+import { LESSON_02_RAMP } from '../data/lesson-02-ramp.data';
 
 describe('Lesson02Ramp', () => {
   function create() {
@@ -25,6 +26,11 @@ describe('Lesson02Ramp', () => {
     game.startPractice();
   }
 
+  function solveReports(game: Lesson02Ramp) {
+    game.answerPractice('unknown');
+    game.answerPractice(game.correctPracticeAnswer());
+  }
+
   it('starts with a visual example before asking about the reports', () => {
     const fixture = create();
     const root = fixture.nativeElement as HTMLElement;
@@ -46,14 +52,14 @@ describe('Lesson02Ramp', () => {
     expect(root.querySelector('.task-card')!.textContent).toContain('organizar las entregas');
     expect(root.querySelector('.task-card')!.textContent).toContain('100 toneladas');
     expect(game.reportChoices().map(choice => choice.text)).toEqual([
-      'Mantener el plan: las cargas fueron parecidas.',
-      'Cambiar el plan de B: sus cargas variaron más.',
-      'Pedir las cargas antes de decidir.',
+      'Las cargas se parecen igual en los dos turnos.',
+      'En B, las cargas son más diferentes.',
+      'Falta ver la carga de cada camión.',
     ]);
     game.assess('same');
     game.assess('b');
     expect(game.stage()).toBe('report');
-    expect(game.feedback()).toContain('Para mantener o cambiar el plan');
+    expect(game.feedback()).toContain('qué información falta antes de decidir');
     game.assess('unknown');
     fixture.detectChanges();
     expect(game.stage()).toBe('request');
@@ -175,7 +181,7 @@ describe('Lesson02Ramp', () => {
     fixture.detectChanges();
     expect(game.stage()).toBe('discovery');
     expect(fixture.nativeElement.textContent).toContain('El resumen no basta para cerrar el plan');
-    expect(fixture.nativeElement.textContent).toContain('no explican la causa');
+    expect(fixture.nativeElement.textContent).toContain('no nos dicen por qué pasó');
     game.startPractice();
     expect(game.stage()).toBe('practice');
     expect(game.step()).toBe(3);
@@ -183,23 +189,34 @@ describe('Lesson02Ramp', () => {
     expect(game.reports()).toEqual([{ id: 'C', mean: 90 }, { id: 'D', mean: 90 }]);
   });
 
-  it('labels practice as a separate request with a target that matches the current example', () => {
+  it('contrasts a summary-only report with complete loads on the same practice screen', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     const root = fixture.nativeElement as HTMLElement;
     practice(game);
     fixture.detectChanges();
-    expect(root.textContent).toContain('Ensayo: otro pedido de cargas');
-    expect(root.querySelector('.task-card')!.textContent).toContain('90 toneladas');
-    expect(root.querySelector('.task-card')!.textContent).not.toContain('100 toneladas');
-    expect(game.reportChoices()[1].text).toContain('plan de D');
-    game.answerPractice('same');
+    expect(root.textContent).toContain('Ensayo: informe con solo promedios');
+    expect(root.querySelectorAll('.report-sheet')).toHaveLength(2);
+    expect(root.querySelectorAll('.value-track, .load-record')).toHaveLength(0);
+    expect(root.querySelector('.task-card')!.textContent).toContain('Prueba 1 de 2');
+    expect(root.querySelector('.task-card')!.textContent).toContain('preparar el siguiente turno');
+    game.answerPractice('a');
     game.answerPractice('unknown');
+    fixture.detectChanges();
+    expect(game.stage()).toBe('practice');
+    expect(game.practiceCase()).toBe(1);
+    expect(root.querySelectorAll('.report-sheet')).toHaveLength(0);
+    expect(root.querySelectorAll('.value-track')).toHaveLength(2);
+    expect(root.querySelectorAll('.load-record')).toHaveLength(10);
+    expect(root.querySelector('.task-card')!.textContent).toContain('Prueba 2 de 2');
+    expect(root.querySelectorAll('.answer-choice')).toHaveLength(3);
+    game.answerPractice('b');
     game.explain('summary');
     game.continueAfterHelp();
     fixture.detectChanges();
-    expect(root.querySelector('.task-card')!.textContent).toContain('95 toneladas');
-    expect(game.reportChoices()[1].text).toContain('plan de F');
+    expect(game.reports()).toEqual([{ id: 'E', mean: 95 }, { id: 'F', mean: 95 }]);
+    expect(game.practiceChoices()[1].text).toContain('turno F');
+    expect(game.practiceCase()).toBe(0);
     expect(root.querySelector('.value-track')).toBeNull();
   });
 
@@ -207,18 +224,179 @@ describe('Lesson02Ramp', () => {
     const game = create().componentInstance;
     practice(game);
     const before = game.reports();
-    game.answerPractice('same');
+    game.answerPractice('a');
     expect(game.stage()).toBe('practice');
     expect(game.reports()).toBe(before);
     expect(game.round()).toBe(0);
     expect(game.practiceHelped()).toBe(true);
-    expect(game.feedback()).toContain('parecidas');
+    expect(game.feedback()).toContain('Solo ves los promedios');
     game.answerPractice('b');
     game.continueAfterHelp();
     expect(game.round()).toBe(0);
     game.answerPractice('unknown');
+    expect(game.stage()).toBe('practice');
+    expect(game.practiceCase()).toBe(1);
+    expect(game.reports()).toEqual(before);
+  });
+
+  it('does not reward asking for records that are already visible', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const done = vi.fn();
+    game.completed.subscribe(done);
+    practice(game);
+    game.answerPractice('unknown');
+    fixture.detectChanges();
+    const reports = game.reports();
+    const plots = game.plots();
+    expect(game.showRecords()).toBe(true);
+    expect(game.correctPracticeAnswer()).toBe('b');
+    game.answerPractice('unknown');
+    expect(game.stage()).toBe('practice');
+    expect(game.practiceCase()).toBe(1);
+    expect(game.feedback()).toContain('Aquí ya están todas las cargas');
+    expect(game.feedback()).not.toContain('turno D');
+    expect(game.practiceHelped()).toBe(true);
+    expect(game.reports()).toBe(reports);
+    expect(game.plots()).toBe(plots);
+    game.explain('summary');
+    game.continueAfterHelp();
+    game.finish();
+    expect(game.stage()).toBe('practice');
+    expect(game.round()).toBe(0);
+    expect(done).not.toHaveBeenCalled();
+    game.answerPractice('b');
+    game.explain('summary');
+    expect(game.stage()).toBe('review');
+    game.continueAfterHelp();
+    game.answerPractice('unknown');
+    expect(game.correctPracticeAnswer()).toBe('a');
+    game.answerPractice('b');
+    expect(game.stage()).toBe('practice');
+    expect(game.feedback()).not.toContain('turno E');
+    game.answerPractice('a');
+    game.explain('summary');
+    expect(game.stage()).toBe('review');
+  });
+
+  it('ignores invalid values and out-of-order calls without counting them as learning mistakes', () => {
+    const game = create().componentInstance;
+    practice(game);
+    for (const invalid of ['invalid', 'same', Number.NaN, undefined]) {
+      game.answerPractice(invalid as 'a');
+    }
+    game.explain('summary');
+    game.compare('b');
+    game.request('records');
+    game.continueAfterHelp();
+    expect(game.stage()).toBe('practice');
+    expect(game.practiceCase()).toBe(0);
+    expect(game.practiceHelped()).toBe(false);
+    expect(game.feedback()).toBe('');
+    game.answerPractice('unknown');
+    for (const invalid of ['invalid', 'same', Number.NaN, undefined]) {
+      game.answerPractice(invalid as 'a');
+    }
+    game.explain('summary');
+    game.finish();
+    expect(game.practiceCase()).toBe(1);
+    expect(game.practiceHelped()).toBe(false);
+    expect(game.feedback()).toBe('');
+    game.answerPractice('b');
+    game.answerPractice('unknown');
+    game.explain('invalid' as 'summary');
     expect(game.stage()).toBe('reason');
-    expect(game.reports()).toBe(before);
+    expect(game.practiceHelped()).toBe(false);
+    expect(game.feedback()).toBe('');
+  });
+
+  it('keeps all practice loads readable on the shared scale and allows highlighting them', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    practice(game);
+    game.selectLoad('C1');
+    expect(game.selectedLoad()).toBeNull();
+    game.answerPractice('unknown');
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    for (const plot of game.plots()) {
+      expect(plot.points).toHaveLength(5);
+      expect(plot.description).toContain('Promedio de 90 toneladas');
+      expect(plot.description).toContain('Escala de 80 a 120');
+      for (const point of plot.points) expect(point.x).toBe(game.position(point.value));
+    }
+    expect(root.querySelectorAll('.shared-axis')).toHaveLength(1);
+    root.querySelector<HTMLButtonElement>('.load-record')!.click();
+    fixture.detectChanges();
+    expect(game.selectedLoad()).toBe('C1');
+    expect(root.querySelector('.point-reading')!.textContent).toBe('88 t');
+    game.selectLoad('A1');
+    expect(game.selectedLoad()).toBe('C1');
+  });
+
+  it('focuses the current question and hints across both practice reports and the explanation', async () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    practice(game);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(root.querySelector('#ramp-task-title'));
+    for (const answer of ['a', 'b'] as const) {
+      game.answerPractice(answer);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement).toBe(root.querySelector('.feedback'));
+      expect(document.activeElement?.getAttribute('tabindex')).toBe('-1');
+    }
+    game.answerPractice('unknown');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(root.querySelector('.feedback')).toBeNull();
+    expect(document.activeElement).toBe(root.querySelector('#ramp-task-title'));
+    game.answerPractice('unknown');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(root.querySelector('.feedback'));
+    game.answerPractice('b');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.activeElement?.textContent).toContain('¿Por qué ahora sí podemos comparar?');
+    game.explain('largest');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(root.querySelector('.feedback'));
+  });
+
+  it('restores the original evidence for the recommendation instead of reporting the practice values', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    practice(game);
+    game.answerPractice('a');
+    solveReports(game);
+    game.explain('summary');
+    game.continueAfterHelp();
+    expect(game.reports().map(report => report.mean)).toEqual([95, 95]);
+    solveReports(game);
+    game.explain('summary');
+    fixture.detectChanges();
+    expect(game.stage()).toBe('success');
+    expect(game.reports()).toEqual([{ id: 'A', mean: 100 }, { id: 'B', mean: 100 }]);
+    expect(game.plots().map(plot => plot.id)).toEqual(['A', 'B']);
+    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain('Mismo promedio: 100 t');
+    expect(fixture.nativeElement.querySelector('.report-card').textContent).not.toContain('95');
+  });
+
+  it('uses simple narrative language without claiming that the loads explain their cause', () => {
+    const text = LESSON_02_RAMP.steps.flatMap(step => step.type === 'dialogue'
+      ? step.dialogue.messages.map(message => message.text)
+      : []).join(' ');
+    expect(text).toContain('cargas cercanas a 100 toneladas');
+    expect(text).toContain('Eso no explica por qué pasó');
+    expect(text).toContain('hablaré con el equipo antes de cambiar el plan');
+    expect(text).toContain('material de descarte');
+    expect(text).toContain('encargado del botadero');
+    expect(text).not.toContain('dispersión');
   });
 
   it('understands a supported example before requiring a fresh independent check', () => {
@@ -226,8 +404,8 @@ describe('Lesson02Ramp', () => {
     const done = vi.fn();
     game.completed.subscribe(done);
     practice(game);
-    game.answerPractice('same');
-    game.answerPractice('unknown');
+    game.answerPractice('a');
+    solveReports(game);
     game.explain('summary');
     expect(game.stage()).toBe('review');
     expect(game.round()).toBe(0);
@@ -239,7 +417,7 @@ describe('Lesson02Ramp', () => {
     expect(game.reports()).toEqual([{ id: 'E', mean: 95 }, { id: 'F', mean: 95 }]);
     expect(game.practiceHelped()).toBe(false);
     expect(game.feedback()).toBe('');
-    game.answerPractice('unknown');
+    solveReports(game);
     game.explain('summary');
     expect(game.stage()).toBe('success');
   });
@@ -247,23 +425,23 @@ describe('Lesson02Ramp', () => {
   it('keeps the same reports while correcting a wrong explanation', () => {
     const game = create().componentInstance;
     practice(game);
-    game.answerPractice('unknown');
+    solveReports(game);
     const before = game.reports();
     game.explain('always-same');
     expect(game.stage()).toBe('reason');
     expect(game.reports()).toBe(before);
-    expect(game.feedback()).toContain('no se parecían igual');
+    expect(game.feedback()).toContain('información nueva');
     game.explain('largest');
-    expect(game.feedback()).toContain('no solo la más grande');
+    expect(game.feedback()).toContain('Una sola carga');
     game.explain('summary');
     expect(game.stage()).toBe('review');
     game.continueAfterHelp();
-    game.answerPractice('unknown');
+    solveReports(game);
     game.explain('summary');
     expect(game.stage()).toBe('success');
   });
 
-  it('keeps repeated support checks bounded and valid without exposing individual loads', () => {
+  it('keeps support rounds bounded and requires both report formats with new valid data', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     practice(game);
@@ -274,22 +452,30 @@ describe('Lesson02Ramp', () => {
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('.value-track')).toBeNull();
       game.answerPractice('b');
-      game.answerPractice('unknown');
+      solveReports(game);
+      expect(game.showRecords()).toBe(true);
+      expect(game.practiceTurns().every(turn => turn.values.every(value => value >= 80 && value <= 120))).toBe(true);
+      expect(game.practiceTurns().map(turn => game.average(turn.values))).toEqual(game.reports().map(report => report.mean));
       game.explain('summary');
       game.continueAfterHelp();
     }
-    game.answerPractice('unknown');
+    solveReports(game);
     game.explain('summary');
     expect(game.stage()).toBe('success');
   });
 
-  it('emits once only after the independent answer and explanation', () => {
+  it('emits once only after both independent report decisions and the explanation', () => {
     const game = create().componentInstance;
     const done = vi.fn();
     game.completed.subscribe(done);
     game.finish();
     practice(game);
     game.answerPractice('unknown');
+    game.finish();
+    expect(done).not.toHaveBeenCalled();
+    game.explain('summary');
+    expect(game.stage()).toBe('practice');
+    game.answerPractice('b');
     game.finish();
     expect(done).not.toHaveBeenCalled();
     game.explain('summary');
@@ -320,24 +506,26 @@ describe('Lesson02Ramp', () => {
     primary();
     answer(2);
     answer(1);
+    answer(1);
     expect(root.querySelector('.completion-card')).not.toBeNull();
-    expect(root.querySelector('.completion-card')!.textContent).toContain('No cerrar el plan solo con promedios');
+    expect(root.querySelector('.completion-card')!.textContent).toContain('Pide solo la información que falta');
     expect(root.querySelector('.report-card')!.textContent).toContain('Mismo promedio: 100 t');
-    expect(root.querySelector('.report-card')!.textContent).toContain('antes de mantener el plan');
-    expect(root.querySelector('.report-card')!.textContent).toContain('no explican la causa');
+    expect(root.querySelector('.report-card')!.textContent).toContain('antes de decidir sobre el plan');
+    expect(root.querySelector('.report-card')!.textContent).toContain('no nos dicen por qué pasó');
     expect(root.querySelector('.lesson-actions')!.textContent).toContain('Entregar recomendación');
   });
 
   it('starts a replay at the example without previous answers, hints or redistribution', () => {
     const fixture = create();
     practice(fixture.componentInstance);
-    fixture.componentInstance.answerPractice('unknown');
+    solveReports(fixture.componentInstance);
     fixture.componentInstance.explain('summary');
     fixture.destroy();
     const game = create().componentInstance;
     expect(game.stage()).toBe('learn');
     expect(game.redistributed()).toBe(false);
     expect(game.round()).toBe(0);
+    expect(game.practiceCase()).toBe(0);
     expect(game.practiceHelped()).toBe(false);
     expect(game.selectedLoad()).toBeNull();
     expect(game.feedback()).toBe('');

@@ -11,7 +11,7 @@ type Reading = Readonly<{ id: ReadingId; deviation: number; distance: number }>;
 
 const ORIGINAL = [80, 80, 120, 120] as const;
 const PRACTICE_SETS: readonly (readonly number[])[] = [
-  [90, 100, 110], [100, 110, 120], [80, 100, 120],
+  [80, 100, 110, 110], [90, 110, 120, 120], [90, 100, 120, 90],
 ];
 const PRACTICE_ORDER = [0, 2, 1] as const;
 
@@ -42,9 +42,9 @@ export class Lesson05Crushing {
   readonly current = computed(() => this.activeIndex() === null ? null : this.values()[this.activeIndex()!]);
   readonly delta = computed(() => (this.current() ?? this.mean()) - this.mean());
   readonly step = computed(() => this.stage() === 'explore' ? 1 : ['compare', 'notation'].includes(this.stage()) ? 2 : 3);
-  readonly plotDescription = computed(() => 'Registros: ' + this.values().join(', ')
-    + ' toneladas por hora. Media ' + this.mean() + '. Cada punto representa un registro; los puntos apilados tienen el mismo valor. Escala de 80 a 120.'
-    + (this.current() === null ? '' : ' Registro seleccionado: ' + this.current() + '.'));
+  readonly plotDescription = computed(() => 'Datos: ' + this.values().join(', ')
+    + ' toneladas por hora. Promedio ' + this.mean() + '. Cada punto es un dato; los puntos uno sobre otro tienen el mismo valor. Escala de 80 a 120.'
+    + (this.current() === null ? '' : ' Dato seleccionado: ' + this.current() + '.'));
   readonly points = computed(() => this.values().map((value, index) => ({
     id: index, value, x: this.position(value),
     bottom: 32 + this.values().slice(0, index).filter(previous => previous === value).length * 22,
@@ -63,10 +63,11 @@ export class Lesson05Crushing {
   readonly readingChoices = computed<readonly Reading[]>(() => {
     const delta = this.delta();
     const distance = Math.abs(delta);
+    const otherDistance = distance === 10 ? 20 : 10;
     const candidates = [
       { deviation: delta, distance },
-      { deviation: delta === 0 ? 10 : -delta, distance },
-      { deviation: delta, distance: delta === 0 ? 10 : -distance },
+      { deviation: delta === 0 ? 10 : -delta, distance: delta === 0 ? 10 : distance },
+      { deviation: delta === 0 ? -10 : Math.sign(delta) * otherDistance, distance: otherDistance },
     ];
     const offset = (this.solvedCount() + this.round()) % candidates.length;
     return (['a', 'b', 'c'] as const).map((id, index) => ({
@@ -75,12 +76,12 @@ export class Lesson05Crushing {
   });
   readonly comparisons: readonly { id: Comparison; text: string }[] = [
     { id: 'higher-farther', text: '120 está más lejos porque es un número mayor.' },
-    { id: 'same', text: 'Ambos están a 20 de la media, en lados contrarios.' },
+    { id: 'same', text: 'Los dos están a 20 del promedio: uno debajo y otro encima.' },
     { id: 'lower-closer', text: '80 está más cerca porque es un número menor.' },
   ];
   readonly reports: readonly { id: Report; text: string }[] = [
     { id: 'constant', text: 'La alimentación se mantuvo en 100 t/h durante las cuatro horas.' },
-    { id: 'observed', text: 'El promedio fue 100 t/h: hubo dos horas 20 por debajo y dos horas 20 por encima.' },
+    { id: 'observed', text: 'El promedio fue 100 t/h. Dos horas estuvieron 20 por debajo y dos, 20 por encima.' },
     { id: 'cause', text: 'Las diferencias demuestran que el chancador falló.' },
   ];
   private readonly injector = inject(Injector);
@@ -99,14 +100,14 @@ export class Lesson05Crushing {
   answerDistance(answer: number): void {
     if (this.stage() !== 'explore' || !this.distanceOptions.includes(answer)) return;
     if (answer === Math.abs(this.delta())) this.moveTo('compare');
-    else this.hint('Mira el tramo entre ' + this.current() + ' y ' + this.mean()
-      + ': hay dos pasos de 10. La separación es 20 t/h; no es el valor completo del registro.');
+    else this.hint('Entre ' + this.current() + ' y ' + this.mean()
+      + ' hay dos pasos de 10. La separación es 20 t/h, no el valor completo del dato.');
   }
 
   compare(answer: Comparison): void {
     if (this.stage() !== 'compare' || !this.comparisons.some(choice => choice.id === answer)) return;
     if (answer === 'same') this.moveTo('notation');
-    else this.hint('De 80 a 100 hay 20, y de 100 a 120 también hay 20. Estar por debajo o por encima indica el lado, no una separación mayor o menor.');
+    else this.hint('De 80 a 100 hay 20, y de 100 a 120 también hay 20. Cambia el lado, pero la separación es la misma.');
   }
 
   startPractice(): void {
@@ -123,14 +124,15 @@ export class Lesson05Crushing {
     const delta = this.delta();
     if (choice.distance !== Math.abs(delta)) {
       this.hint(delta === 0
-        ? 'Este registro coincide con la media. No hay separación: la desviación y la distancia son 0.'
-        : 'La distancia mide cuánto separa el registro de la media. Nunca es negativa: aquí es ' + Math.abs(delta) + ' t/h.');
+        ? 'Este dato está justo en el promedio. No queda por debajo ni por encima: la desviación y la separación son 0.'
+        : 'Entre ' + this.current() + ' y el promedio de ' + this.mean() + ' hay ' + Math.abs(delta)
+          + ' t/h. Esa es la separación. Mira el tramo coloreado.');
     } else if (choice.deviation !== delta) {
       this.hint(delta === 0
-        ? 'Este registro coincide con la media. No está por debajo ni por encima: la desviación es 0.'
-        : 'El registro ' + this.current() + ' está ' + Math.abs(delta) + ' '
+        ? 'Este dato está justo en el promedio. No está por debajo ni por encima: la desviación es 0.'
+        : 'El dato ' + this.current() + ' está ' + Math.abs(delta) + ' t/h '
           + (delta < 0 ? 'por debajo' : 'por encima') + ' de ' + this.mean()
-          + '. Su desviación es ' + this.signed(delta) + ' t/h.');
+          + '. Por eso su desviación es ' + this.signed(delta) + ' t/h.');
     } else {
       this.solvedCount.update(count => count + 1);
       this.moveTo(this.solvedCount() < 3 ? 'practice' : this.practiceHelped() ? 'review' : 'report');
@@ -149,8 +151,8 @@ export class Lesson05Crushing {
     if (this.stage() !== 'report' || !this.reports.some(choice => choice.id === answer)) return;
     if (answer === 'observed') this.moveTo('success');
     else this.hint(answer === 'constant'
-      ? '100 es el promedio, no lo que ocurrió en cada hora. Los registros fueron 80, 80, 120 y 120 t/h.'
-      : 'Los registros muestran diferencias, pero no explican su causa. Necesitamos más información para saber por qué cambió la alimentación.');
+      ? '100 es el promedio, no el valor de cada hora. Los datos fueron 80, 80, 120 y 120 t/h.'
+      : 'Los datos muestran diferencias, pero no dicen por qué ocurrieron. Hace falta más información para saber si hubo una falla.');
   }
 
   private hint(message: string): void {

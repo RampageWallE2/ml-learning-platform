@@ -105,7 +105,7 @@
             <p><strong>Puntos juntos</strong><span>Cargas parecidas.</span></p>
             <p><strong>Puntos más separados</strong><span>Cargas más diferentes.</span></p>
           </div>
-          <p>La dispersión describe qué tanto se diferencian los valores de un grupo.</p>
+          <p><strong>Dispersión</strong> significa qué tan diferentes son los valores de un grupo.</p>
           <button type="button" class="btn btn--primary" (click)="startPractice()">Probar por mi cuenta →</button>
         } @else if (stage() === 'practice-reason') {
           <span class="task-kicker">Elegiste el grupo {{ selectedGroup() }}</span>
@@ -142,7 +142,7 @@
     <div class="report-card">
       <span class="task-kicker">Para el informe del siguiente turno</span>
       <h3>Las cargas del grupo B fueron más diferentes entre sí.</h3>
-      <p>El encargado añadirá esta observación al informe.</p>
+      <p>El encargado añadirá lo que encontraste al informe.</p>
     </div>
     <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Volver con el encargado →</button></div>
   }

@@ -78,6 +78,38 @@
   .shared-scale { margin-inline: 6px; }
   .load-point { width: 5px; height: 5px; bottom: 11px; border-width: .5px; }
 }
+@media (max-width: 600px), (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .workbench { grid-template-columns: 1fr; gap: 8px; }
+  .board-heading { gap: 6px; margin-bottom: 8px; small { display: block; font-size: 12px; } }
+  .example-caption, .board-note, .example-total { margin: 6px 0; font-size: 14px; line-height: 1.4; }
+  .example-loads, .report-grid { gap: 8px; }
+  .example-truck { padding: 6px 2px; strong { font-size: 20px; } img { height: 28px; margin: 4px auto; } }
+  .bar-track { height: 56px; margin: 4px auto; }
+  .example-note, .chart-key { margin-top: 8px; font-size: 14px; line-height: 1.4; }
+  .mean-explanation { padding: 10px; margin-top: 8px; }
+  .report-sheet {
+    display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 2px 6px; padding: 8px;
+    h3 { margin: 0; font-size: 14px; text-align: left; }
+    > span:not(.turn-badge), > strong, > small { grid-column: 1 / -1; }
+    > span:not(.turn-badge), > small { font-size: 12px; }
+    strong { margin-top: 0; font-size: 28px; }
+  }
+  .turn-badge { flex-basis: 24px; width: 24px; height: 24px; font-size: 12px; }
+  .shared-scale { margin-inline: 6px; }
+  .cargo-row { padding-bottom: 4px; }
+  .cargo-row + .cargo-row { padding-top: 8px; }
+  .group-heading { margin-bottom: 6px; gap: 4px; h3 { font-size: 14px; } }
+  .mean-pill { padding: 3px 6px; }
+  .record-options { gap: 4px; }
+  .load-record { min-width: 44px; min-height: 44px; }
+  .load-point { width: 6px; height: 6px; bottom: 10px; border-width: 1px; }
+  .point-reading { font-size: 12px; }
+  .shared-axis span { font-size: 12px; }
+  .axis-label { margin: 4px -6px; font-size: 12px; }
+}
+@media (min-width: 700px) and (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .workbench { grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr); gap: 10px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .cargo-bar, .btn { transition: none; }
   .btn:hover, .btn:active { transform: none; }

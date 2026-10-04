@@ -27,7 +27,7 @@ describe('Lesson09Thickeners', () => {
     expect(game.stage()).toBe('spread'); expect(game.records().goal).toBe(100);
     expect(root.querySelectorAll('.data-point')).toHaveLength(12);
     expect(root.textContent).toContain('No significa que cada registro deba ser 100');
-    expect(root.textContent).toContain('condiciones equivalentes');
+    expect(root.textContent).toContain('condiciones parecidas');
     expect(root.querySelector('input, textarea, form, select')).toBeNull();
     expect(root.querySelectorAll('button:not([type="button"])')).toHaveLength(0);
   });
@@ -53,7 +53,7 @@ describe('Lesson09Thickeners', () => {
     expect(goals[0].style.left).toBe(goals[1].style.left);
     expect(means[0].style.left).not.toBe(goals[0].style.left);
     expect(means[1].style.left).toBe(goals[1].style.left);
-    expect(game.plotDescription('A')).toContain('Media 80, meta de media 100');
+    expect(game.plotDescription('A')).toContain('Promedio 80, meta de promedio 100');
     expect(game.plotDescription('B')).toContain('varianza 4 (t/h) al cuadrado');
     expect(root.querySelectorAll('[role="img"][aria-label]')).toHaveLength(2);
   });
@@ -86,9 +86,9 @@ describe('Lesson09Thickeners', () => {
     const game = create().componentInstance;
     game.choosePeriod('A'); game.continue(); const records = game.records();
     game.choosePeriod('A'); expect(game.records()).toBe(records);
-    expect(game.feedback()).toContain('media de cada período con la línea de meta');
+    expect(game.feedback()).toContain('promedio de cada período con la línea de meta');
     expect(game.answered()).toBe(false);
-    game.choosePeriod('B'); expect(game.feedback()).toContain('media de B es 100 t/h');
+    game.choosePeriod('B'); expect(game.feedback()).toContain('promedio de B es 100 t/h');
     expect(game.feedback()).toContain('otro período quedó por debajo');
   });
 
@@ -98,40 +98,71 @@ describe('Lesson09Thickeners', () => {
     const records = game.records(); game.chooseRecommendation(answer);
     expect(game.stage()).toBe('recommend'); expect(game.records()).toBe(records);
     expect(game.answered()).toBe(false); expect(game.helped()).toBe(true);
-    expect(game.feedback()).toContain('investigar viene antes de ajustar');
-    if (answer === 'adjust') expect(game.feedback()).toContain('La meta es para la media, no para cada registro');
+    expect(game.feedback()).toContain('Primero hay que buscar las causas');
+    if (answer === 'adjust') expect(game.feedback()).toContain('La meta es para el promedio, no para cada registro');
     game.chooseRecommendation('reference');
-    expect(game.feedback()).toContain('causas y los límites de variación aceptables');
-    expect(game.feedback()).toContain('No es una garantía');
+    expect(game.feedback()).toContain('por qué hubo cambios y qué tanto pueden variar');
+    expect(game.feedback()).toContain('no asegura el resultado del próximo turno');
   });
 
   it('requires every player to complete the equal-goal transfer case before success', () => {
     const game = create().componentInstance; const done = vi.fn(); game.completed.subscribe(done);
     main(game); expect(game.stage()).toBe('transfer-intro');
     expect(game.isTransfer()).toBe(true); expect(game.periods().map(period => period.mean)).toEqual([100, 100]);
-    expect(game.periods().map(period => period.standardDeviation)).toEqual([0, 2]);
+    expect(game.periods().map(period => period.standardDeviation)).toEqual([1, 2]);
+    expect(game.periods().map(period => period.variance)).toEqual([1, 4]);
+    expect(game.periods().every(period => new Set(period.values).size > 1)).toBe(true);
     game.choosePeriod('A'); game.continue(); game.finish();
     expect(game.stage()).toBe('transfer-intro'); expect(done).not.toHaveBeenCalled();
     game.startTransfer(); game.finish(); expect(done).not.toHaveBeenCalled();
     game.choosePeriod('A'); expect(game.stage()).toBe('transfer');
-    expect(game.feedback()).toContain('criterio de este ensayo');
+    expect(game.feedback()).toContain('Para este caso elegimos A');
+    expect(game.feedback()).toContain('su desviación estándar es menor (1 t/h)');
+    expect(game.feedback()).toContain('no garantiza el siguiente turno');
     game.continue(); expect(game.stage()).toBe('success'); expect(game.helped()).toBe(false);
   });
 
   it('states the transfer criterion explicitly and keeps equal-goal data separate from original evidence', () => {
     const fixture = create(); const game = fixture.componentInstance; main(game); fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
-    expect(root.textContent).toContain('Nuevo criterio');
+    expect(root.textContent).toContain('Regla para este caso');
     expect(root.textContent).toContain('preferimos menor variación');
-    expect(root.textContent).toContain('No reemplaza la evidencia original');
+    expect(root.textContent).toContain('No reemplaza los datos originales');
+    expect(root.textContent).toContain('Ningún período tiene todos sus registros iguales');
     expect(root.querySelectorAll('.data-point')).toHaveLength(12);
     expect(game.originalPeriods[0].mean).toBe(80);
+  });
+
+  it.each([
+    { round: 0, goal: 100, spread: [1, 2], expected: 'A' },
+    { round: 1, goal: 104, spread: [2, 1], expected: 'B' },
+    { round: 2, goal: 120, spread: [1, 3], expected: 'A' },
+  ] as const)('compares two changing periods without relying on a zero spread at transfer round $round', ({ round, goal, spread, expected }) => {
+    const game = create().componentInstance;
+    for (let index = 0; index < round; index++) {
+      game.requestHint(); main(game); transfer(game); game.continueAfterHelp();
+    }
+    main(game); game.startTransfer();
+    expect(game.periods().map(period => period.mean)).toEqual([goal, goal]);
+    expect(game.periods().map(period => period.standardDeviation)).toEqual(spread);
+    expect(game.periods().every(period => period.variance > 0 && period.range > 0)).toBe(true);
+    expect(game.periods().every(period => period.values.length === 6)).toBe(true);
+    expect(game.lessSpread()).toBe(expected);
+    game.choosePeriod('same');
+    expect(game.answered()).toBe(false); expect(game.stage()).toBe('transfer');
+    expect(game.feedback()).toContain('El mismo promedio no basta');
+    game.choosePeriod(expected);
+    expect(game.answered()).toBe(true);
+    expect(game.feedback()).toContain('su desviación estándar es menor (1 t/h)');
+    expect(game.feedback()).toContain('no garantiza el siguiente turno');
+    game.continue(); expect(game.stage()).toBe('review');
   });
 
   it.each(['B', 'same'] as const)('corrects transfer choice %s without implying equal means suffice or more variation is better', answer => {
     const game = create().componentInstance; main(game); game.startTransfer(); const records = game.records();
     game.choosePeriod(answer); expect(game.records()).toBe(records);
-    expect(game.feedback()).toContain('compara sus desviaciones estándar, no solo sus medias');
+    expect(game.feedback()).toContain('Compara sus desviaciones estándar');
+    expect(game.feedback()).toContain('El mismo promedio no basta');
     expect(game.answered()).toBe(false); expect(game.helped()).toBe(true);
     game.choosePeriod('A'); game.continue(); expect(game.stage()).toBe('review');
     game.finish(); expect(game.stage()).toBe('review');
@@ -164,7 +195,10 @@ describe('Lesson09Thickeners', () => {
       }
       game.requestHint(); main(game);
       expect(game.periods().every(period => period.mean === game.records().goal)).toBe(true);
-      expect(game.periods().find(period => period.id === game.lessSpread())!.standardDeviation).toBe(0);
+      expect(game.periods().every(period => new Set(period.values).size > 1)).toBe(true);
+      expect(game.periods().find(period => period.id === game.lessSpread())!.standardDeviation).toBe(1);
+      expect(game.periods().find(period => period.id !== game.lessSpread())!.standardDeviation)
+        .toBeGreaterThan(1);
       transfer(game); game.continueAfterHelp();
     }
     expect(game.originalPeriods.map(period => period.mean)).toEqual([80, 100]);
@@ -177,8 +211,8 @@ describe('Lesson09Thickeners', () => {
     expect(game.records().goal).toBe(100); expect(game.periods().map(period => period.mean)).toEqual([80, 100]);
     expect(root.querySelector('.report-card')?.textContent).toContain('80 · 80 · 80 · 80 · 80 · 80');
     expect(root.textContent).toContain('98 · 98 · 98 · 102 · 102 · 102');
-    expect(root.textContent).toContain('A varió menos. B cumplió la meta de media');
-    expect(root.textContent).toContain('Ni menor ni mayor dispersión');
+    expect(root.textContent).toContain('A varió menos. B cumplió la meta de promedio');
+    expect(root.textContent).toContain('Variar menos o más no significa, por sí solo, trabajar mejor');
     expect(root.textContent).not.toContain('117'); expect(root.textContent).not.toContain('104');
     expect(root.querySelector('.route-report')?.textContent).toContain('conclusiones de cada zona');
     expect(root.querySelector('.route-report')?.textContent).toContain('incluyendo los ceros');

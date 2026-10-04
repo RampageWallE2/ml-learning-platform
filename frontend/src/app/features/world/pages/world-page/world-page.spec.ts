@@ -7,6 +7,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
 import { clearWorldSession, saveWorldSession } from '../../../../core/world-session/world-session.storage';
 import { gameEvents, GameEvents, type SceneLoadingSnapshot } from '../../game/events/game-events';
 import { ProgressService } from '../../progress/progress.service';
+import { ZoneProgress as ZoneProgressData } from '../../progress/progress.types';
 import { WorldPage } from './world-page';
 
 // Phaser's browser feature detection needs canvas; this suite tests the Angular
@@ -21,9 +22,11 @@ vi.mock('phaser', async () => {
 
 describe('WorldPage — circular scene loading screen', () => {
   let destroyGame: ReturnType<typeof vi.fn>;
+  let zones: ReturnType<typeof signal<ZoneProgressData[]>>;
 
   beforeEach(() => {
     clearWorldSession();
+    zones = signal<ZoneProgressData[]>([]);
     destroyGame = vi.fn();
     vi.spyOn(Phaser, 'Game').mockImplementation(function () {
       return { destroy: destroyGame, scene: { getScenes: () => [] } } as unknown as Phaser.Game;
@@ -33,7 +36,7 @@ describe('WorldPage — circular scene loading screen', () => {
         provideRouter([]),
         { provide: AuthService, useValue: { user: signal(null) } },
         { provide: ProgressService, useValue: {
-          zoneProgress: signal([]), currentLesson: signal(null),
+          zoneProgress: zones, currentLesson: signal(null),
           loadProgress: vi.fn(() => of(undefined)),
         } },
       ],
@@ -119,5 +122,103 @@ describe('WorldPage — circular scene loading screen', () => {
     fixture.destroy();
     expect(gameEvents.listenerCount(GameEvents.SCENE_LOADING)).toBe(baseline);
     expect(destroyGame).toHaveBeenCalledWith(true);
+  });
+
+  it('places the objective before the account and keeps the HUB instruction static', () => {
+    const fixture = create(); const root: HTMLElement = fixture.nativeElement;
+    report('HubScene', 'ready', 1); fixture.detectChanges();
+    const hud = root.querySelector('.world-hud')!;
+    expect(hud.firstElementChild?.classList.contains('world-hud__progress')).toBe(true);
+    expect(hud.lastElementChild?.classList.contains('world-hud__account')).toBe(true);
+    expect(hud.querySelector('h2')?.textContent).toContain('Elige un ámbito');
+    expect(hud.querySelector('.progress-toggle')).toBeNull();
+  });
+
+  it('uses the existing progression to show the next class after a scene change', () => {
+    zones.set([{
+      id: 'zone-01', name: 'Open Pit', topic: 'Dispersión',
+      completedLessons: 2, totalLessons: 3, percentage: 2 / 3 * 100, completed: false,
+      lessons: [
+        { lessonId: 'c1', name: 'Carguío', objective: 'Ve al tajo.', status: 'completed' },
+        { lessonId: 'c2', name: 'Turnos', objective: 'Ve a la rampa.', status: 'completed' },
+        { lessonId: 'c3', name: 'Botadero', objective: 'Ve al botadero y habla con su encargado.', status: 'current' },
+      ],
+    }]);
+    const fixture = create(); const root: HTMLElement = fixture.nativeElement;
+    gameEvents.emit(GameEvents.SCENE_CHANGED, 'OpenPitScene');
+    report('OpenPitScene', 'ready', 1); fixture.detectChanges();
+    expect(root.querySelector('.objective-label')?.textContent).toContain('C3');
+    expect(root.querySelector('.current-objective h2')?.textContent).toBe('Ve al botadero y habla con su encargado.');
+    expect(root.querySelector('.progress-counter')?.textContent).toContain('2 de 3 clases completadas');
+    expect(root.querySelector('.world-hud')?.hasAttribute('inert')).toBe(false);
+  });
+
+  it('hides and disables the background HUD during lessons and dialogues', () => {
+    const fixture = create(); const root: HTMLElement = fixture.nativeElement;
+    report('HubScene', 'ready', 1); fixture.detectChanges();
+    const hud = root.querySelector('.world-hud')!;
+    fixture.componentInstance.lessonActive.set({ lessonId: 'lesson-01' }); fixture.detectChanges();
+    expect(hud.hasAttribute('inert')).toBe(true);
+    expect(hud.getAttribute('aria-hidden')).toBe('true');
+    fixture.componentInstance.lessonActive.set(null);
+    fixture.componentInstance.activeDialogue.set({ id: 'test', messages: [] }); fixture.detectChanges();
+    expect(hud.hasAttribute('inert')).toBe(true);
+    fixture.componentInstance.activeDialogue.set(null); fixture.detectChanges();
+    expect(hud.hasAttribute('inert')).toBe(false);
+    expect(hud.hasAttribute('aria-hidden')).toBe(false);
+  });
+
+  it('keeps the existing saving and retry notices', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    page.savingLesson.set(true); fixture.detectChanges();
+    expect(root.querySelector('.progress-sync-toast')?.textContent).toContain('Guardando progreso');
+    page.savingLesson.set(false);
+    page.progressSyncError.set('No se pudo guardar tu progreso.'); fixture.detectChanges();
+    const retry = vi.spyOn(page, 'retryProgressSync').mockImplementation(() => undefined);
+    root.querySelector<HTMLButtonElement>('.progress-sync-toast button')!.click();
+    expect(retry).toHaveBeenCalledOnce();
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('role')).toBe('alert');
+  });
+
+  it('keeps the notices together outside the objective panel', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    page.blockedLessonMessage.set('Completa primero la clase siguiente.');
+    page.progressSyncError.set('No se pudo sincronizar.'); fixture.detectChanges();
+    const notices = root.querySelector('.world-notices')!;
+    expect(notices.querySelector('.lesson-locked-toast')).not.toBeNull();
+    expect(notices.querySelector('.progress-sync-toast')).not.toBeNull();
+    expect(root.querySelector('.world-hud')?.contains(notices)).toBe(false);
+  });
+
+  it('allows native HUD keyboard actions without sending them to Phaser', () => {
+    const fixture = create(); const root: HTMLElement = fixture.nativeElement;
+    report('HubScene', 'ready', 1); fixture.detectChanges();
+    const hud = root.querySelector('.world-hud')!;
+    const observer = vi.fn();
+    document.addEventListener('keydown', observer);
+    try {
+      for (const key of ['ArrowDown', ' ', 'e']) {
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        hud.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+      }
+      expect(observer).not.toHaveBeenCalled();
+      hud.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(observer).toHaveBeenCalledOnce();
+    } finally {
+      document.removeEventListener('keydown', observer);
+    }
+    const releases = vi.fn();
+    document.addEventListener('keyup', releases);
+    try {
+      hud.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true }));
+      expect(releases).toHaveBeenCalledOnce();
+      hud.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+      expect(releases).toHaveBeenCalledOnce();
+    } finally {
+      document.removeEventListener('keyup', releases);
+    }
   });
 });
