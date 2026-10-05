@@ -1,20 +1,13 @@
 <div class="progress-page">
   <app-site-header />
 
-  <main>
+  <main id="contenido" aria-labelledby="progress-title">
     <a class="back" routerLink="/">← Volver al inicio</a>
 
-    <div class="heading">
-      <div>
-        <p class="eyebrow">TU RECORRIDO</p>
-        <h1>Progreso de aprendizaje</h1>
-        <p>Revisa lo que completaste y descubre cuál es tu siguiente paso.</p>
-      </div>
-
-      <a class="world-link" routerLink="/world">
-        Continuar en el mundo <span aria-hidden="true">↗</span>
-      </a>
-    </div>
+    <header class="heading">
+      <h1 id="progress-title">Mi progreso</h1>
+      <p>Tus clases completadas y el siguiente objetivo.</p>
+    </header>
 
     @if (loading()) {
       <section class="state-card" role="status">
@@ -30,10 +23,10 @@
           <strong>No se pudo cargar el progreso</strong>
           <p>{{ message }}</p>
         </div>
-        <button type="button" (click)="retry()">Reintentar</button>
+        <button class="btn btn--secondary" type="button" (click)="retry()">Reintentar</button>
       </section>
     } @else if (openPit(); as zone) {
-      <section class="zone-card" aria-labelledby="open-pit-title">
+      <section class="zone-overview" aria-labelledby="open-pit-title">
         <div class="zone-summary">
           <div>
             <p class="eyebrow">OPEN PIT</p>
@@ -54,20 +47,47 @@
         >
           <span [style.width.%]="zone.percentage"></span>
         </div>
+      </section>
 
-        <div class="lesson-list">
+      @if (nextLesson(); as lesson) {
+        <section class="next-step" aria-labelledby="next-step-title">
+          <div>
+            <p class="eyebrow">SIGUIENTE OBJETIVO</p>
+            <h2 id="next-step-title">{{ lesson.name }}</h2>
+            <p>{{ lesson.objective }}</p>
+          </div>
+
+          <a class="btn btn--primary world-link" routerLink="/world">
+            Continuar en el mundo <span aria-hidden="true">→</span>
+          </a>
+        </section>
+      } @else {
+        <section class="next-step next-step--completed" aria-labelledby="next-step-title">
+          <div>
+            <p class="eyebrow">OPEN PIT COMPLETADO</p>
+            <h2 id="next-step-title">Terminaste las clases de esta zona.</h2>
+            <p>Puedes volver al mundo para seguir explorando.</p>
+          </div>
+
+          <a class="btn btn--primary world-link" routerLink="/world">
+            Volver al mundo <span aria-hidden="true">→</span>
+          </a>
+        </section>
+      }
+
+      <section class="lesson-route" aria-labelledby="lesson-route-title">
+        <h2 id="lesson-route-title">Clases de Open Pit</h2>
+
+        <ol class="lesson-list">
           @for (lesson of zone.lessons; track lesson.lessonId; let position = $index) {
-            <article
+            <li
               class="lesson"
               [class.lesson--completed]="lesson.status === 'completed'"
               [class.lesson--current]="lesson.status === 'current'"
+              [attr.aria-current]="lesson.status === 'current' ? 'step' : null"
             >
-              <span class="lesson-number">{{ position + 1 }}</span>
-
-              <div>
-                <span class="lesson-label">Clase {{ position + 1 }}</span>
-                <h3>{{ lesson.name }}</h3>
-              </div>
+              <span class="lesson-number" aria-hidden="true">{{ position + 1 }}</span>
+              <h3>{{ lesson.name }}</h3>
 
               <span class="lesson-status">
                 @switch (lesson.status) {
@@ -82,36 +102,10 @@
                   }
                 }
               </span>
-            </article>
+            </li>
           }
-        </div>
+        </ol>
       </section>
-
-      @if (nextLesson(); as lesson) {
-        <section class="next-step">
-          <div>
-            <p class="eyebrow">SIGUIENTE OBJETIVO</p>
-            <h2>{{ lesson.name }}</h2>
-            <p>{{ lesson.objective }}</p>
-          </div>
-
-          <a class="world-link" routerLink="/world">
-            Ir a la clase <span aria-hidden="true">→</span>
-          </a>
-        </section>
-      } @else {
-        <section class="next-step next-step--completed">
-          <div>
-            <p class="eyebrow">OPEN PIT COMPLETADO</p>
-            <h2>Completaste el recorrido disponible.</h2>
-            <p>Ya terminaste todas las clases disponibles de esta zona.</p>
-          </div>
-
-          <a class="world-link" routerLink="/world">
-            Volver al mundo <span aria-hidden="true">→</span>
-          </a>
-        </section>
-      }
     }
   </main>
 </div>

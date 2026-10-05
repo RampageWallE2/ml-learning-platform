@@ -1,119 +1,246 @@
-<section class="lesson crushing-lesson intuitive-crushing" aria-labelledby="crushing-title">
+<section class="lesson intuitive-crushing" aria-labelledby="crushing-title">
   <header class="lesson-header">
-    <span class="lesson-tag">Clase 5 · ROM / chancado</span>
+    <span class="lesson-tag"><span class="lesson-tag__number">Clase 5</span> · ROM / chancado</span>
     <h2 id="crushing-title">¿Cuánto se aleja cada dato?</h2>
     <p>Misión: completar el aviso de alimentación para el siguiente turno.</p>
   </header>
 
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
     @for (label of ['Explora', 'Entiende', 'Prepara']; track label; let index = $index) {
-      <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'" [attr.aria-current]="step() === index + 1 ? 'step' : null">
-        <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
+      <li
+        [class.step--active]="step() === index + 1"
+        [class.step--done]="step() > index + 1 || stage() === 'success'"
+        [attr.aria-current]="step() === index + 1 ? 'step' : null"
+      >
+        <span aria-hidden="true">{{
+          step() > index + 1 || stage() === 'success' ? '✓' : index + 1
+        }}</span
+        >{{ label }}
       </li>
     }
   </ol>
 
   @if (stage() !== 'success') {
     <div class="workbench">
-      <div class="feed-board">
-        <div class="board-heading"><strong>{{ practicing() ? 'Práctica: otros datos' : 'Datos de cuatro horas' }}</strong><small>Datos de ejemplo</small></div>
-        <div class="mean-summary"><strong>Promedio: {{ mean() }} t/h</strong><span>Resume estos datos; no es una meta de producción.</span></div>
+      <div class="feed-board" role="region" aria-labelledby="crushing-evidence-title">
+        <div class="board-heading">
+          <strong id="crushing-evidence-title">{{
+            practicing() ? 'Práctica: otros datos' : 'Datos de cuatro horas'
+          }}</strong
+          ><small>Datos de ejemplo</small>
+        </div>
+        <div class="mean-summary">
+          <strong>Promedio: {{ mean() }} t/h</strong
+          ><span>Resume estos datos; no es una meta de producción.</span>
+        </div>
         <div class="shared-scale">
           <div class="value-track" role="img" [attr.aria-label]="plotDescription()">
-            @for (tick of ticks; track tick) { <span class="grid-line" [style.left.%]="position(tick)" aria-hidden="true"></span> }
+            @for (tick of ticks; track tick) {
+              <span class="grid-line" [style.left.%]="position(tick)" aria-hidden="true"></span>
+            }
             <span class="track-line" aria-hidden="true"></span>
             <span class="mean-line" [style.left.%]="position(mean())" aria-hidden="true"></span>
-            <span class="mean-label" [style.left.%]="position(mean())" aria-hidden="true">Promedio {{ mean() }}</span>
+            <span class="mean-label" [style.left.%]="position(mean())" aria-hidden="true"
+              >Promedio {{ mean() }}</span
+            >
             @for (segment of segments(); track segment.value) {
               @if (!segment.zero) {
-                <span class="distance-segment" [class.segment--above]="segment.above"
-                  [style.left.%]="segment.left" [style.width.%]="segment.width" aria-hidden="true">
-                  @if (segment.label) { <span>{{ segment.label }}</span> }
+                <span
+                  class="distance-segment"
+                  [class.segment--above]="segment.above"
+                  [style.left.%]="segment.left"
+                  [style.width.%]="segment.width"
+                  aria-hidden="true"
+                >
+                  @if (segment.label) {
+                    <span>{{ segment.label }}</span>
+                  }
                 </span>
               }
             }
             @for (point of points(); track point.id) {
-              <span class="data-point" [class.point--active]="point.active" [style.left.%]="point.x" [style.bottom.px]="point.bottom" aria-hidden="true"></span>
+              <span
+                class="data-point"
+                [class.point--active]="point.active"
+                [style.left.%]="point.x"
+                [style.bottom.px]="point.bottom"
+                aria-hidden="true"
+              ></span>
             }
             <div class="shared-axis" aria-hidden="true">
-              @for (tick of ticks; track tick) { <span [style.left.%]="position(tick)">{{ tick }}</span> }
+              @for (tick of ticks; track tick) {
+                <span [style.left.%]="position(tick)">{{ tick }}</span>
+              }
             </div>
           </div>
           <p class="axis-label">t/h = toneladas por hora</p>
         </div>
-        <p class="chart-key">Cada punto es una hora. Los puntos uno sobre otro tienen el mismo valor. La línea marca el promedio.</p>
-        <div class="record-cards" [attr.aria-label]="practicing() ? 'Datos de la práctica' : 'Datos originales'">
+        @if (stage() === 'explore') {
+          <p class="selection-note" id="crushing-selection-note">
+            Elige una hora. El tramo coloreado muestra cuánto se aleja del promedio.
+          </p>
+        }
+        <div
+          class="record-cards"
+          role="group"
+          [attr.aria-label]="practicing() ? 'Datos de la práctica' : 'Datos originales'"
+        >
           @for (value of values(); track $index; let index = $index) {
             @if (stage() === 'explore') {
-              <button type="button" class="record-card" [attr.aria-pressed]="selected() === index" [attr.aria-label]="'Hora ' + (index + 1) + ': ' + value + ' toneladas por hora'" (click)="select(index)">
-                <small>Hora {{ index + 1 }}</small><strong>{{ value }} t/h</strong>
+              <button
+                type="button"
+                class="btn btn--answer record-card"
+                aria-describedby="crushing-selection-note"
+                [attr.aria-pressed]="selected() === index"
+                [attr.aria-label]="'Hora ' + (index + 1) + ': ' + value + ' toneladas por hora'"
+                (click)="select(index)"
+              >
+                <small>Hora {{ index + 1 }}</small
+                ><strong>{{ value }} t/h</strong>
               </button>
             } @else {
               <div class="record-card" [class.record--active]="activeIndex() === index">
-                <small>{{ practicing() ? 'Dato' : 'Hora' }} {{ index + 1 }}</small><strong>{{ value }} t/h</strong>
+                <small>{{ practicing() ? 'Dato' : 'Hora' }} {{ index + 1 }}</small
+                ><strong>{{ value }} t/h</strong>
               </div>
             }
           }
         </div>
-        @if (stage() === 'explore') { <p class="selection-note">Elige una hora. El tramo coloreado muestra cuánto se aleja del promedio.</p> }
+        <p class="chart-key">
+          Cada punto es una hora. Los puntos uno sobre otro tienen el mismo valor. La línea marca el
+          promedio.
+        </p>
         @if (stage() === 'compare' || stage() === 'notation') {
-          <div class="word-pair"><div><strong>80 t/h</strong><span>← 20 por debajo</span></div><div><strong>120 t/h</strong><span>20 por encima →</span></div></div>
+          <div class="word-pair">
+            <div><strong>80 t/h</strong><span>← 20 por debajo</span></div>
+            <div><strong>120 t/h</strong><span>20 por encima →</span></div>
+          </div>
         }
       </div>
 
       <aside class="task-card" aria-labelledby="crushing-task-title">
         @if (stage() === 'explore') {
           <span class="task-kicker">Mira una hora de cerca</span>
-          <h3 id="crushing-task-title" #taskHeading tabindex="-1">{{ delta() < 0 ? '¿Cuánto le falta a ' + current() + ' para llegar a ' + mean() + '?' : '¿Cuánto supera ' + current() + ' a ' + mean() + '?' }}</h3>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">
+            {{
+              delta() < 0
+                ? '¿Cuánto le falta a ' + current() + ' para llegar a ' + mean() + '?'
+                : '¿Cuánto supera ' + current() + ' a ' + mean() + '?'
+            }}
+          </h3>
           <p>Mira el tramo coloreado. Cada paso de la escala vale 10 t/h.</p>
-          <div class="choices">
-            @for (option of distanceOptions; track option) { <button type="button" class="btn answer-choice" (click)="answerDistance(option)">{{ option }} t/h</button> }
+          <div class="choices choices--distance">
+            @for (option of distanceOptions; track option) {
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="answerDistance(option)"
+              >
+                {{ option }} t/h
+              </button>
+            }
           </div>
         } @else if (stage() === 'compare') {
           <span class="task-kicker">El lado puede cambiar</span>
           <h3 id="crushing-task-title" #taskHeading tabindex="-1">¿Cuál está más lejos de 100?</h3>
           <p>Mira los tramos de 80 a 100 y de 100 a 120.</p>
           <div class="choices">
-            @for (choice of comparisons; track choice.id) { <button type="button" class="btn answer-choice" (click)="compare(choice.id)">{{ choice.text }}</button> }
+            @for (choice of comparisons; track choice.id) {
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="compare(choice.id)"
+              >
+                {{ choice.text }}
+              </button>
+            }
           </div>
         } @else if (stage() === 'notation') {
           <span class="task-kicker">Una idea, dos signos</span>
           <h3 id="crushing-task-title" #taskHeading tabindex="-1">El signo muestra el lado</h3>
-          <p>La <strong>desviación</strong> dice cuánto está el dato por debajo o por encima del promedio.</p>
+          <p>
+            La <strong>desviación</strong> dice cuánto está el dato por debajo o por encima del
+            promedio.
+          </p>
           <div class="notation-cards">
-            <div><strong>80 está 20 por debajo</strong><span>Desviación: <b>−20 t/h</b></span><span>Separación: <b>20 t/h</b></span></div>
-            <div><strong>120 está 20 por encima</strong><span>Desviación: <b>+20 t/h</b></span><span>Separación: <b>20 t/h</b></span></div>
+            <div>
+              <strong>80 está 20 por debajo</strong><span>Desviación: <b>−20 t/h</b></span
+              ><span>Separación: <b>20 t/h</b></span>
+            </div>
+            <div>
+              <strong>120 está 20 por encima</strong><span>Desviación: <b>+20 t/h</b></span
+              ><span>Separación: <b>20 t/h</b></span>
+            </div>
           </div>
-          <p class="plain-rule">Desviación = dato − promedio. La separación no lleva signo negativo.</p>
-          <button type="button" class="btn btn--primary" (click)="startPractice()">Probar con otros datos →</button>
+          <p class="plain-rule">
+            Desviación = dato − promedio. La separación no lleva signo negativo.
+          </p>
+          <button type="button" class="btn btn--primary" (click)="startPractice()">
+            Probar con otros datos →
+          </button>
         } @else if (stage() === 'practice') {
-          <span class="task-kicker">Práctica {{ solvedCount() + 1 }} de 3{{ round() > 0 ? ' · otros números' : '' }}</span>
-          <h3 id="crushing-task-title" #taskHeading tabindex="-1">¿Cómo describirías {{ current() }} t/h?</h3>
-          <p>Compáralo con el promedio de <strong>{{ mean() }} t/h</strong>. Elige su lado y su separación.</p>
+          <span class="task-kicker"
+            >Práctica {{ solvedCount() + 1 }} de 3{{ round() > 0 ? ' · otros números' : '' }}</span
+          >
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">
+            ¿Cómo describirías {{ current() }} t/h?
+          </h3>
+          <p>
+            Compáralo con el promedio de <strong>{{ mean() }} t/h</strong>. Elige su lado y su
+            separación.
+          </p>
           <div class="choices" role="group" aria-label="Desviación y separación del dato">
             @for (choice of readingChoices(); track choice.id) {
-              <button type="button" class="btn answer-choice reading-choice" (click)="chooseReading(choice.id)">
-                <span>Desviación: <strong>{{ signed(choice.deviation) }} t/h</strong></span>
-                <span>Separación: <strong>{{ choice.distance }} t/h</strong></span>
+              <button
+                type="button"
+                class="btn btn--answer answer-choice reading-choice"
+                (click)="chooseReading(choice.id)"
+              >
+                <span
+                  >Desviación: <strong>{{ signed(choice.deviation) }} t/h</strong></span
+                >
+                <span
+                  >Separación: <strong>{{ choice.distance }} t/h</strong></span
+                >
               </button>
             }
           </div>
         } @else if (stage() === 'review') {
           <span class="task-kicker">Ya lo tienes</span>
           <h3 id="crushing-task-title" #taskHeading tabindex="-1">Un lado y una separación</h3>
-          <p>Por debajo usamos −; por encima, +. Si el dato está justo en el promedio, la desviación y la separación son 0.</p>
+          <p>
+            Por debajo usamos −; por encima, +. Si el dato está justo en el promedio, la desviación
+            y la separación son 0.
+          </p>
           <p>Compruébalo con otros números, sin la pista.</p>
-          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otros datos →</button>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
+            Probar otros datos →
+          </button>
         } @else if (stage() === 'report') {
           <span class="task-kicker">Volvemos a las cuatro horas originales</span>
-          <h3 id="crushing-task-title" #taskHeading tabindex="-1">¿Qué aviso entregarías al relevo?</h3>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">
+            ¿Qué aviso entregarías al relevo?
+          </h3>
           <p>Cuenta lo que muestran los datos. No sabemos por qué cambió la alimentación.</p>
           <div class="choices">
-            @for (report of reports; track report.id) { <button type="button" class="btn answer-choice" (click)="chooseReport(report.id)">{{ report.text }}</button> }
+            @for (report of reports; track report.id) {
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="chooseReport(report.id)"
+              >
+                {{ report.text }}
+              </button>
+            }
           </div>
         }
-        <div aria-live="polite" aria-atomic="true">
-          @if (feedback()) { <div class="feedback feedback--hint"><strong>Una pista</strong><p>{{ feedback() }}</p></div> }
+        <div class="feedback-region" aria-live="polite" aria-atomic="true">
+          @if (feedback()) {
+            <div class="feedback feedback--hint">
+              <strong>Una pista</strong>
+              <p>{{ feedback() }}</p>
+            </div>
+          }
         </div>
       </aside>
     </div>
@@ -126,10 +253,18 @@
     <div class="report-card">
       <span class="task-kicker">Alimentación de las cuatro horas revisadas</span>
       <h3>Promedio: 100 t/h · Datos: 80, 80, 120 y 120 t/h</h3>
-      <p>Hubo dos horas <strong>20 t/h por debajo</strong> y dos horas <strong>20 t/h por encima</strong> del promedio.</p>
+      <p>
+        Hubo dos horas <strong>20 t/h por debajo</strong> y dos horas
+        <strong>20 t/h por encima</strong> del promedio.
+      </p>
       <p>Desviaciones: −20, −20, +20 y +20 t/h. Las cuatro separaciones son 20 t/h.</p>
-      <p>Los datos no dicen por qué cambió la alimentación ni si cumple una meta. El promedio es un resumen, no una meta.</p>
+      <p>
+        Los datos no dicen por qué cambió la alimentación ni si cumple una meta. El promedio es un
+        resumen, no una meta.
+      </p>
     </div>
-    <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar el aviso →</button></div>
+    <div class="lesson-actions">
+      <button type="button" class="btn btn--primary" (click)="finish()">Entregar el aviso →</button>
+    </div>
   }
 </section>

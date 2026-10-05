@@ -102,6 +102,97 @@ describe('Login', () => {
     expect(renderButton).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    { mode: 'login', title: 'Iniciar sesión' },
+    { mode: 'register', title: 'Crear cuenta' },
+  ])('shows a clear title and shared primary action for $mode', ({ mode, title }) => {
+    TestBed.inject(ActivatedRoute).snapshot.data = { mode };
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const submit = root.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+
+    expect(root.querySelector('#auth-title')?.textContent?.trim()).toBe(title);
+    expect(root.querySelector('.auth-card')?.getAttribute('aria-labelledby')).toBe('auth-title');
+    expect(submit.classList.contains('btn')).toBe(true);
+    expect(submit.classList.contains('btn--primary')).toBe(true);
+  });
+
+  it('shows and hides the login password through its labelled control', () => {
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const password = root.querySelector<HTMLInputElement>('#login-password')!;
+    const toggle = root.querySelector<HTMLButtonElement>('button[aria-controls="login-password"]')!;
+
+    expect(password.type).toBe('password');
+    expect(toggle.getAttribute('aria-label')).toBe('Mostrar contraseña');
+    toggle.click();
+    fixture.detectChanges();
+    expect(password.type).toBe('text');
+    expect(toggle.getAttribute('aria-label')).toBe('Ocultar contraseña');
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    toggle.click();
+    fixture.detectChanges();
+    expect(password.type).toBe('password');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(auth.loginWithEmail).not.toHaveBeenCalled();
+  });
+
+  it('keeps the visibility control connected to both registration passwords', () => {
+    TestBed.inject(ActivatedRoute).snapshot.data = { mode: 'register' };
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const toggle = root.querySelector<HTMLButtonElement>(
+      'button[aria-controls="register-password register-confirm-password"]',
+    )!;
+    const passwords = [
+      root.querySelector<HTMLInputElement>('#register-password')!,
+      root.querySelector<HTMLInputElement>('#register-confirm-password')!,
+    ];
+
+    expect(toggle.getAttribute('aria-label')).toBe('Mostrar contraseñas');
+    toggle.click();
+    fixture.detectChanges();
+    expect(passwords.every((input) => input.type === 'text')).toBe(true);
+    expect(toggle.getAttribute('aria-label')).toBe('Ocultar contraseñas');
+    toggle.click();
+    fixture.detectChanges();
+    expect(passwords.every((input) => input.type === 'password')).toBe(true);
+    expect(auth.register).not.toHaveBeenCalled();
+  });
+
+  it('still displays field errors without sending an empty login form', () => {
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    root
+      .querySelector('form')!
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(root.querySelector('#login-email')?.getAttribute('aria-invalid')).toBe('true');
+    expect(root.querySelector('#login-email-error')?.textContent).toContain('Ingresa un correo');
+    expect(root.querySelector('#login-password-error')?.textContent).toContain(
+      'Ingresa tu contraseña',
+    );
+    expect(auth.loginWithEmail).not.toHaveBeenCalled();
+  });
+
+  it('preserves the pending state and disabled controls', () => {
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    fixture.componentInstance.submittingCredentials.set(true);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('.auth-card')?.getAttribute('aria-busy')).toBe('true');
+    expect(root.querySelector<HTMLFieldSetElement>('fieldset')?.disabled).toBe(true);
+    expect(root.querySelector('button[type="submit"]')?.textContent).toContain('Ingresando…');
+  });
+
   it('loads Google Identity only when the authentication page needs it', () => {
     delete window.google;
     const fixture = TestBed.createComponent(Login);

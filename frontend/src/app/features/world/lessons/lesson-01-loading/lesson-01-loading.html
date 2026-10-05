@@ -1,14 +1,23 @@
-<section class="lesson loading-lesson intuitive-loading" aria-labelledby="loading-title">
+<section class="lesson intuitive-loading" aria-labelledby="loading-title">
   <header class="lesson-header">
-    <span class="lesson-tag">Clase 1 · Interior del tajo</span>
+    <span class="lesson-tag"
+      ><span class="lesson-tag__number">Clase 1</span> · Interior del tajo</span
+    >
     <h2 id="loading-title">¿Cargas parecidas o diferentes?</h2>
     <p>Ayuda al encargado a revisar las cargas del turno.</p>
   </header>
 
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
     @for (label of ['Mira', 'Compara', 'Prueba']; track label; let index = $index) {
-      <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'" [attr.aria-current]="step() === index + 1 ? 'step' : null">
-        <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
+      <li
+        [class.step--active]="step() === index + 1"
+        [class.step--done]="step() > index + 1 || stage() === 'success'"
+        [attr.aria-current]="step() === index + 1 ? 'step' : null"
+      >
+        <span aria-hidden="true">{{
+          step() > index + 1 || stage() === 'success' ? '✓' : index + 1
+        }}</span
+        >{{ label }}
       </li>
     }
   </ol>
@@ -24,8 +33,14 @@
         @if (stage() === 'learn') {
           <div class="tutorial-trucks" role="group" aria-label="Selecciona un camión del ejemplo">
             @for (point of plots()[0].points; track point.id) {
-              <button type="button" class="tutorial-truck" [attr.aria-pressed]="selectedLoad() === point.id" [attr.aria-label]="point.label + ', ' + point.tonnes + ' toneladas'" (click)="selectLoad(point.id)">
-                <img src="assets/game/tilesets/vehicles/dump_truck_2.png" alt="">
+              <button
+                type="button"
+                class="tutorial-truck"
+                [attr.aria-pressed]="selectedLoad() === point.id"
+                [attr.aria-label]="point.label + ', ' + point.tonnes + ' toneladas'"
+                (click)="selectLoad(point.id)"
+              >
+                <img src="assets/game/tilesets/vehicles/dump_truck_2.png" alt="" />
                 <span>{{ point.label }}</span>
                 <strong>{{ point.tonnes }} <small>t</small></strong>
               </button>
@@ -38,10 +53,27 @@
             <section class="cargo-row" [class.cargo-row--second]="second">
               @if (stage() !== 'learn') {
                 <div class="group-heading">
-                  <h3><span class="group-badge" aria-hidden="true">{{ plot.name }}</span>Grupo {{ plot.name }}</h3>
-                  <div class="record-options" role="group" [attr.aria-label]="'Camiones del grupo ' + plot.name">
+                  <h3>
+                    <span class="group-badge" aria-hidden="true">{{ plot.name }}</span
+                    >Grupo {{ plot.name }}
+                  </h3>
+                  <div
+                    class="record-options"
+                    role="group"
+                    [attr.aria-label]="'Camiones del grupo ' + plot.name"
+                  >
                     @for (point of plot.points; track point.id) {
-                      <button type="button" class="load-record" [attr.aria-label]="point.label + ', ' + point.tonnes + ' toneladas. Destacar su punto.'" [attr.aria-pressed]="selectedLoad() === point.id" (click)="selectLoad(point.id)">{{ point.tonnes }} t</button>
+                      <button
+                        type="button"
+                        class="load-record"
+                        [attr.aria-label]="
+                          point.label + ', ' + point.tonnes + ' toneladas. Destacar su punto.'
+                        "
+                        [attr.aria-pressed]="selectedLoad() === point.id"
+                        (click)="selectLoad(point.id)"
+                      >
+                        {{ point.tonnes }} t
+                      </button>
                     }
                   </div>
                 </div>
@@ -52,10 +84,16 @@
                 }
                 <span class="track-line"></span>
                 @for (point of plot.points; track point.id) {
-                  <span class="load-point" [class.point--selected]="selectedLoad() === point.id" [style.left.%]="point.x"></span>
+                  <span
+                    class="load-point"
+                    [class.point--selected]="selectedLoad() === point.id"
+                    [style.left.%]="point.x"
+                  ></span>
                   @if (selectedLoad() === point.id) {
                     <span class="point-guide" [style.left.%]="point.x"></span>
-                    <span class="point-reading" [style.--point-position]="point.x + '%'">{{ point.tonnes }} t</span>
+                    <span class="point-reading" [style.--point-position]="point.x + '%'"
+                      >{{ point.tonnes }} t</span
+                    >
                   }
                 }
               </div>
@@ -67,7 +105,9 @@
             }
           </div>
           <p class="axis-label">Carga en toneladas <span>· t = toneladas</span></p>
-          <div class="axis-direction" aria-hidden="true"><span>Menos carga</span><span>Más carga →</span></div>
+          <div class="axis-direction" aria-hidden="true">
+            <span>Menos carga</span><span>Más carga →</span>
+          </div>
         </div>
         <p class="chart-key">Cada punto es la carga de un camión.</p>
       </div>
@@ -86,14 +126,40 @@
               <span>Elige uno de los tres camiones.</span>
             }
           </div>
-          <p class="reading-tip">Más a la derecha significa más toneladas. La línea muestra cuánto llevó, no dónde está el camión.</p>
-          <button type="button" class="btn btn--primary" [disabled]="!selectedPoint()" (click)="startComparison()">Comparar dos grupos →</button>
+          <p class="reading-tip">
+            Más a la derecha significa más toneladas. La línea muestra cuánto llevó, no dónde está
+            el camión.
+          </p>
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="!selectedPoint()"
+            (click)="startComparison()"
+          >
+            Comparar dos grupos →
+          </button>
         } @else if (stage() === 'compare' || stage() === 'practice') {
-          <span class="task-kicker">{{ stage() === 'compare' ? 'Compara las cargas' : practiceRound() === 0 ? 'Ahora tú' : 'Otro ejemplo, sin ayuda' }}</span>
-          <h3 id="loading-task-title" #taskHeading tabindex="-1">¿En qué grupo las cargas son más diferentes?</h3>
+          <span class="task-kicker">{{
+            stage() === 'compare'
+              ? 'Compara las cargas'
+              : practiceRound() === 0
+                ? 'Ahora tú'
+                : 'Otro ejemplo, sin ayuda'
+          }}</span>
+          <h3 id="loading-task-title" #taskHeading tabindex="-1">
+            ¿En qué grupo las cargas son más diferentes?
+          </h3>
           <div class="group-choices">
             @for (group of groups(); track group.name; let second = $odd) {
-              <button type="button" class="btn group-choice" [class.group-choice--second]="second" (click)="chooseGroup(group.name)"><span class="group-badge" aria-hidden="true">{{ group.name }}</span>Grupo {{ group.name }}</button>
+              <button
+                type="button"
+                class="btn group-choice"
+                [class.group-choice--second]="second"
+                (click)="chooseGroup(group.name)"
+              >
+                <span class="group-badge" aria-hidden="true">{{ group.name }}</span
+                >Grupo {{ group.name }}
+              </button>
             }
           </div>
           <p class="reading-tip">Mira cómo se reparten todos los puntos.</p>
@@ -105,26 +171,40 @@
             <p><strong>Puntos juntos</strong><span>Cargas parecidas.</span></p>
             <p><strong>Puntos más separados</strong><span>Cargas más diferentes.</span></p>
           </div>
-          <p><strong>Dispersión</strong> significa qué tan diferentes son los valores de un grupo.</p>
-          <button type="button" class="btn btn--primary" (click)="startPractice()">Probar por mi cuenta →</button>
+          <p>
+            <strong>Dispersión</strong> significa qué tan diferentes son los valores de un grupo.
+          </p>
+          <button type="button" class="btn btn--primary" (click)="startPractice()">
+            Probar por mi cuenta →
+          </button>
         } @else if (stage() === 'practice-reason') {
           <span class="task-kicker">Elegiste el grupo {{ selectedGroup() }}</span>
           <h3 id="loading-task-title" #taskHeading tabindex="-1">¿Por qué elegiste ese grupo?</h3>
           <div class="reason-choices">
             @for (reason of reasons; track reason.id) {
-              <button type="button" class="btn reason-choice" (click)="chooseReason(reason.id)">{{ reason.text }}</button>
+              <button type="button" class="btn reason-choice" (click)="chooseReason(reason.id)">
+                {{ reason.text }}
+              </button>
             }
           </div>
         } @else if (stage() === 'practice-review') {
           <span class="task-kicker">Ya lo viste</span>
           <h3 id="loading-task-title" #taskHeading tabindex="-1">Sus cargas se parecen menos</h3>
-          <p>En el grupo {{ selectedGroup() }}, los puntos están más separados. Eso indica más dispersión.</p>
+          <p>
+            En el grupo {{ selectedGroup() }}, los puntos están más separados. Eso indica más
+            dispersión.
+          </p>
           <p>Ahora prueba otro ejemplo para comprobarlo sin la pista.</p>
-          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otro ejemplo →</button>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
+            Probar otro ejemplo →
+          </button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
           @if (feedback()) {
-            <div class="feedback feedback--hint"><strong>Una pista</strong><p>{{ feedback() }}</p></div>
+            <div class="feedback feedback--hint">
+              <strong>Una pista</strong>
+              <p>{{ feedback() }}</p>
+            </div>
           }
         </div>
       </aside>
@@ -144,6 +224,10 @@
       <h3>Las cargas del grupo B fueron más diferentes entre sí.</h3>
       <p>El encargado añadirá lo que encontraste al informe.</p>
     </div>
-    <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Volver con el encargado →</button></div>
+    <div class="lesson-actions">
+      <button type="button" class="btn btn--primary" (click)="finish()">
+        Volver con el encargado →
+      </button>
+    </div>
   }
 </section>

@@ -19,6 +19,15 @@ describe('Lesson01Loading', () => {
     game.startPractice();
   }
 
+  it('separates the short lesson identity from the learning question', () => {
+    const root = create().nativeElement as HTMLElement;
+
+    expect(root.querySelector('.lesson-tag__number')?.textContent).toBe('Clase 1');
+    expect(root.querySelector('.lesson-tag')?.textContent).toContain('Interior del tajo');
+    expect(root.querySelector('h2')?.textContent).toBe('¿Cargas parecidas o diferentes?');
+    expect(root.querySelector('section')?.getAttribute('aria-labelledby')).toBe('loading-title');
+  });
+
   it('teaches the truck-to-point link before asking for a comparison', () => {
     const fixture = create();
     const root = fixture.nativeElement as HTMLElement;
@@ -217,7 +226,7 @@ describe('Lesson01Loading', () => {
     fixture.detectChanges();
     root.querySelector<HTMLButtonElement>('.btn--primary')!.click();
     fixture.detectChanges();
-    expect(root.querySelector('.task-card h3')!.textContent).toBe('¿En qué grupo las cargas son más diferentes?');
+    expect(root.querySelector('.task-card h3')!.textContent?.trim()).toBe('¿En qué grupo las cargas son más diferentes?');
     root.querySelectorAll<HTMLButtonElement>('.group-choice')[1].click();
     fixture.detectChanges();
     root.querySelector<HTMLButtonElement>('.btn--primary')!.click();

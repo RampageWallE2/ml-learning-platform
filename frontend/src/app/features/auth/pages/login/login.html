@@ -2,16 +2,22 @@
   <app-site-header />
 
   <div class="auth-page">
-    <aside class="auth-story">
+    <aside class="auth-story" aria-label="Aprendizaje en Open Pit">
       <div class="story-copy">
-        <p class="eyebrow">APRENDER ES HACER CONEXIONES</p>
-        <h2>Una pregunta.<br />Un descubrimiento.<br /><em>Tu siguiente paso.</em></h2>
-        <p>Explora las matemáticas y los datos en un mundo que te invita a pensar.</p>
-        <div class="diagram" aria-hidden="true">
-          <span>Observar</span><i></i><span>Comprender</span><i></i><span>Aplicar</span>
-        </div>
+        <p class="eyebrow">EXPLORALAB · OPEN PIT</p>
+        <h2>Aprende explorando.</h2>
+        <p>Recorre la mina y descubre qué cuentan los datos.</p>
       </div>
-      <p class="story-footer">ExploraLab / Aprendizaje interactivo</p>
+      <img
+        class="story-image"
+        src="assets/branding/exploralab-experience.png"
+        alt="Dos exploradores observan minerales y comparan sus datos"
+        width="1254"
+        height="1254"
+        loading="lazy"
+        decoding="async"
+      />
+      <p class="story-footer">Observa · Compara · Prueba</p>
     </aside>
     <main class="auth-main">
       <section class="auth-card" aria-labelledby="auth-title" [attr.aria-busy]="busy()">
@@ -19,13 +25,13 @@
           {{ mode() === 'login' ? 'CONTINÚA TU RECORRIDO' : 'EMPIEZA A EXPLORAR' }}
         </p>
         <h1 id="auth-title">
-          {{ mode() === 'login' ? 'Qué bueno verte.' : 'La curiosidad empieza aquí.' }}
+          {{ mode() === 'login' ? 'Iniciar sesión' : 'Crear cuenta' }}
         </h1>
         <p class="intro">
           {{
             mode() === 'login'
-              ? 'Inicia sesión y retoma lo que estabas aprendiendo.'
-              : 'Crea tu cuenta para comenzar y guardar tus avances.'
+              ? 'Continúa donde te quedaste.'
+              : 'Crea tu cuenta para comenzar el recorrido.'
           }}
         </p>
         @if (noticeMessage(); as notice) {
@@ -73,6 +79,8 @@
                   aria-describedby="login-password-error"
                 /><button
                   type="button"
+                  aria-controls="login-password"
+                  [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                   [attr.aria-pressed]="showPassword()"
                   (click)="showPassword.set(!showPassword())"
                 >
@@ -87,7 +95,7 @@
               @if (errorMessage(); as message) {
                 <p class="error" role="alert">{{ message }}</p>
               }
-              <button class="submit" type="submit">
+              <button class="btn btn--primary submit" type="submit">
                 {{ submittingCredentials() ? 'Ingresando…' : 'Iniciar sesión' }}
                 <span aria-hidden="true">→</span>
               </button>
@@ -152,6 +160,8 @@
                   "
                 /><button
                   type="button"
+                  aria-controls="register-password register-confirm-password"
+                  [attr.aria-label]="showPassword() ? 'Ocultar contraseñas' : 'Mostrar contraseñas'"
                   [attr.aria-pressed]="showPassword()"
                   (click)="showPassword.set(!showPassword())"
                 >
@@ -195,7 +205,7 @@
               @if (errorMessage(); as message) {
                 <p class="error" role="alert">{{ message }}</p>
               }
-              <button class="submit" type="submit">
+              <button class="btn btn--primary submit" type="submit">
                 {{ submittingCredentials() ? 'Creando cuenta…' : 'Crear mi cuenta' }}
                 <span aria-hidden="true">→</span>
               </button>
@@ -218,7 +228,7 @@
           >
         </p>
       </section>
-      <p class="auth-footer">Un espacio para aprender, a tu ritmo.</p>
+      <p class="auth-footer">Tu progreso se guarda en tu cuenta.</p>
     </main>
   </div>
 </div>

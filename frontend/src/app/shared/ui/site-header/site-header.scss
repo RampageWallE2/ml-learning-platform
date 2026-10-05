@@ -2,8 +2,9 @@
   position: relative;
   z-index: 200;
   display: block;
-  color: #f1f3ee;
-  background: #050914;
+  color: var(--color-surface);
+  background: var(--color-forest);
+  font-family: var(--font-body);
 }
 
 * {
@@ -17,7 +18,7 @@ a {
 
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid #f4c44e;
+  outline: 3px solid var(--color-accent);
   outline-offset: 5px;
 }
 
@@ -29,14 +30,7 @@ button:focus-visible {
   width: min(1240px, calc(100% - 80px));
   min-height: 100px;
   margin: auto;
-  border-bottom: 1px solid #202b40;
-}
-
-.brand,
-nav,
-.button,
-.menu-toggle {
-  font-family: Consolas, monospace;
+  border-bottom: 1px solid var(--color-forest-border);
 }
 
 .brand {
@@ -55,37 +49,31 @@ nav {
   display: flex;
   align-items: center;
   gap: 24px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
-nav a:hover {
+nav a:not(.button) {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-min-height);
+}
+
+nav a:not(.button):hover {
   text-decoration: underline;
   text-underline-offset: 5px;
 }
 
 .button {
-  display: inline-flex;
-  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 40px;
   padding: 8px 15px;
-  color: #070b16;
-  border: 1px solid #f4c44e;
-  border-radius: 2px;
-  background: #f4c44e;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.button:hover {
-  border-color: #ffd96f;
-  background: #ffd96f;
+  border-color: var(--color-accent);
+  font-size: 14px;
 }
 
 .quiet {
-  color: #7f8ca0;
-  font-size: 11px;
+  color: var(--color-forest-muted);
+  font-size: 12px;
 }
 
 .menu-toggle {
@@ -98,24 +86,27 @@ nav a:hover {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .site-header {
     flex-wrap: wrap;
     width: calc(100% - 36px);
     min-height: 76px;
-    padding: 18px 0;
+    padding: 12px 0;
   }
 
   .brand-logo {
-    width: 150px;
+    width: 140px;
   }
 
   .menu-toggle {
     display: block;
+    min-height: var(--control-min-height);
     padding: 8px 12px;
-    color: #f4c44e;
-    border: 1px solid #34425b;
+    color: var(--color-surface);
+    border: 1px solid var(--color-forest-border);
+    border-radius: var(--radius-control);
     background: transparent;
+    font: 600 14px var(--font-body);
   }
 
   nav {

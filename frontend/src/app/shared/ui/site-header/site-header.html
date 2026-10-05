@@ -20,16 +20,10 @@
   </button>
 
   <nav id="site-navigation" aria-label="Navegación principal" [class.open]="menuOpen()">
-    <a
-      [href]="sectionHref('experiencia')"
-      (click)="navigateToSection($event, 'experiencia')"
-    >
+    <a [href]="sectionHref('experiencia')" (click)="navigateToSection($event, 'experiencia')">
       La experiencia
     </a>
-    <a
-      [href]="sectionHref('metodologia')"
-      (click)="navigateToSection($event, 'metodologia')"
-    >
+    <a [href]="sectionHref('metodologia')" (click)="navigateToSection($event, 'metodologia')">
       Cómo aprendemos
     </a>
 
@@ -41,7 +35,7 @@
         Iniciar sesión
       </a>
       <a
-        class="button"
+        class="btn btn--primary button"
         routerLink="/register"
         [queryParams]="{ returnUrl: '/progress' }"
         (click)="closeMenu()"

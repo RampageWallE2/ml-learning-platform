@@ -7,8 +7,8 @@ describe('Dialogue', () => {
     id: 'test-dialogue',
     messages: [
       { speaker: 'npc', name: 'Encargado', text: 'Primer mensaje.' },
-      { speaker: 'player', name: 'Tú', text: 'Respuesta.' }
-    ]
+      { speaker: 'player', name: 'Tú', text: 'Respuesta.' },
+    ],
   };
 
   beforeEach(() => {
@@ -19,10 +19,7 @@ describe('Dialogue', () => {
     vi.useRealTimers();
   });
 
-  function create(
-    dialogue: DialogueData = data,
-    finishTyping = true
-  ) {
+  function create(dialogue: DialogueData = data, finishTyping = true) {
     const fixture = TestBed.createComponent(Dialogue);
     fixture.componentRef.setInput('dialogue', dialogue);
     fixture.detectChanges();
@@ -48,7 +45,9 @@ describe('Dialogue', () => {
     fixture.detectChanges();
     expect(root.textContent).not.toContain('Primer mensaje.');
     expect(root.textContent).toContain('Respuesta.');
-    expect(root.querySelector('.dialogue-band--player')?.classList).toContain('dialogue-band--active');
+    expect(root.querySelector('.dialogue-band--player')?.classList).toContain(
+      'dialogue-band--active',
+    );
   });
 
   it('completes only after advancing from the last message', () => {
@@ -87,9 +86,7 @@ describe('Dialogue', () => {
     const fixture = create(data, false);
     const replacement: DialogueData = {
       id: 'replacement-dialogue',
-      messages: [
-        { speaker: 'npc', name: 'Operador', text: 'Nuevo diálogo.' }
-      ]
+      messages: [{ speaker: 'npc', name: 'Operador', text: 'Nuevo diálogo.' }],
     };
 
     fixture.componentInstance.next();
@@ -105,12 +102,13 @@ describe('Dialogue', () => {
   });
 
   it('does not split Unicode characters while typing', () => {
-    const fixture = create({
-      id: 'unicode-dialogue',
-      messages: [
-        { speaker: 'npc', name: 'Operador', text: '👷 listo' }
-      ]
-    }, false);
+    const fixture = create(
+      {
+        id: 'unicode-dialogue',
+        messages: [{ speaker: 'npc', name: 'Operador', text: '👷 listo' }],
+      },
+      false,
+    );
 
     expect(fixture.componentInstance.displayedText()).toBe('👷');
   });
@@ -123,9 +121,9 @@ describe('Dialogue', () => {
           speaker: 'npc',
           characterId: 'ramp-controller',
           name: 'Encargado de rampa',
-          text: 'Mensaje de prueba.'
-        }
-      ]
+          text: 'Mensaje de prueba.',
+        },
+      ],
     });
     const root = fixture.nativeElement as HTMLElement;
     const frame = root.querySelector<HTMLElement>('.dialogue-band--npc .portrait-frame');
@@ -154,9 +152,9 @@ describe('Dialogue', () => {
           characterId: 'ramp-controller',
           portrait: '/assets/custom/avatar.png',
           name: 'Personaje',
-          text: 'Mensaje de prueba.'
-        }
-      ]
+          text: 'Mensaje de prueba.',
+        },
+      ],
     });
     const root = fixture.nativeElement as HTMLElement;
     const frame = root.querySelector<HTMLElement>('.dialogue-band--npc .portrait-frame');
@@ -164,5 +162,72 @@ describe('Dialogue', () => {
 
     expect(frame?.dataset['characterId']).toBe('custom');
     expect(portrait?.style.backgroundImage).toContain('/assets/custom/avatar.png');
+  });
+
+  it('uses the shared button and shows message progress without mouse-only instructions', () => {
+    const fixture = create(data, false);
+    const root = fixture.nativeElement as HTMLElement;
+    const button = root.querySelector<HTMLButtonElement>('.continue-button')!;
+
+    expect(button.type).toBe('button');
+    expect(button.classList.contains('btn')).toBe(true);
+    expect(button.classList.contains('btn--secondary')).toBe(true);
+    expect(button.textContent).toContain('Mostrar texto');
+    expect(button.querySelector('small')?.textContent).toContain('Mensaje 1 / 2');
+    expect(button.textContent).not.toContain('clic');
+
+    button.click();
+    fixture.detectChanges();
+    expect(button.textContent).toContain('Siguiente');
+    expect(fixture.componentInstance.currentIndex()).toBe(0);
+
+    button.click();
+    vi.runAllTimers();
+    fixture.detectChanges();
+    expect(button.textContent).toContain('Continuar');
+    expect(button.querySelector('small')?.textContent).toContain('Mensaje 2 / 2');
+  });
+
+  it('exposes the full message once to assistive technology while it is typing', () => {
+    const fixture = create(data, false);
+    const root = fixture.nativeElement as HTMLElement;
+    const copy = root.querySelector('.dialogue-copy')!;
+    const text = copy.querySelector('.dialogue-copy__text')!;
+
+    expect(copy.getAttribute('aria-live')).toBe('polite');
+    expect(copy.getAttribute('aria-atomic')).toBe('true');
+    expect(text.getAttribute('aria-label')).toBe('Primer mensaje.');
+    expect(text.querySelector('.dialogue-copy__reserve')?.getAttribute('aria-hidden')).toBe('true');
+    expect(text.querySelector('.dialogue-copy__typed')?.getAttribute('aria-hidden')).toBe('true');
+    expect(text.querySelector('.dialogue-copy__typed')?.textContent).toBe('P');
+  });
+
+  it('does not skip the last message when the reveal button is pressed', () => {
+    const fixture = create({ id: 'last-message', messages: [data.messages[0]] }, false);
+    const completed = vi.fn();
+    fixture.componentInstance.completed.subscribe(completed);
+    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '.continue-button',
+    )!;
+
+    button.click();
+    fixture.detectChanges();
+    expect(completed).not.toHaveBeenCalled();
+    expect(button.textContent).toContain('Continuar');
+    expect(fixture.componentInstance.displayedText()).toBe('Primer mensaje.');
+
+    button.click();
+    expect(completed).toHaveBeenCalledOnce();
+  });
+
+  it('stops typing when the dialogue is destroyed', () => {
+    const fixture = create(data, false);
+    expect(fixture.componentInstance.isTyping()).toBe(true);
+    fixture.destroy();
+    const displayedText = fixture.componentInstance.displayedText();
+
+    vi.advanceTimersByTime(500);
+    expect(fixture.componentInstance.displayedText()).toBe(displayedText);
+    expect(fixture.componentInstance.isTyping()).toBe(false);
   });
 });

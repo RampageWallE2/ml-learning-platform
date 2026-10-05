@@ -31,6 +31,96 @@ describe('Lesson02Ramp', () => {
     game.answerPractice(game.correctPracticeAnswer());
   }
 
+  it('keeps the question and named evidence in one workspace with the shared lesson theme', () => {
+    const fixture = create();
+    const root = fixture.nativeElement as HTMLElement;
+    const lesson = root.querySelector('.intuitive-ramp')!;
+    expect(lesson.classList.contains('ramp-lesson')).toBe(false);
+    expect(root.querySelector('.lesson-tag__number')!.textContent).toBe('Clase 2');
+
+    const verifyWorkspace = (title: string) => {
+      const workbench = root.querySelector('.workbench')!;
+      const evidence = workbench.querySelector('.evidence-board')!;
+      expect(evidence.getAttribute('role')).toBe('region');
+      expect(evidence.getAttribute('aria-labelledby')).toBe('ramp-evidence-title');
+      expect(evidence.querySelector('#ramp-evidence-title')!.textContent).toBe(title);
+      expect(root.querySelectorAll('#ramp-evidence-title')).toHaveLength(1);
+      expect(workbench.querySelector('.task-card')!.getAttribute('aria-labelledby')).toBe(
+        'ramp-task-title',
+      );
+      expect(workbench.querySelector('#ramp-task-title')).not.toBeNull();
+    };
+
+    verifyWorkspace('Ejemplo: tres camiones');
+    report(fixture.componentInstance);
+    fixture.detectChanges();
+    verifyWorkspace('El informe para decidir el plan');
+    fixture.componentInstance.assess('unknown');
+    fixture.componentInstance.request('records');
+    fixture.detectChanges();
+    verifyWorkspace('Las cargas de cada camión');
+  });
+
+  it('uses shared answer controls throughout the unchanged investigation and practice', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    const verifyAnswers = () => {
+      fixture.detectChanges();
+      const answers = [...root.querySelectorAll<HTMLButtonElement>('.answer-choice')];
+      expect(answers).toHaveLength(3);
+      expect(
+        answers.every(
+          (button) => button.classList.contains('btn--answer') && button.type === 'button',
+        ),
+      ).toBe(true);
+      expect(root.querySelectorAll('input, textarea')).toHaveLength(0);
+    };
+
+    report(game);
+    verifyAnswers();
+    game.assess('unknown');
+    verifyAnswers();
+    game.request('records');
+    verifyAnswers();
+    game.compare('b');
+    game.startPractice();
+    verifyAnswers();
+    game.answerPractice('unknown');
+    verifyAnswers();
+    game.answerPractice('b');
+    verifyAnswers();
+  });
+
+  it('retains turn labels and the mean legend while records use shared selection controls', () => {
+    const fixture = create();
+    records(fixture.componentInstance);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(
+      [...root.querySelectorAll('.group-heading h3')].map((heading) =>
+        heading.textContent?.replace(/\s+/g, ' ').trim(),
+      ),
+    ).toEqual(['ATurno A', 'BTurno B']);
+    expect(root.querySelector('.chart-key')!.textContent).toContain(
+      'La línea azul punteada marca el promedio.',
+    );
+    expect(root.querySelectorAll('.choices--turns .answer-choice')).toHaveLength(3);
+    expect(
+      [...root.querySelectorAll<HTMLElement>('.mean-line')].map((line) => line.style.left),
+    ).toEqual(['50%', '50%']);
+    const loads = [...root.querySelectorAll<HTMLButtonElement>('.load-record')];
+    expect(loads).toHaveLength(10);
+    expect(loads.every((button) => button.classList.contains('btn'))).toBe(true);
+    loads[5].click();
+    fixture.detectChanges();
+    expect(loads[5].getAttribute('aria-pressed')).toBe('true');
+    expect(root.querySelector('.cargo-row--second .point-reading')!.textContent).toBe('80 t');
+    expect(
+      root.querySelector('.cargo-row--second .value-track')!.getAttribute('aria-label'),
+    ).toContain('80, 120, 90, 110, 100');
+  });
+
   it('starts with a visual example before asking about the reports', () => {
     const fixture = create();
     const root = fixture.nativeElement as HTMLElement;
@@ -46,12 +136,14 @@ describe('Lesson02Ramp', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.lesson-header')!.textContent).toContain('plan de carga del siguiente turno');
+    expect(root.querySelector('.lesson-header')!.textContent).toContain(
+      'plan de carga del siguiente turno',
+    );
     report(game);
     fixture.detectChanges();
     expect(root.querySelector('.task-card')!.textContent).toContain('organizar las entregas');
     expect(root.querySelector('.task-card')!.textContent).toContain('100 toneladas');
-    expect(game.reportChoices().map(choice => choice.text)).toEqual([
+    expect(game.reportChoices().map((choice) => choice.text)).toEqual([
       'Las cargas se parecen igual en los dos turnos.',
       'En B, las cargas son más diferentes.',
       'Falta ver la carga de cada camión.',
@@ -63,7 +155,9 @@ describe('Lesson02Ramp', () => {
     game.assess('unknown');
     fixture.detectChanges();
     expect(game.stage()).toBe('request');
-    expect(root.querySelector('.task-card')!.textContent).toContain('antes de decidir sobre el plan');
+    expect(root.querySelector('.task-card')!.textContent).toContain(
+      'antes de decidir sobre el plan',
+    );
     expect(root.querySelector('.value-track')).toBeNull();
   });
 
@@ -71,14 +165,14 @@ describe('Lesson02Ramp', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     expect(game.exampleLoads()).toEqual([90, 100, 110]);
-    const originals = game.turns.map(turn => [...turn.values]);
+    const originals = game.turns.map((turn) => [...turn.values]);
     game.showSharing();
     fixture.detectChanges();
     expect(game.exampleLoads()).toEqual([100, 100, 100]);
     expect(game.exampleLoads().reduce((sum, value) => sum + value, 0)).toBe(game.exampleTotal);
     expect(game.exampleTotal).toBe(300);
     expect(game.exampleMean).toBe(100);
-    expect(game.turns.map(turn => [...turn.values])).toEqual(originals);
+    expect(game.turns.map((turn) => [...turn.values])).toEqual(originals);
     expect(fixture.nativeElement.textContent).toContain('reparto imaginario');
     expect(fixture.nativeElement.textContent).toContain('90, 100 y 110');
     expect(fixture.nativeElement.querySelectorAll('.example-truck strong').length).toBe(3);
@@ -132,13 +226,14 @@ describe('Lesson02Ramp', () => {
     expect(root.querySelectorAll('.load-point')).toHaveLength(10);
     expect(root.querySelectorAll('.mean-line')).toHaveLength(2);
     expect(root.querySelectorAll('.shared-axis')).toHaveLength(1);
-    expect(game.turns.map(turn => game.average(turn.values))).toEqual([100, 100]);
+    expect(game.turns.map((turn) => game.average(turn.values))).toEqual([100, 100]);
   });
 
   it('retains the planned datasets and maps every record to the same numeric scale', () => {
     const game = create().componentInstance;
-    expect(game.turns.map(turn => [...turn.values])).toEqual([
-      [98, 101, 100, 99, 102], [80, 120, 90, 110, 100],
+    expect(game.turns.map((turn) => [...turn.values])).toEqual([
+      [98, 101, 100, 99, 102],
+      [80, 120, 90, 110, 100],
     ]);
     expect(game.position(80)).toBe(0);
     expect(game.position(100)).toBe(50);
@@ -186,7 +281,10 @@ describe('Lesson02Ramp', () => {
     expect(game.stage()).toBe('practice');
     expect(game.step()).toBe(3);
     expect(game.showRecords()).toBe(false);
-    expect(game.reports()).toEqual([{ id: 'C', mean: 90 }, { id: 'D', mean: 90 }]);
+    expect(game.reports()).toEqual([
+      { id: 'C', mean: 90 },
+      { id: 'D', mean: 90 },
+    ]);
   });
 
   it('contrasts a summary-only report with complete loads on the same practice screen', () => {
@@ -214,7 +312,10 @@ describe('Lesson02Ramp', () => {
     game.explain('summary');
     game.continueAfterHelp();
     fixture.detectChanges();
-    expect(game.reports()).toEqual([{ id: 'E', mean: 95 }, { id: 'F', mean: 95 }]);
+    expect(game.reports()).toEqual([
+      { id: 'E', mean: 95 },
+      { id: 'F', mean: 95 },
+    ]);
     expect(game.practiceChoices()[1].text).toContain('turno F');
     expect(game.practiceCase()).toBe(0);
     expect(root.querySelector('.value-track')).toBeNull();
@@ -376,21 +477,28 @@ describe('Lesson02Ramp', () => {
     solveReports(game);
     game.explain('summary');
     game.continueAfterHelp();
-    expect(game.reports().map(report => report.mean)).toEqual([95, 95]);
+    expect(game.reports().map((report) => report.mean)).toEqual([95, 95]);
     solveReports(game);
     game.explain('summary');
     fixture.detectChanges();
     expect(game.stage()).toBe('success');
-    expect(game.reports()).toEqual([{ id: 'A', mean: 100 }, { id: 'B', mean: 100 }]);
-    expect(game.plots().map(plot => plot.id)).toEqual(['A', 'B']);
-    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain('Mismo promedio: 100 t');
+    expect(game.reports()).toEqual([
+      { id: 'A', mean: 100 },
+      { id: 'B', mean: 100 },
+    ]);
+    expect(game.plots().map((plot) => plot.id)).toEqual(['A', 'B']);
+    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain(
+      'Mismo promedio: 100 t',
+    );
     expect(fixture.nativeElement.querySelector('.report-card').textContent).not.toContain('95');
   });
 
   it('uses simple narrative language without claiming that the loads explain their cause', () => {
-    const text = LESSON_02_RAMP.steps.flatMap(step => step.type === 'dialogue'
-      ? step.dialogue.messages.map(message => message.text)
-      : []).join(' ');
+    const text = LESSON_02_RAMP.steps
+      .flatMap((step) =>
+        step.type === 'dialogue' ? step.dialogue.messages.map((message) => message.text) : [],
+      )
+      .join(' ');
     expect(text).toContain('cargas cercanas a 100 toneladas');
     expect(text).toContain('Eso no explica por qué pasó');
     expect(text).toContain('hablaré con el equipo antes de cambiar el plan');
@@ -414,7 +522,10 @@ describe('Lesson02Ramp', () => {
     game.continueAfterHelp();
     expect(game.stage()).toBe('practice');
     expect(game.round()).toBe(1);
-    expect(game.reports()).toEqual([{ id: 'E', mean: 95 }, { id: 'F', mean: 95 }]);
+    expect(game.reports()).toEqual([
+      { id: 'E', mean: 95 },
+      { id: 'F', mean: 95 },
+    ]);
     expect(game.practiceHelped()).toBe(false);
     expect(game.feedback()).toBe('');
     solveReports(game);
@@ -448,14 +559,20 @@ describe('Lesson02Ramp', () => {
     for (let round = 0; round < 10; round += 1) {
       expect(game.round()).toBe(round);
       expect(game.reports()[0].mean).toBe(game.reports()[1].mean);
-      expect(game.reports().every(report => report.mean >= 80 && report.mean <= 120)).toBe(true);
+      expect(game.reports().every((report) => report.mean >= 80 && report.mean <= 120)).toBe(true);
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('.value-track')).toBeNull();
       game.answerPractice('b');
       solveReports(game);
       expect(game.showRecords()).toBe(true);
-      expect(game.practiceTurns().every(turn => turn.values.every(value => value >= 80 && value <= 120))).toBe(true);
-      expect(game.practiceTurns().map(turn => game.average(turn.values))).toEqual(game.reports().map(report => report.mean));
+      expect(
+        game
+          .practiceTurns()
+          .every((turn) => turn.values.every((value) => value >= 80 && value <= 120)),
+      ).toBe(true);
+      expect(game.practiceTurns().map((turn) => game.average(turn.values))).toEqual(
+        game.reports().map((report) => report.mean),
+      );
       game.explain('summary');
       game.continueAfterHelp();
     }
@@ -497,7 +614,9 @@ describe('Lesson02Ramp', () => {
       expect(root.querySelectorAll('input, textarea')).toHaveLength(0);
     };
     primary();
-    expect(root.querySelector('.mean-explanation')!.textContent).toContain('100 toneladas por camión');
+    expect(root.querySelector('.mean-explanation')!.textContent).toContain(
+      '100 toneladas por camión',
+    );
     primary();
     answer(2);
     expect(root.textContent).toContain('¿Qué pedirías al encargado?');
@@ -508,9 +627,13 @@ describe('Lesson02Ramp', () => {
     answer(1);
     answer(1);
     expect(root.querySelector('.completion-card')).not.toBeNull();
-    expect(root.querySelector('.completion-card')!.textContent).toContain('Pide solo la información que falta');
+    expect(root.querySelector('.completion-card')!.textContent).toContain(
+      'Pide solo la información que falta',
+    );
     expect(root.querySelector('.report-card')!.textContent).toContain('Mismo promedio: 100 t');
-    expect(root.querySelector('.report-card')!.textContent).toContain('antes de decidir sobre el plan');
+    expect(root.querySelector('.report-card')!.textContent).toContain(
+      'antes de decidir sobre el plan',
+    );
     expect(root.querySelector('.report-card')!.textContent).toContain('no nos dicen por qué pasó');
     expect(root.querySelector('.lesson-actions')!.textContent).toContain('Entregar recomendación');
   });

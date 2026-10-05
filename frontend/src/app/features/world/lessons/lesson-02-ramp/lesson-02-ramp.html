@@ -1,50 +1,102 @@
-<section class="lesson ramp-lesson intuitive-ramp" aria-labelledby="ramp-title">
+<section class="lesson intuitive-ramp" aria-labelledby="ramp-title">
   <header class="lesson-header">
-    <span class="lesson-tag">Clase 2 · Control de camiones</span>
+    <span class="lesson-tag"
+      ><span class="lesson-tag__number">Clase 2</span> · Control de camiones</span
+    >
     <h2 id="ramp-title">¿Un número cuenta toda la historia?</h2>
     <p>Misión: ayudar a preparar el plan de carga del siguiente turno.</p>
   </header>
 
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
     @for (label of ['Mira', 'Investiga', 'Prueba']; track label; let index = $index) {
-      <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'" [attr.aria-current]="step() === index + 1 ? 'step' : null">
-        <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
+      <li
+        [class.step--active]="step() === index + 1"
+        [class.step--done]="step() > index + 1 || stage() === 'success'"
+        [attr.aria-current]="step() === index + 1 ? 'step' : null"
+      >
+        <span aria-hidden="true">{{
+          step() > index + 1 || stage() === 'success' ? '✓' : index + 1
+        }}</span
+        >{{ label }}
       </li>
     }
   </ol>
 
   @if (stage() !== 'success') {
     <div class="workbench">
-      <div class="evidence-board">
+      <div class="evidence-board" role="region" aria-labelledby="ramp-evidence-title">
         @if (stage() === 'learn') {
-          <div class="board-heading"><strong>Ejemplo: tres camiones</strong><small>t = toneladas</small></div>
-          <p class="example-caption">{{ redistributed() ? 'Si repartiéramos el material por igual…' : 'Cada camión llevó una cantidad distinta.' }}</p>
-          <div class="example-loads" [class.example-loads--shared]="redistributed()" aria-live="polite" aria-atomic="true">
+          <div class="board-heading">
+            <strong id="ramp-evidence-title">Ejemplo: tres camiones</strong
+            ><small>t = toneladas</small>
+          </div>
+          <p class="example-caption">
+            {{
+              redistributed()
+                ? 'Si repartiéramos el material por igual…'
+                : 'Cada camión llevó una cantidad distinta.'
+            }}
+          </p>
+          <div
+            class="example-loads"
+            [class.example-loads--shared]="redistributed()"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             @for (load of exampleLoads(); track $index; let index = $index) {
               <article class="example-truck">
                 <strong>{{ load }} <small>t</small></strong>
-                <div class="bar-track" aria-hidden="true"><span class="cargo-bar" [style.height.%]="load / 120 * 100"></span></div>
-                <img src="assets/game/tilesets/vehicles/dump_truck_2.png" alt="">
+                <div class="bar-track" aria-hidden="true">
+                  <span class="cargo-bar" [style.height.%]="(load / 120) * 100"></span>
+                </div>
+                <img src="assets/game/tilesets/vehicles/dump_truck_2.png" alt="" />
                 <span>Camión {{ index + 1 }}</span>
               </article>
             }
           </div>
-          <p class="example-total">El total {{ redistributed() ? 'sigue siendo' : 'es' }} <strong>{{ exampleTotal }} toneladas.</strong></p>
+          <p class="example-total">
+            El total {{ redistributed() ? 'sigue siendo' : 'es' }}
+            <strong>{{ exampleTotal }} toneladas.</strong>
+          </p>
           @if (redistributed()) {
-            <p class="example-note">Es un reparto imaginario. Las cargas originales eran 90, 100 y 110 t.</p>
+            <p class="example-note">
+              Es un reparto imaginario. Las cargas originales eran 90, 100 y 110 t.
+            </p>
           }
         } @else if (showRecords()) {
-          <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: informe con todas las cargas' : 'Las cargas de cada camión' }}</strong><small>Datos de ejemplo</small></div>
+          <div class="board-heading">
+            <strong id="ramp-evidence-title">{{
+              practicing() ? 'Ensayo: informe con todas las cargas' : 'Las cargas de cada camión'
+            }}</strong
+            ><small>Datos de ejemplo</small>
+          </div>
           <div class="shared-scale">
             @for (plot of plots(); track plot.id; let second = $odd) {
               <section class="cargo-row" [class.cargo-row--second]="second">
                 <div class="group-heading">
-                  <h3><span class="turn-badge" aria-hidden="true">{{ plot.id }}</span>Turno {{ plot.id }}</h3>
+                  <h3>
+                    <span class="turn-badge" aria-hidden="true">{{ plot.id }}</span
+                    >Turno {{ plot.id }}
+                  </h3>
                   <span class="mean-pill">Promedio: {{ plot.mean }} t</span>
                 </div>
-                <div class="record-options" role="group" [attr.aria-label]="'Cargas del turno ' + plot.id">
+                <div
+                  class="record-options"
+                  role="group"
+                  [attr.aria-label]="'Cargas del turno ' + plot.id"
+                >
                   @for (point of plot.points; track point.id) {
-                    <button type="button" class="load-record" [attr.aria-label]="'Camión ' + point.id + ', ' + point.value + ' toneladas. Destacar su punto.'" [attr.aria-pressed]="selectedLoad() === point.id" (click)="selectLoad(point.id)">{{ point.value }} t</button>
+                    <button
+                      type="button"
+                      class="btn load-record"
+                      [attr.aria-label]="
+                        'Camión ' + point.id + ', ' + point.value + ' toneladas. Destacar su punto.'
+                      "
+                      [attr.aria-pressed]="selectedLoad() === point.id"
+                      (click)="selectLoad(point.id)"
+                    >
+                      {{ point.value }} t
+                    </button>
                   }
                 </div>
                 <div class="value-track" role="img" [attr.aria-label]="plot.description">
@@ -54,22 +106,39 @@
                   <span class="track-line"></span>
                   <span class="mean-line" [style.left.%]="position(plot.mean)"></span>
                   @for (point of plot.points; track point.id) {
-                    <span class="load-point" [class.point--selected]="selectedLoad() === point.id" [style.left.%]="point.x"></span>
+                    <span
+                      class="load-point"
+                      [class.point--selected]="selectedLoad() === point.id"
+                      [style.left.%]="point.x"
+                    ></span>
                     @if (selectedLoad() === point.id) {
-                      <span class="point-reading" [style.--point-position]="point.x + '%'">{{ point.value }} t</span>
+                      <span class="point-reading" [style.--point-position]="point.x + '%'"
+                        >{{ point.value }} t</span
+                      >
                     }
                   }
                 </div>
               </section>
             }
             <div class="shared-axis" aria-hidden="true">
-              @for (tick of ticks; track tick) { <span [style.left.%]="position(tick)">{{ tick }}</span> }
+              @for (tick of ticks; track tick) {
+                <span [style.left.%]="position(tick)">{{ tick }}</span>
+              }
             </div>
             <p class="axis-label">Carga en toneladas · t = toneladas</p>
           </div>
-          <p class="chart-key">Cada punto es una carga. La línea azul punteada marca el promedio.</p>
+          <p class="chart-key">
+            Cada punto es una carga. La línea azul punteada marca el promedio.
+          </p>
         } @else {
-          <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: informe con solo promedios' : 'El informe para decidir el plan' }}</strong><small>Datos de ejemplo</small></div>
+          <div class="board-heading">
+            <strong id="ramp-evidence-title">{{
+              practicing()
+                ? 'Ensayo: informe con solo promedios'
+                : 'El informe para decidir el plan'
+            }}</strong
+            ><small>Datos de ejemplo</small>
+          </div>
           <div class="report-grid" aria-label="Promedios de carga por turno">
             @for (report of reports(); track report.id; let second = $odd) {
               <article class="report-sheet" [class.report-sheet--second]="second">
@@ -91,31 +160,55 @@
           <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Qué es el promedio?</h3>
           @if (!redistributed()) {
             <p>Imagina que repartimos todo el material por igual entre estos tres camiones.</p>
-            <button type="button" class="btn btn--primary" (click)="showSharing()">Ver el reparto por igual →</button>
+            <button type="button" class="btn btn--primary" (click)="showSharing()">
+              Ver el reparto por igual →
+            </button>
           } @else {
             <div class="mean-explanation">
               <strong>{{ exampleMean }} toneladas por camión</strong>
               <p>Eso recibiría cada uno al repartir todo por igual.</p>
             </div>
             <p>Ese es el <strong>promedio</strong>: resume las cargas con un solo número.</p>
-            <button type="button" class="btn btn--primary" (click)="startReport()">Revisar el plan →</button>
+            <button type="button" class="btn btn--primary" (click)="startReport()">
+              Revisar el plan →
+            </button>
           }
         } @else if (stage() === 'report') {
           <span class="task-kicker">Antes de cerrar el plan</span>
           <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Qué harías con este informe?</h3>
-          <p>Para organizar las entregas, se piden cargas cercanas a <strong>{{ reports()[0].mean }} toneladas.</strong></p>
+          <p>
+            Para organizar las entregas, se piden cargas cercanas a
+            <strong>{{ reports()[0].mean }} toneladas.</strong>
+          </p>
           <div class="choices">
             @for (choice of reportChoices(); track choice.id) {
-              <button type="button" class="btn answer-choice" (click)="assess(choice.id)">{{ choice.text }}</button>
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="assess(choice.id)"
+              >
+                {{ choice.text }}
+              </button>
             }
           </div>
         } @else if (stage() === 'practice') {
-          <span class="task-kicker">{{ practiceCase() === 0 ? 'Prueba 1 de 2' : 'Prueba 2 de 2' }}{{ round() > 0 ? ' · Con otros datos' : '' }}</span>
-          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿En qué turno fueron más diferentes las cargas?</h3>
+          <span class="task-kicker"
+            >{{ practiceCase() === 0 ? 'Prueba 1 de 2' : 'Prueba 2 de 2'
+            }}{{ round() > 0 ? ' · Con otros datos' : '' }}</span
+          >
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">
+            ¿En qué turno fueron más diferentes las cargas?
+          </h3>
           <p>Ayuda a preparar el siguiente turno. Usa la información que tienes aquí.</p>
           <div class="choices">
             @for (choice of practiceChoices(); track choice.id) {
-              <button type="button" class="btn answer-choice" (click)="answerPractice(choice.id)">{{ choice.text }}</button>
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="answerPractice(choice.id)"
+              >
+                {{ choice.text }}
+              </button>
             }
           </div>
         } @else if (stage() === 'request') {
@@ -124,47 +217,90 @@
           <p>Necesitas saber cómo fueron las cargas antes de decidir sobre el plan.</p>
           <div class="choices">
             @for (choice of requests; track choice.id) {
-              <button type="button" class="btn answer-choice" (click)="request(choice.id)">{{ choice.text }}</button>
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="request(choice.id)"
+              >
+                {{ choice.text }}
+              </button>
             }
           </div>
         } @else if (stage() === 'records') {
           <span class="task-kicker">Ya tenemos las cargas</span>
-          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿En qué turno fueron más diferentes?</h3>
-          <div class="choices">
-            <button type="button" class="btn answer-choice" (click)="compare('a')"><span class="turn-badge" aria-hidden="true">A</span>Turno A</button>
-            <button type="button" class="btn answer-choice answer-choice--second" (click)="compare('b')"><span class="turn-badge" aria-hidden="true">B</span>Turno B</button>
-            <button type="button" class="btn answer-choice" (click)="compare('same')">Se parecieron igual en ambos.</button>
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">
+            ¿En qué turno fueron más diferentes?
+          </h3>
+          <div class="choices choices--turns">
+            <button type="button" class="btn btn--answer answer-choice" (click)="compare('a')">
+              <span class="turn-badge" aria-hidden="true">A</span>Turno A
+            </button>
+            <button
+              type="button"
+              class="btn btn--answer answer-choice answer-choice--second"
+              (click)="compare('b')"
+            >
+              <span class="turn-badge" aria-hidden="true">B</span>Turno B
+            </button>
+            <button type="button" class="btn btn--answer answer-choice" (click)="compare('same')">
+              Se parecieron igual en ambos.
+            </button>
           </div>
           <p>Mira todos los puntos, como en la clase anterior.</p>
         } @else if (stage() === 'discovery') {
           <span class="task-kicker">Encontraste lo que faltaba</span>
-          <h3 id="ramp-task-title" #taskHeading tabindex="-1">El resumen no basta para cerrar el plan</h3>
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">
+            El resumen no basta para cerrar el plan
+          </h3>
           <p>Los dos turnos promediaron <strong>100 toneladas</strong>.</p>
-          <div class="mean-explanation">
+          <div class="mean-explanation mean-explanation--comparison">
             <p><strong>En A:</strong> las cargas se parecen.</p>
             <p><strong>En B:</strong> las cargas son más diferentes.</p>
           </div>
-          <p>En A, las cargas están cerca de las 100 toneladas pedidas. En B, van de 80 a 120. El promedio no mostraba esa diferencia.</p>
-          <p>Hay que revisar qué pasó en B antes de decidir. Las cargas no nos dicen por qué pasó.</p>
-          <button type="button" class="btn btn--primary" (click)="startPractice()">Ensayar mi decisión →</button>
+          <p>
+            En A, las cargas están cerca de las 100 toneladas pedidas. En B, van de 80 a 120. El
+            promedio no mostraba esa diferencia.
+          </p>
+          <p>
+            Hay que revisar qué pasó en B antes de decidir. Las cargas no nos dicen por qué pasó.
+          </p>
+          <button type="button" class="btn btn--primary" (click)="startPractice()">
+            Ensayar mi decisión →
+          </button>
         } @else if (stage() === 'reason') {
           <span class="task-kicker">Ya comparaste las cargas</span>
-          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Por qué ahora sí podemos comparar?</h3>
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">
+            ¿Por qué ahora sí podemos comparar?
+          </h3>
           <div class="choices">
             @for (reason of reasons; track reason.id) {
-              <button type="button" class="btn answer-choice" (click)="explain(reason.id)">{{ reason.text }}</button>
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="explain(reason.id)"
+              >
+                {{ reason.text }}
+              </button>
             }
           </div>
         } @else if (stage() === 'review') {
           <span class="task-kicker">Ahora se entiende</span>
           <h3 id="ramp-task-title" #taskHeading tabindex="-1">Pide solo lo que falta</h3>
-          <p>Si solo ves promedios, faltan las cargas. Si ya están todas, puedes compararlas sin pedirlas otra vez.</p>
+          <p>
+            Si solo ves promedios, faltan las cargas. Si ya están todas, puedes compararlas sin
+            pedirlas otra vez.
+          </p>
           <p>Prueba con otros datos, sin la pista.</p>
-          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar con otros datos →</button>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
+            Probar con otros datos →
+          </button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
           @if (feedback()) {
-            <div class="feedback feedback--hint" #practiceFeedback tabindex="-1"><strong>Una pista</strong><p>{{ feedback() }}</p></div>
+            <div class="feedback feedback--hint" #practiceFeedback tabindex="-1">
+              <strong>Una pista</strong>
+              <p>{{ feedback() }}</p>
+            </div>
           }
         </div>
       </aside>
@@ -173,14 +309,27 @@
     <div class="completion-card">
       <span class="task-kicker">Tu recomendación está lista</span>
       <h3 #taskHeading tabindex="-1">Pide solo la información que falta</h3>
-      <p>El promedio no cuenta todo. Cuando ya ves las cargas de cada camión, puedes comparar si se parecen o son diferentes.</p>
+      <p>
+        El promedio no cuenta todo. Cuando ya ves las cargas de cada camión, puedes comparar si se
+        parecen o son diferentes.
+      </p>
     </div>
     <div class="report-card">
       <span class="task-kicker">Para el plan del siguiente turno</span>
       <h3>Mismo promedio: 100 t. En B, las cargas fueron más diferentes.</h3>
-      <p><strong>Recomendación:</strong> revisar qué pasó en B antes de decidir sobre el plan. Las cargas no nos dicen por qué pasó.</p>
-      <p>El encargado añadirá estos registros al informe y consultará al equipo antes de decidir cambios.</p>
+      <p>
+        <strong>Recomendación:</strong> revisar qué pasó en B antes de decidir sobre el plan. Las
+        cargas no nos dicen por qué pasó.
+      </p>
+      <p>
+        El encargado añadirá estos registros al informe y consultará al equipo antes de decidir
+        cambios.
+      </p>
     </div>
-    <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar recomendación →</button></div>
+    <div class="lesson-actions">
+      <button type="button" class="btn btn--primary" (click)="finish()">
+        Entregar recomendación →
+      </button>
+    </div>
   }
 </section>

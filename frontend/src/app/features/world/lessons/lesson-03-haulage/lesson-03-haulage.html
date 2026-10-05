@@ -1,112 +1,271 @@
-<section class="lesson haulage-lesson intuitive-haulage" aria-labelledby="haulage-title">
+<section class="lesson intuitive-haulage" aria-labelledby="haulage-title">
   <header class="lesson-header">
-    <span class="lesson-tag">Clase 3 · Botadero de desmonte</span>
+    <span class="lesson-tag"
+      ><span class="lesson-tag__number">Clase 3</span> · Botadero de desmonte</span
+    >
     <h2 id="haulage-title">¿Cuánto cambiaron los tiempos?</h2>
     <p>Misión: preparar un aviso para el equipo que organiza las llegadas de camiones.</p>
   </header>
 
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
     @for (label of ['Mira', 'Mide', 'Prueba']; track label; let index = $index) {
-      <li [class.step--active]="step() === index + 1" [class.step--done]="step() > index + 1 || stage() === 'success'" [attr.aria-current]="step() === index + 1 ? 'step' : null">
-        <span aria-hidden="true">{{ step() > index + 1 || stage() === 'success' ? '✓' : index + 1 }}</span>{{ label }}
+      <li
+        [class.step--active]="step() === index + 1"
+        [class.step--done]="step() > index + 1 || stage() === 'success'"
+        [attr.aria-current]="step() === index + 1 ? 'step' : null"
+      >
+        <span aria-hidden="true">{{
+          step() > index + 1 || stage() === 'success' ? '✓' : index + 1
+        }}</span
+        >{{ label }}
       </li>
     }
   </ol>
 
   @if (stage() !== 'success') {
     <div class="workbench">
-      <div class="time-board">
-        <div class="board-heading"><strong>{{ practicing() ? 'Ensayo: otras cinco descargas' : 'Cinco descargas de desmonte' }}</strong><small>Datos de ejemplo</small></div>
+      <div class="time-board" role="region" aria-labelledby="haulage-evidence-title">
+        <div class="board-heading">
+          <strong id="haulage-evidence-title">{{
+            practicing() ? 'Ensayo: otras cinco descargas' : 'Cinco descargas de desmonte'
+          }}</strong
+          ><small>Datos de ejemplo</small>
+        </div>
         @if (showMeasure()) {
           <div class="extreme-summary">
-            <div><span>Más corta</span><strong>{{ minimum() }} <small>min</small></strong></div>
-            <div><span>Más larga</span><strong>{{ maximum() }} <small>min</small></strong></div>
+            <div class="extreme-summary__short">
+              <span>Más corta</span><strong>{{ minimum() }} <small>min</small></strong>
+            </div>
+            <div class="extreme-summary__long">
+              <span>Más larga</span><strong>{{ maximum() }} <small>min</small></strong>
+            </div>
           </div>
-          <svg class="time-bridge" viewBox="0 0 560 150" role="img" [attr.aria-label]="diagramDescription()">
+          <svg
+            class="time-bridge"
+            viewBox="0 0 560 150"
+            role="img"
+            [attr.aria-label]="diagramDescription()"
+          >
             <line class="bridge-base" x1="30" y1="74" x2="530" y2="74" />
             @for (interval of intervals(); track interval; let index = $index) {
-              <rect class="minute-step" [attr.x]="bridgePosition(interval) + 4" y="64" [attr.width]="500 / separation() - 8" height="20" rx="4" />
-              <text class="step-number" [attr.x]="bridgePosition(interval + .5)" y="50">{{ index + 1 }}</text>
+              <rect
+                class="minute-step"
+                [attr.x]="bridgePosition(interval) + 4"
+                y="64"
+                [attr.width]="500 / separation() - 8"
+                height="20"
+                rx="2"
+              />
+              <text class="step-number" [attr.x]="bridgePosition(interval + 0.5)" y="50">
+                {{ index + 1 }}
+              </text>
             }
             @for (tick of axisTicks(); track tick) {
-              <line class="minute-mark" [attr.x1]="bridgePosition(tick)" [attr.x2]="bridgePosition(tick)" y1="88" y2="97" />
-              <text class="minute-label" [attr.x]="bridgePosition(tick)" y="122">{{ tick }}</text>
+              <line
+                class="minute-mark"
+                [class.minute-mark--endpoint]="tick === minimum() || tick === maximum()"
+                [attr.x1]="bridgePosition(tick)"
+                [attr.x2]="bridgePosition(tick)"
+                y1="88"
+                y2="97"
+              />
+              <text
+                class="minute-label"
+                [class.minute-label--short]="tick === minimum()"
+                [class.minute-label--long]="tick === maximum()"
+                [attr.x]="bridgePosition(tick)"
+                y="122"
+              >
+                {{ tick }}
+              </text>
             }
+            <circle class="bridge-end bridge-end--short" cx="30" cy="74" r="9" aria-hidden="true" />
+            <circle class="bridge-end bridge-end--long" cx="530" cy="74" r="9" aria-hidden="true" />
             <text class="bridge-caption" x="280" y="146">Duración de descarga en minutos</text>
           </svg>
-          <p class="chart-key">Cada tramo verde es <strong>1 minuto</strong>. Cuenta los espacios entre las marcas.</p>
-          <p class="source-records">Registros: @for (record of records(); track record.id; let last = $last) { {{ record.time }}{{ last ? ' minutos.' : ',' }} }</p>
+          <p class="chart-key">
+            Cada tramo verde es <strong>1 minuto</strong>. Cuenta los espacios entre las marcas.
+          </p>
+          <p class="source-records">
+            Registros:
+            @for (record of records(); track record.id; let last = $last) {
+              {{ record.time }}{{ last ? ' minutos.' : ',' }}
+            }
+          </p>
         } @else {
-          <p class="board-instruction">{{ selecting() ? selectionTask() + '.' : 'Los extremos que encontraste siguen señalados.' }}</p>
+          <p class="board-instruction">
+            {{
+              selecting() ? selectionTask() + '.' : 'Los extremos que encontraste siguen señalados.'
+            }}
+          </p>
           <div class="trip-grid" role="group" aria-label="Duración de cinco descargas observadas">
             @for (record of records(); track record.id; let index = $index) {
-              <button type="button" class="trip-card"
-                [class.trip-card--short]="selectedMinId() === record.id" [class.trip-card--long]="selectedMaxId() === record.id"
-                [disabled]="!selecting() || extremesFound()" [attr.aria-pressed]="selectedMinId() === record.id || selectedMaxId() === record.id"
-                [attr.aria-label]="'Descarga ' + (index + 1) + ', ' + record.time + ' minutos.' + (selectedMinId() === record.id ? ' Más corta seleccionada.' : selectedMaxId() === record.id ? ' Más larga seleccionada.' : '')"
-                (click)="selectTrip(record.id)">
-                <span>Descarga {{ index + 1 }}</span>
+              <button
+                type="button"
+                class="btn trip-card"
+                [class.trip-card--short]="selectedMinId() === record.id"
+                [class.trip-card--long]="selectedMaxId() === record.id"
+                [disabled]="!selecting() || extremesFound()"
+                [attr.aria-pressed]="selectedMinId() === record.id || selectedMaxId() === record.id"
+                [attr.aria-label]="
+                  'Descarga ' +
+                  (index + 1) +
+                  ', ' +
+                  record.time +
+                  ' minutos.' +
+                  (selectedMinId() === record.id
+                    ? ' Más corta seleccionada.'
+                    : selectedMaxId() === record.id
+                      ? ' Más larga seleccionada.'
+                      : '')
+                "
+                (click)="selectTrip(record.id)"
+              >
+                <span class="trip-name"
+                  ><span class="trip-name__word">Descarga </span>{{ index + 1 }}</span
+                >
                 <strong>{{ record.time }} <small>min</small></strong>
-                <div class="bar-track" aria-hidden="true"><span class="time-bar" [style.height.%]="barHeight(record.time)"></span></div>
-                <img src="assets/game/tilesets/vehicles/dump_truck_2.png" alt="">
-                <small class="selection-label">{{ selectedMinId() === record.id ? 'Más corta ✓' : selectedMaxId() === record.id ? 'Más larga ✓' : 'Descarga' }}</small>
+                <div class="bar-track" aria-hidden="true">
+                  <span class="time-bar" [style.height.%]="barHeight(record.time)"></span>
+                </div>
+                <img src="assets/game/tilesets/vehicles/dump_truck_2.png" alt="" />
+                <small
+                  class="selection-label"
+                  [class.selection-label--empty]="
+                    selectedMinId() !== record.id && selectedMaxId() !== record.id
+                  "
+                  >{{
+                    selectedMinId() === record.id
+                      ? 'Más corta ✓'
+                      : selectedMaxId() === record.id
+                        ? 'Más larga ✓'
+                        : 'Descarga'
+                  }}</small
+                >
               </button>
             }
           </div>
-          <p class="chart-key">Más altura = más minutos. Las barras empiezan en cero y usan la misma escala. <strong>min = minutos.</strong></p>
+          <p class="chart-key">
+            Más altura = más minutos. Las barras empiezan en cero y usan la misma escala.
+            <strong>min = minutos.</strong>
+          </p>
           @if (extremesFound()) {
-            <p class="extremes-note">Más corta: <strong>{{ minimum() }} min</strong> · Más larga: <strong>{{ maximum() }} min</strong></p>
+            <p class="extremes-note">
+              Más corta: <strong>{{ minimum() }} min</strong> · Más larga:
+              <strong>{{ maximum() }} min</strong>
+            </p>
           }
         }
       </div>
 
       <aside class="task-card" aria-labelledby="haulage-task-title">
         @if (selecting()) {
-          <span class="task-kicker">{{ stage() === 'extremes' ? 'Prepara el aviso' : round() === 0 ? 'Ahora tú, con otros registros' : 'Otro ensayo, sin la pista' }}</span>
+          <span class="task-kicker">{{
+            stage() === 'extremes'
+              ? 'Prepara el aviso'
+              : round() === 0
+                ? 'Ahora tú, con otros registros'
+                : 'Otro ensayo, sin la pista'
+          }}</span>
           <h3 id="haulage-task-title" #taskHeading tabindex="-1">{{ selectionTask() }}</h3>
           @if (!selectedMinId()) {
-            <p>{{ stage() === 'extremes' ? 'Para organizar las llegadas, necesitamos saber cuánto cambiaron los tiempos.' : 'Busca el tiempo más corto y el más largo.' }}</p>
+            <p>
+              {{
+                stage() === 'extremes'
+                  ? 'Para organizar las llegadas, necesitamos saber cuánto cambiaron los tiempos.'
+                  : 'Busca el tiempo más corto y el más largo.'
+              }}
+            </p>
             <p>Toca la tarjeta con menos minutos.</p>
           } @else if (!selectedMaxId()) {
-            <p>La más corta duró <strong>{{ minimum() }} minutos</strong>. Ahora toca la tarjeta con más minutos.</p>
+            <p>
+              La más corta duró <strong>{{ minimum() }} minutos</strong>. Ahora toca la tarjeta con
+              más minutos.
+            </p>
           } @else {
-            <p>La más corta duró <strong>{{ minimum() }}</strong> y la más larga <strong>{{ maximum() }} minutos</strong>.</p>
+            <p>
+              La más corta duró <strong>{{ minimum() }}</strong> y la más larga
+              <strong>{{ maximum() }} minutos</strong>.
+            </p>
             <p>Vamos a ver cuánto las separa.</p>
-            <button type="button" class="btn btn--primary" (click)="showSeparation()">Ver la separación →</button>
+            <button type="button" class="btn btn--primary" (click)="showSeparation()">
+              Ver la separación →
+            </button>
           }
         } @else if (stage() === 'measure' || stage() === 'practice-range') {
-          <span class="task-kicker">{{ stage() === 'measure' ? 'Recorre de un extremo al otro' : 'Mide lo que encontraste' }}</span>
+          <span class="task-kicker">{{
+            stage() === 'measure' ? 'Recorre de un extremo al otro' : 'Mide lo que encontraste'
+          }}</span>
           <h3 id="haulage-task-title" #taskHeading tabindex="-1">¿Cuántos minutos los separan?</h3>
-          <p>{{ stage() === 'measure' ? 'Cuenta los tramos de un minuto desde la más corta hasta la más larga.' : 'Busca cuánto hay desde ' + minimum() + ' hasta ' + maximum() + ' minutos.' }}</p>
+          <p>
+            {{
+              stage() === 'measure'
+                ? 'Cuenta los tramos de un minuto desde la más corta hasta la más larga.'
+                : 'Busca cuánto hay desde ' + minimum() + ' hasta ' + maximum() + ' minutos.'
+            }}
+          </p>
           <div class="number-choices" role="group" aria-label="Separación en minutos">
             @for (option of rangeOptions(); track option) {
-              <button type="button" class="btn answer-choice" (click)="answerRange(option)">{{ option }} min</button>
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="answerRange(option)"
+              >
+                {{ option }} min
+              </button>
             }
           </div>
         } @else if (stage() === 'discovery') {
           <span class="task-kicker">Ahora tiene nombre</span>
           <h3 id="haulage-task-title" #taskHeading tabindex="-1">Esta separación se llama rango</h3>
-          <div class="range-reading"><strong>{{ separation() }} minutos</strong><span>entre la más corta y la más larga</span></div>
-          <p>El <strong>rango</strong> compara solo los dos extremos: el tiempo menor y el mayor.</p>
-          <p>En este registro: {{ maximum() }} menos {{ minimum() }} da {{ separation() }} minutos.</p>
-          <button type="button" class="btn btn--primary" (click)="startPractice()">Probar con otro registro →</button>
+          <div class="range-reading">
+            <strong>{{ separation() }} minutos</strong
+            ><span>entre la más corta y la más larga</span>
+          </div>
+          <p>
+            El <strong>rango</strong> compara solo los dos extremos: el tiempo menor y el mayor.
+          </p>
+          <p>
+            En este registro: {{ maximum() }} menos {{ minimum() }} da {{ separation() }} minutos.
+          </p>
+          <button type="button" class="btn btn--primary" (click)="startPractice()">
+            Probar con otro registro →
+          </button>
         } @else if (stage() === 'practice-meaning') {
           <span class="task-kicker">Explica tu respuesta</span>
-          <h3 id="haulage-task-title" #taskHeading tabindex="-1">¿Qué significa un rango de {{ separation() }} minutos?</h3>
+          <h3 id="haulage-task-title" #taskHeading tabindex="-1">
+            ¿Qué significa un rango de {{ separation() }} minutos?
+          </h3>
           <div class="meaning-choices">
             @for (meaning of meanings(); track meaning.id) {
-              <button type="button" class="btn answer-choice" (click)="explainRange(meaning.id)">{{ meaning.text }}</button>
+              <button
+                type="button"
+                class="btn btn--answer answer-choice"
+                (click)="explainRange(meaning.id)"
+              >
+                {{ meaning.text }}
+              </button>
             }
           </div>
         } @else if (stage() === 'review') {
           <span class="task-kicker">Ahora se entiende</span>
           <h3 id="haulage-task-title" #taskHeading tabindex="-1">El rango mide la separación</h3>
-          <p>Entre {{ minimum() }} y {{ maximum() }} hay <strong>{{ separation() }} minutos</strong>. Ese resultado no es lo que duró cada descarga.</p>
+          <p>
+            Entre {{ minimum() }} y {{ maximum() }} hay <strong>{{ separation() }} minutos</strong>.
+            Ese resultado no es lo que duró cada descarga.
+          </p>
           <p>Ensaya con otro registro para reconocerlo sin la pista.</p>
-          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otro registro →</button>
+          <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
+            Probar otro registro →
+          </button>
         }
-        <div aria-live="polite" aria-atomic="true">
-          @if (feedback()) { <div class="feedback feedback--hint"><strong>Una pista</strong><p>{{ feedback() }}</p></div> }
+        <div class="feedback-region" aria-live="polite" aria-atomic="true">
+          @if (feedback()) {
+            <div class="feedback feedback--hint">
+              <strong>Una pista</strong>
+              <p>{{ feedback() }}</p>
+            </div>
+          }
         </div>
       </aside>
     </div>
@@ -119,9 +278,17 @@
     <div class="report-card">
       <span class="task-kicker">Para organizar las llegadas del siguiente turno</span>
       <h3>Descargas observadas: de 11 a 18 minutos</h3>
-      <p><strong>Hubo 7 minutos de separación entre la más corta y la más larga.</strong> Ese es el rango de estos registros.</p>
-      <p>Es lo que ocurrió en estas cinco descargas, no una garantía para las siguientes. Los tiempos tampoco explican por qué variaron.</p>
+      <p>
+        <strong>Hubo 7 minutos de separación entre la más corta y la más larga.</strong> Ese es el
+        rango de estos registros.
+      </p>
+      <p>
+        Es lo que ocurrió en estas cinco descargas, no una garantía para las siguientes. Los tiempos
+        tampoco explican por qué variaron.
+      </p>
     </div>
-    <div class="lesson-actions"><button type="button" class="btn btn--primary" (click)="finish()">Entregar el aviso →</button></div>
+    <div class="lesson-actions">
+      <button type="button" class="btn btn--primary" (click)="finish()">Entregar el aviso →</button>
+    </div>
   }
 </section>

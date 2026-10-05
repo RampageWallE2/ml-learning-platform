@@ -9,9 +9,10 @@
     [class.interaction-panel--activity]="mode() === 'activity'"
     role="dialog"
     aria-modal="true"
+    [attr.aria-label]="mode() === 'dialogue' ? 'Conversación' : 'Actividad'"
   >
-
     <button
+      type="button"
       class="close-button"
       [class.close-button--dialogue]="mode() === 'dialogue'"
       [attr.aria-label]="mode() === 'dialogue' ? 'Cerrar diálogo' : 'Cerrar actividad'"
@@ -33,6 +34,5 @@
         <ng-content />
       </div>
     </div>
-
   </div>
 </div>

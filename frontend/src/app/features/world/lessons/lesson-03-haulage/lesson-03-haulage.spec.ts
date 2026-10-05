@@ -21,15 +21,17 @@ describe('Lesson03Haulage', () => {
   }
 
   function findPracticeExtremes(game: Lesson03Haulage) {
-    game.selectTrip(game.records().find(record => record.time === game.minimum())!.id);
-    game.selectTrip(game.records().find(record => record.time === game.maximum())!.id);
+    game.selectTrip(game.records().find((record) => record.time === game.minimum())!.id);
+    game.selectTrip(game.records().find((record) => record.time === game.maximum())!.id);
   }
 
   it('starts with a clear mission and visible records before naming the mathematical tool', () => {
     const fixture = create();
     const root = fixture.nativeElement as HTMLElement;
     expect(fixture.componentInstance.stage()).toBe('extremes');
-    expect(root.querySelector('.lesson-header')!.textContent).toContain('organiza las llegadas de camiones');
+    expect(root.querySelector('.lesson-header')!.textContent).toContain(
+      'organiza las llegadas de camiones',
+    );
     expect(root.textContent).toContain('desmonte');
     expect(root.textContent).toContain('Selecciona la descarga más corta');
     expect(root.textContent).not.toMatch(/rango|máximo|mínimo/);
@@ -41,14 +43,90 @@ describe('Lesson03Haulage', () => {
   it('preserves the planned data and shows proportional bars with a shared zero baseline', () => {
     const fixture = create();
     const game = fixture.componentInstance;
-    expect(game.trips.map(record => record.time)).toEqual([11, 12, 11, 18, 12]);
-    expect(game.practiceTrips().map(record => record.time)).toEqual([14, 10, 12, 15, 11]);
+    expect(game.trips.map((record) => record.time)).toEqual([11, 12, 11, 18, 12]);
+    expect(game.practiceTrips().map((record) => record.time)).toEqual([14, 10, 12, 15, 11]);
     expect(game.barHeight(0)).toBe(0);
     expect(game.barHeight(10)).toBe(50);
     expect(game.barHeight(20)).toBe(100);
     const bars = fixture.nativeElement.querySelectorAll('.time-bar') as NodeListOf<HTMLElement>;
-    Array.from(bars).forEach((bar, index) => expect(parseFloat(bar.style.height)).toBeCloseTo([55, 60, 55, 90, 60][index]));
-    expect(fixture.nativeElement.querySelector('.chart-key').textContent).toContain('empiezan en cero');
+    Array.from(bars).forEach((bar, index) =>
+      expect(parseFloat(bar.style.height)).toBeCloseTo([55, 60, 55, 90, 60][index]),
+    );
+    expect(fixture.nativeElement.querySelector('.chart-key').textContent).toContain(
+      'empiezan en cero',
+    );
+  });
+
+  it('uses the shared lesson theme and a single named evidence region throughout the activity', () => {
+    const fixture = create();
+    const root = fixture.nativeElement as HTMLElement;
+    const game = fixture.componentInstance;
+    const checkEvidence = (title: string) => {
+      expect(root.querySelectorAll('.workbench')).toHaveLength(1);
+      expect(root.querySelectorAll('[id="haulage-evidence-title"]')).toHaveLength(1);
+      const board = root.querySelector('.time-board')!;
+      expect(board.getAttribute('role')).toBe('region');
+      expect(board.getAttribute('aria-labelledby')).toBe('haulage-evidence-title');
+      expect(root.querySelector('#haulage-evidence-title')!.textContent).toBe(title);
+    };
+    expect(root.querySelector('.lesson')!.classList.contains('haulage-lesson')).toBe(false);
+    expect(root.querySelector('.lesson-tag__number')!.textContent).toBe('Clase 3');
+    checkEvidence('Cinco descargas de desmonte');
+    reachMeasure(game);
+    fixture.detectChanges();
+    checkEvidence('Cinco descargas de desmonte');
+    game.answerRange(7);
+    game.startPractice();
+    fixture.detectChanges();
+    checkEvidence('Ensayo: otras cinco descargas');
+  });
+
+  it('shares button styles without losing the selected extremes or their text labels', () => {
+    const fixture = create();
+    const root = fixture.nativeElement as HTMLElement;
+    const game = fixture.componentInstance;
+    expect(root.querySelectorAll('.trip-card.btn[type="button"]')).toHaveLength(5);
+    expect(root.querySelectorAll('.selection-label--empty')).toHaveLength(5);
+    game.selectTrip('trip-1');
+    game.selectTrip('trip-4');
+    fixture.detectChanges();
+    const short = root.querySelector<HTMLButtonElement>('.trip-card--short')!;
+    const long = root.querySelector<HTMLButtonElement>('.trip-card--long')!;
+    expect(short.getAttribute('aria-label')).toContain('11 minutos. Más corta seleccionada.');
+    expect(long.getAttribute('aria-label')).toContain('18 minutos. Más larga seleccionada.');
+    expect(short.querySelector('.selection-label')!.textContent).toBe('Más corta ✓');
+    expect(long.querySelector('.selection-label')!.textContent).toBe('Más larga ✓');
+    expect(short.disabled && long.disabled).toBe(true);
+    expect(root.querySelectorAll('.selection-label--empty')).toHaveLength(3);
+    game.showSeparation();
+    fixture.detectChanges();
+    expect(root.querySelectorAll('.number-choices .btn--answer[type="button"]')).toHaveLength(4);
+    game.answerRange(7);
+    game.startPractice();
+    findPracticeExtremes(game);
+    game.answerRange(5);
+    fixture.detectChanges();
+    expect(root.querySelectorAll('.meaning-choices .btn--answer[type="button"]')).toHaveLength(3);
+    expect(root.querySelectorAll('input, textarea')).toHaveLength(0);
+  });
+
+  it('highlights only the two ends while retaining all seven spaces and eight duration marks', () => {
+    const fixture = create();
+    reachMeasure(fixture.componentInstance);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.extreme-summary__short span')!.textContent).toBe('Más corta');
+    expect(root.querySelector('.extreme-summary__short strong')!.textContent).toContain('11');
+    expect(root.querySelector('.extreme-summary__long span')!.textContent).toBe('Más larga');
+    expect(root.querySelector('.extreme-summary__long strong')!.textContent).toContain('18');
+    expect(root.querySelectorAll('.minute-step')).toHaveLength(7);
+    expect(root.querySelectorAll('.minute-mark')).toHaveLength(8);
+    expect(root.querySelectorAll('.minute-mark--endpoint')).toHaveLength(2);
+    expect(root.querySelector('.minute-label--short')!.textContent?.trim()).toBe('11');
+    expect(root.querySelector('.minute-label--long')!.textContent?.trim()).toBe('18');
+    expect(root.querySelector('.bridge-end--short')!.getAttribute('cx')).toBe('30');
+    expect(root.querySelector('.bridge-end--long')!.getAttribute('cx')).toBe('530');
+    expect(root.querySelectorAll('.bridge-end[aria-hidden="true"]')).toHaveLength(2);
   });
 
   it('accepts either record with the repeated shortest duration', () => {
@@ -118,7 +196,9 @@ describe('Lesson03Haulage', () => {
     cards[0].click();
     fixture.detectChanges();
     expect(root.querySelector('.trip-grid')).toBe(grid);
-    expect(root.querySelector('.task-card')!.textContent).toContain('Selecciona la descarga más larga');
+    expect(root.querySelector('.task-card')!.textContent).toContain(
+      'Selecciona la descarga más larga',
+    );
     expect(root.querySelector('.btn--primary')).toBeNull();
     cards[3].click();
     fixture.detectChanges();
@@ -127,7 +207,7 @@ describe('Lesson03Haulage', () => {
     expect(root.querySelector('.trip-card--short')!.textContent).toContain('Más corta ✓');
     expect(root.querySelector('.trip-card--long')!.textContent).toContain('Más larga ✓');
     expect(root.querySelector('.btn--primary')!.textContent).toContain('Ver la separación');
-    expect(Array.from(cards).every(card => card.disabled)).toBe(true);
+    expect(Array.from(cards).every((card) => card.disabled)).toBe(true);
   });
 
   it('shows seven one-minute spaces and eight duration marks without a mandatory slider', () => {
@@ -143,11 +223,14 @@ describe('Lesson03Haulage', () => {
     expect(root.querySelectorAll('.minute-step')).toHaveLength(7);
     expect(root.querySelectorAll('.minute-mark')).toHaveLength(8);
     expect(root.querySelectorAll('.step-number')).toHaveLength(7);
-    expect(root.querySelector('.time-bridge')!.getAttribute('aria-label')).toContain('7 tramos de un minuto');
+    expect(root.querySelector('.time-bridge')!.getAttribute('aria-label')).toContain(
+      '7 tramos de un minuto',
+    );
     expect(root.querySelectorAll('input, textarea')).toHaveLength(0);
     expect(root.textContent).not.toContain('se llama rango');
     const steps = root.querySelectorAll<SVGRectElement>('.minute-step');
-    for (const step of Array.from(steps)) expect(Number(step.getAttribute('width'))).toBeCloseTo(500 / 7 - 8);
+    for (const step of Array.from(steps))
+      expect(Number(step.getAttribute('width'))).toBeCloseTo(500 / 7 - 8);
   });
 
   it('distinguishes longest duration from separation and spaces from inclusive marks', () => {
@@ -180,7 +263,7 @@ describe('Lesson03Haulage', () => {
     fixture.detectChanges();
     expect(game.stage()).toBe('practice-extremes');
     expect(game.step()).toBe(3);
-    expect(game.records().map(record => record.time)).toEqual([14, 10, 12, 15, 11]);
+    expect(game.records().map((record) => record.time)).toEqual([14, 10, 12, 15, 11]);
     expect(game.minimum()).toBe(10);
     expect(game.maximum()).toBe(15);
     expect(game.selectedMinId()).toBeNull();
@@ -215,7 +298,9 @@ describe('Lesson03Haulage', () => {
     fixture.detectChanges();
     expect(game.rangeOptions()).toEqual([4, 5, 6, 15]);
     expect(fixture.nativeElement.querySelector('.time-bridge')).toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.trip-card--short, .trip-card--long')).toHaveLength(2);
+    expect(
+      fixture.nativeElement.querySelectorAll('.trip-card--short, .trip-card--long'),
+    ).toHaveLength(2);
     game.answerRange(5);
     fixture.detectChanges();
     expect(game.stage()).toBe('practice-meaning');
@@ -246,7 +331,7 @@ describe('Lesson03Haulage', () => {
     expect(done).not.toHaveBeenCalled();
     game.continueAfterHelp();
     expect(game.round()).toBe(1);
-    expect(game.records().map(record => record.time)).toEqual([13, 9, 15, 11, 12]);
+    expect(game.records().map((record) => record.time)).toEqual([13, 9, 15, 11, 12]);
     expect(game.practiceHelped()).toBe(false);
     expect(game.selectedMinId()).toBeNull();
     expect(game.selectedMaxId()).toBeNull();
@@ -305,8 +390,10 @@ describe('Lesson03Haulage', () => {
     for (let round = 0; round < 10; round += 1) {
       expect(game.round()).toBe(round);
       expect(game.records()).toHaveLength(5);
-      expect(game.records().every(record => record.time > 0 && record.time <= game.barMaximum)).toBe(true);
-      game.selectTrip(game.records().find(record => record.time !== game.minimum())!.id);
+      expect(
+        game.records().every((record) => record.time > 0 && record.time <= game.barMaximum),
+      ).toBe(true);
+      game.selectTrip(game.records().find((record) => record.time !== game.minimum())!.id);
       findPracticeExtremes(game);
       game.answerRange(game.separation());
       game.explainRange('separation');
@@ -321,9 +408,13 @@ describe('Lesson03Haulage', () => {
     game.explainRange('separation');
     fixture.detectChanges();
     expect(game.stage()).toBe('success');
-    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain('de 11 a 18 minutos');
-    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain('7 minutos de separación');
-    expect(game.trips.map(record => record.time)).toEqual([11, 12, 11, 18, 12]);
+    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain(
+      'de 11 a 18 minutos',
+    );
+    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain(
+      '7 minutos de separación',
+    );
+    expect(game.trips.map((record) => record.time)).toEqual([11, 12, 11, 18, 12]);
   });
 
   it('emits once only after an independent calculation and its interpretation', () => {
@@ -358,11 +449,18 @@ describe('Lesson03Haulage', () => {
     };
     const number = (value: number) => {
       Array.from(root.querySelectorAll<HTMLButtonElement>('.number-choices button'))
-        .find(button => button.textContent?.trim() === value + ' min')!.click();
+        .find((button) => button.textContent?.trim() === value + ' min')!
+        .click();
       fixture.detectChanges();
     };
-    trip(0); trip(3); primary(); number(7); primary();
-    trip(1); trip(3); number(5);
+    trip(0);
+    trip(3);
+    primary();
+    number(7);
+    primary();
+    trip(1);
+    trip(3);
+    number(5);
     root.querySelectorAll<HTMLButtonElement>('.meaning-choices button')[1].click();
     fixture.detectChanges();
     expect(root.querySelector('.completion-card')!.textContent).toContain('Tu aviso está listo');

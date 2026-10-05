@@ -57,6 +57,20 @@ describe('LandingPage', () => {
     expect(element.querySelector('a[href="/world"]')).toBeNull();
   });
 
+  it('uses the shared primary action for account and learning entry points', () => {
+    const fixture = TestBed.createComponent(LandingPage);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const actions = element.querySelectorAll<HTMLAnchorElement>('a.button');
+
+    expect(actions).toHaveLength(3);
+    for (const action of actions) {
+      expect(action.classList.contains('btn')).toBe(true);
+      expect(action.classList.contains('btn--primary')).toBe(true);
+      expect(action.getAttribute('href')).toContain('/register');
+    }
+  });
+
   it('shows the profile and continuation actions for an authenticated user', () => {
     userState.set({
       id: 'user-id',

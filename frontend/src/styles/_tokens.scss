@@ -1,25 +1,49 @@
 :root {
   --font-body: 'Inter', sans-serif;
   --font-retro: 'Press Start 2P', monospace;
+
+  /* Una misma paleta para superficies oscuras y claras. */
+  --color-forest: #18251e;
+  --color-forest-soft: #22352b;
+  --color-forest-muted: #b8c4b9;
+  --color-forest-border: #536c5a;
+  --color-accent: #d4aa4b;
+
   /* Colores principales */
-  --color-primary: #3f6b4f;
+  --color-primary: #315b48;
+  --color-primary-hover: #254737;
   --color-primary-soft: #7fa36b;
+  --color-primary-tint: #edf3e9;
 
   /* Superficies */
   --color-surface: #f4ebd8;
+  --color-surface-raised: #fffdf8;
   --color-surface-alt: #e3d2ae;
 
   /* Tierra / bordes */
   --color-earth: #8b6246;
+  --color-border: #c5d2c9;
 
   /* Texto */
   --color-text: #28332d;
   --color-text-muted: #647067;
 
   /* Estados */
-  --color-success: #5f914f;
+  --color-success: #315b48;
+  --color-success-soft: #eaf3e8;
   --color-warning: #c5903f;
-  --color-error: #b85c4a;
+  --color-hint: #79551c;
+  --color-hint-surface: #fbf3e4;
+  --color-error: #8f4437;
+  --color-focus: #146d9a;
+
+  --radius-frame: 2px;
+  --radius-control: 6px;
+  --radius-panel: 12px;
+  --control-min-height: 44px;
+  --shadow-control: 0 3px 0 rgba(40, 51, 45, 0.25);
+  --shadow-frame: 3px 3px 0 var(--color-earth);
+  --motion-fast: 150ms;
 
   /* Overlay */
   --color-overlay: rgba(20, 28, 23, 0.72);
