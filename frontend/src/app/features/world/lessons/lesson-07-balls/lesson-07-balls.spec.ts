@@ -24,6 +24,60 @@ describe('Lesson07Balls', () => {
     button!.click();
   }
 
+  it('places all active records and the given mean in focused evidence before a calculation', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.primary-evidence')).toBeNull();
+    game.choosePrediction('b');
+    fixture.detectChanges();
+    const primary = root.querySelector('.workbench--focused > .primary-evidence')!;
+    expect(primary.getAttribute('role')).toBe('region');
+    expect(primary.getAttribute('aria-labelledby')).toBe('balls-records-title');
+    expect(primary.querySelector('h4')!.textContent).toContain('Período A');
+    expect(primary.querySelector('.mean-summary')!.textContent).toContain('100 t/h');
+    expect(primary.querySelectorAll('.record-card')).toHaveLength(6);
+    expect(primary.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(primary.querySelector('.totals')).toBeNull();
+    expect(primary.textContent).not.toMatch(/Varianza:|Suma de cuadrados:/);
+    expect(root.querySelector('.data-board .active-records')).toBeNull();
+    expect(root.querySelectorAll('.data-point')).toHaveLength(12);
+    const options = [...game.options()];
+    game.requestHint();
+    fixture.detectChanges();
+    expect(primary.querySelectorAll('.record--hint')).toHaveLength(2);
+    expect(primary.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(game.options()).toEqual(options);
+    game.requestHint();
+    fixture.detectChanges();
+    expect(root.querySelector('.workbench--squares')).not.toBeNull();
+    expect(primary.querySelectorAll('.square-cell')).toHaveLength(18);
+    expect(primary.querySelector('.totals')!.textContent).toContain('Suma de cuadrados:');
+  });
+
+  it('switches the focused evidence to B and returns to the two-period report without duplicate records', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    game.choosePrediction('b');
+    game.answerVariance(3);
+    fixture.detectChanges();
+    expect(root.querySelector('.workbench--checked')).not.toBeNull();
+    game.continueCalculation();
+    fixture.detectChanges();
+    const primary = root.querySelector('.primary-evidence')!;
+    expect(primary.querySelector('h4')!.textContent).toContain('Período B');
+    expect(primary.querySelectorAll('.record-card')).toHaveLength(6);
+    expect(root.querySelectorAll('.record-card')).toHaveLength(6);
+    expect(primary.querySelectorAll('.square-cell')).toHaveLength(0);
+    game.answerVariance(6);
+    game.continueCalculation();
+    fixture.detectChanges();
+    expect(root.querySelector('.primary-evidence, .workbench--focused')).toBeNull();
+    expect(root.querySelectorAll('.period-plot')).toHaveLength(2);
+    expect(root.querySelectorAll('.variance--solved')).toHaveLength(2);
+  });
+
   it('starts with the report mission and two fully visible datasets, without revealing results or written answers', () => {
     const fixture = create();
     const game = fixture.componentInstance;
@@ -61,6 +115,17 @@ describe('Lesson07Balls', () => {
     expect(root.querySelectorAll('.record-card')).toHaveLength(0);
     expect(root.querySelector('.totals')).toBeNull();
     expect(root.textContent).not.toContain('18 ÷ 6');
+    const context = root.querySelector('.workbench > .evidence-context')!;
+    expect(context.getAttribute('aria-label')).toBe(
+      'Registros completos y lectura de los gráficos',
+    );
+    expect(context.querySelectorAll('.record-list')).toHaveLength(2);
+    game.periods().forEach((period, index) => {
+      expect(context.querySelectorAll('.record-list')[index].textContent).toContain(
+        period.values.join(', '),
+      );
+    });
+    expect(root.querySelector('.data-board .record-list')).toBeNull();
   });
 
   it.each(['a', 'b', 'equal'] as const)(

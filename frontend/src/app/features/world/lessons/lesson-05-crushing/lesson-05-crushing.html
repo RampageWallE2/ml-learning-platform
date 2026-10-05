@@ -22,7 +22,11 @@
 
   @if (stage() !== 'success') {
     <div class="workbench">
-      <div class="feed-board" role="region" aria-labelledby="crushing-evidence-title">
+      <div
+        class="feed-board primary-evidence"
+        role="region"
+        aria-labelledby="crushing-evidence-title"
+      >
         <div class="board-heading">
           <strong id="crushing-evidence-title">{{
             practicing() ? 'Práctica: otros datos' : 'Datos de cuatro horas'
@@ -30,8 +34,13 @@
           ><small>Datos de ejemplo</small>
         </div>
         <div class="mean-summary">
-          <strong>Promedio: {{ mean() }} t/h</strong
-          ><span>Resume estos datos; no es una meta de producción.</span>
+          <strong>Promedio: {{ mean() }} t/h</strong>
+          @if (current() !== null) {
+            <span class="current-reading">
+              {{ practicing() ? 'Dato' : 'Hora' }} {{ activeIndex()! + 1 }}:
+              <b>{{ current() }} t/h</b>
+            </span>
+          }
         </div>
         <div class="shared-scale">
           <div class="value-track" role="img" [attr.aria-label]="plotDescription()">
@@ -77,16 +86,10 @@
         </div>
         @if (stage() === 'explore') {
           <p class="selection-note" id="crushing-selection-note">
-            Elige una hora. El tramo coloreado muestra cuánto se aleja del promedio.
+            Elige una hora para ver su tramo coloreado.
           </p>
-        }
-        <div
-          class="record-cards"
-          role="group"
-          [attr.aria-label]="practicing() ? 'Datos de la práctica' : 'Datos originales'"
-        >
-          @for (value of values(); track $index; let index = $index) {
-            @if (stage() === 'explore') {
+          <div class="record-cards" role="group" aria-label="Datos originales">
+            @for (value of values(); track $index; let index = $index) {
               <button
                 type="button"
                 class="btn btn--answer record-card"
@@ -98,22 +101,7 @@
                 <small>Hora {{ index + 1 }}</small
                 ><strong>{{ value }} t/h</strong>
               </button>
-            } @else {
-              <div class="record-card" [class.record--active]="activeIndex() === index">
-                <small>{{ practicing() ? 'Dato' : 'Hora' }} {{ index + 1 }}</small
-                ><strong>{{ value }} t/h</strong>
-              </div>
             }
-          }
-        </div>
-        <p class="chart-key">
-          Cada punto es una hora. Los puntos uno sobre otro tienen el mismo valor. La línea marca el
-          promedio.
-        </p>
-        @if (stage() === 'compare' || stage() === 'notation') {
-          <div class="word-pair">
-            <div><strong>80 t/h</strong><span>← 20 por debajo</span></div>
-            <div><strong>120 t/h</strong><span>20 por encima →</span></div>
           </div>
         }
       </div>
@@ -243,6 +231,33 @@
           }
         </div>
       </aside>
+      <div class="evidence-context" role="group" aria-label="Detalle de las cuatro horas">
+        @if (stage() !== 'explore') {
+          <div
+            class="record-cards"
+            role="group"
+            [attr.aria-label]="practicing() ? 'Datos de la práctica' : 'Datos originales'"
+          >
+            @for (value of values(); track $index; let index = $index) {
+              <div class="record-card" [class.record--active]="activeIndex() === index">
+                <small>{{ practicing() ? 'Dato' : 'Hora' }} {{ index + 1 }}</small>
+                <strong>{{ value }} t/h</strong>
+              </div>
+            }
+          </div>
+        }
+        <p class="chart-key">
+          Cada punto es una hora. Los puntos uno sobre otro tienen el mismo valor. La línea azul
+          discontinua marca el promedio.
+        </p>
+        <p class="chart-key">El promedio resume estos datos; no es una meta de producción.</p>
+        @if (stage() === 'compare' || stage() === 'notation') {
+          <div class="word-pair">
+            <div><strong>80 t/h</strong><span>← 20 por debajo</span></div>
+            <div><strong>120 t/h</strong><span>20 por encima →</span></div>
+          </div>
+        }
+      </div>
     </div>
   } @else {
     <div class="completion-card">

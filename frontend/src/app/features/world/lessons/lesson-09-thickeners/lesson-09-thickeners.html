@@ -1,11 +1,11 @@
-<section class="thickeners-lesson" aria-labelledby="thickeners-title">
+<section class="lesson thickeners-lesson" aria-labelledby="thickeners-title">
   <header class="lesson-header">
-    <span class="eyebrow">C9 · Espesadores · Cierre de la investigación</span>
+    <span class="lesson-tag"><span class="lesson-tag__number">C9</span> · Espesadores · Informe final</span>
     <h2 id="thickeners-title">Una meta, dos períodos</h2>
-    <p>Ayuda al operador a preparar el siguiente turno. Mira <strong>el promedio y cuánto cambiaron los registros</strong>, no solo uno de ellos.</p>
+    <p>Prepara el siguiente turno: compara <strong>el promedio y cuánto variaron los registros</strong>.</p>
     <ol class="steps" aria-label="Pasos de la misión">
       @for (label of ['Variación', 'Meta', 'Recomendación', 'Comprobación']; track $index) {
-        <li [class.active]="step() === $index + 1" [attr.aria-current]="step() === $index + 1 ? 'step' : null">{{ $index + 1 }} · {{ label }}</li>
+        <li [class.active]="step() === $index + 1" [class.step--done]="step() > $index + 1" [attr.aria-current]="step() === $index + 1 ? 'step' : null"><span class="step-number" aria-hidden="true">{{ $index + 1 }}</span>{{ label }}</li>
       }
     </ol>
   </header>
@@ -17,9 +17,8 @@
     <div class="goal-banner"><span>Meta de ejemplo</span><strong>Promedio de {{ records().goal }} t/h</strong><p>No significa que cada registro deba ser {{ records().goal }}. t/h = toneladas por hora.</p></div>
     <div class="workbench">
       <section class="data-board" aria-label="Comparación de alimentación en espesadores">
-        <p class="muted full-context">Misma zona y punto de medición. Seis registros por período, con la misma frecuencia y en condiciones parecidas.</p>
-        <p class="muted compact-context">Cada punto = un registro. Misma escala en ambos gráficos.</p>
-        <div class="legend"><span><i class="legend-goal" aria-hidden="true"></i>Meta: lo que buscamos</span><span><i class="legend-mean" aria-hidden="true"></i>Promedio: lo que hubo</span></div>
+        <p class="muted">Cada punto = un registro · Misma escala.</p>
+        <div class="legend"><span><i class="legend-goal" aria-hidden="true"></i>Meta</span><span><i class="legend-mean" aria-hidden="true"></i>Promedio</span></div>
         <div class="periods">
           @for (period of plots(); track period.id) {
             <section class="period" [attr.aria-labelledby]="'period-' + period.id">
@@ -38,26 +37,18 @@
               <p class="records">{{ period.values.join(' · ') }} <span>t/h</span></p>
               <dl class="measures">
                 <div class="mean-measure"><dt>Promedio</dt><dd>{{ period.mean }} <small>t/h</small></dd></div>
-                <div class="additional-measure"><dt>Rango</dt><dd>{{ period.range }} <small>t/h</small></dd></div>
-                <div class="additional-measure"><dt>Varianza</dt><dd>{{ period.variance }} <small>(t/h)²</small></dd></div>
                 <div class="spread-measure"><dt>Desv. estándar</dt><dd>{{ period.standardDeviation }} <small>t/h</small></dd></div>
               </dl>
             </section>
           }
         </div>
-        <details class="additional-measures"><summary>Ver rango y varianza</summary>
-          @for (period of periods(); track period.id) { <p>Período {{ period.id }}: rango {{ period.range }} t/h · varianza {{ period.variance }} (t/h)².</p> }
-          <p>Seis registros por período, medidos en el mismo punto, con la misma frecuencia y en condiciones parecidas. Las medidas ya están calculadas. Los puntos uno sobre otro tienen el mismo valor.</p>
-          <p>La desviación estándar resume la separación respecto al promedio: un número menor indica menos variación.</p>
-        </details>
-        <p class="muted full-context">Los dos gráficos usan la misma escala. Cada punto es un registro; apilados = mismo valor. Las medidas ya están calculadas.</p>
       </section>
 
       <aside class="task-card" aria-labelledby="thickeners-task-title">
         <span class="eyebrow">{{ isTransfer() ? 'Una comprobación breve' : 'Prepara el informe' }}</span>
         <h3 id="thickeners-task-title" #taskHeading tabindex="-1">{{ question() }}</h3>
         @switch (stage()) {
-          @case ('spread') { <p>Mira cuánto se separan los registros. ¿Qué período tuvo menos variación?</p> }
+          @case ('spread') { <p>Mira cuánto se separan los registros.</p> }
           @case ('goal') { <p>Ahora mira el promedio. ¿Cuál estuvo más cerca de <strong>{{ records().goal }} t/h</strong>?</p> }
           @case ('recommend') { <p>¿Qué consejo podemos dar con estos datos?</p> }
           @case ('transfer-intro') {
@@ -75,17 +66,23 @@
           @if (!answered()) {
             <div class="choices">
               @if (stage() === 'recommend') {
-                @for (choice of recommendations(); track choice.id) { <button type="button" class="btn choice" (click)="chooseRecommendation(choice.id)">{{ choice.text }}</button> }
+                @for (choice of recommendations(); track choice.id) { <button type="button" class="btn btn--answer choice" (click)="chooseRecommendation(choice.id)">{{ choice.text }}</button> }
               } @else {
-                @for (choice of choices(); track choice.id) { <button type="button" class="btn choice" (click)="choosePeriod(choice.id)">{{ choice.text }}</button> }
+                @for (choice of choices(); track choice.id) { <button type="button" class="btn btn--answer choice" (click)="choosePeriod(choice.id)">{{ choice.text }}</button> }
               }
             </div>
-            <button type="button" class="btn btn--hint" (click)="requestHint()">Necesito una pista</button>
+            <button type="button" class="btn btn--secondary btn--hint" (click)="requestHint()">Necesito una pista</button>
           }
         }
         @if (feedback()) { <div class="feedback" [class.feedback--checked]="answered()" role="status" aria-live="polite"><strong>{{ answered() ? 'Lo que nos dicen los datos' : 'Una pista' }}</strong><p>{{ feedback() }}</p></div> }
         @if (answered()) { <button type="button" class="btn btn--primary next" (click)="continue()">{{ stage() === 'transfer' ? 'Ver el informe →' : 'Continuar →' }}</button> }
       </aside>
+      <details class="additional-measures"><summary>Ver rango, varianza y cómo leer los gráficos</summary>
+        @for (period of periods(); track period.id) { <p>Período {{ period.id }}: rango {{ period.range }} t/h · varianza {{ period.variance }} (t/h)².</p> }
+        <p>Seis registros por período, medidos en el mismo punto, con la misma frecuencia y en condiciones parecidas. Las medidas ya están calculadas. Los puntos uno sobre otro tienen el mismo valor.</p>
+        <p>La desviación estándar resume la separación respecto al promedio: un número menor indica menos variación.</p>
+        <p>Si las líneas de promedio y meta coinciden, el promedio cumple la meta.</p>
+      </details>
     </div>
   } @else {
     <section class="report-card" aria-labelledby="thickeners-task-title">

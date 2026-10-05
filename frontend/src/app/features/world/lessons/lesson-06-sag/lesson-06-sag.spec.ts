@@ -43,6 +43,12 @@ describe('Lesson06Sag', () => {
     button!.click();
   }
 
+  function comparisonValues(root: HTMLElement): string[] {
+    return Array.from(root.querySelectorAll('.comparison-box dd'), (value) =>
+      value.textContent!.trim(),
+    );
+  }
+
   it('starts with a purpose, all four records and the given mean, without written answers', () => {
     const fixture = create();
     const root: HTMLElement = fixture.nativeElement;
@@ -68,6 +74,119 @@ describe('Lesson06Sag', () => {
     expect(game.points().map((point) => point.square)).toEqual([4, 0, 0, 4]);
     expect(game.sourceSquareSum()).toBe(8);
     expect(game.variance()).toBe(2);
+  });
+
+  it('zooms one record without replacing the full records or excluding zeros', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    game.sumChanges();
+    game.chooseCancellation('balanced');
+    fixture.detectChanges();
+    expect(root.querySelector('.record-focus')).toBeNull();
+    game.formSquares();
+    fixture.detectChanges();
+    expect(root.querySelector('.workbench > .record-focus')).not.toBeNull();
+    expect(
+      Array.from(root.querySelectorAll('.focus-reading dd'), (value) => value.textContent?.trim()),
+    ).toEqual(['98 t/h', '100 t/h', '−2 t/h']);
+    expect(root.querySelector('.focus-square')?.getAttribute('aria-label')).toBe(
+      '2 filas de 2 casillas',
+    );
+    expect(root.querySelectorAll('.focus-cell')).toHaveLength(4);
+    expect(root.querySelectorAll('.point--focus')).toHaveLength(1);
+    expect(root.querySelectorAll('.record--focus')).toHaveLength(1);
+    expect(root.querySelectorAll('.record-card')).toHaveLength(4);
+    expect(root.querySelectorAll('.record-card .square-cell')).toHaveLength(8);
+    expect(root.querySelectorAll('.record-card .empty-square')).toHaveLength(2);
+    expect(root.querySelector('.totals')?.textContent).toContain('Registros: 4');
+    expect(root.querySelector('.record--focus .record-separation')?.textContent).toBe(
+      'Separación: 2',
+    );
+  });
+
+  it('keeps practice zoom unsolved and follows its current record and mean in every round', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    reachPractice(game);
+    for (let round = 0; round < 3; round += 1) {
+      fixture.detectChanges();
+      expect(
+        Array.from(root.querySelectorAll('.focus-reading dd'), (value) =>
+          value.textContent?.trim(),
+        ),
+      ).toEqual([
+        game.records()[0] + ' t/h',
+        game.mean() + ' t/h',
+        game.signed(game.deviations()[0]) + ' t/h',
+      ]);
+      expect(root.querySelector('.focus-caption')?.textContent).toContain(
+        'Separación: ' + Math.abs(game.deviations()[0]),
+      );
+      expect(root.querySelectorAll('.record-card')).toHaveLength(4);
+      expect(
+        root.querySelectorAll('.focus-cell, .square-cell, .square-caption, .comparison-box b'),
+      ).toHaveLength(0);
+      expect(root.textContent).not.toContain('÷');
+      expect(root.querySelectorAll('.point--focus, .record--focus')).toHaveLength(2);
+      game.answerPracticeSquare(-game.practiceSquare());
+      solvePractice(game);
+      game.continueAfterHelp();
+    }
+  });
+
+  it('shows copy counts only after duplication and removes them when the copy is undone', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    reachDuplicate(game);
+    for (const copied of [false, true, false]) {
+      game.setDuplicated(copied);
+      fixture.detectChanges();
+      expect(comparisonValues(root)).toEqual(copied ? ['4', '8', '8', '16'] : ['4', '8', '—', '—']);
+      expect(root.querySelectorAll('.comparison-box dt')).toHaveLength(4);
+      expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
+      expect(root.querySelectorAll('.record-card')).toHaveLength(copied ? 8 : 4);
+      expect(root.querySelectorAll('.data-point')).toHaveLength(copied ? 8 : 4);
+      expect(game.comparisonSolved()).toBe(false);
+      expect(root.querySelector('.comparison-caption')?.textContent).toContain(
+        copied ? 'No son nuevas mediciones' : 'Duplica los registros',
+      );
+    }
+  });
+
+  it('keeps optional reading help closed and gives each stage one primary demonstration', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    const notes = root.querySelector<HTMLDetailsElement>('.workbench > .reading-notes')!;
+    expect(notes.open).toBe(false);
+    expect(notes.querySelector('summary')?.textContent).toBe('Cómo leer los registros');
+    expect(notes.textContent).toContain('Los puntos apilados tienen el mismo valor');
+    expect(root.querySelectorAll('.primary-evidence')).toHaveLength(0);
+    const steps = [
+      () => game.sumChanges(),
+      () => {
+        game.chooseCancellation('balanced');
+        game.formSquares();
+      },
+      () => game.answerSquare(4),
+      () => game.chooseWeight('four'),
+      () => {
+        game.setDuplicated(true);
+        game.compareCopy();
+      },
+      () => game.chooseSummary('per-record'),
+    ];
+    for (const next of steps) {
+      next();
+      fixture.detectChanges();
+      expect(root.querySelectorAll('.workbench > .primary-evidence')).toHaveLength(1);
+      expect(root.querySelector('.task-card .primary-evidence')).toBeNull();
+      expect(root.querySelector('.workbench--focused > .data-board')).not.toBeNull();
+      expect(notes.open).toBe(false);
+    }
   });
 
   it('uses the shared lesson identity and neutral points on both sides of the mean', () => {
@@ -424,8 +543,7 @@ describe('Lesson06Sag', () => {
     fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
     const comparison = root.querySelector('.comparison-box')!;
-    expect(comparison.textContent).toContain('4 registros · suma 8');
-    expect(comparison.textContent).toContain('8 registros · suma 16');
+    expect(comparisonValues(root)).toEqual(['4', '8', '8', '16']);
     expect(comparison.querySelectorAll('b')).toHaveLength(0);
     expect(game.comparisonSolved()).toBe(false);
     game.chooseSummary('total');
@@ -483,8 +601,7 @@ describe('Lesson06Sag', () => {
       Array.from(root.querySelectorAll('.record-card strong'), (record) => record.textContent),
     ).toEqual(['99 t/h', '99 t/h', '101 t/h', '101 t/h']);
     expect(root.querySelector('.mean-summary')?.textContent).toContain('Promedio: 100 t/h');
-    expect(comparison.textContent).toContain('4 registros · suma 4');
-    expect(comparison.textContent).toContain('8 registros · suma 8');
+    expect(comparisonValues(root)).toEqual(['4', '4', '8', '8']);
     expect(comparison.querySelectorAll('b')).toHaveLength(0);
     expect(game.comparisonSolved()).toBe(false);
     expect(root.textContent).not.toContain('÷');
@@ -904,12 +1021,12 @@ describe('Lesson06Sag', () => {
           const root: HTMLElement = fixture.nativeElement;
           expect(game.comparisonSolved()).toBe(false);
           expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
-          expect(root.querySelector('.comparison-box')?.textContent).toContain(
-            '4 registros · suma ' + game.sourceSquareSum(),
-          );
-          expect(root.querySelector('.comparison-box')?.textContent).toContain(
-            '8 registros · suma ' + game.sourceSquareSum() * 2,
-          );
+          expect(comparisonValues(root)).toEqual([
+            '4',
+            String(game.sourceSquareSum()),
+            '8',
+            String(game.sourceSquareSum() * 2),
+          ]);
           expect(root.textContent).not.toContain('÷');
           expect(root.textContent).not.toContain(game.variance() + ' (t/h)²');
           expect(
@@ -1125,8 +1242,7 @@ describe('Lesson06Sag', () => {
     game.answerPracticeSquare(1);
     fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
-    expect(root.querySelector('.comparison-box')?.textContent).toContain('4 registros · suma 4');
-    expect(root.querySelector('.comparison-box')?.textContent).toContain('8 registros · suma 8');
+    expect(comparisonValues(root)).toEqual(['4', '4', '8', '8']);
     expect(root.querySelectorAll('.comparison-box b')).toHaveLength(0);
     game.choosePracticeSummary('same');
     fixture.detectChanges();

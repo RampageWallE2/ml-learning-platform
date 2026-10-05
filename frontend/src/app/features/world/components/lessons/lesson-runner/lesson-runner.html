@@ -2,6 +2,7 @@
 
   <app-interaction-panel
     [mode]="step.type === 'dialogue' ? 'dialogue' : 'activity'"
+    [returnFocusTarget]="returnFocusTarget()"
     (closed)="closed.emit()"
   >
 

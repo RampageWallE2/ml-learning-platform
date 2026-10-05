@@ -55,9 +55,9 @@ describe('Lesson05Crushing', () => {
       expect(root.querySelector('#crushing-evidence-title')!.textContent).not.toBe('');
       expect(board.querySelectorAll('.data-point')).toHaveLength(4);
       expect(board.querySelectorAll('.shared-axis span')).toHaveLength(5);
-      expect(board.querySelectorAll('.record-card')).toHaveLength(4);
-      expect(board.querySelector('.mean-summary')!.textContent).toContain('no es una meta');
-      const records = board.querySelector('.record-cards')!;
+      expect(root.querySelectorAll('.record-card')).toHaveLength(4);
+      expect(root.querySelector('.evidence-context')!.textContent).toContain('no es una meta');
+      const records = root.querySelector('.record-cards')!;
       expect(records.getAttribute('role')).toBe('group');
       expect(records.getAttribute('aria-label')).toBe(
         game.practicing() ? 'Datos de la práctica' : 'Datos originales',
@@ -77,6 +77,47 @@ describe('Lesson05Crushing', () => {
     check();
     solvePractice(game);
     check();
+  });
+
+  it('keeps one graph as primary evidence and places supporting detail separately', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    const primary = root.querySelector('.workbench > .primary-evidence')!;
+    expect(primary.getAttribute('aria-labelledby')).toBe('crushing-evidence-title');
+    expect(primary.querySelectorAll('.value-track')).toHaveLength(1);
+    expect(primary.querySelectorAll('button.record-card')).toHaveLength(4);
+    expect(root.querySelectorAll('button.record-card')).toHaveLength(4);
+    game.select(2);
+    fixture.detectChanges();
+    expect(primary.querySelector('.current-reading')!.textContent).toContain('Hora 3:');
+    expect(primary.querySelector('.current-reading')!.textContent).toContain('120 t/h');
+    expect(root.querySelector('.evidence-context')!.textContent).toContain(
+      'línea azul discontinua',
+    );
+  });
+
+  it('updates the focused practice reading without leaking the answer or hiding any observation', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    reachPractice(game);
+    for (let index = 0; index < 3; index += 1) {
+      fixture.detectChanges();
+      const primary = root.querySelector('.primary-evidence')!;
+      expect(primary.querySelector('.current-reading')!.textContent).toContain(
+        game.current() + ' t/h',
+      );
+      expect(primary.querySelector('.mean-summary strong')!.textContent).toContain(
+        game.mean() + ' t/h',
+      );
+      expect(primary.textContent).not.toMatch(/Desviación:|Separación:|por debajo|por encima/);
+      expect(primary.querySelectorAll('.data-point')).toHaveLength(4);
+      expect(root.querySelectorAll('.evidence-context .record-card')).toHaveLength(4);
+      expect(root.querySelectorAll('.value-track')).toHaveLength(1);
+      expect(root.querySelector('.evidence-context details')).toBeNull();
+      game.chooseReading(correctReading(game).id);
+    }
   });
 
   it('links each hour selection to its highlighted point and distance without moving observations', () => {

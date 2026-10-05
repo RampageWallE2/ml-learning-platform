@@ -75,7 +75,13 @@
        ========================= -->
 
   <div
+    #gameViewport
     id="phaser-container"
+    tabindex="-1"
+    role="group"
+    aria-label="Mapa del juego"
+    [attr.inert]="loadingScene() || lessonActive() || activeDialogue() ? '' : null"
+    [attr.aria-hidden]="loadingScene() || lessonActive() || activeDialogue() ? 'true' : null"
   ></div>
 
 
@@ -173,6 +179,7 @@
 
     <app-lesson-runner
       [lessonId]="lesson.lessonId"
+      [returnFocusTarget]="gameViewport"
       (closed)="closeLesson()"
       (completed)="completeLesson($event)"
     />
@@ -191,6 +198,7 @@
 
     <app-interaction-panel
       mode="dialogue"
+      [returnFocusTarget]="gameViewport"
       (closed)="closeDialogue()"
     >
 

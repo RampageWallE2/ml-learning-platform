@@ -19,6 +19,8 @@ import {
   getLessonStatus,
 } from './lesson-indicator';
 
+import { LessonGuide } from './lesson-guide';
+
 
 type InteractionType =
   | 'lesson'
@@ -72,6 +74,8 @@ export class InteractionManager {
   private readonly interactionText:
     Phaser.GameObjects.Text;
 
+  private readonly lessonGuide: LessonGuide | null;
+
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -86,6 +90,9 @@ export class InteractionManager {
 
 
     this.createInteractions();
+
+    this.lessonGuide = this.scene.scene.key === 'OpenPitScene'
+      ? new LessonGuide(this.scene) : null;
 
 
     gameEvents.on(
@@ -116,6 +123,8 @@ export class InteractionManager {
 
     if (playerLocked) {
 
+      this.lessonGuide?.hide();
+
       this.clearCurrentInteraction();
 
       return false;
@@ -131,6 +140,9 @@ export class InteractionManager {
 
     const available =
       this.currentInteraction !== null;
+
+    // Do not compete with a nearby interaction prompt or an open activity.
+    this.lessonGuide?.update(this.player, this.scene.cameras.main, available);
 
 
     /* =========================
@@ -158,6 +170,8 @@ export class InteractionManager {
     );
 
     this.interactionText.destroy();
+
+    this.lessonGuide?.destroy();
 
 
     for (
@@ -640,6 +654,17 @@ export class InteractionManager {
         ...progress.completedLessonIds
       ],
     };
+
+    const target = this.interactionZones.find(zone =>
+      zone.getData('interactionType') === 'lesson'
+      && zone.getData('lessonId') === this.lessonProgress.currentLessonId
+      && getLessonStatus(zone.getData('lessonId'), this.lessonProgress) === 'current'
+    );
+    this.lessonGuide?.setTarget(target ? {
+      lessonId: target.getData('lessonId'),
+      x: target.x,
+      y: target.y,
+    } : null);
 
 
     for (

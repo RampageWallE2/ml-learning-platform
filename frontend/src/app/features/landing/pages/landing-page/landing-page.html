@@ -28,13 +28,26 @@
           <p class="quiet">A tu ritmo. Con tu progreso guardado.</p>
         </div>
         <figure class="hero-visual" appRevealOnScroll [revealDelay]="120">
-          <img
-            src="assets/branding/exploralab-mining-world.png"
-            alt="Mundo minero de ExploraLab con un tajo abierto, maquinaria y exploradores analizando datos"
-            width="1536"
-            height="1024"
-            fetchpriority="high"
-          />
+          <picture>
+            <source
+              type="image/webp"
+              srcset="
+                assets/branding/exploralab-mining-world-640.webp   640w,
+                assets/branding/exploralab-mining-world-960.webp   960w,
+                assets/branding/exploralab-mining-world-1536.webp 1536w
+              "
+              sizes="(max-width: 1024px) and (max-height: 560px) and (orientation: landscape) 42vw, (max-width: 476px) calc(100vw - 36px), (max-width: 760px) 440px, (max-width: 1320px) 52vw, 650px"
+            />
+            <img
+              src="assets/branding/exploralab-mining-world.png"
+              alt="Mundo minero de ExploraLab con un tajo abierto, maquinaria y exploradores analizando datos"
+              width="1536"
+              height="1024"
+              loading="eager"
+              decoding="async"
+              fetchpriority="high"
+            />
+          </picture>
         </figure>
       </div>
     </section>
@@ -113,7 +126,17 @@
   </main>
   <footer>
     <a class="brand" routerLink="/" aria-label="ExploraLab, inicio">
-      <img src="assets/branding/exploralab-logo.png" alt="" width="2073" height="758" />
+      <picture>
+        <source type="image/webp" srcset="assets/branding/exploralab-logo-540.webp" />
+        <img
+          src="assets/branding/exploralab-logo.png"
+          alt=""
+          width="2073"
+          height="758"
+          loading="lazy"
+          decoding="async"
+        />
+      </picture>
     </a>
     <p>Matemáticas, datos y aprendizaje interactivo.</p>
     <a href="#contenido">Volver arriba ↑</a>

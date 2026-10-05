@@ -44,6 +44,8 @@ export class LessonRunner {
 
   lessonId = input.required<string>();
 
+  readonly returnFocusTarget = input<HTMLElement | null>(null);
+
   completed = output<string>();
 
   closed = output<void>();

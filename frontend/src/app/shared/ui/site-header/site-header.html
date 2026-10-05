@@ -1,12 +1,16 @@
 <header class="site-header" (keydown.escape)="closeMenu()">
   <a class="brand" routerLink="/" aria-label="ExploraLab, inicio" (click)="closeMenu()">
-    <img
-      class="brand-logo"
-      src="assets/branding/exploralab-logo.png"
-      alt=""
-      width="2073"
-      height="758"
-    />
+    <picture>
+      <source type="image/webp" srcset="assets/branding/exploralab-logo-540.webp" />
+      <img
+        class="brand-logo"
+        src="assets/branding/exploralab-logo.png"
+        alt=""
+        width="2073"
+        height="758"
+        decoding="async"
+      />
+    </picture>
   </a>
 
   <button

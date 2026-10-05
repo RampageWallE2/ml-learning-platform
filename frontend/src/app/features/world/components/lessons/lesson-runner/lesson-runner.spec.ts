@@ -12,6 +12,7 @@ import { Lesson06Sag } from '../../../lessons/lesson-06-sag/lesson-06-sag';
 import { Lesson07Balls } from '../../../lessons/lesson-07-balls/lesson-07-balls';
 import { Lesson08Flotation } from '../../../lessons/lesson-08-flotation/lesson-08-flotation';
 import { Lesson09Thickeners } from '../../../lessons/lesson-09-thickeners/lesson-09-thickeners';
+import { LEARNING_ZONES } from '../../../lessons/lesson-catalog';
 
 function completeDialogue(dialogue: Dialogue): void {
   const messageCount = dialogue.dialogue().messages.length;
@@ -24,6 +25,33 @@ function completeDialogue(dialogue: Dialogue): void {
     dialogue.next();
   }
 }
+
+describe('LessonRunner — shared modal focus', () => {
+  it.each(LEARNING_ZONES[0].lessons.map(lesson => lesson.lessonId))(
+    'keeps focus inside %s across introduction, activity and closing dialogue',
+    async lessonId => {
+      const fixture = TestBed.createComponent(LessonRunner);
+      fixture.componentRef.setInput('lessonId', lessonId);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const root = fixture.nativeElement as HTMLElement;
+      const panel = root.querySelector('[role="dialog"]')!;
+      expect(document.activeElement).toBe(root.querySelector('.continue-button'));
+
+      fixture.componentInstance.nextStep();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(root.querySelector('[role="dialog"]')).toBe(panel);
+      expect(document.activeElement).toBe(root.querySelector('h2'));
+
+      fixture.componentInstance.nextStep();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(root.querySelector('[role="dialog"]')).toBe(panel);
+      expect(document.activeElement).toBe(root.querySelector('.continue-button'));
+    },
+  );
+});
 
 describe('LessonRunner — thickeners lesson', () => {
   it('requires C9 decisions, transfer, original report and closing dialogue before completion', () => {

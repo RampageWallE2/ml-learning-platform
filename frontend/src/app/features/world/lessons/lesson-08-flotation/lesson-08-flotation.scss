@@ -144,12 +144,12 @@ h3 {
   position: absolute;
   top: 24px;
   bottom: 18px;
-  border-left: 2px dashed var(--color-primary);
+  border-left: 2px dashed var(--color-chart-mean);
   > span {
     position: absolute;
     top: -24px;
     transform: translateX(-50%);
-    color: var(--color-primary);
+    color: var(--color-chart-mean);
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;

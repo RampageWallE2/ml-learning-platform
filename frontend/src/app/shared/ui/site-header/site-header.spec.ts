@@ -38,6 +38,22 @@ describe('SiteHeader', () => {
     expect(element.querySelector('a[href^="/login"]')).not.toBeNull();
   });
 
+  it('loads a compact WebP logo without changing the brand dimensions or PNG fallback', () => {
+    const fixture = TestBed.createComponent(SiteHeader);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const source = element.querySelector('.brand picture source')!;
+    const logo = element.querySelector<HTMLImageElement>('.brand-logo')!;
+    expect(source.getAttribute('type')).toBe('image/webp');
+    expect(source.getAttribute('srcset')).toBe('assets/branding/exploralab-logo-540.webp');
+    expect(logo.getAttribute('src')).toBe('assets/branding/exploralab-logo.png');
+    expect([logo.width, logo.height]).toEqual([2073, 758]);
+    expect(logo.getAttribute('decoding')).toBe('async');
+    expect(logo.getAttribute('loading')).not.toBe('lazy');
+    expect(logo.alt).toBe('');
+    expect(element.querySelector('.brand')?.getAttribute('aria-label')).toBe('ExploraLab, inicio');
+  });
+
   it('shows progress and the account menu for an authenticated user', () => {
     userState.set({
       id: 'user-id',

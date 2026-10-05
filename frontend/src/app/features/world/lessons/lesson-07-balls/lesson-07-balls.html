@@ -21,17 +21,95 @@
     }
   </ol>
   @if (stage() !== 'success') {
-    <div class="workbench">
+    <div
+      class="workbench"
+      [class.workbench--focused]="stage() === 'calculate' || stage() === 'checked'"
+      [class.workbench--checked]="stage() === 'checked'"
+      [class.workbench--squares]="squaresVisible()"
+    >
+      @if (stage() === 'calculate' || stage() === 'checked') {
+        <div
+          class="active-records primary-evidence"
+          role="region"
+          aria-labelledby="balls-records-title"
+        >
+          <h4 id="balls-records-title">{{ activePeriod().name }} · Todos sus registros</h4>
+          <p class="mean-summary">
+            Promedio: <strong>{{ activePeriod().mean }} t/h</strong> ·
+            {{ activePeriod().values.length }} registros
+          </p>
+          <p class="chart-key">Desviación = registro − promedio</p>
+          <div
+            class="record-cards"
+            [attr.aria-label]="'Registros y desviaciones del ' + activePeriod().name"
+          >
+            @for (record of activePeriod().records; track record.id; let index = $index) {
+              <article class="record-card" [class.record--hint]="isHintRecord(record.deviation)">
+                <small>Registro {{ index + 1 }}</small
+                ><strong>{{ record.value }} t/h</strong>
+                <span class="record-deviation">Desviación: {{ signed(record.deviation) }}</span>
+                @if (isHintRecord(record.deviation)) {
+                  <small class="hint-marker">{{
+                    hintFocus() === 'count'
+                      ? record.deviation === 0
+                        ? 'También cuenta'
+                        : 'Cuenta este registro'
+                      : 'Mira su separación'
+                  }}</small>
+                }
+                @if (squaresVisible()) {
+                  @if (record.square > 0) {
+                    <div
+                      class="square-grid"
+                      [style.grid-template-columns]="'repeat(' + record.side + ', 22px)'"
+                      role="img"
+                      [attr.aria-label]="
+                        'Separación ' +
+                        record.side +
+                        ': ' +
+                        record.side +
+                        ' por ' +
+                        record.side +
+                        ', ' +
+                        record.square +
+                        ' casillas.'
+                      "
+                    >
+                      @for (cell of record.cells; track cell) {
+                        <span class="square-cell" aria-hidden="true"></span>
+                      }
+                    </div>
+                  } @else {
+                    <div class="empty-square">Sin separación<br />0 casillas</div>
+                  }
+                  <span class="square-caption"
+                    >{{ record.side }} × {{ record.side }} = {{ record.square }}</span
+                  >
+                }
+              </article>
+            }
+          </div>
+          @if (squaresVisible()) {
+            <div class="totals">
+              <span
+                >Registros: <strong>{{ activePeriod().values.length }}</strong></span
+              ><span
+                >Suma de cuadrados: <strong>{{ activePeriod().squareSum }}</strong></span
+              >
+            </div>
+            <p class="chart-key">
+              Las casillas muestran el cálculo al cuadrado, no toneladas físicas. Los registros con
+              separación 0 también cuentan al promediar.
+            </p>
+          }
+        </div>
+      }
       <div class="data-board">
         <div class="board-heading">
           <strong>{{
             round() > 0 ? 'Ensayo: otros registros' : 'Alimentación del circuito · Datos de ejemplo'
           }}</strong>
         </div>
-        <p class="chart-key">
-          Medimos la cantidad de material que entra, en el mismo punto y en condiciones parecidas.
-          Cada punto es un registro; los puntos uno sobre otro tienen el mismo valor.
-        </p>
         <div class="comparison-plots">
           @for (period of periods(); track period.id) {
             <article
@@ -92,9 +170,6 @@
                   </div>
                 </div>
               </div>
-              <p class="record-list">
-                Registros: <strong>{{ period.values.join(', ') }}</strong> t/h
-              </p>
               <p
                 class="variance-summary"
                 [class.variance--solved]="isSolved(period.id)"
@@ -110,80 +185,6 @@
             </article>
           }
         </div>
-        <p class="axis-label">
-          Toneladas por hora · Ambos gráficos usan la misma escala cercana: {{ bounds().min }} a
-          {{ bounds().max }}.
-        </p>
-        <p class="chart-key">El promedio sirve para comparar. No es una meta de producción.</p>
-        @if (stage() === 'calculate' || stage() === 'checked') {
-          <div class="active-records">
-            <h4>{{ activePeriod().name }} · Todos sus registros</h4>
-            <p class="chart-key">Desviación = registro − promedio</p>
-            <div
-              class="record-cards"
-              [attr.aria-label]="'Registros y desviaciones del ' + activePeriod().name"
-            >
-              @for (record of activePeriod().records; track record.id; let index = $index) {
-                <article class="record-card" [class.record--hint]="isHintRecord(record.deviation)">
-                  <small>Registro {{ index + 1 }}</small
-                  ><strong>{{ record.value }} t/h</strong>
-                  <span class="record-deviation">Desviación: {{ signed(record.deviation) }}</span>
-                  @if (isHintRecord(record.deviation)) {
-                    <small class="hint-marker">{{
-                      hintFocus() === 'count'
-                        ? record.deviation === 0
-                          ? 'También cuenta'
-                          : 'Cuenta este registro'
-                        : 'Mira su separación'
-                    }}</small>
-                  }
-                  @if (squaresVisible()) {
-                    @if (record.square > 0) {
-                      <div
-                        class="square-grid"
-                        [style.grid-template-columns]="'repeat(' + record.side + ', 22px)'"
-                        role="img"
-                        [attr.aria-label]="
-                          'Separación ' +
-                          record.side +
-                          ': ' +
-                          record.side +
-                          ' por ' +
-                          record.side +
-                          ', ' +
-                          record.square +
-                          ' casillas.'
-                        "
-                      >
-                        @for (cell of record.cells; track cell) {
-                          <span class="square-cell" aria-hidden="true"></span>
-                        }
-                      </div>
-                    } @else {
-                      <div class="empty-square">Sin separación<br />0 casillas</div>
-                    }
-                    <span class="square-caption"
-                      >{{ record.side }} × {{ record.side }} = {{ record.square }}</span
-                    >
-                  }
-                </article>
-              }
-            </div>
-            @if (squaresVisible()) {
-              <div class="totals">
-                <span
-                  >Registros: <strong>{{ activePeriod().values.length }}</strong></span
-                ><span
-                  >Suma de cuadrados: <strong>{{ activePeriod().squareSum }}</strong></span
-                >
-              </div>
-              <p class="chart-key">
-                Las casillas muestran el cálculo al cuadrado, no toneladas físicas. Los registros
-                con separación 0 también cuentan al promediar.
-              </p>
-            }
-          </div>
-        }
       </div>
       <aside
         class="task-card"
@@ -334,6 +335,29 @@
           }
         </div>
       </aside>
+      <div
+        class="evidence-context"
+        role="group"
+        aria-label="Registros completos y lectura de los gráficos"
+      >
+        <div class="record-lists">
+          @for (period of periods(); track period.id) {
+            <p class="record-list">
+              <span>{{ period.name }} · Registros:</span>
+              <strong>{{ period.values.join(', ') }}</strong> t/h
+            </p>
+          }
+        </div>
+        <p class="axis-label">
+          Toneladas por hora · Ambos gráficos usan la misma escala cercana: {{ bounds().min }} a
+          {{ bounds().max }}.
+        </p>
+        <p class="chart-key">
+          Mismo punto de medición y condiciones parecidas. Cada punto es un registro; los puntos
+          apilados tienen el mismo valor. La línea azul discontinua es el promedio. No es una meta
+          de producción.
+        </p>
+      </div>
     </div>
   } @else {
     <div class="completion-card">

@@ -168,6 +168,43 @@ describe('WorldPage — circular scene loading screen', () => {
     expect(hud.hasAttribute('aria-hidden')).toBe(false);
   });
 
+  it.each(['lesson', 'dialogue'] as const)('returns keyboard focus to the map when a %s closes', async kind => {
+    const fixture = create();
+    const page = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    report('HubScene', 'ready', 1);
+    fixture.detectChanges();
+    const map = root.querySelector<HTMLElement>('#phaser-container')!;
+    expect(map.tabIndex).toBe(-1);
+    expect(map.getAttribute('aria-label')).toBe('Mapa del juego');
+    expect(map.hasAttribute('inert')).toBe(false);
+
+    if (kind === 'lesson') page.lessonActive.set({ lessonId: 'lesson-01' });
+    else page.activeDialogue.set({ id: 'test', messages: [] });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(map.hasAttribute('inert')).toBe(true);
+    expect(map.getAttribute('aria-hidden')).toBe('true');
+    const dialog = root.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    const unlock = vi.fn();
+    gameEvents.on(GameEvents.UNLOCK_PLAYER, unlock);
+    try {
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Escape', bubbles: true, cancelable: true,
+      }));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(root.querySelector('[role="dialog"]')).toBeNull();
+      expect(map.hasAttribute('inert')).toBe(false);
+      expect(map.hasAttribute('aria-hidden')).toBe(false);
+      expect(document.activeElement).toBe(map);
+      expect(unlock).toHaveBeenCalledOnce();
+    } finally {
+      gameEvents.off(GameEvents.UNLOCK_PLAYER, unlock);
+    }
+  });
+
   it('keeps the existing saving and retry notices', () => {
     const fixture = create(); const page = fixture.componentInstance;
     const root: HTMLElement = fixture.nativeElement;

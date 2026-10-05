@@ -120,4 +120,58 @@ describe('LandingPage', () => {
     );
     expect(animatedTitles[0].textContent).toContain('cuando los exploras');
   });
+
+  it('offers responsive WebP illustrations while retaining the original PNG fallbacks', () => {
+    const fixture = TestBed.createComponent(LandingPage);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    for (const [selector, name, widths, dimensions] of [
+      ['.hero-visual', 'exploralab-mining-world', [640, 960, 1536], [1536, 1024]],
+      ['app-learning-scene', 'exploralab-experience', [640, 960, 1254], [1254, 1254]],
+    ] as const) {
+      const source = element.querySelector(`${selector} picture source`)!;
+      const image = element.querySelector<HTMLImageElement>(`${selector} picture img`)!;
+      expect(source.getAttribute('type')).toBe('image/webp');
+      const candidates = source.getAttribute('srcset')?.replace(/\s+/g, ' ');
+      for (const width of widths) {
+        expect(candidates).toContain(`assets/branding/${name}-${width}.webp ${width}w`);
+      }
+      expect(source.getAttribute('sizes')).toContain('100vw');
+      expect(image.getAttribute('src')).toBe(`assets/branding/${name}.png`);
+      expect([image.width, image.height]).toEqual(dimensions);
+      expect(image.alt.length).toBeGreaterThan(10);
+      expect(image.getAttribute('decoding')).toBe('async');
+    }
+  });
+
+  it('prioritizes the hero and defers the experience and footer images', () => {
+    const fixture = TestBed.createComponent(LandingPage);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const hero = element.querySelector<HTMLImageElement>('.hero-visual img')!;
+    expect(hero.getAttribute('loading')).toBe('eager');
+    expect(hero.getAttribute('fetchpriority')).toBe('high');
+    expect(element.querySelectorAll('img[fetchpriority="high"]')).toHaveLength(1);
+
+    for (const selector of ['app-learning-scene img', 'footer .brand img']) {
+      const image = element.querySelector(selector)!;
+      expect(image.getAttribute('loading')).toBe('lazy');
+      expect(image.getAttribute('decoding')).toBe('async');
+      expect(image.hasAttribute('fetchpriority')).toBe(false);
+    }
+  });
+
+  it('reuses the lightweight header logo in the footer without changing the accessible brand name', () => {
+    const fixture = TestBed.createComponent(LandingPage);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const headerSource = element.querySelector('app-site-header .brand source')!;
+    const footerSource = element.querySelector('footer .brand source')!;
+    expect(headerSource.getAttribute('srcset')).toBe('assets/branding/exploralab-logo-540.webp');
+    expect(footerSource.getAttribute('srcset')).toBe(headerSource.getAttribute('srcset'));
+    expect(footerSource.getAttribute('type')).toBe('image/webp');
+    expect(element.querySelector('footer .brand')?.getAttribute('aria-label')).toBe('ExploraLab, inicio');
+    expect(element.querySelector('footer .brand img')?.getAttribute('alt')).toBe('');
+  });
 });

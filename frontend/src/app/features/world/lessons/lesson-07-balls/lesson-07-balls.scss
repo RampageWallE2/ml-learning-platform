@@ -78,14 +78,49 @@ h3:focus {
   background: var(--color-surface-raised);
 }
 .data-board,
+.primary-evidence,
 .task-card {
   min-width: 0;
   padding: 20px;
+}
+.workbench--focused {
+  > .primary-evidence {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  > .task-card {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  > .data-board {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    border-top: 1px solid var(--color-border);
+  }
+  > .evidence-context {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}
+.evidence-context {
+  grid-column: 1;
+  min-width: 0;
+  padding: 0 20px 20px;
+}
+.record-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  .record-list span {
+    display: block;
+  }
 }
 .task-card {
   position: sticky;
   top: 12px;
   border-left: 1px solid var(--color-border);
+  grid-column: 2;
+  grid-row: 1 / span 2;
 }
 .board-heading {
   margin-bottom: 12px;
@@ -126,6 +161,9 @@ h3:focus {
   gap: 3px;
   margin-top: 8px;
   font-size: 14px;
+  > span:first-child {
+    color: var(--color-chart-mean);
+  }
 }
 .shared-scale {
   margin-inline: 12px;
@@ -151,13 +189,13 @@ h3:focus {
   position: absolute;
   top: 24px;
   bottom: 34px;
-  border-left: 2px dashed var(--color-primary);
+  border-left: 2px dashed var(--color-chart-mean);
 }
 .mean-label {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  color: var(--color-primary);
+  color: var(--color-chart-mean);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -208,12 +246,16 @@ h3:focus {
   color: var(--color-primary);
 }
 .active-records {
-  border-top: 1px solid var(--color-border);
-  padding-top: 16px;
-  margin-top: 12px;
   h4 {
     margin: 0;
     font-size: 16px;
+  }
+}
+.mean-summary {
+  margin: 8px 0;
+  font-size: 14px;
+  strong {
+    color: var(--color-chart-mean);
   }
 }
 .record-cards {
@@ -401,6 +443,27 @@ h3:focus {
     position: static;
     border-left: 0;
     border-top: 1px solid var(--color-border);
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .workbench--focused {
+    > .primary-evidence,
+    > .task-card,
+    > .data-board {
+      grid-column: 1;
+      grid-row: auto;
+    }
+    > .task-card {
+      order: 1;
+    }
+    > .data-board {
+      order: 2;
+    }
+    > .evidence-context {
+      grid-column: 1;
+      grid-row: auto;
+      order: 3;
+    }
   }
 }
 @media (max-width: 600px),
@@ -449,6 +512,10 @@ h3:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
+  .workbench--focused:not(.workbench--squares) .record-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
   .record-card strong {
     font-size: 15px;
   }
@@ -476,12 +543,28 @@ h3:focus {
   .task-card > :is(.plain-rule, .calculation-card) {
     order: -1;
   }
-  // Keep calculation choices and live hints by the question, ahead of the long evidence board.
-  :host
-    .intuitive-balls
-    .task-card--calculate
-    > :is(.choices--variance, .hint-button, .feedback-region) {
-    order: -1;
+  // Read the active period before answering, not the entire two-period board.
+  :host .intuitive-balls .workbench--focused > .data-board {
+    order: 5;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+  :host .intuitive-balls .workbench > .evidence-context {
+    order: 6;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+  :host .intuitive-balls .workbench--checked > .primary-evidence {
+    order: 4;
+  }
+  .record-card {
+    small,
+    span {
+      font-size: 12px;
+    }
+  }
+  :host .intuitive-balls .task-card > .hint-button {
+    order: 2;
   }
 }
 @media (min-width: 700px) and (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
@@ -491,6 +574,27 @@ h3:focus {
   .task-card {
     border-top: 0;
     border-left: 1px solid var(--color-border);
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .workbench--focused {
+    > .primary-evidence {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    > .task-card {
+      grid-column: 2;
+      grid-row: 1;
+      order: 0;
+    }
+    > .data-board {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    > .evidence-context {
+      grid-column: 1 / -1;
+      grid-row: 3;
+    }
   }
 }
 @media (prefers-reduced-motion: reduce) {

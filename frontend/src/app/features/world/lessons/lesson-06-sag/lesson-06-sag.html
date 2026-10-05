@@ -19,7 +19,138 @@
     }
   </ol>
   @if (stage() !== 'success') {
-    <div class="workbench">
+    @let focusRecord = (stage() === 'squares' && squaresFormed()) || stage() === 'practice-square';
+    <div
+      class="workbench"
+      [class.workbench--focused]="
+        focusRecord ||
+        stage() === 'cancel' ||
+        stage() === 'weight' ||
+        comparingCopy() ||
+        comparisonVisible()
+      "
+    >
+      @if (stage() === 'cancel') {
+        <div class="primary-evidence calculation-card" role="status">
+          <span>Suma de desviaciones</span>
+          <strong>{{ deviationExpression() }} = {{ deviationSum() }}</strong>
+          <span>Sumar cambios de lado contrario no borra los registros.</span>
+        </div>
+      }
+      @if (focusRecord) {
+        @let record = points()[0];
+        <figure class="primary-evidence record-focus" aria-labelledby="sag-focus-title">
+          <figcaption id="sag-focus-title">Registro 1 de cerca</figcaption>
+          <dl class="focus-reading">
+            <div>
+              <dt>Registro</dt>
+              <dd>{{ record.value }} <small>t/h</small></dd>
+            </div>
+            <div>
+              <dt>Promedio</dt>
+              <dd>{{ mean() }} <small>t/h</small></dd>
+            </div>
+            <div>
+              <dt>Desviación</dt>
+              <dd>{{ signed(record.deviation) }} <small>t/h</small></dd>
+            </div>
+          </dl>
+          @if (stage() === 'squares') {
+            <div class="focus-construction">
+              <p>
+                Separación <strong>{{ record.side }}</strong
+                ><br />Lado del cuadrado
+              </p>
+              <span class="construction-arrow" aria-hidden="true">→</span>
+              <div
+                class="focus-square"
+                role="img"
+                [attr.aria-label]="record.side + ' filas de ' + record.side + ' casillas'"
+                [style.grid-template-columns]="'repeat(' + record.side + ', 34px)'"
+              >
+                @for (cell of record.cells; track cell) {
+                  <span class="focus-cell" aria-hidden="true"></span>
+                }
+              </div>
+            </div>
+            <p class="focus-caption">
+              Cuenta las casillas: {{ record.side }} filas de {{ record.side }}.
+            </p>
+          } @else {
+            <p class="focus-caption">
+              Separación: {{ record.side }}. Imagina un cuadrado con ese lado.
+            </p>
+          }
+        </figure>
+      }
+      @if (stage() === 'weight') {
+        <div
+          class="primary-evidence weight-demo"
+          aria-label="Comparación de separaciones, no nuevos registros"
+        >
+          <div>
+            <strong>Separación 1</strong>
+            <div class="square-grid" role="img" aria-label="1 por 1: una casilla">
+              <span class="square-cell" aria-hidden="true"></span>
+            </div>
+            <span>1 × 1 = 1</span>
+          </div>
+          <div>
+            <strong>Separación 2</strong>
+            <div class="square-grid" role="img" aria-label="2 por 2: cuatro casillas">
+              @for (cell of [0, 1, 2, 3]; track cell) {
+                <span class="square-cell" aria-hidden="true"></span>
+              }
+            </div>
+            <span>2 × 2 = 4</span>
+          </div>
+        </div>
+      }
+      @if (comparingCopy() || comparisonVisible()) {
+        <div class="primary-evidence comparison-box" aria-label="Original y copia duplicada">
+          <div>
+            <strong>{{ practicing() ? 'Original del ensayo' : 'Original' }}</strong>
+            <dl>
+              <div>
+                <dt>Registros</dt>
+                <dd>{{ records().length }}</dd>
+              </div>
+              <div>
+                <dt>Suma de cuadrados</dt>
+                <dd>{{ sourceSquareSum() }}</dd>
+              </div>
+            </dl>
+            @if (comparisonSolved()) {
+              <b>{{ sourceSquareSum() }} ÷ {{ records().length }} = {{ variance() }}</b>
+            }
+          </div>
+          <div>
+            <strong>Copia duplicada</strong>
+            <dl>
+              <div>
+                <dt>Registros</dt>
+                <dd>{{ stage() === 'duplicate' && !duplicated() ? '—' : records().length * 2 }}</dd>
+              </div>
+              <div>
+                <dt>Suma de cuadrados</dt>
+                <dd>
+                  {{ stage() === 'duplicate' && !duplicated() ? '—' : sourceSquareSum() * 2 }}
+                </dd>
+              </div>
+            </dl>
+            @if (comparisonSolved()) {
+              <b>{{ sourceSquareSum() * 2 }} ÷ {{ records().length * 2 }} = {{ variance() }}</b>
+            }
+          </div>
+          <p class="comparison-caption">
+            {{
+              stage() === 'duplicate' && !duplicated()
+                ? 'Duplica los registros para ver la copia.'
+                : 'La copia repite estos mismos datos. No son nuevas mediciones.'
+            }}
+          </p>
+        </div>
+      }
       <div class="data-board">
         <div class="board-heading">
           <strong>{{
@@ -45,9 +176,10 @@
             <span class="mean-label" [style.left.%]="position(mean())" aria-hidden="true"
               >Promedio {{ mean() }}</span
             >
-            @for (point of points(); track point.id) {
+            @for (point of points(); track point.id; let index = $index) {
               <span
                 class="data-point"
+                [class.point--focus]="focusRecord && index === 0"
                 [style.left.%]="point.x"
                 [style.bottom.px]="point.bottom"
                 aria-hidden="true"
@@ -61,10 +193,6 @@
           </div>
           <p class="axis-label">Toneladas por hora · Escala cercana: 98 a 102</p>
         </div>
-        <p class="chart-key">
-          Cada punto es un registro. Los puntos apilados tienen el mismo valor. Los registros
-          permanecen a la vista.
-        </p>
         @if (comparingCopy() && duplicated()) {
           <p class="copy-note">
             <strong>Solo una copia.</strong> Repetimos cada registro dos veces; no son nuevas
@@ -73,11 +201,12 @@
         }
         <div class="record-cards" aria-label="Cada registro y su desviación">
           @for (point of points(); track point.id; let index = $index) {
-            <article class="record-card">
+            <article class="record-card" [class.record--focus]="focusRecord && index === 0">
               <small>Registro {{ index + 1 }}</small
               ><strong>{{ point.value }} t/h</strong>
               <span class="record-deviation">Desviación: {{ signed(point.deviation) }}</span>
               @if (squaresVisible()) {
+                <span class="record-separation">Separación: {{ point.side }}</span>
                 @if (point.square > 0) {
                   <div
                     class="square-grid"
@@ -109,13 +238,6 @@
             </article>
           }
         </div>
-        @if (stage() === 'cancel') {
-          <div class="calculation-card" role="status">
-            <span>Suma de desviaciones</span
-            ><strong>{{ deviationExpression() }} = {{ deviationSum() }}</strong
-            ><span>Sumar cambios de lado contrario no borra los registros.</span>
-          </div>
-        }
         @if (squaresVisible()) {
           <div class="totals">
             <span
@@ -128,35 +250,6 @@
             Las casillas representan el cálculo al cuadrado, no toneladas físicas. Una separación de
             0 aporta 0, pero su registro también se cuenta.
           </p>
-        }
-        @if (comparisonVisible()) {
-          <div class="comparison-box" aria-label="Original y copia duplicada">
-            <div>
-              <strong>{{ practicing() ? 'Original del ensayo' : 'Original' }}</strong
-              ><span
-                ><strong>{{ records().length }}</strong> registros · suma
-                <strong>{{ sourceSquareSum() }}</strong></span
-              >
-              @if (comparisonSolved()) {
-                <b>{{ sourceSquareSum() }} ÷ {{ records().length }} = {{ variance() }}</b>
-              }
-            </div>
-            <div>
-              <strong>Copia duplicada</strong
-              ><span
-                ><strong>{{ records().length * 2 }}</strong> registros · suma
-                <strong>{{ sourceSquareSum() * 2 }}</strong></span
-              >
-              @if (comparisonSolved()) {
-                <b>{{ sourceSquareSum() * 2 }} ÷ {{ records().length * 2 }} = {{ variance() }}</b>
-              }
-            </div>
-          </div>
-          @if (practicing()) {
-            <p class="chart-key">
-              La segunda columna repite estos mismos datos. No son nuevas mediciones.
-            </p>
-          }
         }
       </div>
       <aside
@@ -232,24 +325,6 @@
         } @else if (stage() === 'weight') {
           <span class="task-kicker">Por qué elegimos cuadrados</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">Si la separación pasa de 1 a 2…</h3>
-          <div class="weight-demo" aria-label="Comparación de separaciones, no nuevos registros">
-            <div>
-              <strong>Separación 1</strong>
-              <div class="square-grid" role="img" aria-label="1 por 1: una casilla">
-                <span class="square-cell" aria-hidden="true"></span>
-              </div>
-              <span>1 × 1 = 1</span>
-            </div>
-            <div>
-              <strong>Separación 2</strong>
-              <div class="square-grid" role="img" aria-label="2 por 2: cuatro casillas">
-                @for (cell of [0, 1, 2, 3]; track cell) {
-                  <span class="square-cell" aria-hidden="true"></span>
-                }
-              </div>
-              <span>2 × 2 = 4</span>
-            </div>
-          </div>
           <p>¿Cuánto crece su aporte al cuadrado?</p>
           <div class="choices">
             @for (choice of weights; track choice.id) {
@@ -289,11 +364,6 @@
               Duplicar en una copia
             </button>
           </div>
-          <p class="copy-note">
-            Original: 4 registros, suma 8.<br />{{
-              duplicated() ? 'Copia: 8 registros, suma 16.' : 'Todavía estás viendo el original.'
-            }}
-          </p>
           <button
             type="button"
             class="btn btn--primary"
@@ -437,6 +507,23 @@
           }
         </div>
       </aside>
+      <details class="reading-notes">
+        <summary>Cómo leer los registros</summary>
+        <p>
+          Cada punto es un registro. Los puntos apilados tienen el mismo valor. Los registros
+          permanecen a la vista.
+        </p>
+        <p>
+          Desviación: cuánto está por debajo o por encima del promedio. Separación: esa distancia
+          sin el signo.
+        </p>
+        @if (squaresVisible() || stage() === 'squares') {
+          <p>
+            Las casillas representan el cálculo al cuadrado, no toneladas físicas. Una separación de
+            0 aporta 0, pero su registro también se cuenta.
+          </p>
+        }
+      </details>
     </div>
   } @else {
     <div class="completion-card">

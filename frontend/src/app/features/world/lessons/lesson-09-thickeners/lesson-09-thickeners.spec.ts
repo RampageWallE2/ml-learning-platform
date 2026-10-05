@@ -32,6 +32,48 @@ describe('Lesson09Thickeners', () => {
     expect(root.querySelectorAll('button:not([type="button"])')).toHaveLength(0);
   });
 
+  it('uses the shared lesson and answer controls with a single current step', () => {
+    const fixture = create(); const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('.lesson.thickeners-lesson')).not.toBeNull();
+    expect(root.querySelectorAll('.choices .btn--answer')).toHaveLength(3);
+    expect(root.querySelector('.btn--hint')?.classList.contains('btn--secondary')).toBe(true);
+    expect(root.querySelectorAll('.steps [aria-current="step"]')).toHaveLength(1);
+    expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain('Variación');
+    fixture.componentInstance.choosePeriod('A'); fixture.componentInstance.continue(); fixture.detectChanges();
+    expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain('Meta');
+    expect(root.querySelectorAll('.steps .step--done')).toHaveLength(1);
+  });
+
+  it('prioritizes mean and standard deviation while retaining range, variance and graph context in a disclosure', () => {
+    const fixture = create(); const root: HTMLElement = fixture.nativeElement;
+    expect([...root.querySelectorAll('.measures dt')].map(label => label.textContent))
+      .toEqual(['Promedio', 'Desv. estándar', 'Promedio', 'Desv. estándar']);
+    expect([...root.querySelectorAll('.measures dd')].map(value => value.textContent?.trim()))
+      .toEqual(['80 t/h', '0 t/h', '100 t/h', '2 t/h']);
+    const detail = root.querySelector<HTMLDetailsElement>('.additional-measures')!;
+    expect(detail.open).toBe(false);
+    expect(detail.textContent).toContain('Período A: rango 0 t/h · varianza 0 (t/h)²');
+    expect(detail.textContent).toContain('Período B: rango 4 t/h · varianza 4 (t/h)²');
+    expect(detail.textContent).toContain('condiciones parecidas');
+    expect(detail.textContent).toContain('el promedio cumple la meta');
+    expect(detail.parentElement).toBe(root.querySelector('.workbench'));
+    expect(root.querySelector('.task-card')?.nextElementSibling).toBe(detail);
+  });
+
+  it('retains the same comparison hierarchy in transfer without marking either period as automatically better', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    main(game); game.startTransfer(); fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('.goal-banner')?.textContent).toContain('Promedio de 100 t/h');
+    expect(root.querySelectorAll('.period .data-point')).toHaveLength(12);
+    expect([...root.querySelectorAll('.period')].map(period => period.className)).toEqual(['period', 'period']);
+    expect([...root.querySelectorAll('.measures dd')].map(value => value.textContent?.trim()))
+      .toEqual(['100 t/h', '1 t/h', '100 t/h', '2 t/h']);
+    expect(root.querySelectorAll('.choices .btn--answer')).toHaveLength(3);
+    expect(root.querySelector('.additional-measures')?.textContent).toContain('Período A: rango 2 t/h · varianza 1 (t/h)²');
+    expect(root.querySelector('.additional-measures')?.textContent).toContain('Período B: rango 4 t/h · varianza 4 (t/h)²');
+  });
+
   it('computes population variance, range, mean and standard deviation including all zero contributions', () => {
     const game = create().componentInstance; const [a, b] = game.periods();
     expect(a.values).toEqual([80, 80, 80, 80, 80, 80]);

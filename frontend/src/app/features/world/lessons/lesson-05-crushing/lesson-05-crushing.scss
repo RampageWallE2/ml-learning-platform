@@ -84,6 +84,13 @@
 }
 .task-card {
   border-left: 1px solid var(--color-border);
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.evidence-context {
+  grid-column: 1;
+  padding: 0 20px 20px;
+  min-width: 0;
 }
 .board-heading {
   display: flex;
@@ -97,14 +104,20 @@
   }
 }
 .mean-summary {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   strong {
-    color: var(--color-primary);
+    color: var(--color-chart-mean);
   }
   span {
     color: var(--color-text-muted);
     font-size: 13px;
+  }
+  .current-reading {
+    color: var(--color-text);
+    font-size: 14px;
   }
 }
 .shared-scale {
@@ -131,13 +144,13 @@
   position: absolute;
   top: 24px;
   bottom: 38px;
-  border-left: 2px dashed var(--color-primary);
+  border-left: 2px dashed var(--color-chart-mean);
 }
 .mean-label {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  color: var(--color-primary);
+  color: var(--color-chart-mean);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -301,6 +314,8 @@ div.record-card {
     grid-template-columns: 1fr;
   }
   .task-card {
+    grid-column: auto;
+    grid-row: auto;
     border-left: 0;
     border-top: 1px solid var(--color-border);
   }
@@ -344,6 +359,15 @@ div.record-card {
   }
 }
 @media (max-width: 600px) {
+  // The graph stays between the question and choices; supporting detail follows the answer.
+  :host .intuitive-crushing .workbench > .evidence-context {
+    order: 4;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+  .record-card {
+    padding: 6px 4px;
+  }
   // Keep notation before its rule in the existing question-first mobile layout.
   .notation-cards {
     order: 1;
@@ -352,16 +376,13 @@ div.record-card {
     order: 1;
   }
 }
-@media (max-width: 380px) {
-  .record-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (min-width: 700px) and (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
   .workbench {
     grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr);
   }
   .task-card {
+    grid-column: 2;
+    grid-row: 1 / span 2;
     border-top: 0;
     border-left: 1px solid var(--color-border);
   }
