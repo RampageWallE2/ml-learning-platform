@@ -1,117 +1,503 @@
-:host { display: block; min-width: 0; }
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .intuitive-balls {
-  --color-primary: #315b48; --color-earth: #c5d2c9;
-  max-width: 1060px; margin-inline: auto; gap: 16px;
-  h2, h3 { font-family: var(--font-body); }
-  h2 { font-size: clamp(24px, 3vw, 32px); }
-  h3 { margin: 0; font-size: 23px; line-height: 1.3; }
-  h3:focus { outline: none; }
-  .lesson-tag { font: 700 11px var(--font-body); color: #52675a; }
-  .lesson-header { padding-right: 0; }
-  .btn { min-height: 46px; border-radius: 12px; white-space: normal; }
-  .btn--primary { width: 100%; background: #315b48; color: #fff; border-color: #315b48; }
-  .btn--primary:hover:not(:disabled) { background: #254737; }
-  button:focus-visible { outline: 3px solid #146d9a; outline-offset: 3px; }
+  max-width: 1060px;
+  margin-inline: auto;
+  gap: 16px;
+}
+h2,
+h3 {
+  font-family: var(--font-body);
+}
+.lesson-header h2 {
+  font-size: clamp(24px, 3vw, 32px);
+}
+h3 {
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.3;
+}
+h3:focus {
+  outline: none;
+}
+.lesson-header {
+  padding-right: 0;
+}
+.lesson-tag {
+  font: 600 12px/1.6 var(--font-body);
+  color: var(--color-text-muted);
+}
+.lesson-tag__number {
+  font: 8px/1.8 var(--font-retro);
+  color: var(--color-primary);
+}
+.btn--primary {
+  width: 100%;
 }
 .lesson-steps {
-  display: flex; gap: 24px; list-style: none; margin: 0; padding: 0 0 12px; border-bottom: 1px solid #d4ded6;
-  li { display: flex; align-items: center; gap: 8px; color: #52675a; font-size: 14px; }
-  span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #e5eae4; font-weight: 700; }
-  .step--active span { background: #315b48; color: #fff; }
-  .step--done span { background: #dcebdc; }
-}
-.workbench { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
-.data-board, .task-card, .completion-card, .report-card { padding: 20px; border: 1px solid #d1dcd4; border-radius: 18px; background: #fffdf8; }
-.task-card { position: sticky; top: 12px; }
-.board-heading { margin-bottom: 12px; }
-.comparison-plots, .final-periods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.period-plot { padding: 12px; border: 1px solid #d4ded6; border-radius: 12px; background: #f8faf3; }
-.period--active { border-color: #315b48; box-shadow: inset 0 0 0 1px #315b48; }
-.period-heading { display: flex; justify-content: space-between; gap: 6px; small { font-size: 12px; } }
-.period-summary { display: grid; gap: 3px; margin-top: 8px; font-size: 13px; }
-.shared-scale { margin-inline: 12px; }
-.value-track { position: relative; height: 142px; margin-top: 12px; }
-.grid-line { position: absolute; top: 28px; bottom: 34px; border-left: 1px dashed #d9e3dc; }
-.track-line { position: absolute; inset: auto 0 33px; height: 2px; background: #c5d2c8; }
-.mean-line { position: absolute; top: 24px; bottom: 34px; border-left: 2px dashed #315b48; }
-.mean-label { position: absolute; top: 0; transform: translateX(-50%); padding: 3px 8px; border-radius: 6px; background: #e4eee3; color: #315b48; font-size: 12px; white-space: nowrap; }
-.data-point { position: absolute; width: 13px; height: 13px; box-sizing: border-box; border: 1px solid #fff; border-radius: 50%; background: #617966; transform: translateX(-50%); }
-.point--below { background: #467788; }
-.point--above { background: #af7734; }
-.point--hint { outline: 2px solid #79551c; outline-offset: 2px; }
-.shared-axis { position: absolute; inset: auto 0 0; height: 24px; span { position: absolute; transform: translateX(-50%); font-size: 13px; } }
-.axis-label { margin: 12px 0 0; text-align: center; font-size: 12px; }
-.chart-key, .record-list { margin: 12px 0; font-size: 13px; line-height: 1.5; }
-.record-list { overflow-wrap: anywhere; }
-.variance-summary { margin: 0; font-size: 13px; }
-.variance--solved { color: #315b48; }
-.active-records { border-top: 1px solid #d4ded6; padding-top: 16px; h4 { margin: 0; font-size: 16px; } }
-.record-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.record-card { display: grid; gap: 4px; padding: 10px; border: 1px solid #d4ded6; border-radius: 10px; background: #f8faf3; small, span { font-size: 12px; } strong { font-size: 17px; } }
-.record--hint, .variance--hint, .context-hint { border: 2px solid #b58237; background: #fbf3e4; }
-.variance--hint, .context-hint { padding: 8px; border-radius: 8px; }
-.hint-marker { color: #79551c; font-weight: 700; }
-.square-grid { display: grid; grid-auto-rows: 22px; gap: 3px; margin-block: 6px; }
-.square-cell { width: 22px; height: 22px; box-sizing: border-box; border: 1px solid #46725a; border-radius: 3px; background: #bddbb8; }
-.empty-square { display: grid; align-content: center; min-height: 72px; color: #52675a; font-size: 12px; }
-.square-caption { color: #315b48; font-weight: 700; }
-.totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; padding: 12px; border-radius: 10px; background: #edf3e9; font-size: 14px; }
-.task-kicker { display: block; margin-bottom: 8px; color: #52675a; font-size: 11px; text-transform: uppercase; font-weight: 700; }
-.task-card p { margin: 12px 0; line-height: 1.5; }
-.choices { display: grid; gap: 10px; margin-top: 18px; }
-.answer-choice { justify-content: flex-start; padding: 12px; border: 1px solid #cbd8ce; background: #fff; color: #2c4234; text-align: left; }
-.answer-choice:hover { background: #edf3e9; }
-.plain-rule, .calculation-card { display: grid; gap: 6px; padding: 12px; border-radius: 10px; background: #edf3e9; font-size: 13px; strong { color: #315b48; } }
-.calculation-card { margin-top: 14px; strong { font-size: 21px; } }
-.draft-note { margin: 16px 0; padding: 12px; border-left: 4px solid #bd8640; background: #fbf1df; font-size: 15px; }
-.hint-button { width: 100%; margin-top: 14px; background: transparent; color: #315b48; border: 1px dashed #9baf9f; }
-.feedback { margin-top: 16px; padding: 12px; border: 1px solid #e0cba3; background: #fbf3e4; strong { color: #79551c; font-size: 13px; } }
-.feedback--explained { background: #edf3e9; }
-.feedback:focus { outline: 2px solid #146d9a; outline-offset: 2px; }
-.completion-card { background: #eaf3e8; }
-.report-card { border-left: 5px solid #bd8640; }
-.final-periods { margin-top: 16px; article { display: grid; gap: 6px; padding: 12px; border: 1px solid #d4ded6; border-radius: 10px; background: #f8faf3; font-size: 14px; } b { color: #315b48; font-size: 18px; } }
-@media (max-width: 860px) { .workbench { grid-template-columns: 1fr; gap: 14px; } .task-card { position: static; } }
-@media (max-width: 600px) {
-  .data-board, .task-card { padding: 16px; }
-  .comparison-plots, .final-periods { grid-template-columns: 1fr; }
-  .record-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lesson-steps { justify-content: space-between; gap: 6px; li { font-size: 12px; gap: 5px; } }
-}
-@media (max-width: 600px), (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
-  .lesson-steps { flex-wrap: wrap; }
-  .workbench { gap: 10px; }
-  .board-heading { margin-bottom: 8px; }
-  .comparison-plots, .final-periods { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .period-plot { min-width: 0; padding: 8px; }
-  .period-heading { flex-wrap: wrap; gap: 4px; font-size: 12px; }
-  .period-summary { gap: 2px; margin-top: 4px; font-size: 12px; }
-  .shared-scale { margin-inline: 8px; }
-  .value-track { height: 128px; margin-top: 8px; }
-  .mean-label { padding: 2px 4px; line-height: 1.3; }
-  .shared-axis span { font-size: 12px; }
-  .axis-label { margin-top: 8px; }
-  .chart-key, .record-list { margin: 8px 0; font-size: 12px; line-height: 1.4; }
-  .variance-summary { font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
-  .active-records { padding-top: 10px; h4 { font-size: 14px; } }
-  .record-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .record-card { padding: 8px; strong { font-size: 15px; } }
-  .totals { gap: 8px; margin-top: 8px; padding: 8px; font-size: 12px; }
-  .choices:is([aria-label="Opciones de varianza"], [aria-label="Predicción visual"]) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    .answer-choice { justify-content: center; padding-inline: 4px; text-align: center; }
+  display: flex;
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--color-border);
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-muted);
+    font-size: 14px;
   }
-  .plain-rule, .calculation-card { gap: 4px; padding: 10px; }
-  .calculation-card { margin-top: 8px; strong { font-size: 18px; } }
-  .draft-note { margin: 8px 0; padding: 10px; font-size: 14px; }
-  .hint-button { margin-top: 8px; }
+  span {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-frame);
+    background: var(--color-primary-tint);
+    font-weight: 700;
+  }
+  .step--active span {
+    background: var(--color-primary);
+    color: var(--color-surface-raised);
+  }
+  .step--done span {
+    background: var(--color-success-soft);
+    color: var(--color-success);
+  }
+}
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  align-items: start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-raised);
+}
+.data-board,
+.task-card {
+  min-width: 0;
+  padding: 20px;
+}
+.task-card {
+  position: sticky;
+  top: 12px;
+  border-left: 1px solid var(--color-border);
+}
+.board-heading {
+  margin-bottom: 12px;
+}
+.comparison-plots,
+.final-periods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.period-plot {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  min-width: 0;
+}
+.period-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  padding: 6px 0;
+  border-bottom: 2px solid var(--color-border);
+  transition:
+    border-color var(--motion-fast) ease,
+    background var(--motion-fast) ease;
+  small {
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+}
+.period--active .period-heading {
+  border-color: var(--color-accent);
+  background: var(--color-hint-surface);
+}
+.period-summary {
+  display: grid;
+  gap: 3px;
+  margin-top: 8px;
+  font-size: 14px;
+}
+.shared-scale {
+  margin-inline: 12px;
+}
+.value-track {
+  position: relative;
+  height: 142px;
+  margin-top: 12px;
+}
+.grid-line {
+  position: absolute;
+  top: 28px;
+  bottom: 34px;
+  border-left: 1px dashed var(--color-border);
+}
+.track-line {
+  position: absolute;
+  inset: auto 0 33px;
+  height: 2px;
+  background: var(--color-text-muted);
+}
+.mean-line {
+  position: absolute;
+  top: 24px;
+  bottom: 34px;
+  border-left: 2px dashed var(--color-primary);
+}
+.mean-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+// A sign describes position. Neither side nor period is automatically better.
+.data-point {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-surface-raised);
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: translateX(-50%);
+}
+.point--hint {
+  outline: 2px solid var(--color-hint);
+  outline-offset: 2px;
+}
+.shared-axis {
+  position: absolute;
+  inset: auto 0 0;
+  height: 24px;
+  span {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 13px;
+  }
+}
+.axis-label {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 13px;
+}
+.chart-key,
+.record-list {
+  margin: 12px 0;
+  font-size: 13px;
+}
+.chart-key {
+  color: var(--color-text-muted);
+}
+.variance-summary {
+  margin: 0;
+  font-size: 14px;
+}
+.variance--solved {
+  color: var(--color-primary);
+}
+.active-records {
+  border-top: 1px solid var(--color-border);
+  padding-top: 16px;
+  margin-top: 12px;
+  h4 {
+    margin: 0;
+    font-size: 16px;
+  }
+}
+.record-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.record-card {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding-block: 8px;
+  border-top: 1px solid var(--color-border);
+  small,
+  span {
+    font-size: 13px;
+  }
+  strong {
+    font-size: 17px;
+    white-space: nowrap;
+  }
+}
+.record--hint {
+  outline: 1px solid var(--color-hint);
+  outline-offset: 3px;
+  background: var(--color-hint-surface);
+}
+.variance--hint,
+.context-hint {
+  padding: 6px 8px;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-hint-surface);
+}
+.hint-marker {
+  color: var(--color-hint);
+  font-weight: 700;
+}
+.square-grid {
+  display: grid;
+  grid-auto-rows: 22px;
+  gap: 3px;
+  margin-block: 6px;
+}
+.square-cell {
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-hint);
+  border-radius: var(--radius-frame);
+  background: var(--color-accent);
+  animation: square-enter var(--motion-fast) ease-out both;
+}
+.empty-square {
+  display: grid;
+  align-content: center;
+  min-height: 84px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.square-caption {
+  color: var(--color-hint);
+  font-weight: 700;
+}
+.totals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+  font-size: 14px;
+}
+.task-kicker {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.task-card p {
+  margin: 12px 0;
+}
+.choices {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+.answer-choice {
+  min-width: 0;
+  padding: 12px;
+  white-space: normal;
+}
+.choices--prediction,
+.choices--variance {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  .answer-choice {
+    justify-content: center;
+    text-align: center;
+  }
+}
+.answer-value {
+  font-size: 20px;
+  small {
+    display: block;
+    font-size: 13px;
+    font-weight: 400;
+  }
+}
+.plain-rule,
+.calculation-card {
+  display: grid;
+  gap: 6px;
+  padding-left: 12px;
+  border-left: 3px solid var(--color-accent);
+  font-size: 14px;
+  strong {
+    color: var(--color-primary);
+  }
+}
+.calculation-card {
+  margin-top: 14px;
+  strong {
+    font-size: 21px;
+  }
+}
+.hint-button {
+  width: 100%;
+  margin-top: 14px;
+}
+.feedback-region .feedback {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--color-accent);
+  background: var(--color-hint-surface);
+  strong {
+    color: var(--color-hint);
+    font-size: 13px;
+  }
+}
+.feedback:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.completion-card {
+  padding: 16px 20px;
+  border-radius: var(--radius-panel);
+  background: var(--color-success-soft);
+}
+.report-card {
+  padding: 4px 0 4px 16px;
+  border-left: 3px solid var(--color-accent);
+}
+.final-periods {
+  margin-top: 16px;
+  article {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    min-width: 0;
+    font-size: 14px;
+    + article {
+      padding-left: 12px;
+      border-left: 1px solid var(--color-border);
+    }
+  }
+  b {
+    color: var(--color-primary);
+    font-size: 18px;
+  }
+}
+@keyframes square-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+@media (max-width: 860px) {
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+  .task-card {
+    position: static;
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+}
+@media (max-width: 600px),
+  (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .board-heading {
+    margin-bottom: 8px;
+  }
+  .comparison-plots,
+  .final-periods {
+    gap: 12px;
+  }
+  .period-heading {
+    font-size: 14px;
+  }
+  .period-summary {
+    gap: 2px;
+    margin-top: 4px;
+  }
+  // Preserve enough space for all four stacked points, including the one at 88px.
+  .value-track {
+    height: 128px;
+    margin-top: 8px;
+  }
+  .shared-axis span {
+    font-size: 12px;
+  }
+  .axis-label {
+    margin-top: 8px;
+  }
+  .chart-key,
+  .record-list {
+    margin-block: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .variance-summary {
+    line-height: 1.4;
+  }
+  .active-records {
+    padding-top: 10px;
+    h4 {
+      font-size: 14px;
+    }
+  }
+  .record-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .record-card strong {
+    font-size: 15px;
+  }
+  .totals {
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .calculation-card {
+    margin-top: 8px;
+    strong {
+      font-size: 18px;
+    }
+  }
+  .hint-button {
+    margin-top: 8px;
+  }
   .final-periods {
     margin-top: 10px;
-    article { gap: 4px; padding: 8px; font-size: 12px; overflow-wrap: anywhere; }
-    b { font-size: 16px; }
+    b {
+      font-size: 16px;
+    }
+  }
+}
+@media (max-width: 600px) {
+  .task-card > :is(.plain-rule, .calculation-card) {
+    order: -1;
+  }
+  // Keep calculation choices and live hints by the question, ahead of the long evidence board.
+  :host
+    .intuitive-balls
+    .task-card--calculate
+    > :is(.choices--variance, .hint-button, .feedback-region) {
+    order: -1;
   }
 }
 @media (min-width: 700px) and (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
-  .workbench { grid-template-columns: minmax(0, 1.45fr) minmax(240px, 1fr); }
+  .workbench {
+    grid-template-columns: minmax(0, 1.45fr) minmax(240px, 1fr);
+  }
+  .task-card {
+    border-top: 0;
+    border-left: 1px solid var(--color-border);
+  }
 }
-@media (prefers-reduced-motion: reduce) { .btn { transition: none; &:hover, &:active { transform: none; } } }
+@media (prefers-reduced-motion: reduce) {
+  .period-heading {
+    transition: none;
+  }
+  .square-cell {
+    animation: none;
+  }
+}

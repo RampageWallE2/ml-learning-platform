@@ -1,13 +1,30 @@
-<section class="flotation-lesson" aria-labelledby="flotation-title">
+<section class="lesson flotation-lesson" aria-labelledby="flotation-title">
   <header class="lesson-header">
-    <span class="eyebrow">C8 · Flotación · Informe del relevo</span>
+    <span class="lesson-tag"
+      ><span class="lesson-tag__number">Clase 8</span> · Flotación · Informe del relevo</span
+    >
     <h2 id="flotation-title">Volvamos a las unidades que conocemos</h2>
-    <p>Tu misión: explicar cuánto cambian los registros usando <strong>toneladas por hora (t/h)</strong>.</p>
+    <p>
+      Tu misión: explicar cuánto cambian los registros usando
+      <strong>toneladas por hora (t/h)</strong>.
+    </p>
     <ol class="steps" aria-label="Pasos de la misión">
-      <li [class.active]="step() === 1" [attr.aria-current]="step() === 1 ? 'step' : null">1 · Observa</li>
-      <li [class.active]="step() === 2" [attr.aria-current]="step() === 2 ? 'step' : null">2 · Del cuadrado al lado</li>
-      <li [class.active]="step() === 3" [attr.aria-current]="step() === 3 ? 'step' : null">3 · Revisa la franja</li>
-      <li [class.active]="step() === 4" [attr.aria-current]="step() === 4 ? 'step' : null">4 · Prepara el aviso</li>
+      @for (
+        label of ['Observa', 'Del cuadrado al lado', 'Revisa la franja', 'Prepara el aviso'];
+        track label;
+        let index = $index
+      ) {
+        <li
+          [class.active]="step() === index + 1"
+          [class.step--done]="step() > index + 1 || stage() === 'success'"
+          [attr.aria-current]="step() === index + 1 ? 'step' : null"
+        >
+          <span class="step-number" aria-hidden="true">{{
+            step() > index + 1 || stage() === 'success' ? '✓' : index + 1
+          }}</span>
+          <span>{{ label }}</span>
+        </li>
+      }
     </ol>
   </header>
 
@@ -15,13 +32,28 @@
     <div class="plot" role="img" [attr.aria-label]="plotDescription()">
       <div class="plot-area" aria-hidden="true">
         @if (bandVisible()) {
-          <span class="spread-band" [style.left.%]="position(stats().lower)"
-            [style.width.%]="position(stats().upper) - position(stats().lower)"></span>
+          <span
+            class="spread-band"
+            [style.left.%]="position(stats().lower)"
+            [style.width.%]="position(stats().upper) - position(stats().lower)"
+          ></span>
+          <span class="band-bound" [style.left.%]="position(stats().lower)">{{
+            stats().lower
+          }}</span>
+          <span class="band-bound" [style.left.%]="position(stats().upper)">{{
+            stats().upper
+          }}</span>
         }
-        <span class="mean-line" [style.left.%]="position(stats().mean)"><span>Promedio {{ stats().mean }}</span></span>
+        <span class="mean-line" [style.left.%]="position(stats().mean)"
+          ><span>Promedio {{ stats().mean }}</span></span
+        >
         @for (point of points(); track point.id) {
-          <span class="data-point" [class.point--outside]="bandExplained() && point.outside"
-            [style.left.%]="point.x" [style.bottom.px]="point.bottom"></span>
+          <span
+            class="data-point"
+            [class.point--outside]="bandExplained() && point.outside"
+            [style.left.%]="point.x"
+            [style.bottom.px]="point.bottom"
+          ></span>
         }
         <span class="axis"></span>
         @for (tick of ticks(); track tick) {
@@ -30,10 +62,16 @@
       </div>
     </div>
     @if (bandVisible()) {
-      <p class="band-caption">Franja verde: <strong>{{ stats().lower }} a {{ stats().upper }} t/h</strong>, incluidos los bordes.</p>
+      <p class="band-caption">
+        Franja verde: <strong>{{ stats().lower }} a {{ stats().upper }} t/h</strong>, incluidos los
+        bordes.
+      </p>
     }
     <p class="records"><span>Registros:</span> {{ records().join(' · ') }} <span>t/h</span></p>
-    <p class="muted">Cada punto es un registro. Si están uno encima de otro, tienen el mismo valor. El promedio no es una meta.</p>
+    <p class="muted">
+      Cada punto es un registro. Si están uno encima de otro, tienen el mismo valor. El promedio no
+      es una meta.
+    </p>
   </ng-template>
 
   @if (stage() !== 'success') {
@@ -42,102 +80,218 @@
     }
     <div class="workbench" [class.workbench--locate]="stage() === 'locate'">
       @if (stage() !== 'locate') {
-      <section class="data-board" aria-label="Registros de alimentación de flotación">
-        <div class="board-heading"><h3>{{ comparing() ? 'Otros datos, la misma franja' : 'Una sola zona, seis registros' }}</h3><span class="badge">t/h</span></div>
-        <p class="muted">{{ comparing() ? 'Este ejemplo sirve para comparar. No cambia los datos del informe.' : 'Medidos en el mismo lugar y cada cierto tiempo. No son los datos del molino.' }}</p>
-        <ng-container [ngTemplateOutlet]="recordsPlot" />
-
-        <div class="measure-row">
-          <div class="measure measure--squared"><span>Varianza ya calculada</span><strong>{{ stats().variance }} <small>(t/h)²</small></strong></div>
-          <span class="conversion-arrow" aria-hidden="true">→</span>
-          <div class="measure measure--linear"><span>Desviación estándar</span><strong>{{ rootKnown() ? stats().standardDeviation : '?' }} <small>t/h</small></strong></div>
-        </div>
-        <details class="variance-detail"><summary>¿De dónde sale la varianza?</summary>
-          <p>Restamos el promedio a cada registro y multiplicamos cada resultado por sí mismo: {{ stats().squares.join(' + ') }}. La suma es {{ stats().squareSum }}.</p>
-          <p>Dividimos entre los seis registros: {{ stats().squareSum }} ÷ 6 = {{ stats().variance }} (t/h)².</p>
-        </details>
-
-        @if (bandExplained()) {
-          <div class="band-explanation">
-            <strong>Una desviación estándar a cada lado del promedio</strong>
-            <span>{{ stats().mean }} − {{ stats().standardDeviation }} = {{ stats().lower }} · {{ stats().mean }} + {{ stats().standardDeviation }} = {{ stats().upper }} t/h</span>
-            @if (stats().outside.length) {
-              <p>La franja va de {{ stats().lower }} a {{ stats().upper }} t/h. El registro de <strong>{{ stats().outside[0] }} t/h</strong> está fuera y sigue siendo parte de los datos.</p>
-            } @else {
-              <p>En este ejemplo, todos los registros están dentro. Los bordes también cuentan.</p>
-            }
-            <p>No es una zona de «bien o mal». Tampoco asegura cómo serán los próximos registros.</p>
+        <section class="data-board" aria-label="Registros de alimentación de flotación">
+          <div class="board-heading">
+            <h3>
+              {{ comparing() ? 'Otros datos, la misma franja' : 'Una sola zona, seis registros' }}
+            </h3>
+            <span class="badge">t/h</span>
           </div>
-        }
-      </section>
+          <p class="muted">
+            {{
+              comparing()
+                ? 'Este ejemplo sirve para comparar. No cambia los datos del informe.'
+                : 'Medidos en el mismo lugar y cada cierto tiempo. No son los datos del molino.'
+            }}
+          </p>
+          <ng-container [ngTemplateOutlet]="recordsPlot" />
+
+          <div class="measure-row">
+            <div class="measure measure--squared">
+              <span>Varianza ya calculada</span
+              ><strong>{{ stats().variance }} <small>(t/h)²</small></strong>
+            </div>
+            <span class="conversion-arrow" aria-hidden="true">→</span>
+            <div class="measure measure--linear">
+              <span>Desviación estándar</span
+              ><strong
+                >{{ rootKnown() ? stats().standardDeviation : '?' }} <small>t/h</small></strong
+              >
+            </div>
+          </div>
+          <details class="variance-detail">
+            <summary>¿De dónde sale la varianza?</summary>
+            <p>
+              Restamos el promedio a cada registro y multiplicamos cada resultado por sí mismo:
+              {{ stats().squares.join(' + ') }}. La suma es {{ stats().squareSum }}.
+            </p>
+            <p>
+              Dividimos entre los seis registros: {{ stats().squareSum }} ÷ 6 =
+              {{ stats().variance }} (t/h)².
+            </p>
+          </details>
+
+          @if (bandExplained()) {
+            <div class="band-explanation">
+              <strong>Una desviación estándar a cada lado del promedio</strong>
+              <span
+                >{{ stats().mean }} − {{ stats().standardDeviation }} = {{ stats().lower }} ·
+                {{ stats().mean }} + {{ stats().standardDeviation }} = {{ stats().upper }} t/h</span
+              >
+              @if (stats().outside.length) {
+                <p>
+                  La franja va de {{ stats().lower }} a {{ stats().upper }} t/h. El registro de
+                  <strong>{{ stats().outside[0] }} t/h</strong> está fuera y sigue siendo parte de
+                  los datos.
+                </p>
+              } @else {
+                <p>
+                  En este ejemplo, todos los registros están dentro. Los bordes también cuentan.
+                </p>
+              }
+              <p>
+                No es una zona de «bien o mal». Tampoco asegura cómo serán los próximos registros.
+              </p>
+            </div>
+          }
+        </section>
       }
 
-      <aside class="task-card" aria-labelledby="flotation-task-title">
+      <aside
+        class="task-card"
+        [class.task-card--square]="stage() === 'root' || stage() === 'checked'"
+        aria-labelledby="flotation-task-title"
+      >
         @switch (stage()) {
           @case ('observe') {
             <span class="eyebrow">El problema del informe</span>
-            <h3 id="flotation-task-title" #taskHeading tabindex="-1">Tenemos un 4, pero está al cuadrado</h3>
-            <p>El operador necesita explicar la variación al siguiente turno. Escribir «4 t/h» cambiaría el significado del informe.</p>
+            <h3 id="flotation-task-title" #taskHeading tabindex="-1">
+              Tenemos un 4, pero está al cuadrado
+            </h3>
+            <p>
+              El operador necesita explicar la variación al siguiente turno. Escribir «4 t/h»
+              cambiaría el significado del informe.
+            </p>
             <p>Busquemos una medida en las mismas unidades que los registros.</p>
-            <button type="button" class="btn btn--primary" (click)="startRoot()">Volver a t/h →</button>
+            <button type="button" class="btn btn--primary" (click)="startRoot()">
+              Volver a t/h →
+            </button>
           }
           @case ('root') {
             <span class="eyebrow">Mira las casillas</span>
             <h3 id="flotation-task-title" #taskHeading tabindex="-1">¿Cuánto mide el lado?</h3>
-            <p>¿Qué número multiplicado por sí mismo da {{ stats().variance }}? Puedes contar las casillas de una fila.</p>
+            <p>
+              ¿Qué número multiplicado por sí mismo da {{ stats().variance }}? Puedes contar las
+              casillas de una fila.
+            </p>
             <figure class="square-figure">
-              <figcaption>Representación de la varianza: {{ stats().variance }} casillas</figcaption>
+              <figcaption>
+                Representación de la varianza: {{ stats().variance }} casillas
+              </figcaption>
               <div class="square-wrap">
-                <div class="square-grid" [style.grid-template-columns]="'repeat(' + stats().standardDeviation + ', 34px)'"
-                  role="img" [attr.aria-label]="'Representación de la varianza con ' + stats().variance + ' casillas'">
-                  @for (cell of cells(); track cell) { <span class="square-cell" aria-hidden="true"></span> }
+                <div
+                  class="square-grid"
+                  [style.grid-template-columns]="'repeat(' + stats().standardDeviation + ', 34px)'"
+                  role="img"
+                  [attr.aria-label]="
+                    'Representación de la varianza con ' + stats().variance + ' casillas'
+                  "
+                >
+                  @for (cell of cells(); track cell) {
+                    <span class="square-cell" aria-hidden="true"></span>
+                  }
                 </div>
               </div>
             </figure>
-            <div class="number-choices" aria-label="Elige el número">
+            <div class="number-choices" role="group" aria-label="Elige el número">
               @for (option of options(); track option) {
-                <button type="button" class="btn number-choice" (click)="answerRoot(option)">{{ option }}</button>
+                <button
+                  type="button"
+                  class="btn btn--answer number-choice"
+                  (click)="answerRoot(option)"
+                >
+                  {{ option }}
+                </button>
               }
             </div>
-            <button type="button" class="btn btn--hint" (click)="requestHint()">Necesito una pista</button>
+            <button type="button" class="btn btn--secondary hint-button" (click)="requestHint()">
+              Necesito una pista
+            </button>
           }
           @case ('checked') {
             <span class="eyebrow">Del total al lado</span>
-            <h3 id="flotation-task-title" #taskHeading tabindex="-1">{{ stats().standardDeviation }} × {{ stats().standardDeviation }} = {{ stats().variance }}</h3>
+            <h3 id="flotation-task-title" #taskHeading tabindex="-1">
+              {{ stats().standardDeviation }} × {{ stats().standardDeviation }} =
+              {{ stats().variance }}
+            </h3>
             <p>Recuperar el lado se llama <strong>sacar la raíz cuadrada</strong>.</p>
             <figure class="square-figure">
-              <figcaption>{{ stats().variance }} casillas → lado {{ stats().standardDeviation }}</figcaption>
+              <figcaption>
+                {{ stats().variance }} casillas → lado {{ stats().standardDeviation }}
+              </figcaption>
               <div class="square-wrap">
-                <div class="square-grid" [style.grid-template-columns]="'repeat(' + stats().standardDeviation + ', 34px)'"
-                  role="img" [attr.aria-label]="'Representación de la varianza con ' + stats().variance + ' casillas'">
-                  @for (cell of cells(); track cell) { <span class="square-cell" aria-hidden="true"></span> }
+                <div
+                  class="square-grid"
+                  [style.grid-template-columns]="'repeat(' + stats().standardDeviation + ', 34px)'"
+                  role="img"
+                  [attr.aria-label]="
+                    'Representación de la varianza con ' + stats().variance + ' casillas'
+                  "
+                >
+                  @for (cell of cells(); track cell) {
+                    <span class="square-cell" aria-hidden="true"></span>
+                  }
                 </div>
                 <span class="side-label">Lado: {{ stats().standardDeviation }} t/h</span>
               </div>
             </figure>
-            <div class="root-proof"><span>√{{ stats().variance }} = {{ stats().standardDeviation }}</span><strong>Desviación estándar: {{ stats().standardDeviation }} t/h</strong></div>
+            <div class="root-proof">
+              <span>√{{ stats().variance }} = {{ stats().standardDeviation }}</span
+              ><strong>Desviación estándar: {{ stats().standardDeviation }} t/h</strong>
+            </div>
             <p>La varianza tiene unidades al cuadrado. Su raíz vuelve a las unidades originales.</p>
-            <p class="muted">Sale de la varianza; no es el promedio simple de las distancias al promedio.</p>
-            <button type="button" class="btn btn--primary" (click)="continueToBand()">Revisar la franja →</button>
+            <p class="muted">
+              Sale de la varianza; no es el promedio simple de las distancias al promedio.
+            </p>
+            <button type="button" class="btn btn--primary" (click)="continueToBand()">
+              Revisar la franja →
+            </button>
           }
           @case ('locate') {
-            <span class="eyebrow">{{ comparing() ? 'Un ejemplo para comparar' : 'Comprueba los registros' }}</span>
-            <h3 id="flotation-task-title" #taskHeading tabindex="-1">{{ comparing() ? '¿Aquí también hay alguno fuera?' : '¿Qué registro queda fuera?' }}</h3>
+            <span class="eyebrow">{{
+              comparing() ? 'Un ejemplo para comparar' : 'Comprueba los registros'
+            }}</span>
+            <h3 id="flotation-task-title" #taskHeading tabindex="-1">
+              {{ comparing() ? '¿Aquí también hay alguno fuera?' : '¿Qué registro queda fuera?' }}
+            </h3>
             @if (comparing()) {
-              <p>Otros datos, el mismo promedio y la misma desviación estándar. Mira los puntos: ¿están todos dentro de la franja?</p>
+              <p>
+                Otros datos, el mismo promedio y la misma desviación estándar. Mira los puntos:
+                ¿están todos dentro de la franja?
+              </p>
             } @else {
-              <p>Elige un registro fuera de la franja verde: de <strong>{{ stats().lower }} a {{ stats().upper }} t/h</strong>. Los bordes también están dentro.</p>
+              <p>
+                Elige un registro fuera de la franja verde: de
+                <strong>{{ stats().lower }} a {{ stats().upper }} t/h</strong>. Los bordes también
+                están dentro.
+              </p>
             }
             <ng-container [ngTemplateOutlet]="recordsPlot" />
             @if (comparing()) {
               <div class="report-choices" role="group" aria-label="Revisa el ejemplo">
-                <button type="button" class="btn comparison-choice" (click)="answerComparison('inside')">Todos están dentro.</button>
-                <button type="button" class="btn comparison-choice" (click)="answerComparison('outside')">Hay alguno fuera.</button>
+                <button
+                  type="button"
+                  class="btn btn--answer comparison-choice"
+                  (click)="answerComparison('inside')"
+                >
+                  Todos están dentro.
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--answer comparison-choice"
+                  (click)="answerComparison('outside')"
+                >
+                  Hay alguno fuera.
+                </button>
               </div>
             } @else {
               <div class="record-choices" role="group" aria-label="Selecciona un registro">
                 @for (value of records(); track $index) {
-                  <button type="button" class="btn record-choice" (click)="selectRecord($index)">
+                  <button
+                    type="button"
+                    class="btn btn--answer record-choice"
+                    (click)="selectRecord($index)"
+                  >
                     <span>Registro {{ $index + 1 }} · </span><strong>{{ value }} t/h</strong>
                   </button>
                 }
@@ -146,54 +300,125 @@
           }
           @case ('located') {
             <span class="eyebrow">Lo comprobaste en los datos</span>
-            <h3 id="flotation-task-title" #taskHeading tabindex="-1">{{ comparing() ? 'Aquí sí están todos dentro' : 'El registro ' + ((selectedRecord() ?? 0) + 1) + ' queda fuera' }}</h3>
+            <h3 id="flotation-task-title" #taskHeading tabindex="-1">
+              {{
+                comparing()
+                  ? 'Aquí sí están todos dentro'
+                  : 'El registro ' + ((selectedRecord() ?? 0) + 1) + ' queda fuera'
+              }}
+            </h3>
             <div class="root-proof">
               @if (comparing()) {
-                <strong>{{ stats().lower }} y {{ stats().upper }} t/h están en los bordes. Ningún punto queda fuera.</strong>
+                <strong
+                  >{{ stats().lower }} y {{ stats().upper }} t/h están en los bordes. Ningún punto
+                  queda fuera.</strong
+                >
                 <p>No hemos cambiado el promedio ni la desviación estándar.</p>
               } @else {
-                <strong>{{ stats().outside[0] }} t/h está {{ stats().outside[0] < stats().lower ? 'por debajo de ' + stats().lower : 'por encima de ' + stats().upper }} t/h.</strong>
-                <p>Lo marcamos en violeta. Sigue siendo parte de los datos.</p>
+                <strong
+                  >{{ stats().outside[0] }} t/h está
+                  {{
+                    stats().outside[0] < stats().lower
+                      ? 'por debajo de ' + stats().lower
+                      : 'por encima de ' + stats().upper
+                  }}
+                  t/h.</strong
+                >
+                <p>Lo resaltamos con un contorno. Sigue siendo parte de los datos.</p>
               }
             </div>
-            <p>La franja puede contener todos los puntos o dejar alguno fuera. <strong>Hay que mirar los datos.</strong></p>
-            <p class="muted">Estar fuera no significa que el trabajo esté mal. Haría falta conocer los límites permitidos.</p>
-            <button type="button" class="btn btn--primary" (click)="continueToReport()">{{ comparing() ? 'Preparar el aviso →' : 'Comparar otro ejemplo →' }}</button>
+            <p>
+              La franja puede contener todos los puntos o dejar alguno fuera.
+              <strong>Hay que mirar los datos.</strong>
+            </p>
+            <p class="muted">
+              Estar fuera no significa que el trabajo esté mal. Haría falta conocer los límites
+              permitidos.
+            </p>
+            <button type="button" class="btn btn--primary" (click)="continueToReport()">
+              {{ comparing() ? 'Preparar el aviso →' : 'Comparar otro ejemplo →' }}
+            </button>
           }
           @case ('report') {
             <span class="eyebrow">Volvamos a los datos del informe</span>
-            <h3 id="flotation-task-title" #taskHeading tabindex="-1">¿Qué aviso enviarías al siguiente turno?</h3>
+            <h3 id="flotation-task-title" #taskHeading tabindex="-1">
+              ¿Qué aviso enviarías al siguiente turno?
+            </h3>
             <p>Indica la desviación estándar y si la franja contiene todos los registros.</p>
-            <div class="report-choices">
+            <div class="report-choices" role="group" aria-label="Opciones para el aviso">
               @for (choice of reportChoices(); track choice.id) {
-                <button type="button" class="btn report-choice" (click)="chooseReport(choice.id)">{{ choice.text }}</button>
+                <button
+                  type="button"
+                  class="btn btn--answer report-choice"
+                  (click)="chooseReport(choice.id)"
+                >
+                  {{ choice.text }}
+                </button>
               }
             </div>
           }
           @case ('review') {
             <span class="eyebrow">Ya aclaraste este ejemplo</span>
-            <h3 id="flotation-task-title" #taskHeading tabindex="-1">Ahora prueba con otros registros</h3>
-            <p>Usaste una pista. Comprobemos lo aprendido con otros números, sin mezclar este ensayo con el informe.</p>
-            <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">Probar otros registros →</button>
+            <h3 id="flotation-task-title" #taskHeading tabindex="-1">
+              Ahora prueba con otros registros
+            </h3>
+            <p>
+              Usaste una pista. Comprobemos lo aprendido con otros números, sin mezclar este ensayo
+              con el informe.
+            </p>
+            <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
+              Probar otros registros →
+            </button>
           }
         }
-        @if (feedback()) { <div class="feedback" #feedbackPanel tabindex="-1" role="status" aria-live="polite"><strong>Una pista</strong><p>{{ feedback() }}</p></div> }
+        @if (feedback()) {
+          <div
+            class="feedback"
+            #feedbackPanel
+            tabindex="-1"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <strong>Una pista</strong>
+            <p>{{ feedback() }}</p>
+          </div>
+        }
       </aside>
     </div>
   } @else {
     <section class="report-card" aria-labelledby="flotation-task-title">
       <span class="eyebrow">Para el informe · Datos originales</span>
-      <h3 id="flotation-task-title" #taskHeading tabindex="-1">Ya podemos explicar los cambios en t/h</h3>
+      <h3 id="flotation-task-title" #taskHeading tabindex="-1">
+        Ya podemos explicar los cambios en t/h
+      </h3>
       <p>Registros de flotación: {{ originalStats.values.join(' · ') }} t/h.</p>
       <div class="final-measures">
-        <div class="measure"><span>Promedio</span><strong>100 <small>t/h</small></strong></div>
-        <div class="measure"><span>Varianza</span><strong>4 <small>(t/h)²</small></strong></div>
-        <div class="measure measure--linear"><span>Desviación estándar</span><strong>2 <small>t/h</small></strong></div>
+        <div class="measure">
+          <span>Promedio</span><strong>100 <small>t/h</small></strong>
+        </div>
+        <div class="measure">
+          <span>Varianza</span><strong>4 <small>(t/h)²</small></strong>
+        </div>
+        <div class="measure measure--linear">
+          <span>Desviación estándar</span><strong>2 <small>t/h</small></strong>
+        </div>
       </div>
-      <p><strong>√4 = 2.</strong> La desviación estándar resume cuánto se separan los registros del promedio. Aquí se expresa en t/h.</p>
-      <p>En los datos originales, 96 t/h queda fuera de la franja de 98 a 102. En el ejemplo de comparación, todos estaban dentro. Hay que revisar cada grupo de datos.</p>
-      <p>La franja no indica si el trabajo está bien o mal, ni cómo serán los próximos registros. Menos cambios no significa siempre un mejor resultado.</p>
-      <button type="button" class="btn btn--primary" (click)="finish()">Entregar la explicación →</button>
+      <p>
+        <strong>√4 = 2.</strong> La desviación estándar resume cuánto se separan los registros del
+        promedio. Aquí se expresa en t/h.
+      </p>
+      <p>
+        En los datos originales, 96 t/h queda fuera de la franja de 98 a 102. En el ejemplo de
+        comparación, todos estaban dentro. Hay que revisar cada grupo de datos.
+      </p>
+      <p>
+        La franja no indica si el trabajo está bien o mal, ni cómo serán los próximos registros.
+        Menos cambios no significa siempre un mejor resultado.
+      </p>
+      <button type="button" class="btn btn--primary" (click)="finish()">
+        Entregar la explicación →
+      </button>
     </section>
   }
 </section>
