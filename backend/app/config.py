@@ -41,8 +41,17 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = _database_engine_options(DATABASE_URL)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CORS_ORIGINS = _cors_origins()
+    # None uses CORS_ORIGINS after application/test configuration is applied.
+    CSRF_TRUSTED_ORIGINS = (
+        [origin.strip() for origin in os.environ["CSRF_TRUSTED_ORIGINS"].split(",")]
+        if "CSRF_TRUSTED_ORIGINS" in os.environ
+        else None
+    )
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
     SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "ml_session")
     SESSION_COOKIE_SECURE = _boolean_setting("SESSION_COOKIE_SECURE", False)
     SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
     SESSION_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "7"))
+    PASSWORD_LOGIN_MAX_ATTEMPTS = int(os.getenv("PASSWORD_LOGIN_MAX_ATTEMPTS", "8"))
+    PASSWORD_LOGIN_WINDOW_SECONDS = int(os.getenv("PASSWORD_LOGIN_WINDOW_SECONDS", "300"))
+    API_MAX_REQUEST_BYTES = int(os.getenv("API_MAX_REQUEST_BYTES", "65536"))

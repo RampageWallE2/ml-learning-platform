@@ -1,11 +1,10 @@
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
-  inject, Injector, output, signal, viewChild,
+  inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
 
-type Stage = 'observe' | 'cancel' | 'squares' | 'weight' | 'duplicate' | 'average' | 'discovery'
-  | 'practice-square' | 'practice-average' | 'practice-checked' | 'review' | 'success';
+import { C6Stage as Stage, C6State, C6_MAX_PRACTICE_ROUNDS, isC6State } from './lesson-06-sag.state';
 type Cancellation = 'constant' | 'balanced' | 'missing';
 type Weight = 'twice' | 'four' | 'unchanged';
 type Summary = 'total' | 'per-record' | 'signed';
@@ -22,9 +21,11 @@ const PRACTICE_SETS: readonly (readonly number[])[] = [
   styleUrl: './lesson-06-sag.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Lesson06Sag {
+export class Lesson06Sag implements OnChanges {
   readonly title = LESSON_NAMES['lesson-06'];
   readonly completed = output<void>();
+  readonly initialState = input<C6State | null>(null);
+  readonly stateChanged = output<C6State>();
   readonly stage = signal<Stage>('observe');
   readonly feedback = signal('');
   readonly squaresFormed = signal(false);
@@ -32,6 +33,8 @@ export class Lesson06Sag {
   readonly duplicateViewed = signal(false);
   readonly round = signal(0);
   readonly practiceHelped = signal(false);
+  readonly needsPractice = computed(() => this.practiceHelped() && this.round() < C6_MAX_PRACTICE_ROUNDS);
+  readonly guidedCompletion = computed(() => this.stage() === 'success' && this.practiceHelped());
   readonly practiceVarianceAnswered = signal(false);
   readonly original = ORIGINAL;
   readonly ticks = [98, 99, 100, 101, 102];
@@ -77,24 +80,24 @@ export class Lesson06Sag {
   });
   readonly cancellations: readonly { id: Cancellation; text: string }[] = [
     { id: 'constant', text: 'Sí. Todos los registros fueron iguales a 100.' },
-    { id: 'balanced', text: 'No. Hubo diferencias, pero los signos se compensaron.' },
-    { id: 'missing', text: 'No podemos saberlo porque faltan los registros.' },
+    { id: 'balanced', text: 'No. Hay datos distintos, aunque la suma dé 0.' },
+    { id: 'missing', text: 'No podemos saberlo: faltan datos.' },
   ];
   readonly weights: readonly { id: Weight; text: string }[] = [
     { id: 'twice', text: 'El doble: pasa de 1 a 2 casillas.' },
     { id: 'four', text: 'Cuatro veces: pasa de 1 a 4 casillas.' },
-    { id: 'unchanged', text: 'Lo mismo: sigue aportando 1 casilla.' },
+    { id: 'unchanged', text: 'Lo mismo: sigue teniendo 1 casilla.' },
   ];
   readonly summaries: readonly { id: Summary; text: string }[] = [
-    { id: 'total', text: 'Comparar solo las sumas: 16 significa más variación que 8.' },
-    { id: 'per-record', text: 'Comparar el promedio de cuadrados por registro.' },
-    { id: 'signed', text: 'Volver a la suma de desviaciones: 0 significa que no hubo cambios.' },
+    { id: 'total', text: 'Usar solo la suma: más casillas significa más separación.' },
+    { id: 'per-record', text: 'Sumar las casillas y dividir entre todos los registros.' },
+    { id: 'signed', text: 'Sumar las diferencias con signo: 0 significa que todos fueron iguales.' },
   ];
   // Keep the order fixed within a question, but vary it between attempts and rounds.
-  private readonly choiceOffset = Math.floor(Math.random() * 3);
+  private readonly choiceOffset = signal(Math.floor(Math.random() * 3));
   readonly practiceVarianceOptions = computed(() => {
     const choices = [0, this.variance(), this.sourceSquareSum()];
-    const offset = (this.choiceOffset + this.round()) % choices.length;
+    const offset = (this.choiceOffset() + this.round()) % choices.length;
     return choices.map((_, index) => choices[(index + offset) % choices.length]);
   });
   readonly practiceSummaries = computed<readonly { id: PracticeSummary; text: string }[]>(() => {
@@ -103,13 +106,38 @@ export class Lesson06Sag {
       { id: 'zero', text: 'Se vuelve cero' },
       { id: 'same', text: 'Se mantiene igual' },
     ];
-    const offset = (this.choiceOffset + this.round()) % choices.length;
+    const offset = (this.choiceOffset() + this.round()) % choices.length;
     return choices.map((_, index) => choices[(index + offset) % choices.length]);
   });
   private readonly injector = inject(Injector);
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
   private readonly practiceFeedback = viewChild<ElementRef<HTMLDivElement>>('practiceFeedback');
   private finished = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['initialState']) return;
+    const state = this.initialState();
+    if (isC6State(state)) {
+      this.stage.set(state.stage);
+      this.squaresFormed.set(state.squaresFormed);
+      this.duplicated.set(state.duplicated);
+      this.duplicateViewed.set(state.duplicateViewed);
+      this.round.set(state.round);
+      this.practiceHelped.set(state.practiceHelped);
+      this.practiceVarianceAnswered.set(state.practiceVarianceAnswered);
+      this.choiceOffset.set(state.choiceOffset);
+      this.feedback.set('');
+      this.finished = false;
+    }
+    this.publishState();
+  }
+
+  private publishState(): void {
+    this.stateChanged.emit({ stage: this.stage(), squaresFormed: this.squaresFormed(),
+      duplicated: this.duplicated(), duplicateViewed: this.duplicateViewed(), round: this.round(),
+      practiceHelped: this.practiceHelped(), practiceVarianceAnswered: this.practiceVarianceAnswered(),
+      choiceOffset: this.choiceOffset() });
+  }
 
   position(value: number): number { return (value - 98) / 4 * 100; }
   signed(value: number): string { return value < 0 ? '−' + Math.abs(value) : value > 0 ? '+' + value : '0'; }
@@ -123,14 +151,15 @@ export class Lesson06Sag {
     if (this.stage() !== 'cancel' || !this.cancellations.some(choice => choice.id === answer)) return;
     if (answer === 'balanced') this.moveTo('squares');
     else this.hint(answer === 'constant'
-      ? 'Los registros siguen a la vista: hay 98 y 102, no solo 100. El −2 y el +2 se compensaron al sumarlos; eso no borra las diferencias.'
-      : 'Tenemos los cuatro registros. El 0 viene de sumar cambios en lados contrarios, no de que falten datos.');
+      ? 'Mira los datos: hay 98 y 102, no solo 100. Al sumar −2 y +2 obtenemos 0, pero los datos siguen siendo distintos.'
+      : 'Tenemos los cuatro registros. La suma da 0 porque −2 y +2 se compensan, no porque falten datos.');
   }
 
   formSquares(): void {
     if (this.stage() !== 'squares') return;
     this.squaresFormed.set(true);
     this.feedback.set('');
+    this.publishState();
     this.focusTask();
   }
 
@@ -138,14 +167,14 @@ export class Lesson06Sag {
     if (this.stage() !== 'squares' || !this.squaresFormed() || !this.squareOptions.includes(answer)) return;
     if (answer === 4) this.moveTo('weight');
     else this.hint(answer < 0
-      ? 'El signo − indica que está por debajo del promedio. La separación es 2: un cuadrado de 2 por 2 tiene 4 casillas. No puede tener menos de 0 casillas.'
-      : 'Cuenta dos filas de dos casillas. Multiplicamos 2 × 2: son 4 casillas, no 2.');
+      ? 'El − indica que el dato está por debajo del promedio. El lado mide 2: 2 × 2 = 4 casillas. La cantidad de casillas no puede ser negativa.'
+      : 'Cuenta dos filas de dos casillas: 2 × 2 = 4. El lado mide 2, pero hay 4 casillas en total.');
   }
 
   chooseWeight(answer: Weight): void {
     if (this.stage() !== 'weight' || !this.weights.some(choice => choice.id === answer)) return;
     if (answer === 'four') this.moveTo('duplicate');
-    else this.hint('Con separación 1, el cuadrado tiene 1 × 1 = 1 casilla. Con separación 2, tiene 2 × 2 = 4. La separación se duplicó, pero el aporte pasó de 1 a 4.');
+    else this.hint('Mira los cuadrados: 1 × 1 = 1 casilla y 2 × 2 = 4. El lado se duplicó, pero las casillas pasaron de 1 a 4.');
   }
 
   setDuplicated(value: boolean): void {
@@ -153,6 +182,7 @@ export class Lesson06Sag {
     this.duplicated.set(value);
     if (value) this.duplicateViewed.set(true);
     this.feedback.set('');
+    this.publishState();
   }
 
   compareCopy(): void {
@@ -168,8 +198,8 @@ export class Lesson06Sag {
     if (this.stage() !== 'average' || !this.summaries.some(choice => choice.id === answer)) return;
     if (answer === 'per-record') this.moveTo('discovery');
     else this.hint(answer === 'total'
-      ? 'La copia repite cada valor dos veces. La suma creció porque contamos el doble de registros, no porque se separen más del promedio.'
-      : 'Los signos siguen compensándose: un menos borra un más. Para medir la variación, conservamos los cuadrados y los promediamos.');
+      ? 'La copia tiene el doble de registros, pero repite los mismos datos. La suma crece sin que cambie su separación del promedio.'
+      : 'La suma da 0 porque −2 y +2 se compensan. Los datos no son iguales. Usemos las casillas de los cuadrados para conservar esas diferencias.');
   }
 
   startPractice(): void {
@@ -182,18 +212,17 @@ export class Lesson06Sag {
   answerPracticeSquare(answer: number): void {
     if (this.stage() !== 'practice-square' || !this.practiceSquareOptions().includes(answer)) return;
     if (answer === this.practiceSquare()) this.moveTo('practice-average');
-    else this.hint('La desviación es ' + this.signed(this.practiceDeviation()) + ' t/h. Su separación es '
-      + Math.abs(this.practiceDeviation()) + ': el cuadrado tiene '
+    else this.hint('El dato está a ' + Math.abs(this.practiceDeviation()) + ' t/h del promedio. El cuadrado tiene '
       + Math.abs(this.practiceDeviation()) + ' × ' + Math.abs(this.practiceDeviation()) + ' = '
-      + this.cellCount(this.practiceSquare()) + '. El aporte no es negativo.');
+      + this.cellCount(this.practiceSquare()) + '. Las casillas no pueden ser negativas.');
   }
 
   choosePracticeSummary(answer: PracticeSummary): void {
     if (this.stage() !== 'practice-average' || !this.practiceSummaries().some(choice => choice.id === answer)) return;
     if (answer === 'same') this.moveTo('practice-checked');
     else this.hint(answer === 'double'
-      ? 'La suma y la cantidad de registros se duplican juntas. Su promedio no cambia por repetir los mismos datos.'
-      : 'La suma de desviaciones da 0, pero la varianza promedia sus cuadrados. Los cuadrados siguen teniendo aportes, no se vuelven 0.');
+      ? 'Ahora hay el doble de casillas y el doble de registros. Al dividir, obtenemos el mismo promedio.'
+      : 'Sumar las diferencias con signo da 0. La varianza usa sus cuadrados: las casillas no se vuelven 0.');
   }
 
   answerPracticeVariance(answer: number): void {
@@ -202,19 +231,26 @@ export class Lesson06Sag {
     if (answer === this.variance()) {
       this.practiceVarianceAnswered.set(true);
       this.feedback.set('');
+      this.publishState();
       this.focusTask();
     } else this.hint(answer === 0
-      ? '0 sería no tener separación en ningún registro. Aquí hay aportes al cuadrado: promedia su suma entre los ' + this.records().length + ' registros.'
-      : answer + ' es la suma. Para obtener el promedio, divídela entre los ' + this.records().length + ' registros.');
+      ? '0 sería tener todos los datos iguales al promedio. Aquí hay casillas: suma y divide entre los ' + this.records().length + ' registros.'
+      : answer + ' es la suma de casillas, no el promedio. Divide entre los ' + this.records().length + ' registros.');
   }
 
   continuePractice(): void {
     if (this.stage() !== 'practice-checked' || !this.practiceVarianceAnswered()) return;
-    this.moveTo(this.practiceHelped() ? 'review' : 'success');
+    this.moveTo(this.needsPractice() ? 'review' : 'success');
   }
 
   continueAfterHelp(): void {
     if (this.stage() !== 'review') return;
+    // Old review drafts have already finished their practice. Keep the help
+    // flag and offer an explicit finish instead of adding another round.
+    if (!this.needsPractice()) {
+      this.moveTo('success');
+      return;
+    }
     this.round.update(round => round + 1);
     this.practiceHelped.set(false);
     this.practiceVarianceAnswered.set(false);
@@ -224,6 +260,7 @@ export class Lesson06Sag {
   private hint(message: string): void {
     if (this.practicing()) this.practiceHelped.set(true);
     this.feedback.set(message);
+    this.publishState();
     if (this.practicing()) {
       afterNextRender(() => this.practiceFeedback()?.nativeElement.focus(), { injector: this.injector });
     }
@@ -232,6 +269,7 @@ export class Lesson06Sag {
   private moveTo(stage: Stage): void {
     this.feedback.set('');
     this.stage.set(stage);
+    this.publishState();
     this.focusTask();
   }
 
@@ -242,6 +280,7 @@ export class Lesson06Sag {
   finish(): void {
     if (this.stage() !== 'success' || this.finished) return;
     this.finished = true;
+    this.publishState();
     this.completed.emit();
   }
 }

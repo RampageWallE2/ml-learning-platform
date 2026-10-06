@@ -1,11 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { Lesson08Flotation } from './lesson-08-flotation';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { C8State } from './lesson-08-flotation.state';
 
-function create() {
+function create(state: C8State | null = null) {
   const fixture = TestBed.createComponent(Lesson08Flotation);
+  fixture.componentRef.setInput('initialState', state);
   fixture.detectChanges();
   return fixture;
+}
+// Older drafts can contain later practice rounds; keep their data supported
+// without making the player repeat those rounds in the current lesson.
+function createPractice(round: number) {
+  return create({ stage: 'root', round, helped: false, selectedRecord: null,
+    comparing: false, choiceOffset: Math.floor(Math.random() * 3) });
 }
 function reachBand(game: Lesson08Flotation): void {
   game.startRoot();
@@ -69,7 +77,7 @@ describe('Lesson08Flotation', () => {
 
     expect(root.querySelector('h2')?.textContent).toBe(LESSON_NAMES['lesson-08']);
     expect(root.querySelector('.lesson-header p')?.textContent).toContain('toneladas por hora');
-    expect(root.querySelector('.task-card')?.textContent).toContain('El siguiente turno necesita');
+    expect(root.querySelector('.task-card')?.textContent).toContain('el siguiente turno pueda leer');
     expect(root.querySelector('.task-card .btn--primary')?.textContent).toContain('Volver a t/h');
     expect(root.querySelectorAll('.plot .data-point')).toHaveLength(6);
     expect(root.querySelector('.measure--squared')?.textContent).toContain('4 (t/h)²');
@@ -109,12 +117,10 @@ describe('Lesson08Flotation', () => {
   });
 
   it('keeps the square and native numeric choices in the task without revealing the side or root proof', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    const root: HTMLElement = fixture.nativeElement;
-    game.startRoot();
-
-    for (const side of [2, 3, 4]) {
+    for (const [round, side] of [2, 3, 4].entries()) {
+      const fixture = createPractice(round);
+      const game = fixture.componentInstance;
+      const root: HTMLElement = fixture.nativeElement;
       fixture.detectChanges();
       const task = root.querySelector('.task-card')!;
       const square = task.querySelector('.square-grid') as HTMLElement;
@@ -132,10 +138,7 @@ describe('Lesson08Flotation', () => {
       expect(root.querySelector('.side-label, .root-proof, .band-bound')).toBeNull();
       expect(game.rootKnown()).toBe(false);
 
-      game.requestHint();
-      reachReport(game);
-      game.chooseReport('observed');
-      game.continueAfterHelp();
+      fixture.destroy();
     }
   });
 
@@ -329,7 +332,7 @@ describe('Lesson08Flotation', () => {
     expect(root.querySelector('.root-proof')?.textContent).toContain('√4 = 2');
     expect(root.querySelector('.side-label')?.textContent).toContain('2 t/h');
     expect(root.textContent).toContain('sacar la raíz cuadrada');
-    expect(root.textContent).toContain('no es el promedio simple de las distancias');
+    expect(root.textContent).toContain('No se calcula sumando las separaciones y dividiendo entre los registros');
     expect(root.querySelector('.spread-band')).toBeNull();
     game.requestHint();
     game.answerRoot(4);
@@ -558,7 +561,7 @@ describe('Lesson08Flotation', () => {
     expect(root.querySelector('.records')?.textContent).not.toContain('98 · 98 · 98');
   });
 
-  it('requires an independent fresh example after a wrong comparison rather than accepting a habitual outside answer', () => {
+  it('offers one fresh example after a wrong comparison rather than accepting a habitual outside answer', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     reachComparison(game);
@@ -617,6 +620,7 @@ describe('Lesson08Flotation', () => {
     fixture.detectChanges();
     expect(game.stage()).toBe('success');
     expect(game.helped()).toBe(false);
+    expect(game.guidedCompletion()).toBe(false);
     expect(game.records()).toEqual(game.originalStats.values);
     expect(root.querySelector('.report-card')?.textContent).toContain(
       '96 · 100 · 100 · 100 · 102 · 102',
@@ -629,8 +633,7 @@ describe('Lesson08Flotation', () => {
     expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the same-franja comparison accurate across different source means and standard deviations', () => {
-    const game = create().componentInstance;
+  it('keeps the same-franja comparison accurate in current and older practice drafts', () => {
     const expected = [
       [98, 102],
       [97, 103],
@@ -638,6 +641,8 @@ describe('Lesson08Flotation', () => {
       [102, 106],
     ];
     for (let round = 0; round < 7; round += 1) {
+      const fixture = createPractice(round);
+      const game = fixture.componentInstance;
       const index = round === 0 ? 0 : 1 + ((round - 1) % 3);
       const source = game.records();
       const sourceStats = game.stats();
@@ -668,9 +673,7 @@ describe('Lesson08Flotation', () => {
       expect(game.stats().outside).toHaveLength(1);
       expect(game.selectedRecord()).toBe(selected);
       expect(game.comparing()).toBe(false);
-      game.chooseReport('units');
-      game.chooseReport('observed');
-      game.continueAfterHelp();
+      fixture.destroy();
     }
   });
 
@@ -907,10 +910,10 @@ describe('Lesson08Flotation', () => {
     ({ random, observedPosition }) => {
       const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(random);
       try {
-        const fixture = create();
-        const game = fixture.componentInstance;
         const positions: number[] = [];
         for (let round = 0; round < 3; round += 1) {
+          const fixture = createPractice(round);
+          const game = fixture.componentInstance;
           reachReport(game);
           fixture.detectChanges();
           const choices = game.reportChoices();
@@ -940,8 +943,7 @@ describe('Lesson08Flotation', () => {
           game.chooseReport('invalid' as 'observed');
           fixture.detectChanges();
           expect(game.reportChoices().map((choice) => choice.id)).toEqual(order);
-          game.chooseReport('observed');
-          game.continueAfterHelp();
+          fixture.destroy();
         }
         expect(new Set(positions).size).toBe(3);
       } finally {
@@ -987,7 +989,7 @@ describe('Lesson08Flotation', () => {
     expect(game.stage()).toBe('report');
     expect(game.records()).toBe(records);
     expect(game.feedback()).toContain('registro de 96 t/h');
-    expect(game.feedback()).toContain('puede contener todos los registros o dejar alguno fuera');
+    expect(game.feedback()).toContain('No todos los puntos tienen que estar dentro de la franja');
     game.chooseReport('fake' as 'observed');
     expect(game.stage()).toBe('report');
     game.chooseReport('observed');
@@ -1000,6 +1002,7 @@ describe('Lesson08Flotation', () => {
     game.chooseReport('observed');
     expect(game.stage()).toBe('success');
     expect(game.helped()).toBe(false);
+    expect(game.guidedCompletion()).toBe(false);
     expect(game.stats().standardDeviation).toBe(2);
   });
 
@@ -1030,12 +1033,75 @@ describe('Lesson08Flotation', () => {
     expect(game.comparing()).toBe(false);
   });
 
-  it('keeps fresh squares, units, options and counterexamples accurate across repeated practice', () => {
-    const game = create().componentInstance;
-    game.startRoot();
+  it.each(['root-hint', 'root-answer', 'record', 'comparison', 'report'] as const)(
+    'allows a guided finish after %s help in the only additional practice, without skipping answers',
+    helpAt => {
+      const fixture = create();
+      const game = fixture.componentInstance;
+      const root: HTMLElement = fixture.nativeElement;
+      const done = vi.fn();
+      game.completed.subscribe(done);
+      game.startRoot();
+      game.requestHint();
+      reachReport(game);
+      game.chooseReport('observed');
+      fixture.detectChanges();
+      expect(game.needsPractice()).toBe(true);
+      expect(root.querySelector('.task-card')?.textContent).toContain('Prueba una vez más');
+      expect(root.querySelector('.task-card')?.textContent).toContain('Puedes pedir ayuda');
+      game.finish();
+      expect(done).not.toHaveBeenCalled();
+      click(root, 'Probar otros registros →');
+      expect(game.round()).toBe(1);
+      expect(game.helped()).toBe(false);
+
+      if (helpAt === 'root-hint') game.requestHint();
+      if (helpAt === 'root-answer') game.answerRoot(game.options().find(value => value !== game.stats().standardDeviation)!);
+      game.continueToBand(); game.chooseReport('observed'); game.finish();
+      expect(game.stage()).toBe('root');
+      game.answerRoot(3); game.continueToBand();
+      if (helpAt === 'record') game.selectRecord(0);
+      game.continueToReport(); game.chooseReport('observed'); game.finish();
+      expect(game.stage()).toBe('locate');
+      expect(game.selectedRecord()).toBeNull();
+      game.selectRecord(5); game.continueToReport();
+      if (helpAt === 'comparison') game.answerComparison('outside');
+      game.continueToReport(); game.chooseReport('observed'); game.finish();
+      expect(game.stage()).toBe('locate');
+      expect(game.comparing()).toBe(true);
+      game.answerComparison('inside'); game.continueToReport();
+      if (helpAt === 'report') game.chooseReport('units');
+      game.continueAfterHelp(); game.finish();
+      expect(game.stage()).toBe('report');
+      expect(game.helped()).toBe(true);
+      expect(done).not.toHaveBeenCalled();
+
+      game.chooseReport('observed');
+      fixture.detectChanges();
+      expect(game.stage()).toBe('success');
+      expect(game.round()).toBe(1);
+      expect(game.helped()).toBe(true);
+      expect(game.guidedCompletion()).toBe(true);
+      expect(game.needsPractice()).toBe(false);
+      expect(root.querySelector('.report-card h3')?.textContent).toContain('Completaste con ayuda');
+      expect(game.records()).toEqual(game.originalStats.values);
+      expect(game.stats().variance).toBe(4);
+      expect(game.stats().standardDeviation).toBe(2);
+      game.continueAfterHelp();
+      expect(game.round()).toBe(1);
+      expect(game.stage()).toBe('success');
+      expect(done).not.toHaveBeenCalled();
+      game.finish(); game.finish();
+      expect(done).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('keeps squares, units, options and counterexamples accurate in older practice drafts', () => {
     const roots = [2, 3, 4, 2];
     const means = [100, 100, 106, 104];
     for (let round = 0; round < 10; round++) {
+      const fixture = createPractice(round);
+      const game = fixture.componentInstance;
       const index = round === 0 ? 0 : 1 + ((round - 1) % 3);
       const stats = game.stats();
       expect(stats.mean).toBe(means[index]);
@@ -1051,25 +1117,15 @@ describe('Lesson08Flotation', () => {
           .filter((point) => point.outside)
           .map((point) => point.value),
       ).toEqual(stats.outside);
-      game.requestHint();
-      reachReport(game);
-      game.chooseReport('observed');
-      game.continueAfterHelp();
+      expect(game.originalStats.mean).toBe(100);
+      expect(game.originalStats.variance).toBe(4);
+      fixture.destroy();
     }
-    expect(game.originalStats.mean).toBe(100);
-    expect(game.originalStats.variance).toBe(4);
   });
 
   it('restores original evidence after practice with a different mean and root', () => {
-    const fixture = create();
+    const fixture = createPractice(2);
     const game = fixture.componentInstance;
-    game.startRoot();
-    for (let attempt = 0; attempt < 2; attempt++) {
-      game.requestHint();
-      reachReport(game);
-      game.chooseReport('observed');
-      game.continueAfterHelp();
-    }
     expect(game.stats().mean).toBe(106);
     expect(game.stats().standardDeviation).toBe(4);
     reachReport(game);

@@ -1,19 +1,13 @@
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
-  inject, Injector, output, signal, viewChild,
+  inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
 import { NgTemplateOutlet } from '@angular/common';
+import { C8_ORIGINAL as ORIGINAL, C8_PRACTICE as PRACTICE, C8_MAX_PRACTICE_ROUNDS,
+  C8Stage as Stage, C8State, isC8State } from './lesson-08-flotation.state';
 
-type Stage = 'observe' | 'root' | 'checked' | 'locate' | 'located' | 'report' | 'review' | 'success';
 type ReportChoice = 'units' | 'inside' | 'observed';
-
-const ORIGINAL = [96, 100, 100, 100, 102, 102] as const;
-const PRACTICE: readonly (readonly number[])[] = [
-  [97, 97, 100, 100, 100, 106],
-  [102, 102, 106, 106, 106, 114],
-  [100, 104, 104, 104, 106, 106],
-];
 
 function describe(values: readonly number[]) {
   const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -35,13 +29,17 @@ function describe(values: readonly number[]) {
   styleUrl: './lesson-08-flotation.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Lesson08Flotation {
+export class Lesson08Flotation implements OnChanges {
   readonly title = LESSON_NAMES['lesson-08'];
   readonly completed = output<void>();
+  readonly initialState = input<C8State | null>(null);
+  readonly stateChanged = output<C8State>();
   readonly stage = signal<Stage>('observe');
   readonly feedback = signal('');
   readonly round = signal(0);
   readonly helped = signal(false);
+  readonly needsPractice = computed(() => this.helped() && this.round() < C8_MAX_PRACTICE_ROUNDS);
+  readonly guidedCompletion = computed(() => this.stage() === 'success' && this.helped());
   readonly selectedRecord = signal<number | null>(null);
   readonly comparing = signal(false);
   readonly sourceRecords = computed<readonly number[]>(() => this.stage() === 'success' || this.round() === 0
@@ -67,27 +65,48 @@ export class Lesson08Flotation {
   readonly ticks = computed(() => [Math.min(...this.records()), this.stats().mean, Math.max(...this.records())]);
   readonly cells = computed(() => Array.from({ length: this.stats().variance }, (_, index) => index));
   // Keep the order stable during an attempt; change it on replay and new practice.
-  private readonly choiceOffset = Math.floor(Math.random() * 3);
+  private readonly choiceOffset = signal(Math.floor(Math.random() * 3));
   readonly options = computed(() => {
     const stats = this.stats();
     const choices = [stats.standardDeviation === 4 ? 2 : 1, stats.standardDeviation, stats.variance];
-    const offset = (this.choiceOffset + this.round()) % choices.length;
+    const offset = (this.choiceOffset() + this.round()) % choices.length;
     return choices.map((_, index) => choices[(index + offset) % choices.length]);
   });
   readonly reportChoices = computed<readonly { id: ReportChoice; text: string }[]>(() => {
     const stats = this.stats();
     const choices: { id: ReportChoice; text: string }[] = [
-      { id: 'units', text: 'La desviación estándar es ' + stats.variance + ' t/h: uso la varianza sin cambiarla.' },
-      { id: 'inside', text: 'La desviación estándar es ' + stats.standardDeviation + ' t/h: todos los registros están dentro.' },
-      { id: 'observed', text: 'La desviación estándar es ' + stats.standardDeviation + ' t/h: hay un registro fuera de la franja.' },
+      { id: 'units', text: 'Desviación estándar: ' + stats.variance + ' t/h. No hace falta sacar la raíz.' },
+      { id: 'inside', text: 'Desviación estándar: ' + stats.standardDeviation + ' t/h. Todos los puntos están dentro de la franja.' },
+      { id: 'observed', text: 'Desviación estándar: ' + stats.standardDeviation + ' t/h. Hay un punto fuera de la franja.' },
     ];
-    const offset = (this.choiceOffset + this.round()) % choices.length;
+    const offset = (this.choiceOffset() + this.round()) % choices.length;
     return choices.map((_, index) => choices[(index + offset) % choices.length]);
   });
   private readonly injector = inject(Injector);
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
   private readonly feedbackPanel = viewChild<ElementRef<HTMLDivElement>>('feedbackPanel');
   private finished = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['initialState']) return;
+    const state = this.initialState();
+    if (isC8State(state)) {
+      this.stage.set(state.stage);
+      this.round.set(state.round);
+      this.helped.set(state.helped);
+      this.selectedRecord.set(state.selectedRecord);
+      this.comparing.set(state.comparing);
+      this.choiceOffset.set(state.choiceOffset);
+      this.feedback.set('');
+      this.finished = false;
+    }
+    this.publishState();
+  }
+
+  private publishState(): void {
+    this.stateChanged.emit({ stage: this.stage(), round: this.round(), helped: this.helped(),
+      selectedRecord: this.selectedRecord(), comparing: this.comparing(), choiceOffset: this.choiceOffset() });
+  }
 
   position(value: number): number {
     return (value - this.bounds().min) / (this.bounds().max - this.bounds().min) * 100;
@@ -103,7 +122,7 @@ export class Lesson08Flotation {
     const stats = this.stats();
     return (this.comparing() ? 'Ejemplo de comparación. ' : 'Alimentación de flotación: ')
       + this.records().join(', ') + ' toneladas por hora. Promedio '
-      + stats.mean + '. Cada punto es un registro; los apilados tienen el mismo valor.'
+      + stats.mean + '. Cada punto es un registro; los puntos uno sobre otro tienen el mismo valor.'
       + (this.bandVisible() ? ' Franja de ' + stats.lower + ' a ' + stats.upper
         + ' toneladas por hora, incluidos sus bordes. No indica si el trabajo está bien o mal.' : '')
       + (this.bandExplained() ? ' Registros fuera: ' + (stats.outside.join(', ') || 'ninguno') + '.' : '');
@@ -128,7 +147,7 @@ export class Lesson08Flotation {
     const side = this.stats().standardDeviation;
     this.hint('Hay ' + side + ' casillas por fila y ' + side + ' filas. '
       + side + ' × ' + side + ' = ' + this.stats().variance
-      + '. El total representa la varianza; el lado nos devuelve a t/h.');
+      + '. El total de casillas representa la varianza. El lado representa la desviación estándar, que se expresa en t/h.');
   }
 
   continueToBand(): void {
@@ -176,20 +195,26 @@ export class Lesson08Flotation {
   chooseReport(answer: ReportChoice): void {
     if (this.stage() !== 'report' || !this.reportChoices().some(choice => choice.id === answer)) return;
     if (answer === 'observed') {
-      this.moveTo(this.helped() ? 'review' : 'success');
+      this.moveTo(this.needsPractice() ? 'review' : 'success');
       return;
     }
     const stats = this.stats();
     this.hint(answer === 'units'
       ? 'La varianza es ' + stats.variance + ' (t/h)². Su raíz es ' + stats.standardDeviation
-        + ' t/h: cambia el valor y vuelven las unidades originales.'
+        + ' t/h. Ese resultado es la desviación estándar, expresada en toneladas por hora.'
       : 'Mira el registro de ' + stats.outside[0] + ' t/h: está fuera de '
         + stats.lower + ' a ' + stats.upper
-        + '. La franja puede contener todos los registros o dejar alguno fuera: hay que mirar los datos.');
+        + '. No todos los puntos tienen que estar dentro de la franja. Revisa dónde está cada uno.');
   }
 
   continueAfterHelp(): void {
     if (this.stage() !== 'review') return;
+    // Older review drafts have already completed their practice. Finish only
+    // on explicit action, preserving the help flag instead of adding a round.
+    if (!this.needsPractice()) {
+      this.moveTo('success');
+      return;
+    }
     this.round.update(round => round + 1);
     this.helped.set(false);
     this.selectedRecord.set(null);
@@ -200,18 +225,21 @@ export class Lesson08Flotation {
   finish(): void {
     if (this.stage() !== 'success' || this.finished) return;
     this.finished = true;
+    this.publishState();
     this.completed.emit();
   }
 
   private hint(message: string): void {
     this.helped.set(true);
     this.feedback.set(message);
+    this.publishState();
     afterNextRender(() => this.feedbackPanel()?.nativeElement.focus(), { injector: this.injector });
   }
 
   private moveTo(stage: Stage): void {
     this.feedback.set('');
     this.stage.set(stage);
+    this.publishState();
     afterNextRender(() => this.taskHeading()?.nativeElement.focus(), { injector: this.injector });
   }
 }

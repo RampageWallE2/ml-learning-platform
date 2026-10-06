@@ -3,13 +3,14 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  TemplateRef,
   afterRenderEffect,
   inject,
   input,
   output,
   viewChild,
 } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 
 const TAB_STOPS =
   'button, a[href], input, select, textarea, summary, [tabindex], [contenteditable="true"]';
@@ -18,7 +19,7 @@ export type InteractionPanelMode = 'dialogue' | 'activity';
 
 @Component({
   selector: 'app-interaction-panel',
-  imports: [],
+  imports: [NgTemplateOutlet],
   templateUrl: './interaction-panel.html',
   styleUrl: './interaction-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,16 +27,34 @@ export type InteractionPanelMode = 'dialogue' | 'activity';
 export class InteractionPanel {
   readonly mode = input<InteractionPanelMode>('activity');
   readonly returnFocusTarget = input<HTMLElement | null>(null);
+  readonly statusTemplate = input<TemplateRef<{ inline: boolean }> | null>(null);
+  readonly statusBusy = input(false);
   readonly closed = output<void>();
 
   private readonly document = inject(DOCUMENT);
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
+  private readonly statusRegion = viewChild<ElementRef<HTMLElement>>('statusRegion');
   private readonly previousFocus = this.document.activeElement as HTMLElement | null;
+  private lastFocusedElement: HTMLElement | null = null;
 
   constructor() {
-    // Recheck after dialogue/activity switches, not after every lesson action.
+    // Recheck mode and save-status transitions, not every lesson action.
     afterRenderEffect(() => {
       this.mode();
+      this.statusTemplate();
+      this.statusBusy();
+      const status = this.statusRegion()?.nativeElement;
+      const active = this.document.activeElement as HTMLElement | null;
+      // Disabling a focused retry button can move browser focus to the body.
+      // Keep it in the notice until the request finishes, without stealing it
+      // from a student who is still using the lesson content.
+      if (
+        status && this.lastFocusedElement && status.contains(this.lastFocusedElement)
+        && (!active || active === this.document.body || !this.isAvailable(active))
+      ) {
+        status.focus({ preventScroll: true });
+        return;
+      }
       this.focusInitialElement();
     });
 
@@ -58,6 +77,10 @@ export class InteractionPanel {
         }
       });
     });
+  }
+
+  rememberFocus(event: FocusEvent): void {
+    if (event.target instanceof HTMLElement) this.lastFocusedElement = event.target;
   }
 
   onKeydown(event: KeyboardEvent): void {
@@ -101,7 +124,8 @@ export class InteractionPanel {
 
   private focusInitialElement(): void {
     const panel = this.panel()?.nativeElement;
-    if (!panel || panel.contains(this.document.activeElement)) return;
+    const active = this.document.activeElement as HTMLElement | null;
+    if (!panel || (active && panel.contains(active) && this.isAvailable(active))) return;
 
     const selector = this.mode() === 'dialogue' ? '[autofocus]' : 'h1, h2';
     const target =

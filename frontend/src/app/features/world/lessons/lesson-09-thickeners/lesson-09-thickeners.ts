@@ -1,10 +1,10 @@
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
-  inject, Injector, output, signal, viewChild,
+  inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { C9Stage as Stage, C9FeedbackKind, C9State, isC9State } from './lesson-09-thickeners.state';
 
-type Stage = 'spread' | 'goal' | 'recommend' | 'transfer-intro' | 'transfer' | 'review' | 'success';
 type PeriodId = 'A' | 'B';
 type PeriodChoice = PeriodId | 'same';
 type Recommendation = 'reference' | 'stable' | 'adjust';
@@ -38,14 +38,17 @@ function summarize(records: Records) {
   styleUrl: './lesson-09-thickeners.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Lesson09Thickeners {
+export class Lesson09Thickeners implements OnChanges {
   readonly title = LESSON_NAMES['lesson-09'];
   readonly completed = output<void>();
+  readonly initialState = input<C9State | null>(null);
+  readonly stateChanged = output<C9State>();
   readonly stage = signal<Stage>('spread');
   readonly round = signal(0);
   readonly helped = signal(false);
   readonly answered = signal(false);
   readonly feedback = signal('');
+  private readonly feedbackKind = signal<C9FeedbackKind>('none');
   readonly isTransfer = computed(() => ['transfer-intro', 'transfer', 'review'].includes(this.stage()));
   readonly mainRecords = computed(() => this.round() === 0 || this.stage() === 'success'
     ? ORIGINAL : PRACTICE[(this.round() - 1) % PRACTICE.length]);
@@ -101,6 +104,22 @@ export class Lesson09Thickeners {
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
   private finished = false;
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['initialState']) return;
+    const state = this.initialState();
+    if (state !== null && !isC9State(state)) return;
+    if (state) {
+      this.stage.set(state.stage); this.round.set(state.round); this.helped.set(state.helped);
+      this.answered.set(state.answered); this.feedbackKind.set(state.feedbackKind);
+    }
+    this.finished = false; this.refreshFeedback(); this.publishState();
+  }
+
+  private publishState(): void {
+    this.stateChanged.emit({ stage: this.stage(), round: this.round(), helped: this.helped(),
+      answered: this.answered(), feedbackKind: this.feedbackKind() });
+  }
+
   position(value: number): number {
     return (value - this.bounds().min) / (this.bounds().max - this.bounds().min) * 100;
   }
@@ -110,7 +129,7 @@ export class Lesson09Thickeners {
     return 'Período ' + id + ': ' + period.values.join(', ') + ' t/h. Promedio ' + period.mean
       + ', meta de promedio ' + this.records().goal + ', rango ' + period.range
       + ', varianza ' + period.variance + ' (t/h) al cuadrado, desviación estándar '
-      + period.standardDeviation + ' t/h. Misma escala que el otro período. Cada punto es un registro; los apilados tienen el mismo valor.';
+      + period.standardDeviation + ' t/h. Misma escala que el otro período. Cada punto es un registro; los puntos uno sobre otro tienen el mismo valor.';
   }
 
   choosePeriod(answer: PeriodChoice): void {
@@ -118,39 +137,57 @@ export class Lesson09Thickeners {
       || !this.choices().some(choice => choice.id === answer)) return;
     const expected = this.stage() === 'goal' ? this.closerToGoal() : this.lessSpread();
     if (answer !== expected) { this.requestHint(); return; }
-    const period = this.periods().find(period => period.id === expected)!;
     this.answered.set(true);
-    this.feedback.set(this.stage() === 'spread'
-      ? expected + ' no cambió entre registros: su rango y su desviación estándar son 0. Eso no dice si cumple la meta.'
-      : this.stage() === 'goal'
-        ? 'El promedio de ' + expected + ' es ' + period.mean + ' t/h, igual a la meta. El promedio del otro período quedó por debajo.'
-        : 'Ambos promedios cumplen la meta y ambos períodos tuvieron cambios. Para este caso elegimos ' + expected
-          + ': su desviación estándar es menor (' + period.standardDeviation + ' t/h). Varió menos, pero eso no garantiza el siguiente turno.');
+    this.feedbackKind.set('answer'); this.refreshFeedback(); this.publishState();
   }
 
   chooseRecommendation(answer: Recommendation): void {
     if (this.stage() !== 'recommend' || this.answered()
       || !this.recommendations().some(choice => choice.id === answer)) return;
     if (answer !== 'reference') {
-      this.requestHint();
-      if (answer === 'adjust') this.feedback.set('La meta es para el promedio, no para cada registro. Estos datos no dicen qué ajuste hacer. Primero hay que buscar las causas.');
+      if (answer === 'adjust') {
+        this.helped.set(true); this.feedbackKind.set('adjust'); this.refreshFeedback(); this.publishState();
+      } else this.requestHint();
       return;
     }
     this.answered.set(true);
-    this.feedback.set('La referencia es ' + this.closerToGoal()
-      + ' en estos registros. Antes de cambiar ajustes, necesitamos saber por qué hubo cambios y qué tanto pueden variar. Esto no asegura el resultado del próximo turno.');
+    this.feedbackKind.set('answer'); this.refreshFeedback(); this.publishState();
   }
 
   requestHint(): void {
     if (this.answered() || !['spread', 'goal', 'recommend', 'transfer'].includes(this.stage())) return;
     this.helped.set(true);
-    this.feedback.set(this.stage() === 'spread'
-      ? 'Mira los puntos apilados: todos tienen el mismo valor. En ese período, rango y desviación estándar son 0.'
+    this.feedbackKind.set('hint'); this.refreshFeedback(); this.publishState();
+  }
+
+  // Store the explanation kind, never its text; rebuild it from this round's data.
+  private refreshFeedback(): void {
+    const kind = this.feedbackKind();
+    this.feedback.set(kind === 'answer' ? this.answerFeedback() : kind === 'hint' ? this.hintFeedback()
+      : kind === 'adjust' ? 'La meta es para el promedio, no para cada registro. Estos datos no dicen qué ajuste hacer. Primero hay que buscar las causas.' : '');
+  }
+
+  private answerFeedback(): string {
+    if (this.stage() === 'recommend') return 'La referencia es ' + this.closerToGoal()
+      + ': lo usamos como ejemplo para comparar el siguiente turno. Antes de cambiar ajustes, necesitamos conocer las causas y los límites permitidos. El próximo turno puede ser distinto.';
+    const expected = this.stage() === 'goal' ? this.closerToGoal() : this.lessSpread();
+    const period = this.periods().find(period => period.id === expected)!;
+    return this.stage() === 'spread'
+      ? expected + ' no cambió entre registros: su rango y su desviación estándar son 0. Eso no dice si cumple la meta.'
+      : this.stage() === 'goal'
+        ? 'El promedio de ' + expected + ' es ' + period.mean + ' t/h, igual a la meta. El promedio del otro período quedó por debajo.'
+        : 'Ambos promedios cumplen la meta y ambos períodos tuvieron cambios. Para este caso elegimos ' + expected
+          + ': su desviación estándar es menor (' + period.standardDeviation + ' t/h). Varió menos, pero eso no garantiza el siguiente turno.';
+  }
+
+  private hintFeedback(): string {
+    return this.stage() === 'spread'
+      ? 'Mira los puntos uno sobre otro: todos tienen el mismo valor. En ese período, el rango y la desviación estándar son 0.'
       : this.stage() === 'goal'
         ? 'Compara el promedio de cada período con la línea de meta, no solo cuánto varió. ¿Qué promedio coincide con ' + this.records().goal + ' t/h?'
         : this.stage() === 'recommend'
-          ? 'No cambiar no basta: un período puede variar poco y quedar bajo la meta. Usa los datos para elegir una referencia. Primero hay que buscar las causas, antes de ajustar.'
-          : 'Ambos promedios cumplen y ambos períodos cambian. Compara sus desviaciones estándar: la menor indica menos variación. El mismo promedio no basta.');
+          ? 'Todos los datos pueden ser iguales y aun así quedar bajo la meta. Busca qué promedio cumple la meta. Primero hay que buscar las causas, antes de cambiar ajustes.'
+          : 'Ambos promedios cumplen y ambos períodos cambian. Compara sus desviaciones estándar: la menor indica menos variación. El mismo promedio no basta.';
   }
 
   continue(): void {
@@ -175,13 +212,16 @@ export class Lesson09Thickeners {
   finish(): void {
     if (this.stage() !== 'success' || this.finished) return;
     this.finished = true;
+    this.publishState();
     this.completed.emit();
   }
 
   private moveTo(stage: Stage): void {
     this.answered.set(false);
+    this.feedbackKind.set('none');
     this.feedback.set('');
     this.stage.set(stage);
+    this.publishState();
     afterNextRender(() => {
       const heading = this.taskHeading()?.nativeElement;
       heading?.focus();

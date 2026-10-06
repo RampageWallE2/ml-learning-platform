@@ -7,6 +7,8 @@ import {
   inject,
   signal
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import {
   takeUntilDestroyed
@@ -65,6 +67,8 @@ import {
 import {
   ProgressService
 } from '../../progress/progress.service';
+import { LessonDraftService } from '../../progress/lesson-draft.service';
+import { isDraftLessonId } from '../../progress/lesson-draft.storage';
 
 import {
   ZoneProgress
@@ -108,6 +112,7 @@ const SCENE_ZONES: Record<
   selector: 'app-world-page',
 
   imports: [
+    NgTemplateOutlet,
     LessonRunner,
     Dialogue,
     InteractionPanel,
@@ -123,6 +128,8 @@ export class WorldPage
 
   readonly progress =
     inject(ProgressService);
+
+  private readonly drafts = inject(LessonDraftService);
 
 
   private readonly destroyRef =
@@ -320,7 +327,19 @@ export class WorldPage
       : 'Terminaste la clase, pero este navegador no pudo conservar el pendiente. No recargues ni cierres esta página antes de reintentar.';
   });
 
-  readonly progressSyncMessage = computed(() => this.pendingSaveMessage() ?? this.progressSyncError());
+  private readonly progressBodyRefused = signal(false);
+  readonly progressSyncMessage = computed(() => {
+    const pending = this.pendingSaveMessage();
+    // Never hide the warning that closing/reloading may lose an unpersisted result.
+    if (pending && !this.progress.pendingStorageAvailable()) return pending;
+    return this.progressBodyRefused() && this.progressSyncError()
+      ? this.progressSyncError()
+      : pending ?? this.progressSyncError();
+  });
+  readonly progressSyncBusy = computed(() =>
+    this.loadingProgress() || this.savingLesson() || this.progress.syncingPending());
+  readonly hasProgressNotice = computed(() =>
+    !!this.progressSyncMessage() || this.savingLesson() || this.progress.syncingPending() || this.lessonSaved());
 
 
   /* =========================
@@ -351,6 +370,7 @@ export class WorldPage
     );
 
 
+    const draftOwner = this.drafts.currentUser();
     this.progress.completeLesson(
       lessonId
     ).pipe(
@@ -366,6 +386,8 @@ export class WorldPage
     ).subscribe({
       next: () => {
 
+        this.drafts.clearConfirmed(lessonId, draftOwner);
+
         this.lessonSaved.set(true);
 
 
@@ -379,9 +401,9 @@ export class WorldPage
 
         this.closeLesson();
       },
-      error: () => {
+      error: (error: unknown) => {
 
-        this.progressSyncError.set(
+        this.recordProgressError(error,
           'No se pudo guardar tu progreso. Comprueba la conexión e inténtalo nuevamente.'
         );
       }
@@ -390,7 +412,7 @@ export class WorldPage
 
 
   retryProgressSync(): void {
-    if (this.loadingProgress() || this.savingLesson()) return;
+    if (this.progressSyncBusy()) return;
     // Read the server first: a lost response may hide a successful save.
     this.loadProgress();
   }
@@ -632,6 +654,7 @@ export class WorldPage
 
 
     const pendingBeforeLoad = [...this.progress.pendingLessonIds()];
+    const draftOwner = this.drafts.currentUser();
     this.lessonSaved.set(false);
 
 
@@ -657,6 +680,13 @@ export class WorldPage
       )
     ).subscribe({
       next: () => {
+        // Reconcile this attempt's pending completion, not an older confirmed
+        // result: a student may be halfway through replaying a completed lesson.
+        for (const lessonId of pendingBeforeLoad) {
+          if (isDraftLessonId(lessonId) && this.progress.isLessonCompleted(lessonId)) {
+            this.drafts.clearConfirmed(lessonId, draftOwner);
+          }
+        }
         this.publishLessonProgress();
         if (pendingBeforeLoad.length && !this.progress.pendingLessonIds().length) {
           this.lessonSaved.set(true);
@@ -666,8 +696,8 @@ export class WorldPage
           }
         }
       },
-      error: () => {
-        this.progressSyncError.set(
+      error: (error: unknown) => {
+        this.recordProgressError(error,
           'No se pudo recuperar tu progreso guardado. Puedes volver a intentarlo.'
         );
       }
@@ -678,6 +708,17 @@ export class WorldPage
   /* =========================
      MOSTRAR BLOQUEO
      ========================= */
+
+  private recordProgressError(error: unknown, fallback: string): void {
+    const bodyRefused = error instanceof HttpErrorResponse && error.status === 413;
+    const sizeMessage = this.progress.pendingLessonIds().length
+      ? 'El envío es demasiado grande. No se pudo guardar; tu avance sigue pendiente.'
+      : 'El envío es demasiado grande. No se pudo completar la solicitud.';
+    this.progressBodyRefused.set(bodyRefused);
+    this.progressSyncError.set(bodyRefused
+      ? sizeMessage
+      : fallback);
+  }
 
   private showBlockedLessonNotice(
     message: string

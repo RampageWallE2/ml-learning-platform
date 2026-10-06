@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 
 from flask import Blueprint, current_app, g, jsonify, request
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from ..auth.google import GoogleCredentialError, verify_google_credential
+from ..auth.login_limit import consume_password_login_attempt
 from ..auth.password import (
     hash_password,
     normalize_display_name,
@@ -112,6 +113,32 @@ def password_login():
 
     try:
         email = normalize_email(payload.get("email"))
+    except ValueError:
+        return _error("Invalid email or password.", 401, "invalid_credentials")
+
+    try:
+        retry_after = consume_password_login_attempt(email)
+    except SQLAlchemyError:
+        # Do not log SQL parameters, credentials, email or connection details.
+        current_app.logger.warning("Password login limiter storage is unavailable.")
+        response = jsonify({
+            "error": "Login protection is temporarily unavailable.",
+            "code": "login_protection_unavailable",
+        })
+        response.headers["Cache-Control"] = "no-store"
+        return response, 503
+
+    if retry_after is not None:
+        response = jsonify({
+            "error": "Too many login attempts. Please try again later.",
+            "code": "too_many_login_attempts",
+            "retryAfterSeconds": retry_after,
+        })
+        response.headers["Retry-After"] = str(retry_after)
+        response.headers["Cache-Control"] = "no-store"
+        return response, 429
+
+    try:
         password = validate_password(payload.get("password"))
     except ValueError:
         return _error("Invalid email or password.", 401, "invalid_credentials")

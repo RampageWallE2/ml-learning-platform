@@ -129,7 +129,7 @@
           }
         </div>
         <p class="chart-key">
-          Cada punto es una revisión. Los puntos apilados tienen el mismo tiempo. Ambos gráficos
+          Cada punto es una revisión. Los puntos uno sobre otro tienen el mismo tiempo. Ambos gráficos
           usan la misma escala.
         </p>
         @if (experimentVisible()) {
@@ -150,7 +150,7 @@
             <strong>El informe dice:</strong>
             <p>«Los tiempos fueron parecidos porque ambos equipos tienen el mismo rango».</p>
           </div>
-          <p>Mira todos los puntos, no solo los extremos.</p>
+          <p>Mira todos los puntos, no solo el tiempo menor y el mayor.</p>
           <div class="choices">
             @for (choice of compareChoices; track choice.id) {
               <button
@@ -287,7 +287,7 @@
       <span class="task-kicker">Tu corrección está lista</span>
       <h3 #taskHeading tabindex="-1">El mismo rango puede esconder diferencias</h3>
       <p>
-        El rango describe los extremos. Para comparar los tiempos, necesitamos mirar también los
+        El rango mide la diferencia entre el tiempo menor y el mayor. Para comparar, mira también los
         demás registros.
       </p>
     </div>

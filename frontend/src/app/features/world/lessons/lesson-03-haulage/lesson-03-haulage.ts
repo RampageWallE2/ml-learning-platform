@@ -1,20 +1,11 @@
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
-  inject, Injector, output, signal, viewChild,
+  inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { C3Stage as Stage, C3State, C3_TRIPS as TRIPS, C3_PRACTICE_SETS as PRACTICE_SETS, isC3State } from './lesson-03-haulage.state';
 
-type Stage = 'extremes' | 'measure' | 'discovery' | 'practice-extremes' | 'practice-range' | 'practice-meaning' | 'review' | 'success';
 type Meaning = 'separation' | 'maximum' | 'every';
-type TripRecord = Readonly<{ id: string; time: number }>;
-
-const TRIPS: readonly TripRecord[] = [
-  { id: 'trip-1', time: 11 }, { id: 'trip-2', time: 12 },
-  { id: 'trip-3', time: 11 }, { id: 'trip-4', time: 18 }, { id: 'trip-5', time: 12 },
-];
-const PRACTICE_SETS: readonly (readonly TripRecord[])[] = [
-  [14, 10, 12, 15, 11], [13, 9, 15, 11, 12], [12, 8, 16, 11, 13],
-].map((times, round) => times.map((time, index) => ({ id: 'practice-' + round + '-' + (index + 1), time })));
 
 @Component({
   selector: 'app-lesson-03-haulage',
@@ -22,9 +13,11 @@ const PRACTICE_SETS: readonly (readonly TripRecord[])[] = [
   styleUrl: './lesson-03-haulage.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Lesson03Haulage {
+export class Lesson03Haulage implements OnChanges {
   readonly title = LESSON_NAMES['lesson-03'];
   readonly completed = output<void>();
+  readonly initialState = input<C3State | null>(null);
+  readonly stateChanged = output<C3State>();
   readonly stage = signal<Stage>('extremes');
   readonly feedback = signal('');
   readonly selectedMinId = signal<string | null>(null);
@@ -43,7 +36,7 @@ export class Lesson03Haulage {
   readonly extremesFound = computed(() => this.selectedMinId() !== null && this.selectedMaxId() !== null);
   readonly showMeasure = computed(() => ['measure', 'discovery', 'review'].includes(this.stage()));
   readonly step = computed(() => this.stage() === 'extremes' ? 1 : ['measure', 'discovery'].includes(this.stage()) ? 2 : 3);
-  readonly selectionTask = computed(() => this.extremesFound() ? 'Encontraste los dos extremos' : this.selectedMinId() ? 'Selecciona la descarga más larga' : 'Selecciona la descarga más corta');
+  readonly selectionTask = computed(() => this.extremesFound() ? 'Encontraste la más corta y la más larga' : this.selectedMinId() ? 'Selecciona la descarga más larga' : 'Selecciona la descarga más corta');
   readonly axisTicks = computed(() => Array.from({ length: this.separation() + 1 }, (_, index) => this.minimum() + index));
   readonly intervals = computed(() => this.axisTicks().slice(0, -1));
   readonly rangeOptions = computed(() => [this.separation() - 1, this.separation(), this.separation() + 1, this.maximum()]);
@@ -56,6 +49,22 @@ export class Lesson03Haulage {
   private readonly injector = inject(Injector);
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
   private finished = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['initialState']) return;
+    const state = this.initialState();
+    if (state !== null && !isC3State(state)) return;
+    if (state) {
+      this.stage.set(state.stage); this.selectedMinId.set(state.selectedMinId); this.selectedMaxId.set(state.selectedMaxId);
+      this.round.set(state.round); this.practiceHelped.set(state.practiceHelped);
+    }
+    this.feedback.set(''); this.finished = false; this.publishState();
+  }
+
+  private publishState(): void {
+    this.stateChanged.emit({ stage: this.stage(), selectedMinId: this.selectedMinId(), selectedMaxId: this.selectedMaxId(),
+      round: this.round(), practiceHelped: this.practiceHelped() });
+  }
 
   barHeight(time: number): number { return time / this.barMaximum * 100; }
   bridgePosition(time: number): number { return 30 + (time - this.minimum()) / this.separation() * 500; }
@@ -75,7 +84,7 @@ export class Lesson03Haulage {
     if (findingMin) this.selectedMinId.set(id);
     else this.selectedMaxId.set(id);
     if (this.stage() === 'practice-extremes' && this.extremesFound()) this.moveTo('practice-range');
-    else this.focusTask();
+    else { this.publishState(); this.focusTask(); }
   }
 
   showSeparation(): void {
@@ -90,9 +99,9 @@ export class Lesson03Haulage {
       return;
     }
     this.hint(answer === this.maximum()
-      ? answer + ' minutos es la duración más larga, no la separación. Compara los dos extremos.'
+      ? answer + ' minutos es lo que duró la descarga más larga. Busca la diferencia entre la más corta y la más larga.'
       : answer === this.separation() + 1
-        ? 'Cuenta los espacios de un minuto entre los extremos, no las marcas incluyendo los dos extremos.'
+        ? 'Cuenta los espacios de un minuto entre el tiempo menor y el mayor. Cuenta los espacios, no las marcas.'
         : 'Busca cuánto hay desde la duración más corta hasta la más larga. Puedes contar los espacios de un minuto.');
   }
 
@@ -126,11 +135,13 @@ export class Lesson03Haulage {
   private hint(message: string): void {
     if (this.practicing()) this.practiceHelped.set(true);
     this.feedback.set(message);
+    this.publishState();
   }
 
   private moveTo(stage: Stage): void {
     this.feedback.set('');
     this.stage.set(stage);
+    this.publishState();
     this.focusTask();
   }
 
@@ -141,6 +152,7 @@ export class Lesson03Haulage {
   finish(): void {
     if (this.stage() !== 'success' || this.finished) return;
     this.finished = true;
+    this.publishState();
     this.completed.emit();
   }
 }

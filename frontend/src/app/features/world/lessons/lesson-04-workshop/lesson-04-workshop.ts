@@ -1,16 +1,15 @@
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
-  inject, Injector, output, signal, viewChild,
+  inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { C4Stage as Stage, C4ExperimentMode as ExperimentMode, C4RangePrediction as RangePrediction,
+  C4State, isC4State } from './lesson-04-workshop.state';
 
-type Stage = 'compare' | 'predict' | 'experiment' | 'explain' | 'discovery' | 'practice' | 'evidence' | 'review' | 'success';
 type Comparison = 'a' | 'b' | 'same';
 type Explanation = 'extremes' | 'unchanged' | 'useless';
 type Claim = 'same' | 'different' | 'unknown';
 type Evidence = 'a' | 'b' | 'range';
-type ExperimentMode = 'together' | 'apart';
-type RangePrediction = 'increase' | 'same' | 'decrease';
 type RecordGroup = Readonly<{ id: string; name: string; values: readonly number[] }>;
 
 const RECORDS: readonly RecordGroup[] = [
@@ -38,9 +37,11 @@ const PRACTICE_SETS: readonly (readonly RecordGroup[])[] = [
   styleUrl: './lesson-04-workshop.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Lesson04Workshop {
+export class Lesson04Workshop implements OnChanges {
   readonly title = LESSON_NAMES['lesson-04'];
   readonly completed = output<void>();
+  readonly initialState = input<C4State | null>(null);
+  readonly stateChanged = output<C4State>();
   readonly stage = signal<Stage>('compare');
   readonly feedback = signal('');
   readonly experimentMode = signal<ExperimentMode>('together');
@@ -121,13 +122,29 @@ export class Lesson04Workshop {
   private readonly separateButton = viewChild<ElementRef<HTMLButtonElement>>('separateButton');
   private finished = false;
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['initialState']) return;
+    const state = this.initialState();
+    if (state !== null && !isC4State(state)) return;
+    if (state) {
+      this.stage.set(state.stage); this.experimentMode.set(state.experimentMode); this.rangePrediction.set(state.rangePrediction);
+      this.separatedViewed.set(state.separatedViewed); this.round.set(state.round); this.practiceHelped.set(state.practiceHelped);
+    }
+    this.feedback.set(''); this.finished = false; this.publishState();
+  }
+
+  private publishState(): void {
+    this.stateChanged.emit({ stage: this.stage(), experimentMode: this.experimentMode(), rangePrediction: this.rangePrediction(),
+      separatedViewed: this.separatedViewed(), round: this.round(), practiceHelped: this.practiceHelped() });
+  }
+
   position(value: number): number { return (value - 6) / 8 * 100; }
   range(values: readonly number[]): number { return Math.max(...values) - Math.min(...values); }
 
   compare(answer: Comparison): void {
     if (this.stage() !== 'compare' || !this.compareChoices.some(choice => choice.id === answer)) return;
     if (answer === 'a') this.moveTo('predict');
-    else this.hint('Mira los puntos de 10 minutos: en A hay tres y en B hay uno. Los extremos coinciden, pero los demás tiempos no se reparten igual.');
+    else this.hint('Mira los puntos de 10 minutos: en A hay tres y en B hay uno. El tiempo menor y el mayor son iguales en ambos, pero los demás tiempos no.');
   }
 
   predictRange(answer: RangePrediction): void {
@@ -141,6 +158,7 @@ export class Lesson04Workshop {
     this.experimentMode.set(mode);
     if (mode === 'apart') this.separatedViewed.set(true);
     this.feedback.set('');
+    this.publishState();
   }
 
   showChanges(): void {
@@ -157,7 +175,7 @@ export class Lesson04Workshop {
     if (answer === 'extremes') this.moveTo('discovery');
     else this.hint(answer === 'unchanged'
       ? 'Dos tiempos de la copia cambiaron de lugar: de 10 a 8 y a 12. Lo que se mantuvo fue el tiempo menor y el mayor.'
-      : 'El rango sí muestra la separación entre los extremos. Lo que no muestra es cómo se reparten los demás tiempos.');
+      : 'El rango sí muestra cuánto separa al tiempo menor del mayor. No muestra cómo son los demás tiempos.');
   }
 
   startPractice(): void {
@@ -170,8 +188,8 @@ export class Lesson04Workshop {
     if (this.stage() !== 'practice' || !this.claims.some(choice => choice.id === answer)) return;
     if (answer === 'different') this.moveTo('evidence');
     else this.hint(answer === 'same'
-      ? 'El mismo rango solo confirma que la separación entre los extremos es igual. Mira también los puntos que hay en cada tiempo.'
-      : 'Sí tenemos los registros para comparar. Cuenta los puntos que se apilan en un mismo tiempo.');
+      ? 'El mismo rango solo dice que hay la misma diferencia entre el tiempo menor y el mayor. Mira también los demás puntos.'
+      : 'Sí tenemos los datos para comparar. Cuenta los puntos que están uno sobre otro en cada tiempo.');
   }
 
   chooseEvidence(answer: Evidence): void {
@@ -192,11 +210,13 @@ export class Lesson04Workshop {
   private hint(message: string): void {
     if (this.practicing()) this.practiceHelped.set(true);
     this.feedback.set(message);
+    this.publishState();
   }
 
   private moveTo(stage: Stage): void {
     this.feedback.set('');
     this.stage.set(stage);
+    this.publishState();
     this.focusTask();
   }
 
@@ -213,6 +233,7 @@ export class Lesson04Workshop {
   finish(): void {
     if (this.stage() !== 'success' || this.finished) return;
     this.finished = true;
+    this.publishState();
     this.completed.emit();
   }
 }

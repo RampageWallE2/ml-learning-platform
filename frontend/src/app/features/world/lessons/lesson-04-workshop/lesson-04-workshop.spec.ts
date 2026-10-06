@@ -162,7 +162,7 @@ describe('Lesson04Workshop', () => {
       fixture.nativeElement.querySelectorAll('.time-row')[0].querySelectorAll('.time-point'),
     ).toHaveLength(5);
     expect(fixture.nativeElement.querySelector('.chart-key').textContent).toContain(
-      'Los puntos apilados tienen el mismo tiempo',
+      'Los puntos uno sobre otro tienen el mismo tiempo',
     );
   });
 
@@ -470,7 +470,7 @@ describe('Lesson04Workshop', () => {
     game.explain('unchanged');
     expect(game.feedback()).toContain('Dos tiempos de la copia cambiaron');
     game.explain('useless');
-    expect(game.feedback()).toContain('El rango sí muestra la separación');
+    expect(game.feedback()).toContain('El rango sí muestra cuánto separa al tiempo menor del mayor');
     game.explain('invalid' as 'extremes');
     expect(game.stage()).toBe('explain');
     game.explain('extremes');
@@ -527,9 +527,9 @@ describe('Lesson04Workshop', () => {
     practice(game);
     const before = game.groups();
     game.chooseClaim('same');
-    expect(game.feedback()).toContain('solo confirma');
+    expect(game.feedback()).toContain('solo dice que hay la misma diferencia');
     game.chooseClaim('unknown');
-    expect(game.feedback()).toContain('Sí tenemos los registros');
+    expect(game.feedback()).toContain('Sí tenemos los datos');
     expect(game.groups()).toBe(before);
     expect(game.stage()).toBe('practice');
     expect(game.practiceHelped()).toBe(true);

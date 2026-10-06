@@ -1,14 +1,12 @@
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
-  inject, Injector, output, signal, viewChild,
+  inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { C7Stage as Stage, C7PeriodId as PeriodId, C7Prediction as Prediction,
+  C7HintFocus as HintFocus, C7State, C7_MAX_PRACTICE_ROUNDS, isC7State } from './lesson-07-balls.state';
 
-type Stage = 'observe' | 'calculate' | 'checked' | 'report' | 'review' | 'success';
-type PeriodId = 'a' | 'b';
-type Prediction = PeriodId | 'equal';
 type ReportChoice = 'equal' | 'spread' | 'better';
-type HintFocus = 'deviations' | 'count' | 'variances' | 'context';
 type Pair = readonly [readonly number[], readonly number[]];
 
 const ORIGINAL: Pair = [
@@ -46,9 +44,11 @@ type Period = ReturnType<typeof describePeriod>;
   styleUrl: './lesson-07-balls.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Lesson07Balls {
+export class Lesson07Balls implements OnChanges {
   readonly title = LESSON_NAMES['lesson-07'];
   readonly completed = output<void>();
+  readonly initialState = input<C7State | null>(null);
+  readonly stateChanged = output<C7State>();
   readonly stage = signal<Stage>('observe');
   readonly feedback = signal('');
   readonly round = signal(0);
@@ -62,13 +62,15 @@ export class Lesson07Balls {
   readonly activeIndex = signal(0);
   readonly solved = signal<readonly PeriodId[]>([]);
   readonly helped = signal(false);
+  readonly needsPractice = computed(() => this.helped() && this.round() < C7_MAX_PRACTICE_ROUNDS);
+  readonly guidedCompletion = computed(() => this.stage() === 'success' && this.helped());
   readonly hintLevel = signal<0 | 1 | 2>(0);
   readonly hintFocus = signal<HintFocus | null>(null);
   readonly hintShown = computed(() => this.hintLevel() === 2);
   readonly hintButtonText = computed(() => this.hintLevel() === 0 ? 'Necesito una pista'
     : this.stage() === 'calculate' ? 'Ver el cálculo explicado' : 'Ver una explicación');
   // Choose an order once per attempt; hints and incorrect answers never move the buttons.
-  private readonly choiceOffset = Math.floor(Math.random() * 3);
+  private readonly choiceOffset = signal(Math.floor(Math.random() * 3));
   readonly originalPeriods = [describePeriod('a', ORIGINAL[0]), describePeriod('b', ORIGINAL[1])];
   readonly pair = computed(() => this.stage() === 'success' || this.round() === 0
     ? ORIGINAL : PRACTICE_PAIRS[(this.round() - 1) % PRACTICE_PAIRS.length]);
@@ -81,7 +83,7 @@ export class Lesson07Balls {
   readonly options = computed(() => {
     const period = this.activePeriod();
     const answers = [0, period.variance, period.squareSum];
-    const offset = (this.choiceOffset + this.round() + this.activeIndex()) % answers.length;
+    const offset = (this.choiceOffset() + this.round() + this.activeIndex()) % answers.length;
     return answers.map((_, index) => answers[(index + offset) % answers.length]);
   });
   readonly squaresVisible = computed(() => this.stage() === 'checked'
@@ -96,7 +98,7 @@ export class Lesson07Balls {
       { id: 'better', text: 'El período ' + this.lowerPeriod().id.toUpperCase() + ' trabajó mejor: tiene menor varianza.' },
       { id: 'spread', text: 'El período ' + this.higherPeriod().id.toUpperCase() + ' varió más: hay más puntos lejos del promedio.' },
     ];
-    const offset = (this.choiceOffset + this.round()) % choices.length;
+    const offset = (this.choiceOffset() + this.round()) % choices.length;
     return choices.map((_, index) => choices[(index + offset) % choices.length]);
   });
   readonly step = computed(() => this.stage() === 'observe' ? 1
@@ -105,6 +107,27 @@ export class Lesson07Balls {
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
   private readonly hintMessage = viewChild<ElementRef<HTMLDivElement>>('hintMessage');
   private finished = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['initialState']) return;
+    const state = this.initialState();
+    if (state !== null && !isC7State(state)) return;
+    if (state) {
+      this.stage.set(state.stage); this.round.set(state.round); this.prediction.set(state.prediction);
+      this.activeIndex.set(state.activeIndex); this.solved.set([...state.solved]);
+      this.helped.set(state.helped); this.hintLevel.set(state.hintLevel); this.hintFocus.set(state.hintFocus);
+      this.choiceOffset.set(state.choiceOffset);
+    }
+    this.finished = false;
+    this.feedback.set(state?.hintFocus ? this.hintFeedback(state.hintFocus) : '');
+    this.publishState();
+  }
+
+  private publishState(): void {
+    this.stateChanged.emit({ stage: this.stage(), round: this.round(), prediction: this.prediction(),
+      activeIndex: this.activeIndex(), solved: [...this.solved()], helped: this.helped(),
+      hintLevel: this.hintLevel(), hintFocus: this.hintFocus(), choiceOffset: this.choiceOffset() });
+  }
 
   position(value: number): number {
     return (value - this.bounds().min) / (this.bounds().max - this.bounds().min) * 100;
@@ -123,7 +146,7 @@ export class Lesson07Balls {
 
   plotDescription(period: Period): string {
     return period.name + ': ' + period.values.join(', ') + ' toneladas por hora. Promedio '
-      + period.mean + '. Cada punto es un registro; los apilados tienen el mismo valor. Escala de '
+      + period.mean + '. Cada punto es un registro; los puntos uno sobre otro tienen el mismo valor. Escala de '
       + this.bounds().min + ' a ' + this.bounds().max + '.';
   }
 
@@ -175,7 +198,7 @@ export class Lesson07Balls {
     if (this.stage() !== 'report' || !this.isSolved('a') || !this.isSolved('b')
       || !this.reportChoices().some(choice => choice.id === answer)) return;
     if (answer === 'spread') {
-      this.moveTo(this.helped() ? 'review' : 'success');
+      this.moveTo(this.needsPractice() ? 'review' : 'success');
       return;
     }
     this.hint(answer === 'equal' ? 'variances' : 'context');
@@ -183,6 +206,12 @@ export class Lesson07Balls {
 
   continueAfterHelp(): void {
     if (this.stage() !== 'review') return;
+    // Older drafts may already be in a later review. Close explicitly rather
+    // than silently restarting their completed practice or marking it unaided.
+    if (!this.needsPractice()) {
+      this.moveTo('success');
+      return;
+    }
     this.round.update(round => round + 1);
     this.activeIndex.set(0);
     this.solved.set([]);
@@ -195,30 +224,35 @@ export class Lesson07Balls {
     this.helped.set(true);
     this.hintFocus.set(focus);
     this.hintLevel.update(level => level === 0 ? 1 : 2);
+    this.feedback.set(this.hintFeedback(focus));
+    this.publishState();
     afterNextRender(() => this.hintMessage()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  // Rebuild the same explanation on resume without storing UI text or using another hint.
+  private hintFeedback(focus: HintFocus): string {
     if (this.hintLevel() === 1) {
-      this.feedback.set(focus === 'deviations'
-        ? 'Mira las tarjetas destacadas: sus registros no coinciden con el promedio. Compara sus separaciones antes de sumar.'
+      return focus === 'deviations'
+        ? 'Mira las tarjetas destacadas: sus datos están por debajo o por encima del promedio. ¿Cuánto se separan de él?'
         : focus === 'count'
-          ? 'Cuenta todas las tarjetas, también las que coinciden con el promedio. Estamos buscando un promedio, no solo una suma.'
+          ? 'Cuenta todas las tarjetas, también las que tienen el mismo valor que el promedio. Después de sumar, hay que dividir entre todos los registros.'
           : focus === 'variances'
-            ? 'Mira las dos varianzas destacadas. Compara esas medidas, no solo el promedio y el rango.'
-            : 'Sabemos cuánto varió, pero falta la meta del equipo para decidir qué período fue mejor.');
-      return;
+            ? 'Compara las dos varianzas destacadas. ¿Cuál es mayor? El promedio y el rango no muestran toda la diferencia.'
+            : 'Sabemos cuánto varió, pero falta la meta del equipo para decidir qué período fue mejor.';
     }
     if (this.stage() === 'calculate') {
       const period = this.activePeriod();
-      this.feedback.set((focus === 'deviations'
-        ? 'Los signos se compensan, pero eso no borra las diferencias. Usamos los cuadrados: lado × lado. '
-        : period.squareSum + ' es la suma de cuadrados, no su promedio. ')
-        + 'Sumamos ' + period.squareSum + ' y dividimos entre los ' + period.values.length + ' registros'
-        + (period.zeroCount > 0 ? ', incluidos los ' + period.zeroCount + ' que coinciden con el promedio' : '')
-        + '. La varianza es ' + period.squareSum + ' ÷ ' + period.values.length + ' = ' + period.variance + ' (t/h)².');
+      return (focus === 'deviations'
+        ? 'Las diferencias con + y − suman 0, aunque los datos son distintos. Multiplica cada diferencia por sí misma para contar las casillas. '
+        : period.squareSum + ' es el total de casillas. Todavía falta dividir. ')
+        + 'El total es ' + period.squareSum + '. Lo dividimos entre los ' + period.values.length + ' registros'
+        + (period.zeroCount > 0 ? ', también los ' + period.zeroCount + ' que tienen 0 casillas' : '')
+        + '. La varianza es ' + period.squareSum + ' ÷ ' + period.values.length + ' = ' + period.variance + ' (t/h)².';
     } else {
-      this.feedback.set(focus === 'context'
+      return focus === 'context'
         ? 'Variar menos no significa trabajar mejor. Falta saber qué meta debe cumplir el equipo y en qué condiciones trabaja. Estos datos muestran cambios, no qué ajuste hacer.'
         : this.higherPeriod().name + ' varió más: su varianza fue ' + this.higherPeriod().variance
-          + ' frente a ' + this.lowerPeriod().variance + ' (t/h)². Hubo más registros lejos del promedio, aunque el promedio y el rango sean iguales.');
+          + ' frente a ' + this.lowerPeriod().variance + ' (t/h)². Hubo más registros lejos del promedio, aunque el promedio y el rango sean iguales.';
     }
   }
 
@@ -227,12 +261,14 @@ export class Lesson07Balls {
     this.hintLevel.set(0);
     this.hintFocus.set(null);
     this.stage.set(stage);
+    this.publishState();
     afterNextRender(() => this.taskHeading()?.nativeElement.focus(), { injector: this.injector });
   }
 
   finish(): void {
     if (this.stage() !== 'success' || this.finished) return;
     this.finished = true;
+    this.publishState();
     this.completed.emit();
   }
 }

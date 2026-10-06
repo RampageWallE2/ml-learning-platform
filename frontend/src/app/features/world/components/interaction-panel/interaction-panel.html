@@ -8,10 +8,12 @@
     class="interaction-panel"
     [class.interaction-panel--dialogue]="mode() === 'dialogue'"
     [class.interaction-panel--activity]="mode() === 'activity'"
+    [class.interaction-panel--with-status]="!!statusTemplate()"
     role="dialog"
     tabindex="-1"
     aria-modal="true"
     (keydown)="onKeydown($event)"
+    (focusin)="rememberFocus($event)"
     (keyup)="$event.key === ' ' && $event.stopPropagation()"
     [attr.aria-label]="mode() === 'dialogue' ? 'Conversación' : 'Actividad'"
   >
@@ -38,5 +40,10 @@
         <ng-content />
       </div>
     </div>
+    @if (statusTemplate(); as template) {
+      <section #statusRegion class="interaction-status" tabindex="-1" aria-label="Estado del guardado">
+        <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="{ inline: true }" />
+      </section>
+    }
   </div>
 </div>

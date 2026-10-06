@@ -8,7 +8,7 @@ export const LESSON_03_HAULAGE: LessonDefinition = {
       dialogue: {
         id: 'lesson-03-haulage-intro',
         messages: [
-          { speaker: 'npc', characterId: 'haulage-controller', name: 'Encargado del botadero', text: 'Bienvenido al botadero. Aquí registramos cuánto duran las descargas de desmonte.' },
+          { speaker: 'npc', characterId: 'haulage-controller', name: 'Encargado del botadero', text: 'Bienvenido al botadero. Aquí descargamos el material de descarte, llamado desmonte. Anotamos cuánto dura cada descarga.' },
           { speaker: 'npc', characterId: 'haulage-controller', name: 'Encargado del botadero', text: 'El equipo que organiza las llegadas del siguiente turno necesita saber cuánto variaron los tiempos de descarga.' },
           { speaker: 'npc', characterId: 'haulage-controller', name: 'Encargado del botadero', text: 'Estas cinco descargas son del mismo tipo. Ayúdame a preparar un aviso: busca la más corta, la más larga y cuánto las separa.' }
         ]

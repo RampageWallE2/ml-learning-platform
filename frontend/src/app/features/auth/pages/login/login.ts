@@ -281,6 +281,8 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
         return 'Google no pudo validar tu identidad. Inténtalo nuevamente.';
       case 409:
         return 'Este correo ya está asociado a otra cuenta.';
+      case 413:
+        return 'No se pudo enviar el acceso con Google: el envío es demasiado grande. Inténtalo nuevamente.';
       case 503:
         return 'El acceso con Google no está configurado en el servidor.';
       default:
@@ -295,7 +297,17 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
 
     const response = error.error as AuthApiError | null;
 
+    if (error.status === 413) {
+      return 'El envío es demasiado grande. Revisa los datos e inténtalo nuevamente.';
+    }
+
+    if (error.status === 429) {
+      return 'Has intentado ingresar varias veces. Espera un momento y vuelve a intentarlo.';
+    }
+
     switch (response?.code) {
+      case 'login_protection_unavailable':
+        return 'No pudimos comprobar el acceso. Inténtalo nuevamente en un momento.';
       case 'invalid_credentials':
         return 'El correo o la contraseña son incorrectos.';
       case 'email_registered_with_google':

@@ -2,7 +2,7 @@
   <header class="lesson-header">
     <span class="lesson-tag"><span class="lesson-tag__number">Clase 5</span> · ROM / chancado</span>
     <h2 id="crushing-title">{{ title }}</h2>
-    <p>Misión: completar el aviso de alimentación para el siguiente turno.</p>
+    <p>Misión: avisar al siguiente turno cuánto material entró en cada hora.</p>
   </header>
 
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
@@ -174,8 +174,8 @@
             ¿Cómo describirías {{ current() }} t/h?
           </h3>
           <p>
-            Compáralo con el promedio de <strong>{{ mean() }} t/h</strong>. Elige su lado y su
-            separación.
+            Compáralo con el promedio de <strong>{{ mean() }} t/h</strong>. ¿Está por debajo o por encima?
+            ¿Cuánto los separa? Si son iguales, la diferencia es 0.
           </p>
           <div class="choices" role="group" aria-label="Desviación y separación del dato">
             @for (choice of readingChoices(); track choice.id) {
@@ -195,7 +195,7 @@
           </div>
         } @else if (stage() === 'review') {
           <span class="task-kicker">Ya lo tienes</span>
-          <h3 id="crushing-task-title" #taskHeading tabindex="-1">Un lado y una separación</h3>
+          <h3 id="crushing-task-title" #taskHeading tabindex="-1">Por debajo, por encima o igual</h3>
           <p>
             Por debajo usamos −; por encima, +. Si el dato está justo en el promedio, la desviación
             y la separación son 0.
@@ -207,9 +207,9 @@
         } @else if (stage() === 'report') {
           <span class="task-kicker">Volvemos a las cuatro horas originales</span>
           <h3 id="crushing-task-title" #taskHeading tabindex="-1">
-            ¿Qué aviso entregarías al relevo?
+            ¿Qué aviso darías al siguiente turno?
           </h3>
-          <p>Cuenta lo que muestran los datos. No sabemos por qué cambió la alimentación.</p>
+          <p>Cuenta lo que muestran los datos. Todavía no sabemos por qué cambió la cantidad de material que entró.</p>
           <div class="choices">
             @for (report of reports; track report.id) {
               <button
@@ -261,12 +261,12 @@
     </div>
   } @else {
     <div class="completion-card">
-      <span class="task-kicker">Aviso listo para el relevo</span>
+      <span class="task-kicker">Aviso listo para el siguiente turno</span>
       <h3 #taskHeading tabindex="-1">El promedio no cuenta lo que pasó en cada hora</h3>
       <p>Ahora puedes decir cuánto está cada dato por debajo o por encima del promedio.</p>
     </div>
     <div class="report-card">
-      <span class="task-kicker">Alimentación de las cuatro horas revisadas</span>
+      <span class="task-kicker">Material que entró en las cuatro horas revisadas</span>
       <h3>Promedio: 100 t/h · Datos: 80, 80, 120 y 120 t/h</h3>
       <p>
         Hubo dos horas <strong>20 t/h por debajo</strong> y dos horas
@@ -274,7 +274,7 @@
       </p>
       <p>Desviaciones: −20, −20, +20 y +20 t/h. Las cuatro separaciones son 20 t/h.</p>
       <p>
-        Los datos no dicen por qué cambió la alimentación ni si cumple una meta. El promedio es un
+        Los datos no dicen por qué cambió la cantidad de material ni si cumple una meta. El promedio es un
         resumen, no una meta.
       </p>
     </div>

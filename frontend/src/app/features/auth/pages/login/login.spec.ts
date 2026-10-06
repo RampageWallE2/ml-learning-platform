@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../../../core/auth/auth.config';
 import { AuthService } from '../../../../core/auth/auth.service';
@@ -83,8 +84,34 @@ describe('Login', () => {
   });
 
   afterEach(() => {
+    auth.loginWithEmail.mockReturnValue(of(user));
+    auth.register.mockReturnValue(of(user));
+    auth.loginWithGoogle.mockReturnValue(of(user));
     delete window.google;
     document.querySelector('#google-identity-service')?.remove();
+  });
+
+  it.each([
+    [413, { code: 'request_too_large' }, 'El envío es demasiado grande. Revisa los datos e inténtalo nuevamente.'],
+    [413, null, 'El envío es demasiado grande. Revisa los datos e inténtalo nuevamente.'],
+    [413, '<html>Request too large</html>', 'El envío es demasiado grande. Revisa los datos e inténtalo nuevamente.'],
+    [429, { code: 'too_many_login_attempts', retryAfterSeconds: 300 }, 'Has intentado ingresar varias veces. Espera un momento y vuelve a intentarlo.'],
+    [429, null, 'Has intentado ingresar varias veces. Espera un momento y vuelve a intentarlo.'],
+    [503, { code: 'login_protection_unavailable' }, 'No pudimos comprobar el acceso. Inténtalo nuevamente en un momento.'],
+  ])('shows a simple message for HTTP %s without losing the form or redirecting', (status, error, message) => {
+    auth.loginWithEmail.mockReturnValue(throwError(() => new HttpErrorResponse({ status: status as number, error })));
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const values = { email: 'student@example.com', password: 'test-only-password' };
+    fixture.componentInstance.loginForm.setValue(values);
+    fixture.componentInstance.loginWithEmail();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.errorMessage()).toBe(message);
+    expect(fixture.nativeElement.textContent).toContain(message);
+    expect(fixture.componentInstance.loginForm.getRawValue()).toEqual(values);
+    expect(fixture.componentInstance.submittingCredentials()).toBe(false);
+    expect(fixture.componentInstance.busy()).toBe(false);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it('renders the official Google button', async () => {
@@ -109,6 +136,35 @@ describe('Login', () => {
         locale: 'es',
       }),
     );
+  });
+
+  it.each([{ code: 'request_too_large' }, '<html>Request too large</html>'])('preserves registration fields when its body is refused with 413: %s', error => {
+    TestBed.inject(ActivatedRoute).snapshot.data = { mode: 'register' };
+    auth.register.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 413, error })));
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const values = { displayName: 'Test Student', email: 'student@example.test',
+      password: 'test-only-password', confirmPassword: 'test-only-password' };
+    page.registrationForm.setValue(values);
+    page.registerWithEmail();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('El envío es demasiado grande. Revisa los datos e inténtalo nuevamente.');
+    expect(page.registrationForm.getRawValue()).toEqual(values);
+    expect(page.busy()).toBe(false);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it.each([{ code: 'request_too_large' }, null])('explains 413 during Google sign-in without redirecting: %s', error => {
+    auth.loginWithGoogle.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 413, error })));
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const callback = initialize.mock.calls[0][0].callback;
+    callback({ credential: 'fake-test-only' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No se pudo enviar el acceso con Google: el envío es demasiado grande. Inténtalo nuevamente.');
+    expect(fixture.componentInstance.busy()).toBe(false);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it.each([

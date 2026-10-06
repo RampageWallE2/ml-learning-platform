@@ -130,6 +130,15 @@
        SINCRONIZACIÓN
        ========================= -->
 
+  @if (!lessonActive() && !activeDialogue()) {
+    <ng-container [ngTemplateOutlet]="progressNotice" [ngTemplateOutletContext]="{ inline: false }" />
+  }
+
+  </div>
+
+  <!-- One template, rendered either in the modal or over the map. -->
+  <ng-template #progressNotice let-inline="inline">
+
   @if (
     progressSyncMessage();
     as message
@@ -137,17 +146,18 @@
 
     <div
       class="progress-sync-toast progress-sync-toast--error"
+      [class.progress-sync-toast--inline]="inline"
       [attr.role]="progressSyncError() || !progress.pendingStorageAvailable() ? 'alert' : 'status'"
     >
 
       <div>
-        <strong>{{ savingLesson() || progress.syncingPending() ? 'Guardando progreso…' : progress.pendingLessonIds().length ? 'Pendiente de guardar' : 'No se pudo sincronizar' }}</strong>
+        <strong>{{ progressSyncBusy() ? 'Guardando progreso…' : progress.pendingLessonIds().length ? 'Pendiente de guardar' : 'No se pudo sincronizar' }}</strong>
         <p>{{ message }}</p>
       </div>
 
       <button
         type="button"
-        [disabled]="loadingProgress() || savingLesson()"
+        [disabled]="progressSyncBusy()"
         class="btn btn--primary"
         (click)="retryProgressSync()"
       >
@@ -160,6 +170,7 @@
 
     <div
       class="progress-sync-toast"
+      [class.progress-sync-toast--inline]="inline"
       role="status"
       aria-live="polite"
     >
@@ -167,11 +178,11 @@
     </div>
 
   } @else if (lessonSaved()) {
-    <div class="progress-sync-toast" role="status" aria-live="polite">Progreso guardado en tu cuenta.</div>
+    <div class="progress-sync-toast" [class.progress-sync-toast--inline]="inline" role="status" aria-live="polite">Progreso guardado en tu cuenta.</div>
   }
 
 
-  </div>
+  </ng-template>
 
   <!-- =========================
        LECCIONES
@@ -185,6 +196,8 @@
     <app-lesson-runner
       [lessonId]="lesson.lessonId"
       [returnFocusTarget]="gameViewport"
+      [statusTemplate]="hasProgressNotice() ? progressNotice : null"
+      [statusBusy]="progressSyncBusy()"
       (closed)="closeLesson()"
       (completed)="completeLesson($event)"
     />
@@ -204,6 +217,8 @@
     <app-interaction-panel
       mode="dialogue"
       [returnFocusTarget]="gameViewport"
+      [statusTemplate]="hasProgressNotice() ? progressNotice : null"
+      [statusBusy]="progressSyncBusy()"
       (closed)="closeDialogue()"
     >
 

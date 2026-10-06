@@ -4,7 +4,7 @@
       ><span class="lesson-tag__number">Clase 7</span> · Bolas e hidrociclones</span
     >
     <h2 id="balls-title">{{ title }}</h2>
-    <p>Misión: revisar el informe del siguiente turno con la varianza.</p>
+    <p>Misión: corregir el informe del siguiente turno. ¿Los dos grupos de datos cambiaron igual?</p>
   </header>
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
     @for (label of ['Mira', 'Calcula', 'Explica']; track label; let index = $index) {
@@ -99,7 +99,7 @@
             </div>
             <p class="chart-key">
               Las casillas muestran el cálculo al cuadrado, no toneladas físicas. Los registros con
-              separación 0 también cuentan al promediar.
+              separación 0 también cuentan al calcular el promedio.
             </p>
           }
         </div>
@@ -107,7 +107,7 @@
       <div class="data-board">
         <div class="board-heading">
           <strong>{{
-            round() > 0 ? 'Ensayo: otros registros' : 'Alimentación del circuito · Datos de ejemplo'
+            round() > 0 ? 'Ensayo: otros registros' : 'Material que entra al circuito · Datos de ejemplo'
           }}</strong>
         </div>
         <div class="comparison-plots">
@@ -222,12 +222,12 @@
           <h3 id="balls-task-title" #taskHeading tabindex="-1">
             ¿Qué varianza tiene el {{ activePeriod().name }}?
           </h3>
-          <p>Compara cada registro con el promedio. Elige el resultado.</p>
+          <p>Recuerda C6: si la diferencia es −2, su cuadrado es 4 (−2 × −2 = 4).</p>
           <div class="plain-rule">
             <strong>Varianza = suma de cuadrados ÷ cantidad de registros</strong
             ><span
               >Multiplica cada diferencia por sí misma. Suma los resultados y divide entre todos los
-              registros.</span
+              registros. También cuentan los que dan 0.</span
             >
           </div>
           <div class="choices choices--variance" role="group" aria-label="Opciones de varianza">
@@ -252,17 +252,17 @@
             {{ activePeriod().name }}: varianza {{ activePeriod().variance }} (t/h)²
           </h3>
           <div class="calculation-card">
-            <span>Cuadrados: {{ activePeriod().squares.join(', ') }}</span
+            <span>Casillas de cada cuadrado: {{ activePeriod().squares.join(', ') }}</span
             ><strong
               >{{ activePeriod().squareSum }} ÷ {{ activePeriod().values.length }} =
               {{ activePeriod().variance }}</strong
             >
           </div>
           <p>
-            Se promedian los aportes de los {{ activePeriod().values.length }}
+            Suma las casillas y divide entre los {{ activePeriod().values.length }}
             {{
               activePeriod().zeroCount > 0
-                ? 'registros, también los ' + activePeriod().zeroCount + ' que aportan 0.'
+                ? 'registros. También cuenta los ' + activePeriod().zeroCount + ' que tienen 0 casillas.'
                 : 'registros.'
             }}
           </p>
@@ -307,16 +307,19 @@
           }
         } @else if (stage() === 'review') {
           <span class="task-kicker">El ejemplo con ayuda ya está resuelto</span>
-          <h3 id="balls-task-title" #taskHeading tabindex="-1">Ahora prueba con otros registros</h3>
+          <h3 id="balls-task-title" #taskHeading tabindex="-1">{{ needsPractice() ? 'Una práctica más' : 'Cerramos el ejemplo con ayuda' }}</h3>
           <p>
             La varianza usa todos los registros. Aunque el promedio y el rango sean iguales, la
             varianza puede ser distinta.
           </p>
           <p>
-            Prueba con otros dos períodos sin la pista. Los datos originales del informe no cambian.
+            {{ needsPractice()
+              ? 'Prueba una vez con otros datos. Puedes pedir ayuda: si la necesitas otra vez, terminaremos con un cierre guiado.'
+              : 'Ya resolviste la práctica con apoyo. No necesitas repetir otra ronda.' }}
+            Los datos originales del informe no cambian.
           </p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
-            Probar otros registros →
+            {{ needsPractice() ? 'Probar otros registros →' : 'Ver el informe →' }}
           </button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
@@ -354,7 +357,7 @@
         </p>
         <p class="chart-key">
           Mismo punto de medición y condiciones parecidas. Cada punto es un registro; los puntos
-          apilados tienen el mismo valor. La línea azul discontinua es el promedio. No es una meta
+          uno sobre otro tienen el mismo valor. La línea azul de trazos marca el promedio. No es una meta
           de producción.
         </p>
       </div>
@@ -362,8 +365,12 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu aporte al informe del siguiente turno</span>
-      <h3 #taskHeading tabindex="-1">El informe ya distingue los períodos</h3>
-      <p>Usaste la varianza con datos nuevos y comprobaste lo que decía el borrador.</p>
+      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'El informe ya muestra la diferencia' }}</h3>
+      <p>{{ guidedCompletion()
+        ? 'Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.'
+        : round() > 0
+          ? 'Resolviste la práctica sin pistas y comprobaste el informe.'
+          : 'Resolviste los cálculos y comprobaste el informe.' }}</p>
     </div>
     <div class="report-card">
       <span class="task-kicker">Datos originales · Bolas e hidrociclones</span>

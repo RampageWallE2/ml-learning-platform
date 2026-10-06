@@ -66,7 +66,7 @@
         } @else if (showRecords()) {
           <div class="board-heading">
             <strong id="ramp-evidence-title">{{
-              practicing() ? 'Ensayo: informe con todas las cargas' : 'Las cargas de cada camión'
+              practicing() ? 'Práctica: ya tenemos las cargas' : 'Las cargas de cada camión'
             }}</strong
             ><small>Datos de ejemplo</small>
           </div>
@@ -134,7 +134,7 @@
           <div class="board-heading">
             <strong id="ramp-evidence-title">{{
               practicing()
-                ? 'Ensayo: informe con solo promedios'
+                ? 'Práctica: solo vemos promedios'
                 : 'El informe para decidir el plan'
             }}</strong
             ><small>Datos de ejemplo</small>
@@ -165,8 +165,12 @@
             </button>
           } @else {
             <div class="mean-explanation">
+              <p>Sumamos las cargas: {{ example.join(' + ') }} = {{ exampleTotal }} t.</p>
+              <p>
+                Dividimos entre {{ example.length }} camiones:
+                {{ exampleTotal }} ÷ {{ example.length }} = {{ exampleMean }}.
+              </p>
               <strong>{{ exampleMean }} toneladas por camión</strong>
-              <p>Eso recibiría cada uno al repartir todo por igual.</p>
             </div>
             <p>Ese es el <strong>promedio</strong>: resume las cargas con un solo número.</p>
             <button type="button" class="btn btn--primary" (click)="startReport()">
@@ -175,10 +179,11 @@
           }
         } @else if (stage() === 'report') {
           <span class="task-kicker">Antes de cerrar el plan</span>
-          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Qué harías con este informe?</h3>
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Qué podemos saber con estos promedios?</h3>
           <p>
-            Para organizar las entregas, se piden cargas cercanas a
+            Quienes reciben el material piden cargas cercanas a
             <strong>{{ reports()[0].mean }} toneladas.</strong>
+            Revisa el informe antes de preparar el siguiente turno.
           </p>
           <div class="choices">
             @for (choice of reportChoices(); track choice.id) {
@@ -193,13 +198,17 @@
           </div>
         } @else if (stage() === 'practice') {
           <span class="task-kicker"
-            >{{ practiceCase() === 0 ? 'Prueba 1 de 2' : 'Prueba 2 de 2'
+            >{{ practiceCase() === 0 ? 'Primero, mira el resumen' : 'Ahora, compara las cargas'
             }}{{ round() > 0 ? ' · Con otros datos' : '' }}</span
           >
           <h3 id="ramp-task-title" #taskHeading tabindex="-1">
             ¿En qué turno fueron más diferentes las cargas?
           </h3>
-          <p>Ayuda a preparar el siguiente turno. Usa la información que tienes aquí.</p>
+          @if (practiceCase() === 0) {
+            <p>Por ahora solo ves promedios. Si falta información, elígela antes de comparar.</p>
+          } @else {
+            <p>Ya tienes la carga de cada camión. Ahora compara todos los puntos.</p>
+          }
           <div class="choices">
             @for (choice of practiceChoices(); track choice.id) {
               <button
@@ -229,7 +238,7 @@
         } @else if (stage() === 'records') {
           <span class="task-kicker">Ya tenemos las cargas</span>
           <h3 id="ramp-task-title" #taskHeading tabindex="-1">
-            ¿En qué turno fueron más diferentes?
+            ¿En qué turno fueron más diferentes las cargas?
           </h3>
           <div class="choices choices--turns">
             <button type="button" class="btn btn--answer answer-choice" (click)="compare('a')">
@@ -246,13 +255,13 @@
               Se parecieron igual en ambos.
             </button>
           </div>
-          <p>Mira todos los puntos, como en la clase anterior.</p>
+          <p>El encargado te entregó las cargas. Mira todos los puntos, como en la clase anterior.</p>
         } @else if (stage() === 'discovery') {
           <span class="task-kicker">Encontraste lo que faltaba</span>
           <h3 id="ramp-task-title" #taskHeading tabindex="-1">
             El resumen no basta para cerrar el plan
           </h3>
-          <p>Los dos turnos promediaron <strong>100 toneladas</strong>.</p>
+          <p>Los dos turnos tuvieron un promedio de <strong>100 toneladas</strong>.</p>
           <div class="mean-explanation mean-explanation--comparison">
             <p><strong>En A:</strong> las cargas se parecen.</p>
             <p><strong>En B:</strong> las cargas son más diferentes.</p>

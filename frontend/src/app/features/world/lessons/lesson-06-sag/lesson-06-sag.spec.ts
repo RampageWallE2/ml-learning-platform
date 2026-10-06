@@ -8,6 +8,17 @@ describe('Lesson06Sag', () => {
     return fixture;
   }
 
+  function createPractice(round: number, choiceOffset = 0) {
+    const fixture = create();
+    fixture.componentRef.setInput('initialState', {
+      stage: 'practice-square', squaresFormed: true, duplicated: true,
+      duplicateViewed: true, round, practiceHelped: false,
+      practiceVarianceAnswered: false, choiceOffset,
+    });
+    fixture.detectChanges();
+    return fixture;
+  }
+
   function reachDuplicate(game: Lesson06Sag): void {
     game.sumChanges();
     game.chooseCancellation('balanced');
@@ -53,7 +64,7 @@ describe('Lesson06Sag', () => {
     const fixture = create();
     const root: HTMLElement = fixture.nativeElement;
     expect(root.textContent).toContain(
-      'resumir cuánto cambió la cantidad de material que recibió el molino',
+      'ayudar al siguiente turno a entender las diferencias entre los datos del molino',
     );
     expect(root.textContent).toContain('Promedio: 100 t/h');
     expect(root.textContent).toContain('no una meta de producción');
@@ -105,12 +116,11 @@ describe('Lesson06Sag', () => {
     );
   });
 
-  it('keeps practice zoom unsolved and follows its current record and mean in every round', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    const root: HTMLElement = fixture.nativeElement;
-    reachPractice(game);
+  it('keeps practice zoom unsolved when recovering any existing practice round', () => {
     for (let round = 0; round < 3; round += 1) {
+      const fixture = createPractice(round);
+      const game = fixture.componentInstance;
+      const root: HTMLElement = fixture.nativeElement;
       fixture.detectChanges();
       expect(
         Array.from(root.querySelectorAll('.focus-reading dd'), (value) =>
@@ -133,6 +143,7 @@ describe('Lesson06Sag', () => {
       game.answerPracticeSquare(-game.practiceSquare());
       solvePractice(game);
       game.continueAfterHelp();
+      fixture.destroy();
     }
   });
 
@@ -346,7 +357,7 @@ describe('Lesson06Sag', () => {
     game.chooseCancellation('balanced');
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain(
-      'Las distancias sin signo también evitan que un menos borre un más',
+      'También podríamos sumar las distancias sin signo',
     );
     expect(fixture.nativeElement.textContent).toContain('las separaciones grandes cuentan más');
     expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(0);
@@ -380,7 +391,7 @@ describe('Lesson06Sag', () => {
     game.formSquares();
     const values = game.values();
     game.answerSquare(-4);
-    expect(game.feedback()).toContain('No puede tener menos de 0 casillas');
+    expect(game.feedback()).toContain('La cantidad de casillas no puede ser negativa');
     expect(game.stage()).toBe('squares');
     expect(game.values()).toBe(values);
     game.answerSquare(2);
@@ -406,7 +417,7 @@ describe('Lesson06Sag', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(document.activeElement).toBe(root.querySelector('#sag-task-title'));
-    expect(document.activeElement?.textContent).toContain('¿Cuánto aporta la desviación −2?');
+    expect(document.activeElement?.textContent).toContain('¿Cuántas casillas tiene este cuadrado?');
   });
 
   it('contrasts 1 with 4 before asking how the square weights a doubled separation', () => {
@@ -422,7 +433,7 @@ describe('Lesson06Sag', () => {
     expect(fixture.nativeElement.textContent).toContain('2 × 2 = 4');
     game.chooseWeight('twice');
     expect(game.stage()).toBe('weight');
-    expect(game.feedback()).toContain('el aporte pasó de 1 a 4');
+    expect(game.feedback()).toContain('las casillas pasaron de 1 a 4');
     game.chooseWeight('unchanged');
     expect(game.stage()).toBe('weight');
     game.chooseWeight('four');
@@ -481,7 +492,7 @@ describe('Lesson06Sag', () => {
     fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
     const compare = Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
-      button.textContent?.includes('Comparar los resúmenes'),
+      button.textContent?.includes('Comparar original y copia'),
     )!;
     expect(compare.disabled).toBe(true);
     game.compareCopy();
@@ -510,7 +521,7 @@ describe('Lesson06Sag', () => {
     expect(game.stage()).toBe('average');
     expect(game.values()).toBe(copied);
     game.chooseSummary('signed');
-    expect(game.feedback()).toContain('conservamos los cuadrados y los promediamos');
+    expect(game.feedback()).toContain('Usemos las casillas de los cuadrados para conservar esas diferencias');
     expect(game.stage()).toBe('average');
     game.chooseSummary('invalid' as 'total');
     expect(game.values()).toBe(copied);
@@ -527,7 +538,7 @@ describe('Lesson06Sag', () => {
     expect(root.textContent).toContain('Ese promedio se llama varianza');
     expect(root.textContent).toContain('8 ÷ 4 = 2');
     expect(root.textContent).toContain('16 ÷ 8 = 2');
-    expect(root.textContent).toContain('incluidos los que tienen separación 0');
+    expect(root.textContent).toContain('también los que están justo en el promedio');
     expect(root.textContent).toContain('2 (t/h)²');
     expect(root.textContent).toContain('No es una distancia de 2 t/h');
     expect(root.querySelectorAll('.data-point')).toHaveLength(4);
@@ -584,7 +595,7 @@ describe('Lesson06Sag', () => {
     expect(game.feedback()).toBe('');
     expect(game.round()).toBe(0);
     expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(0);
-    expect(fixture.nativeElement.textContent).toContain('¿Cuánto aporta −1 al cuadrado?');
+    expect(fixture.nativeElement.textContent).toContain('¿Cuántas casillas tendría el cuadrado?');
     expect(fixture.nativeElement.querySelectorAll('.data-point')).toHaveLength(4);
   });
 
@@ -645,7 +656,7 @@ describe('Lesson06Sag', () => {
     expect(game.round()).toBe(0);
     expect(game.practiceVarianceAnswered()).toBe(false);
     expect(root.querySelector('#sag-task-title')?.textContent?.trim()).toBe(
-      '¿Cuál es el promedio de estos aportes?',
+      '¿Cuál es el promedio de las casillas?',
     );
     expect(root.querySelector('.task-card')?.textContent).toContain('operador');
     expect(root.querySelector('.task-card')?.textContent).toContain('suman 4');
@@ -719,7 +730,7 @@ describe('Lesson06Sag', () => {
     expect(root.contains(answer)).toBe(false);
     expect(document.activeElement).toBe(root.querySelector('#sag-task-title'));
     expect(document.activeElement?.textContent?.trim()).toBe(
-      '¿Cuál es el promedio de estos aportes?',
+      '¿Cuál es el promedio de las casillas?',
     );
     expect(game.stage()).toBe('practice-checked');
     const numericAnswer = Array.from(
@@ -737,8 +748,8 @@ describe('Lesson06Sag', () => {
   });
 
   it.each([
-    { answer: 0, explanation: '0 sería no tener separación en ningún registro' },
-    { answer: 4, explanation: '4 es la suma. Para obtener el promedio' },
+    { answer: 0, explanation: '0 sería tener todos los datos iguales al promedio' },
+    { answer: 4, explanation: '4 es la suma de casillas, no el promedio' },
   ])(
     'corrects numeric answer $answer on the same data and requires an unaided retry',
     ({ answer, explanation }) => {
@@ -882,7 +893,7 @@ describe('Lesson06Sag', () => {
     await fixture.whenStable();
     expect(document.activeElement).toBe(root.querySelector('.feedback'));
     expect(document.activeElement?.getAttribute('tabindex')).toBe('-1');
-    expect(document.activeElement?.textContent).toContain('se duplican juntas');
+    expect(document.activeElement?.textContent).toContain('el doble de casillas y el doble de registros');
     expect(game.stage()).toBe('practice-average');
 
     click(root, 'Se mantiene igual');
@@ -908,7 +919,7 @@ describe('Lesson06Sag', () => {
     game.answerPracticeSquare(1);
     const records = game.records();
     game.choosePracticeSummary('double');
-    expect(game.feedback()).toContain('se duplican juntas');
+    expect(game.feedback()).toContain('el doble de casillas y el doble de registros');
     expect(game.stage()).toBe('practice-average');
     game.choosePracticeSummary('zero');
     expect(game.feedback()).toContain('no se vuelven 0');
@@ -999,9 +1010,6 @@ describe('Lesson06Sag', () => {
     ({ random, samePosition }) => {
       const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(random);
       try {
-        const fixture = create();
-        const game = fixture.componentInstance;
-        reachPractice(game);
         const positions: number[] = [];
         const texts = new Map([
           ['double', 'Se duplica'],
@@ -1009,6 +1017,8 @@ describe('Lesson06Sag', () => {
           ['same', 'Se mantiene igual'],
         ]);
         for (let round = 0; round < 3; round += 1) {
+          const fixture = createPractice(round, Math.floor(random * 3));
+          const game = fixture.componentInstance;
           game.answerPracticeSquare(game.practiceSquare());
           fixture.detectChanges();
           const choices = game.practiceSummaries();
@@ -1071,6 +1081,7 @@ describe('Lesson06Sag', () => {
           game.answerPracticeVariance(game.variance());
           game.continuePractice();
           game.continueAfterHelp();
+          fixture.destroy();
         }
         expect(new Set(positions).size).toBe(3);
       } finally {
@@ -1099,17 +1110,46 @@ describe('Lesson06Sag', () => {
     expect(game.practiceVarianceAnswered()).toBe(false);
     solvePractice(game);
     expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(false);
   });
 
-  it('keeps replacement means, squares, choices and plots correct over repeated supported rounds', () => {
-    const game = create().componentInstance;
-    reachPractice(game);
+  it.each(['square', 'copy', 'variance'] as const)('allows an honest guided finish after help in the additional practice %s', helpStep => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const done = vi.fn(); game.completed.subscribe(done);
+    reachPractice(game); game.answerPracticeSquare(-1); solvePractice(game);
+    expect(game.stage()).toBe('review'); game.finish(); expect(done).not.toHaveBeenCalled();
+    game.continueAfterHelp(); expect(game.round()).toBe(1);
+    if (helpStep === 'square') game.answerPracticeSquare(-4);
+    game.answerPracticeSquare(4);
+    if (helpStep === 'copy') game.choosePracticeSummary('double');
+    game.continuePractice(); game.continueAfterHelp(); game.finish();
+    expect(game.stage()).toBe('practice-average'); expect(done).not.toHaveBeenCalled();
+    game.choosePracticeSummary('same');
+    if (helpStep === 'variance') game.answerPracticeVariance(16);
+    game.continuePractice(); game.finish();
+    expect(game.stage()).toBe('practice-checked');
+    expect(game.practiceVarianceAnswered()).toBe(false); expect(done).not.toHaveBeenCalled();
+    game.answerPracticeVariance(4); game.finish(); expect(done).not.toHaveBeenCalled();
+    game.continuePractice(); fixture.detectChanges();
+    expect(game.stage()).toBe('success'); expect(game.round()).toBe(1);
+    expect(game.practiceHelped()).toBe(true); expect(game.practiceVarianceAnswered()).toBe(true);
+    expect(game.guidedCompletion()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.completion-card').textContent).toContain('Completaste con ayuda');
+    expect(game.values()).toEqual([98, 100, 100, 102]); expect(game.variance()).toBe(2);
+    game.continueAfterHelp(); expect(game.stage()).toBe('success'); expect(game.round()).toBe(1);
+    game.finish(); game.finish(); expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps old practice drafts accurate without demanding more than one additional round', () => {
     const expected = [
       [99, 99, 101, 101],
       [98, 98, 102, 102],
       [100, 100, 102, 102],
     ];
     for (let round = 0; round < 9; round += 1) {
+      const fixture = createPractice(round);
+      const game = fixture.componentInstance;
       const values = expected[round % 3];
       const mean = values.reduce((sum, value) => sum + value, 0) / 4;
       const squareSum = values.reduce((sum, value) => sum + (value - mean) ** 2, 0);
@@ -1133,10 +1173,14 @@ describe('Lesson06Sag', () => {
       expect(game.practiceVarianceAnswered()).toBe(false);
       game.answerPracticeSquare(-game.practiceSquare());
       solvePractice(game);
-      expect(game.stage()).toBe('review');
+      expect(game.stage()).toBe(round === 0 ? 'review' : 'success');
       game.continueAfterHelp();
+      expect(game.stage()).toBe(round === 0 ? 'practice-square' : 'success');
+      expect(game.round()).toBe(round === 0 ? 1 : round);
+      expect(game.guidedCompletion()).toBe(round > 0);
+      expect(game.original).toEqual([98, 100, 100, 102]);
+      fixture.destroy();
     }
-    expect(game.original).toEqual([98, 100, 100, 102]);
   });
 
   it('does not count invalid practice answers as pedagogical mistakes', () => {
@@ -1228,14 +1272,8 @@ describe('Lesson06Sag', () => {
   });
 
   it('restores original evidence in the final report even after practice with another mean', () => {
-    const fixture = create();
+    const fixture = createPractice(2);
     const game = fixture.componentInstance;
-    reachPractice(game);
-    for (let index = 0; index < 2; index += 1) {
-      game.answerPracticeSquare(-game.practiceSquare());
-      solvePractice(game);
-      game.continueAfterHelp();
-    }
     expect(game.mean()).toBe(101);
     expect(game.values()).toEqual([100, 100, 102, 102]);
     const records = game.records();
@@ -1271,11 +1309,12 @@ describe('Lesson06Sag', () => {
     expect(report.textContent).toContain('Promedio: 100 t/h · Varianza: 2 (t/h)²');
     expect(report.textContent).toContain('4 registros');
     expect(report.textContent).toContain('No explica por qué');
-    expect(report.textContent).toContain('ni dice si fue la adecuada');
+    expect(report.textContent).toContain('ni dice si la cantidad');
+    expect(report.textContent).toContain('de material fue la adecuada');
     expect(report.textContent).toContain('no es una distancia de 2 t/h');
   });
 
-  it('requires independent practice and emits completion only once', () => {
+  it('requires the checked practice before completion and emits only once', () => {
     const game = create().componentInstance;
     const done = vi.fn();
     game.completed.subscribe(done);
@@ -1301,15 +1340,15 @@ describe('Lesson06Sag', () => {
     const done = vi.fn();
     game.completed.subscribe(done);
     const labels = [
-      'Sumar desviaciones →',
-      'No. Hubo diferencias, pero los signos se compensaron.',
+      'Sumar diferencias →',
+      'No. Hay datos distintos, aunque la suma dé 0.',
       'Formar los cuadrados →',
       '4 casillas',
       'Cuatro veces: pasa de 1 a 4 casillas.',
       'Duplicar en una copia',
-      'Comparar los resúmenes →',
-      'Comparar el promedio de cuadrados por registro.',
-      'Comprobar con otros datos →',
+      'Comparar original y copia →',
+      'Sumar las casillas y dividir entre todos los registros.',
+      'Practicar con otros datos →',
       '1 casilla',
       'Se mantiene igual',
       '1',
@@ -1343,10 +1382,10 @@ describe('Lesson06Sag', () => {
     fixture.detectChanges();
     click(root, 'Continuar →');
     fixture.detectChanges();
-    expect(root.textContent).toContain('Cuadrados y promedio trabajan juntos');
+    expect(root.textContent).toContain('Los cuadrados también se promedian');
     click(root, 'Probar otros registros →');
     fixture.detectChanges();
-    expect(root.textContent).toContain('¿Cuánto aporta −2 al cuadrado?');
+    expect(root.textContent).toContain('¿Cuántas casillas tendría el cuadrado?');
     click(root, '4 casillas');
     fixture.detectChanges();
     click(root, 'Se mantiene igual');

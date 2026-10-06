@@ -13,9 +13,15 @@ def app():
             "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
             "SQLALCHEMY_ENGINE_OPTIONS": {},
             "CORS_ORIGINS": ["http://localhost:4200"],
+            "CSRF_TRUSTED_ORIGINS": ["http://localhost:4200"],
             "GOOGLE_CLIENT_ID": "test-client.apps.googleusercontent.com",
+            "SESSION_COOKIE_NAME": "ml_session",
             "SESSION_COOKIE_SECURE": False,
+            "SESSION_COOKIE_SAMESITE": "Lax",
             "SESSION_TTL_DAYS": 7,
+            "PASSWORD_LOGIN_MAX_ATTEMPTS": 8,
+            "PASSWORD_LOGIN_WINDOW_SECONDS": 300,
+            "API_MAX_REQUEST_BYTES": 65536,
         }
     )
 
@@ -30,7 +36,12 @@ def app():
 
 @pytest.fixture()
 def client(app):
-    return app.test_client()
+    test_client = app.test_client()
+    test_client.environ_base.update({
+        "HTTP_ORIGIN": "http://localhost:4200",
+        "HTTP_X_EXPLORALAB_REQUEST": "1",
+    })
+    return test_client
 
 
 @pytest.fixture()

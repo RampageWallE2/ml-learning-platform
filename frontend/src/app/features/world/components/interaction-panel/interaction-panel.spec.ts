@@ -9,8 +9,13 @@ import { InteractionPanel, InteractionPanelMode } from './interaction-panel';
       <button id="opener" (click)="open.set(true)">Abrir clase</button>
       <div #map id="map" tabindex="-1">Mapa del juego</div>
     </div>
+    <ng-template #saveStatus let-inline="inline">
+      <p role="alert">{{ busy() ? 'Guardando progreso…' : 'Pendiente de guardar' }}</p>
+      <button id="retry" [disabled]="busy()" [attr.data-inline]="inline">Reintentar</button>
+    </ng-template>
     @if (open()) {
-      <app-interaction-panel [mode]="mode()" [returnFocusTarget]="map" (closed)="open.set(false)">
+      <app-interaction-panel [mode]="mode()" [returnFocusTarget]="map"
+        [statusTemplate]="showStatus() ? saveStatus : null" [statusBusy]="busy()" (closed)="open.set(false)">
         @if (mode() === 'dialogue') {
           <button id="continue" autofocus>Continuar conversación</button>
         } @else {
@@ -42,6 +47,8 @@ class PanelTestHost {
   readonly open = signal(false);
   readonly mode = signal<InteractionPanelMode>('activity');
   readonly showLast = signal(true);
+  readonly showStatus = signal(false);
+  readonly busy = signal(false);
 }
 
 describe('InteractionPanel', () => {
@@ -130,6 +137,58 @@ describe('InteractionPanel — keyboard and focus', () => {
     expect(document.activeElement).toBe(close);
     key(close, 'Tab', true);
     expect(document.activeElement).toBe(last);
+  });
+
+  it.each<InteractionPanelMode>(['activity', 'dialogue'])('includes a single inline retry in the %s focus loop', async mode => {
+    const { fixture, root } = await openPanel(mode);
+    fixture.componentInstance.showStatus.set(true);
+    fixture.detectChanges(); await fixture.whenStable();
+    const last = root.querySelector<HTMLElement>(mode === 'activity' ? '#last' : '#continue')!;
+    const retry = root.querySelector<HTMLButtonElement>('#retry')!;
+    const close = root.querySelector<HTMLButtonElement>('.close-button')!;
+    expect(root.querySelector('[role="dialog"]')!.contains(retry)).toBe(true);
+    expect(root.querySelectorAll('#retry')).toHaveLength(1);
+    expect(retry.dataset['inline']).toBe('true');
+    last.focus(); key(last, 'Tab');
+    expect(document.activeElement).toBe(retry);
+    key(retry, 'Tab'); expect(document.activeElement).toBe(close);
+    key(close, 'Tab', true); expect(document.activeElement).toBe(retry);
+    key(retry, 'Tab', true); expect(document.activeElement).toBe(last);
+  });
+
+  it('keeps focus in the status when its retry button is disabled and lets it return after failure', async () => {
+    const { fixture, root } = await openPanel();
+    fixture.componentInstance.showStatus.set(true); fixture.detectChanges(); await fixture.whenStable();
+    const retry = root.querySelector<HTMLButtonElement>('#retry')!;
+    retry.focus(); fixture.componentInstance.busy.set(true);
+    fixture.detectChanges(); await fixture.whenStable();
+    const status = root.querySelector<HTMLElement>('.interaction-status')!;
+    expect(retry.disabled).toBe(true);
+    expect(document.activeElement).toBe(status);
+    fixture.componentInstance.busy.set(false); fixture.detectChanges(); await fixture.whenStable();
+    expect(document.activeElement).toBe(status);
+    key(status, 'Tab'); expect(document.activeElement).toBe(retry);
+  });
+
+  it('does not steal focus from lesson content when a save notice appears or becomes busy', async () => {
+    const { fixture, root } = await openPanel();
+    const hint = root.querySelector<HTMLElement>('#hint')!;
+    hint.focus(); fixture.componentInstance.showStatus.set(true);
+    fixture.detectChanges(); await fixture.whenStable();
+    expect(document.activeElement).toBe(hint);
+    fixture.componentInstance.busy.set(true); fixture.detectChanges(); await fixture.whenStable();
+    expect(document.activeElement).toBe(hint);
+    fixture.componentInstance.showStatus.set(false); fixture.detectChanges(); await fixture.whenStable();
+    expect(root.querySelector('.interaction-status')).toBeNull();
+    expect(document.activeElement).toBe(hint);
+  });
+
+  it('returns focus to the lesson when the focused notice is removed', async () => {
+    const { fixture, root } = await openPanel();
+    fixture.componentInstance.showStatus.set(true); fixture.detectChanges(); await fixture.whenStable();
+    root.querySelector<HTMLButtonElement>('#retry')!.focus();
+    fixture.componentInstance.showStatus.set(false); fixture.detectChanges(); await fixture.whenStable();
+    expect(document.activeElement).toBe(root.querySelector('h2'));
   });
 
   it('skips disabled, hidden, inert, negative-tabindex and closed-details controls', async () => {

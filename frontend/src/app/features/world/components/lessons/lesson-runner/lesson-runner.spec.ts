@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { AuthService } from '../../../../../core/auth/auth.service';
 import { By } from '@angular/platform-browser';
 import { Dialogue } from '../../dialogue/dialogue';
 import { InteractionPanel } from '../../interaction-panel/interaction-panel';
@@ -13,6 +15,10 @@ import { Lesson07Balls } from '../../../lessons/lesson-07-balls/lesson-07-balls'
 import { Lesson08Flotation } from '../../../lessons/lesson-08-flotation/lesson-08-flotation';
 import { Lesson09Thickeners } from '../../../lessons/lesson-09-thickeners/lesson-09-thickeners';
 import { LEARNING_ZONES } from '../../../lessons/lesson-catalog';
+
+beforeEach(() => {
+  TestBed.configureTestingModule({ providers: [{ provide: AuthService, useValue: { user: signal(null) } }] });
+});
 
 function completeDialogue(dialogue: Dialogue): void {
   const messageCount = dialogue.dialogue().messages.length;
@@ -60,10 +66,10 @@ describe('LessonRunner — thickeners lesson', () => {
     const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
     const intro = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     const introText = intro.dialogue().messages.map(message => message.text).join(' ');
-    expect(introText).toContain('informe del siguiente turno');
-    expect(introText).toContain('mismo punto, con la misma frecuencia');
+    expect(introText).toContain('terminar el informe');
+    expect(introText).toContain('mismo lugar y dejando el mismo tiempo entre mediciones');
     expect(introText).toContain('condiciones parecidas');
-    expect(introText).toContain('datos de esta zona, no de flotación');
+    expect(introText).toContain('datos de espesadores, no de flotación');
     expect(introText).toContain('En este ejemplo, la meta');
     expect(introText).toContain('No exige que cada registro sea 100');
     completeDialogue(intro); fixture.detectChanges();
@@ -79,9 +85,9 @@ describe('LessonRunner — thickeners lesson', () => {
     expect(endText).toContain('datos originales');
     expect(endText).toContain('A tuvo promedio de 80 t/h');
     expect(endText).toContain('desviación estándar de 2 t/h');
-    expect(endText).toContain('saber la causa y cuánto pueden variar los registros');
-    expect(endText).toContain('no reemplaza los datos originales');
-    expect(endText).toContain('Variar menos o más no significa trabajar mejor');
+    expect(endText).toContain('Investigaremos por qué A quedó por debajo y los límites permitidos');
+    expect(endText).toContain('no reemplazan los del informe');
+    expect(endText).toContain('variar menos no basta para trabajar mejor');
     completeDialogue(end); expect(done).toHaveBeenCalledExactlyOnceWith('lesson-09');
   });
 });
@@ -93,10 +99,10 @@ describe('LessonRunner — flotation lesson', () => {
     const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
     const intro = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     const introText = intro.dialogue().messages.map(message => message.text).join(' ');
-    expect(introText).toContain('calcular la varianza');
+    expect(introText).toContain('Ya calculaste la varianza');
     expect(introText).toContain('siguiente turno');
-    expect(introText).toContain('mismo punto y a intervalos iguales');
-    expect(introText).toContain('Son datos de flotación, no del molino');
+    expect(introText).toContain('mismo lugar y dejando el mismo tiempo entre mediciones');
+    expect(introText).toContain('No son los datos del molino');
     completeDialogue(intro); fixture.detectChanges();
     const game = fixture.debugElement.query(By.directive(Lesson08Flotation)).componentInstance as Lesson08Flotation;
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('activity');
@@ -120,10 +126,10 @@ describe('LessonRunner — flotation lesson', () => {
     const end = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     const endText = end.dialogue().messages.map(message => message.text).join(' ');
     expect(endText).toContain('desviación estándar de 2 t/h');
-    expect(endText).toContain('no es el promedio simple de las distancias');
-    expect(endText).toContain('registro de 96 queda fuera');
-    expect(endText).toContain('En el ejemplo de comparación estaban todos dentro');
-    expect(endText).toContain('ni cómo serán los próximos registros');
+    expect(endText).toContain('no el promedio de las separaciones');
+    expect(endText).toContain('96 queda fuera');
+    expect(endText).toContain('En el otro ejemplo estaban todos dentro');
+    expect(endText).toContain('ni qué pasará después');
     expect(endText).toContain('También tendremos una meta');
     expect(endText).toContain('menos cambios no significa siempre un mejor resultado');
     completeDialogue(end);
@@ -139,8 +145,8 @@ describe('LessonRunner — balls and hydrocyclones lesson', () => {
     const intro = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     const introText = intro.dialogue().messages.map(message => message.text).join(' ');
     expect(introText).toContain('SAG');
-    expect(introText).toContain('informe que recibirá el siguiente turno');
-    expect(introText).toContain('mismo punto');
+    expect(introText).toContain('El siguiente turno recibirá este informe');
+    expect(introText).toContain('mismo lugar');
     expect(introText).toContain('condiciones parecidas');
     expect(introText).toContain('seis registros');
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('dialogue');
@@ -160,9 +166,9 @@ describe('LessonRunner — balls and hydrocyclones lesson', () => {
     const endText = end.dialogue().messages.map(message => message.text).join(' ');
     expect(endText).toContain('Corregiré el informe');
     expect(endText).toContain('3 (t/h)² y B de 6 (t/h)²');
-    expect(endText).toContain('También conté los que aportaban 0');
+    expect(endText).toContain('También conté los registros con 0 casillas');
     expect(endText).toContain('no por qué pasó ni qué ajuste hacer');
-    expect(endText).toContain('no es una distancia de 3 t/h');
+    expect(endText).toContain('no significa una separación de 3 t/h');
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('dialogue');
     completeDialogue(end);
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-07');
@@ -177,8 +183,8 @@ describe('LessonRunner — SAG lesson', () => {
     const intro = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     const introText = intro.dialogue().messages.map(message => message.text).join(' ');
     expect(introText).toContain('chancado');
-    expect(introText).toContain('resumir cuánto cambió la cantidad de material');
-    expect(introText).toContain('más registros y otras veces menos');
+    expect(introText).toContain('explicar al siguiente turno cuánto se separan del promedio los datos');
+    expect(introText).toContain('Contar más datos no significa que sean más distintos');
     expect(introText).toContain('98, 100, 100 y 102');
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('dialogue');
     completeDialogue(intro); fixture.detectChanges();
@@ -201,10 +207,10 @@ describe('LessonRunner — SAG lesson', () => {
     const end = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     const endText = end.dialogue().messages.map(message => message.text).join(' ');
     expect(endText).toContain('2 (t/h)²');
-    expect(endText).toContain('no es una distancia de 2 t/h');
+    expect(endText).toContain('no significa 2 t/h');
     expect(endText).toContain('También podríamos usar distancias sin signo');
-    expect(endText).toContain('Duplicar los mismos datos en una copia');
-    expect(endText).toContain('no por qué ocurrieron');
+    expect(endText).toContain('Repetir los mismos datos en una copia');
+    expect(endText).toContain('pero no por qué');
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('dialogue');
     completeDialogue(end);
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-06');
@@ -219,7 +225,7 @@ describe('LessonRunner — crushing lesson', () => {
     const intro = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     expect(intro.currentMessage()!.text).toContain('taller');
     const introText = intro.dialogue().messages.map(message => message.text).join(' ');
-    expect(introText).toContain('aviso claro de alimentación para el siguiente turno');
+    expect(introText).toContain('El siguiente turno necesita saber cuánto entró en cada hora');
     expect(introText).toContain('registros de cuatro horas');
     expect(introText).toContain('por debajo o por encima del promedio');
     completeDialogue(intro); fixture.detectChanges();
@@ -237,10 +243,10 @@ describe('LessonRunner — crushing lesson', () => {
     const end = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     expect(end.currentMessage()!.text).toContain('20 t/h');
     const endText = end.dialogue().messages.map(message => message.text).join(' ');
-    expect(endText).toContain('dos horas 20 t/h por debajo');
-    expect(endText).toContain('La separación es 20 t/h en ambos lados');
-    expect(endText).toContain('no dicen por qué');
-    expect(endText).toContain('no una meta de producción');
+    expect(endText).toContain('Dos horas estuvieron 20 t/h por debajo');
+    expect(endText).toContain('La separación es 20 t/h en ambos casos');
+    expect(endText).toContain('no explican por qué');
+    expect(endText).toContain('no es una meta');
     expect(end.dialogue().messages.at(-1)?.text).toContain('un solo número');
     completeDialogue(end);
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-05');

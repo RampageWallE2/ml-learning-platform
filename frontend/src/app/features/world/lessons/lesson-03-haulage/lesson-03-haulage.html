@@ -95,7 +95,7 @@
         } @else {
           <p class="board-instruction">
             {{
-              selecting() ? selectionTask() + '.' : 'Los extremos que encontraste siguen señalados.'
+              selecting() ? selectionTask() + '.' : 'La descarga más corta y la más larga siguen señaladas.'
             }}
           </p>
           <div class="trip-grid" role="group" aria-label="Duración de cinco descargas observadas">
@@ -223,7 +223,7 @@
             ><span>entre la más corta y la más larga</span>
           </div>
           <p>
-            El <strong>rango</strong> compara solo los dos extremos: el tiempo menor y el mayor.
+            El <strong>rango</strong> es la diferencia entre el tiempo menor y el mayor. Estos se llaman extremos.
           </p>
           <p>
             En este registro: {{ maximum() }} menos {{ minimum() }} da {{ separation() }} minutos.

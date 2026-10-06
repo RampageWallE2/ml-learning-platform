@@ -1,10 +1,10 @@
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
-  inject, Injector, output, signal, viewChild,
+  inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { C5Stage as Stage, C5State, isC5State } from './lesson-05-crushing.state';
 
-type Stage = 'explore' | 'compare' | 'notation' | 'practice' | 'review' | 'report' | 'success';
 type Comparison = 'same' | 'lower-closer' | 'higher-farther';
 type ReadingId = 'a' | 'b' | 'c';
 type Report = 'observed' | 'constant' | 'cause';
@@ -22,9 +22,11 @@ const PRACTICE_ORDER = [0, 2, 1] as const;
   styleUrl: './lesson-05-crushing.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Lesson05Crushing {
+export class Lesson05Crushing implements OnChanges {
   readonly title = LESSON_NAMES['lesson-05'];
   readonly completed = output<void>();
+  readonly initialState = input<C5State | null>(null);
+  readonly stateChanged = output<C5State>();
   readonly stage = signal<Stage>('explore');
   readonly feedback = signal('');
   readonly selected = signal(0);
@@ -82,13 +84,29 @@ export class Lesson05Crushing {
     { id: 'lower-closer', text: '80 está más cerca porque es un número menor.' },
   ];
   readonly reports: readonly { id: Report; text: string }[] = [
-    { id: 'constant', text: 'La alimentación se mantuvo en 100 t/h durante las cuatro horas.' },
+    { id: 'constant', text: 'Entraron 100 t/h de material en cada una de las cuatro horas.' },
     { id: 'observed', text: 'El promedio fue 100 t/h. Dos horas estuvieron 20 por debajo y dos, 20 por encima.' },
     { id: 'cause', text: 'Las diferencias demuestran que el chancador falló.' },
   ];
   private readonly injector = inject(Injector);
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
   private finished = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['initialState']) return;
+    const state = this.initialState();
+    if (state !== null && !isC5State(state)) return;
+    if (state) {
+      this.stage.set(state.stage); this.selected.set(state.selected); this.round.set(state.round);
+      this.solvedCount.set(state.solvedCount); this.practiceHelped.set(state.practiceHelped);
+    }
+    this.feedback.set(''); this.finished = false; this.publishState();
+  }
+
+  private publishState(): void {
+    this.stateChanged.emit({ stage: this.stage(), selected: this.selected(), round: this.round(),
+      solvedCount: this.solvedCount(), practiceHelped: this.practiceHelped() });
+  }
 
   position(value: number): number { return (value - 80) / 40 * 100; }
   signed(value: number): string { return value < 0 ? '−' + Math.abs(value) : value > 0 ? '+' + value : '0'; }
@@ -97,6 +115,7 @@ export class Lesson05Crushing {
     if (this.stage() !== 'explore' || !Number.isInteger(index) || index < 0 || index >= this.original.length) return;
     this.selected.set(index);
     this.feedback.set('');
+    this.publishState();
   }
 
   answerDistance(answer: number): void {
@@ -160,17 +179,20 @@ export class Lesson05Crushing {
   private hint(message: string): void {
     if (this.stage() === 'practice') this.practiceHelped.set(true);
     this.feedback.set(message);
+    this.publishState();
   }
 
   private moveTo(stage: Stage): void {
     this.feedback.set('');
     this.stage.set(stage);
+    this.publishState();
     afterNextRender(() => this.taskHeading()?.nativeElement.focus(), { injector: this.injector });
   }
 
   finish(): void {
     if (this.stage() !== 'success' || this.finished) return;
     this.finished = true;
+    this.publishState();
     this.completed.emit();
   }
 }

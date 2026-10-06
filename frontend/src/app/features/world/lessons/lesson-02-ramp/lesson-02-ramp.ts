@@ -1,23 +1,14 @@
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
-  inject, Injector, output, signal, viewChild,
+  inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { C2Stage as Stage, C2State, C2_TURNS as TURNS, C2_PRACTICE_REPORTS as PRACTICE_REPORTS, isC2State } from './lesson-02-ramp.state';
 
-type Stage = 'learn' | 'report' | 'request' | 'records' | 'discovery' | 'practice' | 'reason' | 'review' | 'success';
 type ReportAnswer = 'same' | 'a' | 'b' | 'unknown';
 type RequestAnswer = 'records' | 'drivers' | 'copy';
 type Reason = 'summary' | 'always-same' | 'largest';
 
-const TURNS = [
-  { id: 'A', values: [98, 101, 100, 99, 102] },
-  { id: 'B', values: [80, 120, 90, 110, 100] },
-] as const;
-const PRACTICE_REPORTS = [
-  { ids: ['C', 'D'], values: [[88, 89, 90, 91, 92], [80, 85, 90, 95, 100]], different: 'b' },
-  { ids: ['E', 'F'], values: [[85, 90, 95, 100, 105], [93, 94, 95, 96, 97]], different: 'a' },
-  { ids: ['G', 'H'], values: [[103, 104, 105, 106, 107], [95, 100, 105, 110, 115]], different: 'b' },
-] as const;
 
 @Component({
   selector: 'app-lesson-02-ramp',
@@ -25,9 +16,11 @@ const PRACTICE_REPORTS = [
   styleUrl: './lesson-02-ramp.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Lesson02Ramp {
+export class Lesson02Ramp implements OnChanges {
   readonly title = LESSON_NAMES['lesson-02'];
   readonly completed = output<void>();
+  readonly initialState = input<C2State | null>(null);
+  readonly stateChanged = output<C2State>();
   readonly stage = signal<Stage>('learn');
   readonly feedback = signal('');
   readonly redistributed = signal(false);
@@ -85,12 +78,29 @@ export class Lesson02Ramp {
   private readonly practiceFeedback = viewChild<ElementRef<HTMLDivElement>>('practiceFeedback');
   private finished = false;
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['initialState']) return;
+    const state = this.initialState();
+    if (state !== null && !isC2State(state)) return;
+    if (state) {
+      this.stage.set(state.stage); this.redistributed.set(state.redistributed); this.round.set(state.round);
+      this.practiceCase.set(state.practiceCase); this.practiceHelped.set(state.practiceHelped); this.selectedLoad.set(state.selectedLoad);
+    }
+    this.feedback.set(''); this.finished = false; this.publishState();
+  }
+
+  private publishState(): void {
+    this.stateChanged.emit({ stage: this.stage(), redistributed: this.redistributed(), round: this.round(),
+      practiceCase: this.practiceCase(), practiceHelped: this.practiceHelped(), selectedLoad: this.selectedLoad() });
+  }
+
   average(values: readonly number[]): number { return values.reduce((sum, value) => sum + value, 0) / values.length; }
   position(value: number): number { return (value - 80) * 2.5; }
 
   showSharing(): void {
     if (this.stage() !== 'learn' || this.redistributed()) return;
     this.redistributed.set(true);
+    this.publishState();
     this.focusTask();
   }
 
@@ -114,7 +124,9 @@ export class Lesson02Ramp {
   }
 
   selectLoad(id: string): void {
-    if (this.showRecords() && this.plots().some(plot => plot.points.some(point => point.id === id))) this.selectedLoad.set(id);
+    if (this.showRecords() && this.plots().some(plot => plot.points.some(point => point.id === id))) {
+      this.selectedLoad.set(id); this.publishState();
+    }
   }
 
   compare(answer: 'a' | 'b' | 'same'): void {
@@ -173,12 +185,14 @@ export class Lesson02Ramp {
   private hint(message: string): void {
     this.practiceHelped.set(true);
     this.feedback.set(message);
+    this.publishState();
     afterNextRender(() => this.practiceFeedback()?.nativeElement.focus(), { injector: this.injector });
   }
 
   private moveTo(stage: Stage): void {
     this.feedback.set('');
     this.stage.set(stage);
+    this.publishState();
     this.focusTask();
   }
 
@@ -189,6 +203,7 @@ export class Lesson02Ramp {
   finish(): void {
     if (this.stage() !== 'success' || this.finished) return;
     this.finished = true;
+    this.publishState();
     this.completed.emit();
   }
 }

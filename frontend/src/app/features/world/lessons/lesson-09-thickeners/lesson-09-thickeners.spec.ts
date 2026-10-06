@@ -186,8 +186,8 @@ describe('Lesson09Thickeners', () => {
     expect(game.feedback()).toContain('Primero hay que buscar las causas');
     if (answer === 'adjust') expect(game.feedback()).toContain('La meta es para el promedio, no para cada registro');
     game.chooseRecommendation('reference');
-    expect(game.feedback()).toContain('por qué hubo cambios y qué tanto pueden variar');
-    expect(game.feedback()).toContain('no asegura el resultado del próximo turno');
+    expect(game.feedback()).toContain('conocer las causas y los límites permitidos');
+    expect(game.feedback()).toContain('El próximo turno puede ser distinto');
   });
 
   it('requires every player to complete the equal-goal transfer case before success', () => {
@@ -210,8 +210,8 @@ describe('Lesson09Thickeners', () => {
   it('states the transfer criterion explicitly and keeps equal-goal data separate from original evidence', () => {
     const fixture = create(); const game = fixture.componentInstance; main(game); fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
-    expect(root.textContent).toContain('Regla para este caso');
-    expect(root.textContent).toContain('preferimos menor variación');
+    expect(root.textContent).toContain('Regla de este caso');
+    expect(root.textContent).toContain('elegimos el que varió menos');
     expect(root.textContent).toContain('No reemplaza los datos originales');
     expect(root.textContent).toContain('Ningún período tiene todos sus registros iguales');
     expect(root.querySelectorAll('.data-point')).toHaveLength(12);
@@ -300,7 +300,7 @@ describe('Lesson09Thickeners', () => {
     expect(root.textContent).toContain('Variar menos o más no significa, por sí solo, trabajar mejor');
     expect(root.textContent).not.toContain('117'); expect(root.textContent).not.toContain('104');
     expect(root.querySelector('.route-report')?.textContent).toContain('conclusiones de cada zona');
-    expect(root.querySelector('.route-report')?.textContent).toContain('incluyendo los ceros');
+    expect(root.querySelector('.route-report')?.textContent).toContain('también los que dan cero');
   });
 
   it('emits completion only once after success, not after a supported example or before transfer', () => {

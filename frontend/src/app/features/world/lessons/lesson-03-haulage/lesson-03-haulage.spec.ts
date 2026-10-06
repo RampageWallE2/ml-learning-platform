@@ -239,7 +239,7 @@ describe('Lesson03Haulage', () => {
     reachMeasure(game);
     const before = game.records();
     game.answerRange(18);
-    expect(game.feedback()).toContain('duración más larga, no la separación');
+    expect(game.feedback()).toContain('lo que duró la descarga más larga');
     game.answerRange(8);
     expect(game.feedback()).toContain('no las marcas');
     game.answerRange(6);
@@ -347,7 +347,7 @@ describe('Lesson03Haulage', () => {
     findPracticeExtremes(game);
     const before = game.records();
     game.answerRange(15);
-    expect(game.feedback()).toContain('duración más larga');
+    expect(game.feedback()).toContain('lo que duró la descarga más larga');
     game.answerRange(6);
     expect(game.feedback()).toContain('no las marcas');
     game.answerRange(4);

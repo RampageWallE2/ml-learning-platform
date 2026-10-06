@@ -2,10 +2,10 @@
   <header class="lesson-header">
     <span class="lesson-tag"><span class="lesson-tag__number">Clase 6</span> · Molino SAG</span>
     <h2 id="sag-title">{{ title }}</h2>
-    <p>Misión: resumir cuánto cambió la cantidad de material que recibió el molino.</p>
+    <p>Misión: ayudar al siguiente turno a entender las diferencias entre los datos del molino.</p>
   </header>
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
-    @for (label of ['Detecta', 'Construye', 'Promedia']; track label; let index = $index) {
+    @for (label of ['Mira', 'Cuadrados', 'Promedio']; track label; let index = $index) {
       <li
         [class.step--active]="step() === index + 1"
         [class.step--done]="step() > index + 1 || stage() === 'success'"
@@ -32,9 +32,9 @@
     >
       @if (stage() === 'cancel') {
         <div class="primary-evidence calculation-card" role="status">
-          <span>Suma de desviaciones</span>
+          <span>Sumamos las diferencias</span>
           <strong>{{ deviationExpression() }} = {{ deviationSum() }}</strong>
-          <span>Sumar cambios de lado contrario no borra los registros.</span>
+          <span>El resultado es 0. Compruébalo mirando los cuatro datos.</span>
         </div>
       }
       @if (focusRecord) {
@@ -109,7 +109,7 @@
       @if (comparingCopy() || comparisonVisible()) {
         <div class="primary-evidence comparison-box" aria-label="Original y copia duplicada">
           <div>
-            <strong>{{ practicing() ? 'Original del ensayo' : 'Original' }}</strong>
+            <strong>{{ practicing() ? 'Datos de práctica' : 'Original' }}</strong>
             <dl>
               <div>
                 <dt>Registros</dt>
@@ -155,7 +155,7 @@
         <div class="board-heading">
           <strong>{{
             practicing()
-              ? 'Ensayo: otros registros'
+              ? 'Práctica: otros registros'
               : comparingCopy() && duplicated()
                 ? 'Copia de experimento · 8 registros'
                 : 'Registros originales · 4 horas'
@@ -247,7 +247,7 @@
             >
           </div>
           <p class="chart-key">
-            Las casillas representan el cálculo al cuadrado, no toneladas físicas. Una separación de
+            Las casillas muestran el cálculo, no toneladas de material. Una separación de
             0 aporta 0, pero su registro también se cuenta.
           </p>
         }
@@ -259,20 +259,20 @@
       >
         @if (stage() === 'observe') {
           <span class="task-kicker">Retomamos lo aprendido en chancado</span>
-          <h3 id="sag-task-title" #taskHeading tabindex="-1">¿Cómo juntamos las diferencias?</h3>
+          <h3 id="sag-task-title" #taskHeading tabindex="-1">¿Qué pasa al sumar las diferencias?</h3>
           <p>
-            Hay registros por debajo del promedio, justo en él y por encima. La desviación es
-            registro menos promedio. Probemos sumar esas diferencias.
+            A cada dato le restamos el promedio. Por ejemplo: 98 − 100 = −2.
+            Esa diferencia se llama desviación. Ahora sumemos las cuatro diferencias.
           </p>
           <button type="button" class="btn btn--primary" (click)="sumChanges()">
-            Sumar desviaciones →
+            Sumar diferencias →
           </button>
         } @else if (stage() === 'cancel') {
           <span class="task-kicker">La suma dio 0</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">
-            ¿Eso significa que no hubo cambios?
+            ¿Todos los datos fueron iguales?
           </h3>
-          <p>Antes de responder, mira los puntos y los registros.</p>
+          <p>Mira los cuatro datos antes de responder.</p>
           <div class="choices">
             @for (choice of cancellations; track choice.id) {
               <button
@@ -285,30 +285,30 @@
             }
           </div>
         } @else if (stage() === 'squares') {
-          <span class="task-kicker">Una opción que conserva las diferencias</span>
+          <span class="task-kicker">Probemos con cuadrados</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">
             {{
               squaresFormed()
-                ? '¿Cuánto aporta la desviación −2?'
-                : 'Dibujemos las separaciones como cuadrados'
+                ? '¿Cuántas casillas tiene este cuadrado?'
+                : 'Usemos la separación como lado del cuadrado'
             }}
           </h3>
           @if (!squaresFormed()) {
             <p>
-              Tomamos cada separación como el lado de un cuadrado. Una separación de 2 forma dos
-              filas de dos casillas.
+              El dato 98 está a 2 del promedio 100. Dibujemos un cuadrado de lado 2:
+              dos filas de dos casillas.
             </p>
             <p class="plain-rule">
-              Las distancias sin signo también evitan que un menos borre un más. Aquí usamos
-              cuadrados: las separaciones grandes cuentan más.
+              También podríamos sumar las distancias sin signo. Aquí usamos cuadrados:
+              las separaciones grandes cuentan más.
             </p>
             <button type="button" class="btn btn--primary" (click)="formSquares()">
               Formar los cuadrados →
             </button>
           } @else {
             <p>
-              El signo indica si está por debajo o por encima del promedio. Cuenta las casillas del
-              cuadrado de 2 por 2.
+              El − indica que 98 está por debajo del promedio. El lado mide 2, no −2.
+              Cuenta las casillas del cuadrado.
             </p>
             <div class="choices choices--square">
               @for (option of squareOptions; track option) {
@@ -325,7 +325,7 @@
         } @else if (stage() === 'weight') {
           <span class="task-kicker">Por qué elegimos cuadrados</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">Si la separación pasa de 1 a 2…</h3>
-          <p>¿Cuánto crece su aporte al cuadrado?</p>
+          <p>¿Cuántas veces aumenta la cantidad de casillas?</p>
           <div class="choices">
             @for (choice of weights; track choice.id) {
               <button
@@ -340,11 +340,11 @@
         } @else if (stage() === 'duplicate') {
           <span class="task-kicker">Experimento con una copia</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">
-            ¿Más registros significa más variación?
+            ¿Repetir los datos cambia su separación?
           </h3>
           <p>
-            Repite cada registro dos veces en una copia. Mira los valores, la suma y cuántos
-            registros contamos.
+            Haz una copia donde cada dato aparezca dos veces. Compara la suma de casillas
+            y la cantidad de registros.
           </p>
           <div class="choices" role="group" aria-label="Experimento de duplicación">
             <button
@@ -370,14 +370,14 @@
             [disabled]="!duplicated()"
             (click)="compareCopy()"
           >
-            Comparar los resúmenes →
+            Comparar original y copia →
           </button>
         } @else if (stage() === 'average') {
           <span class="task-kicker">Repetimos los mismos valores</span>
-          <h3 id="sag-task-title" #taskHeading tabindex="-1">¿Qué resumen permite comparar?</h3>
+          <h3 id="sag-task-title" #taskHeading tabindex="-1">¿Cómo comparamos los dos grupos?</h3>
           <p>
-            La suma pasó de 8 a 16 solo por repetir los datos. Necesitamos un resumen que no crezca
-            por ese motivo.
+            Al repetir los datos, las casillas pasan de 8 a 16 y los registros de 4 a 8.
+            ¿Qué cálculo evita confundir más registros con más separación?
           </p>
           <div class="choices">
             @for (choice of summaries; track choice.id) {
@@ -391,33 +391,33 @@
             }
           </div>
         } @else if (stage() === 'discovery') {
-          <span class="task-kicker">Ya construiste la medida</span>
+          <span class="task-kicker">Ahora le ponemos nombre</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">Ese promedio se llama varianza</h3>
           <div class="calculation-card">
             <strong>Varianza = promedio de las desviaciones al cuadrado</strong
             ><span>Para estos cuatro registros: 8 ÷ 4 = 2.</span>
           </div>
           <p>
-            La copia da lo mismo: 16 ÷ 8 = 2. Contamos todos los registros, incluidos los que tienen
-            separación 0.
+            La copia da lo mismo: 16 ÷ 8 = 2. Contamos todos los registros,
+            también los que están justo en el promedio.
           </p>
           <p class="plain-rule">
-            Resultado: <strong>2 (t/h)²</strong>. Como elevamos las diferencias al cuadrado, sus
-            unidades también quedaron al cuadrado. No es una distancia de 2 t/h.
+            Resultado: <strong>2 (t/h)²</strong>. Multiplicamos cada diferencia por sí misma;
+            por eso las unidades también están al cuadrado. No es una distancia de 2 t/h.
           </p>
           <button type="button" class="btn btn--primary" (click)="startPractice()">
-            Comprobar con otros datos →
+            Practicar con otros datos →
           </button>
         } @else if (stage() === 'practice-square') {
           <span class="task-kicker">{{
             round() > 0 ? 'Otros datos, sin la pista' : 'Una comprobación breve'
           }}</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">
-            ¿Cuánto aporta {{ signed(practiceDeviation()) }} al cuadrado?
+            ¿Cuántas casillas tendría el cuadrado?
           </h3>
           <p>
-            Compara el registro {{ records()[0] }} con el promedio {{ mean() }}. Elige cuántas
-            casillas tiene el cuadrado de esa separación.
+            El dato es {{ records()[0] }} y el promedio {{ mean() }}. Mira su separación
+            e imagina un cuadrado con ese lado. ¿Cuántas casillas tendría?
           </p>
           <div class="choices choices--square">
             @for (option of practiceSquareOptions(); track option) {
@@ -451,17 +451,17 @@
           <span class="task-kicker">El resumen para el siguiente turno</span>
           @if (!practiceVarianceAnswered()) {
             <h3 id="sag-task-title" #taskHeading tabindex="-1">
-              ¿Cuál es el promedio de estos aportes?
+              ¿Cuál es el promedio de las casillas?
             </h3>
             <p>
-              El operador necesita el resumen para el siguiente turno. Los aportes al cuadrado suman
+              El operador necesita un resumen para el siguiente turno. Las casillas suman
               <strong>{{ sourceSquareSum() }}</strong> y tenemos
               <strong>{{ records().length }} registros</strong>.
             </p>
             <div
               class="choices variance-choices"
               role="group"
-              aria-label="Elige el promedio de los aportes al cuadrado"
+              aria-label="Elige el promedio de las casillas"
             >
               @for (option of practiceVarianceOptions(); track option) {
                 <button
@@ -485,17 +485,19 @@
             </button>
           }
         } @else if (stage() === 'review') {
-          <span class="task-kicker">Ahora se entiende</span>
+          <span class="task-kicker">Repasemos la idea</span>
           <h3 id="sag-task-title" #taskHeading tabindex="-1">
-            Cuadrados y promedio trabajan juntos
+            Los cuadrados también se promedian
           </h3>
           <p>
-            Los cuadrados evitan que un menos borre un más. Al dividir entre todos los registros,
-            repetir los mismos datos no cambia el resultado.
+            Los cuadrados no tienen valores negativos. Sumamos sus casillas y dividimos
+            entre todos los registros. Repetir los mismos datos no cambia ese promedio.
           </p>
-          <p>Prueba otro ejemplo para reconocerlo sin la pista.</p>
+          <p>{{ needsPractice()
+            ? 'Prueba una vez más con otros datos. Puedes pedir ayuda: si la necesitas otra vez, terminaremos con un cierre guiado.'
+            : 'Ya resolviste la práctica con apoyo. No necesitas repetir otra ronda.' }}</p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
-            Probar otros registros →
+            {{ needsPractice() ? 'Probar otros registros →' : 'Ver el informe →' }}
           </button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
@@ -514,12 +516,12 @@
           permanecen a la vista.
         </p>
         <p>
-          Desviación: cuánto está por debajo o por encima del promedio. Separación: esa distancia
-          sin el signo.
+          Desviación: dato menos promedio. El − indica que está por debajo; el +, por encima.
+          Separación: la distancia al promedio, sin el signo.
         </p>
         @if (squaresVisible() || stage() === 'squares') {
           <p>
-            Las casillas representan el cálculo al cuadrado, no toneladas físicas. Una separación de
+            Las casillas muestran el cálculo, no toneladas de material. Una separación de
             0 aporta 0, pero su registro también se cuenta.
           </p>
         }
@@ -528,9 +530,9 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu aporte al informe del siguiente turno</span>
-      <h3 #taskHeading tabindex="-1">Ya sabes cómo construir la varianza</h3>
+      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'Construiste la varianza' }}</h3>
       <p>
-        Resta el promedio a cada registro. Multiplica cada resultado por sí mismo, suma y divide
+        Resta el promedio a cada dato. Multiplica cada diferencia por sí misma, suma y divide
         entre todos los registros.
       </p>
     </div>
@@ -544,8 +546,8 @@
       </p>
       <p>Al duplicar los mismos datos en una copia: 16 ÷ 8 = 2. La varianza no cambia.</p>
       <p>
-        Esto resume los registros. No explica por qué cambió la cantidad de material ni dice si fue
-        la adecuada. Las unidades están al cuadrado: no es una distancia de 2 t/h.
+        Este número resume las diferencias. No explica por qué ocurrieron ni dice si la cantidad
+        de material fue la adecuada. Sus unidades están al cuadrado: no es una distancia de 2 t/h.
       </p>
     </div>
     <div class="lesson-actions">

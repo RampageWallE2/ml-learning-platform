@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { of, Subject, throwError } from 'rxjs';
@@ -7,6 +8,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
 import { clearWorldSession, saveWorldSession } from '../../../../core/world-session/world-session.storage';
 import { gameEvents, GameEvents, type SceneLoadingSnapshot } from '../../game/events/game-events';
 import { ProgressService } from '../../progress/progress.service';
+import { LessonDraftService } from '../../progress/lesson-draft.service';
 import { ZoneProgress as ZoneProgressData } from '../../progress/progress.types';
 import { WorldPage } from './world-page';
 
@@ -66,6 +68,86 @@ describe('WorldPage — circular scene loading screen', () => {
     gameEvents.emit(GameEvents.SCENE_LOADING, { sceneKey, phase, progress } satisfies SceneLoadingSnapshot);
   }
 
+  it('retains the C6 draft through closing and a failed save, clearing only after server confirmation', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const drafts = TestBed.inject(LessonDraftService);
+    const owner = { id: 'draft-world', displayName: 'Test', email: 'test@example.test', avatarUrl: null };
+    vi.spyOn(drafts, 'currentUser').mockReturnValue(owner);
+    const clear = vi.spyOn(drafts, 'clearConfirmed').mockImplementation(() => {});
+    const response = new Subject<void>();
+    vi.spyOn(page.progress, 'completeLesson').mockReturnValue(response);
+    page.lessonActive.set({ lessonId: 'lesson-06' });
+    page.completeLesson('lesson-06'); expect(clear).not.toHaveBeenCalled();
+    response.error(new Error('Offline')); page.closeLesson();
+    expect(clear).not.toHaveBeenCalled();
+    vi.spyOn(page.progress, 'completeLesson').mockReturnValue(of(undefined));
+    page.completeLesson('lesson-06');
+    expect(clear).toHaveBeenCalledExactlyOnceWith('lesson-06', owner);
+  });
+
+  it('clears C6 after confirmed reconciliation but does not replay a pending completion', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const drafts = TestBed.inject(LessonDraftService);
+    const clear = vi.spyOn(drafts, 'clearConfirmed');
+    pending.set(['lesson-06']);
+    vi.spyOn(page.progress, 'isLessonCompleted').mockImplementation(id => id === 'lesson-06');
+    vi.spyOn(page.progress, 'loadProgress').mockImplementation(() => { pending.set([]); return of(undefined); });
+    gameEvents.emit(GameEvents.OPEN_LESSON, { lessonId: 'lesson-06' });
+    expect(page.lessonActive()).toBeNull();
+    expect(clear).toHaveBeenCalledExactlyOnceWith('lesson-06', null);
+  });
+
+  it('does not discard an unfinished replay because C6 was completed on an earlier attempt', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const clear = vi.spyOn(TestBed.inject(LessonDraftService), 'clearConfirmed');
+    vi.spyOn(page.progress, 'isLessonCompleted').mockImplementation(id => id === 'lesson-06');
+    page.retryProgressSync();
+    gameEvents.emit(GameEvents.OPEN_LESSON, { lessonId: 'lesson-06' });
+    expect(clear).not.toHaveBeenCalled();
+    expect(page.lessonActive()?.lessonId).toBe('lesson-06');
+  });
+
+  it('passes the original session owner to cleanup even if an HTTP result arrives after a switch', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const drafts = TestBed.inject(LessonDraftService);
+    const a = { id: 'a', displayName: 'A', email: 'a@example.test', avatarUrl: null };
+    const b = { ...a, id: 'b' };
+    const current = vi.spyOn(drafts, 'currentUser').mockReturnValue(a);
+    const clear = vi.spyOn(drafts, 'clearConfirmed').mockImplementation(() => {});
+    const response = new Subject<void>(); vi.spyOn(page.progress, 'completeLesson').mockReturnValue(response);
+    page.completeLesson('lesson-06'); current.mockReturnValue(b); response.next(); response.complete();
+    expect(clear).toHaveBeenCalledExactlyOnceWith('lesson-06', a);
+  });
+
+  it.each(['lesson-01', 'lesson-02', 'lesson-03', 'lesson-04', 'lesson-05', 'lesson-07', 'lesson-08', 'lesson-09'])('retains %s through a failed save and closing, clearing only its confirmed result', lessonId => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const clear = vi.spyOn(TestBed.inject(LessonDraftService), 'clearConfirmed');
+    const response = new Subject<void>(); vi.spyOn(page.progress, 'completeLesson').mockReturnValue(response);
+    page.lessonActive.set({ lessonId }); page.completeLesson(lessonId);
+    expect(clear).not.toHaveBeenCalled(); response.error(new Error('Offline')); page.closeLesson();
+    expect(clear).not.toHaveBeenCalled();
+    vi.spyOn(page.progress, 'completeLesson').mockReturnValue(of(undefined)); page.completeLesson(lessonId);
+    expect(clear).toHaveBeenCalledExactlyOnceWith(lessonId, null);
+  });
+
+  it.each(['lesson-01', 'lesson-02', 'lesson-03', 'lesson-04', 'lesson-05', 'lesson-07', 'lesson-08', 'lesson-09'])('prioritizes the %s pending completion over replay and clears its reconciled draft', lessonId => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const clear = vi.spyOn(TestBed.inject(LessonDraftService), 'clearConfirmed');
+    pending.set([lessonId]);
+    vi.spyOn(page.progress, 'isLessonCompleted').mockImplementation(id => id === lessonId);
+    vi.spyOn(page.progress, 'loadProgress').mockImplementation(() => { pending.set([]); return of(undefined); });
+    gameEvents.emit(GameEvents.OPEN_LESSON, { lessonId });
+    expect(page.lessonActive()).toBeNull(); expect(clear).toHaveBeenCalledExactlyOnceWith(lessonId, null);
+  });
+
+  it.each(['lesson-01', 'lesson-02', 'lesson-03', 'lesson-04', 'lesson-05', 'lesson-07', 'lesson-08', 'lesson-09'])('does not clear an unfinished %s replay when an earlier attempt was already completed', lessonId => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const clear = vi.spyOn(TestBed.inject(LessonDraftService), 'clearConfirmed');
+    vi.spyOn(page.progress, 'isLessonCompleted').mockImplementation(id => id === lessonId);
+    page.retryProgressSync(); gameEvents.emit(GameEvents.OPEN_LESSON, { lessonId });
+    expect(clear).not.toHaveBeenCalled(); expect(page.lessonActive()?.lessonId).toBe(lessonId);
+  });
+
   it('keeps the pending completion and its notice when closing after a failed save', () => {
     const fixture = create(); const page = fixture.componentInstance;
     report('OpenPitScene', 'ready', 1);
@@ -84,6 +166,63 @@ describe('WorldPage — circular scene loading screen', () => {
     expect(root.textContent).toContain('Pendiente de guardar');
     expect(root.textContent).toContain('no necesitas repetirla');
     expect(root.querySelector('.progress-sync-toast button')).not.toBeNull();
+  });
+
+  it.each(['save', 'retry'])('explains a 413 during %s without clearing the pending completion or draft', action => {
+    const fixture = create(); const page = fixture.componentInstance;
+    report('OpenPitScene', 'ready', 1);
+    page.lessonActive.set({ lessonId: 'lesson-01' });
+    pending.set(['lesson-01']);
+    const clear = vi.spyOn(TestBed.inject(LessonDraftService), 'clearConfirmed');
+    const refused = throwError(() => new HttpErrorResponse({ status: 413, error: { code: 'request_too_large' } }));
+    if (action === 'save') {
+      vi.spyOn(page.progress, 'completeLesson').mockReturnValue(refused);
+      page.completeLesson('lesson-01');
+    } else {
+      vi.spyOn(page.progress, 'loadProgress').mockReturnValue(refused);
+      page.retryProgressSync();
+    }
+    fixture.detectChanges();
+    expect(page.progressSyncError()).toBe('El envío es demasiado grande. No se pudo guardar; tu avance sigue pendiente.');
+    expect(fixture.nativeElement.textContent).toContain('tu avance sigue pendiente');
+    expect(pending()).toEqual(['lesson-01']);
+    expect(page.lessonActive()?.lessonId).toBe('lesson-01');
+    expect(page.lessonSaved()).toBe(false);
+    expect(page.savingLesson()).toBe(false);
+    expect(page.loadingProgress()).toBe(false);
+    expect(clear).not.toHaveBeenCalled();
+  });
+
+  it('does not keep the 413 priority on a later ordinary connection error', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    pending.set(['lesson-01']);
+    const save = vi.spyOn(page.progress, 'completeLesson');
+    save.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 413 })));
+    page.completeLesson('lesson-01');
+    expect(page.progressSyncMessage()).toContain('El envío es demasiado grande');
+    save.mockReturnValue(throwError(() => new Error('Offline')));
+    page.completeLesson('lesson-01');
+    expect(page.progressSyncMessage()).toContain('no necesitas repetirla');
+    expect(page.progressSyncMessage()).not.toContain('demasiado grande');
+    expect(pending()).toEqual(['lesson-01']);
+  });
+
+  it('keeps the browser storage failure warning above a 413 message', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    pending.set(['lesson-01']); storageAvailable.set(false);
+    vi.spyOn(page.progress, 'completeLesson').mockReturnValue(throwError(() => new HttpErrorResponse({ status: 413 })));
+    page.completeLesson('lesson-01');
+    expect(page.progressSyncMessage()).toContain('No recargues ni cierres esta página');
+    expect(pending()).toEqual(['lesson-01']);
+  });
+
+  it('does not claim a pending completion when a read request gets 413 without any', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    vi.spyOn(page.progress, 'loadProgress').mockReturnValue(throwError(() => new HttpErrorResponse({ status: 413 })));
+    page.retryProgressSync();
+    expect(page.progressSyncMessage()).toBe('El envío es demasiado grande. No se pudo completar la solicitud.');
+    expect(page.progressSyncMessage()).not.toContain('avance sigue pendiente');
+    expect(pending()).toEqual([]);
   });
 
   it('reads the server on retry and closes the finished lesson after reconciliation', () => {
@@ -134,6 +273,95 @@ describe('WorldPage — circular scene loading screen', () => {
     expect(root.textContent).toContain('No recargues ni cierres esta página');
     expect(root.textContent).not.toContain('Puedes cerrar la clase');
     expect(root.querySelector('.progress-sync-toast')?.getAttribute('role')).toBe('alert');
+  });
+
+  it.each(['lesson', 'dialogue'] as const)('moves the single retry notice inside an open %s and back on closing', async kind => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    report('OpenPitScene', 'ready', 1);
+    pending.set(['lesson-01']);
+    page.progressSyncError.set('No se pudo guardar tu progreso.');
+    if (kind === 'lesson') page.lessonActive.set({ lessonId: 'lesson-01' });
+    else page.activeDialogue.set({ id: 'test', messages: [] });
+    fixture.detectChanges(); await fixture.whenStable();
+    const panel = root.querySelector('[role="dialog"]')!;
+    const retry = root.querySelector<HTMLButtonElement>('.progress-sync-toast button')!;
+    expect(panel.contains(retry)).toBe(true);
+    expect(root.querySelectorAll('.progress-sync-toast')).toHaveLength(1);
+    expect(root.querySelector('.world-notices .progress-sync-toast')).toBeNull();
+    expect(root.querySelector('.progress-sync-toast')?.classList.contains('progress-sync-toast--inline')).toBe(true);
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('role')).toBe('alert');
+    const close = root.querySelector<HTMLButtonElement>('.close-button')!;
+    close.focus(); close.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Tab', shiftKey: true, bubbles: true, cancelable: true,
+    }));
+    expect(document.activeElement).toBe(retry);
+    if (kind === 'lesson') page.closeLesson(); else page.closeDialogue();
+    fixture.detectChanges(); await fixture.whenStable();
+    expect(root.querySelectorAll('.progress-sync-toast')).toHaveLength(1);
+    expect(root.querySelector('.world-notices .progress-sync-toast')).not.toBeNull();
+    expect(document.activeElement).toBe(root.querySelector('#phaser-container'));
+  });
+
+  it('keeps a failed retry inside the lesson, locks the map during saving and restores map focus on confirmation', async () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    report('OpenPitScene', 'ready', 1);
+    gameEvents.emit(GameEvents.OPEN_LESSON, { lessonId: 'lesson-01' });
+    pending.set(['lesson-01']); page.progressSyncError.set('No se pudo guardar.');
+    fixture.detectChanges(); await fixture.whenStable();
+    const read = new Subject<void>();
+    const load = vi.spyOn(page.progress, 'loadProgress').mockReturnValue(read); load.mockClear();
+    const unlock = vi.fn(); gameEvents.on(GameEvents.UNLOCK_PLAYER, unlock);
+    try {
+      const retry = root.querySelector<HTMLButtonElement>('.progress-sync-toast button')!;
+      retry.focus(); retry.click(); fixture.detectChanges(); await fixture.whenStable();
+      expect(load).toHaveBeenCalledOnce();
+      expect(retry.disabled).toBe(true);
+      expect(document.activeElement).toBe(root.querySelector('.interaction-status'));
+      expect(root.querySelector('#phaser-container')!.hasAttribute('inert')).toBe(true);
+      expect(unlock).not.toHaveBeenCalled();
+      page.retryProgressSync(); expect(load).toHaveBeenCalledOnce();
+      read.error(new Error('Offline')); fixture.detectChanges(); await fixture.whenStable();
+      expect(page.lessonActive()?.lessonId).toBe('lesson-01');
+      expect(pending()).toEqual(['lesson-01']);
+      expect(retry.disabled).toBe(false);
+      expect(root.querySelectorAll('.progress-sync-toast')).toHaveLength(1);
+      const status = root.querySelector<HTMLElement>('.interaction-status')!;
+      status.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+      expect(document.activeElement).toBe(retry);
+      const confirmed = new Subject<void>(); load.mockReturnValue(confirmed);
+      vi.spyOn(page.progress, 'isLessonCompleted').mockReturnValue(true);
+      retry.click(); fixture.detectChanges(); await fixture.whenStable();
+      expect(unlock).not.toHaveBeenCalled();
+      pending.set([]); confirmed.next(); confirmed.complete();
+      fixture.detectChanges(); await fixture.whenStable();
+      expect(page.lessonActive()).toBeNull();
+      expect(unlock).toHaveBeenCalledOnce();
+      expect(document.activeElement).toBe(root.querySelector('#phaser-container'));
+      expect(root.textContent).toContain('Progreso guardado en tu cuenta');
+    } finally { gameEvents.off(GameEvents.UNLOCK_PLAYER, unlock); }
+  });
+
+  it('keeps native Enter and Space on an inline retry away from Phaser', async () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    report('OpenPitScene', 'ready', 1);
+    page.lessonActive.set({ lessonId: 'lesson-01' }); pending.set(['lesson-01']);
+    fixture.detectChanges(); await fixture.whenStable();
+    const retry = root.querySelector<HTMLButtonElement>('.progress-sync-toast button')!;
+    const keyDown = vi.fn(); const keyUp = vi.fn();
+    document.addEventListener('keydown', keyDown); document.addEventListener('keyup', keyUp);
+    try {
+      for (const key of ['Enter', ' ', 'ArrowDown', 'e']) {
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        retry.dispatchEvent(event); expect(event.defaultPrevented).toBe(false);
+      }
+      retry.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+      expect(keyDown).not.toHaveBeenCalled(); expect(keyUp).not.toHaveBeenCalled();
+    } finally {
+      document.removeEventListener('keydown', keyDown); document.removeEventListener('keyup', keyUp);
+    }
   });
 
   it('shows a circular 0% indicator before Phaser has loaded any resources', () => {

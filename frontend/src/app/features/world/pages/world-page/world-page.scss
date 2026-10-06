@@ -263,6 +263,13 @@
 
 .progress-sync-toast--error { border-color: var(--color-error); }
 
+.progress-sync-toast--inline {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--color-surface-alt);
+}
+
 
 /* =========================
    RESPONSIVE

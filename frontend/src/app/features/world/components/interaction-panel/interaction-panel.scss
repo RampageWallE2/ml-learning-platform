@@ -77,6 +77,35 @@
   height: 100%;
 }
 
+// Reserve space for saving instead of floating the notice over the activity.
+.interaction-panel--with-status {
+  display: flex;
+  flex-direction: column;
+
+  .interaction-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+  }
+
+  .interaction-content--dialogue { overflow-y: auto; }
+}
+
+.interaction-status {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-height: min(40dvh, 240px);
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-top: 2px solid var(--color-earth);
+  background: var(--color-surface);
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+  }
+}
+
 .close-button {
   position: absolute;
   top: 16px;

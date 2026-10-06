@@ -340,6 +340,9 @@ describe('Lesson07Balls', () => {
     expect(game.stage()).toBe('calculate');
     expect(game.activePeriod().id).toBe('a');
     expect(root.textContent).toContain('Varianza = suma de cuadrados ÷ cantidad de registros');
+    const reminder = root.querySelector('.task-card')!.textContent!.replace(/\s+/g, ' ');
+    expect(reminder).toContain('Recuerda C6: si la diferencia es −2, su cuadrado es 4 (−2 × −2 = 4)');
+    expect(reminder).toContain('Multiplica cada diferencia por sí misma. Suma los resultados y divide entre todos los registros. También cuentan los que dan 0.');
     expect(root.querySelectorAll('.record-card')).toHaveLength(6);
     expect(root.querySelector('.totals')).toBeNull();
     expect(root.querySelectorAll('.square-cell')).toHaveLength(0);
@@ -428,7 +431,7 @@ describe('Lesson07Balls', () => {
     expect(squares[0].querySelectorAll('.square-cell')).toHaveLength(9);
     expect(squares[0].getAttribute('aria-label')).toContain('9 casillas');
     expect(root.querySelector('.totals')?.textContent).toContain('Registros: 6');
-    expect(root.textContent).toContain('también los 4 que aportan 0');
+    expect(root.textContent).toContain('También cuenta los 4 que tienen 0 casillas');
     expect(root.querySelectorAll('.data-point')).toHaveLength(12);
   });
 
@@ -443,7 +446,7 @@ describe('Lesson07Balls', () => {
     expect(game.pair()).toBe(pair);
     expect(game.solved()).toEqual([]);
     expect(game.helped()).toBe(true);
-    expect(game.feedback()).toContain('no coinciden con el promedio');
+    expect(game.feedback()).toContain('por debajo o por encima del promedio');
     expect(game.hintLevel()).toBe(1);
     expect(game.hintFocus()).toBe('deviations');
     expect(game.squaresVisible()).toBe(false);
@@ -451,7 +454,7 @@ describe('Lesson07Balls', () => {
     expect(fixture.nativeElement.querySelectorAll('.record--hint')).toHaveLength(2);
     game.requestHint();
     fixture.detectChanges();
-    expect(game.feedback()).toContain('no borra las diferencias');
+    expect(game.feedback()).toContain('suman 0, aunque los datos son distintos');
     expect(game.squaresVisible()).toBe(true);
     expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(18);
     expect(fixture.nativeElement.querySelectorAll('.variance--solved')).toHaveLength(0);
@@ -470,9 +473,9 @@ describe('Lesson07Balls', () => {
     expect(game.feedback()).toContain('Cuenta todas las tarjetas');
     expect(game.squaresVisible()).toBe(false);
     game.requestHint();
-    expect(game.feedback()).toContain('suma de cuadrados, no su promedio');
+    expect(game.feedback()).toContain('total de casillas. Todavía falta dividir');
     expect(game.feedback()).toContain('6 registros');
-    expect(game.feedback()).toContain('4 que coinciden con el promedio');
+    expect(game.feedback()).toContain('4 que tienen 0 casillas');
     expect(game.helped()).toBe(true);
   });
 
@@ -698,7 +701,7 @@ describe('Lesson07Balls', () => {
     game.answerVariance(36);
     expect(game.feedback()).toContain('Cuenta todas las tarjetas');
     game.requestHint();
-    expect(game.feedback()).toContain('2 que coinciden con el promedio');
+    expect(game.feedback()).toContain('2 que tienen 0 casillas');
     game.answerVariance(6);
     fixture.detectChanges();
     expect(root.querySelectorAll('.square-cell')).toHaveLength(36);
@@ -842,13 +845,7 @@ describe('Lesson07Balls', () => {
     expect(game.feedback()).toBe('');
   });
 
-  it('keeps replacement scales, means, squares and choices accurate over repeated supported rounds', () => {
-    const game = create().componentInstance;
-    game.choosePrediction('b');
-    game.requestHint();
-    reachReport(game);
-    game.chooseReport('spread');
-    game.continueAfterHelp();
+  it('keeps old practice drafts accurate without demanding any further rounds', () => {
     const means = [100, 104, 104];
     const variances = [
       [16, 8],
@@ -857,6 +854,13 @@ describe('Lesson07Balls', () => {
     ];
     const higher = ['a', 'b', 'a'];
     for (let round = 0; round < 9; round += 1) {
+      const fixture = create();
+      fixture.componentRef.setInput('initialState', {
+        stage: 'observe', round: round + 1, prediction: null, activeIndex: 0,
+        solved: [], helped: false, hintLevel: 0, hintFocus: null, choiceOffset: 0,
+      });
+      fixture.detectChanges();
+      const game = fixture.componentInstance;
       const periods = game.periods();
       expect(periods.map((period) => period.mean)).toEqual([means[round % 3], means[round % 3]]);
       expect(periods.map((period) => period.variance)).toEqual(variances[round % 3]);
@@ -875,12 +879,16 @@ describe('Lesson07Balls', () => {
       game.requestHint();
       reachReport(game);
       game.chooseReport('spread');
+      expect(game.stage()).toBe('success');
+      expect(game.guidedCompletion()).toBe(true);
       game.continueAfterHelp();
+      expect(game.round()).toBe(round + 1);
+      expect(game.originalPeriods.map((period) => period.variance)).toEqual([3, 6]);
+      fixture.destroy();
     }
-    expect(game.originalPeriods.map((period) => period.variance)).toEqual([3, 6]);
   });
 
-  it('requires an unassisted conclusion on replacement data, including when A is more dispersed', () => {
+  it('recognizes an unassisted practice conclusion, including when A is more dispersed', () => {
     const game = create().componentInstance;
     game.choosePrediction('b');
     game.requestHint();
@@ -895,6 +903,55 @@ describe('Lesson07Balls', () => {
     expect(game.helped()).toBe(false);
     game.chooseReport('spread');
     expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(false);
+  });
+
+  it.each(['calculate', 'report'] as const)('ends with honest guided feedback after help in practice %s', helpStage => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const done = vi.fn();
+    game.completed.subscribe(done);
+    game.choosePrediction('b');
+    game.requestHint();
+    reachReport(game);
+    game.chooseReport('spread');
+    game.finish();
+    expect(game.stage()).toBe('review');
+    expect(done).not.toHaveBeenCalled();
+    game.continueAfterHelp();
+    expect(game.round()).toBe(1);
+    game.choosePrediction('a');
+    if (helpStage === 'calculate') {
+      game.answerVariance(0);
+      game.requestHint();
+      game.continueAfterHelp();
+      game.finish();
+      expect(game.stage()).toBe('calculate');
+      expect(game.solved()).toEqual([]);
+      expect(done).not.toHaveBeenCalled();
+    }
+    reachReport(game);
+    if (helpStage === 'report') {
+      game.chooseReport('better');
+      game.requestHint();
+    }
+    game.finish();
+    expect(done).not.toHaveBeenCalled();
+    game.chooseReport('spread');
+    fixture.detectChanges();
+    expect(game.stage()).toBe('success');
+    expect(game.round()).toBe(1);
+    expect(game.helped()).toBe(true);
+    expect(game.guidedCompletion()).toBe(true);
+    expect(game.solved()).toEqual(['a', 'b']);
+    expect(fixture.nativeElement.querySelector('.completion-card').textContent).toContain('Completaste con ayuda');
+    expect(fixture.nativeElement.querySelector('.completion-card').textContent).not.toContain('sin pistas');
+    expect(game.originalPeriods.map(period => period.variance)).toEqual([3, 6]);
+    game.continueAfterHelp();
+    expect(game.stage()).toBe('success');
+    expect(game.round()).toBe(1);
+    game.finish(); game.finish();
+    expect(done).toHaveBeenCalledTimes(1);
   });
 
   it('does not invent zero-contribution observations when all practice values differ from the mean', () => {
@@ -912,23 +969,20 @@ describe('Lesson07Balls', () => {
     expect(game.activePeriod().zeroCount).toBe(0);
     expect(root.querySelectorAll('.empty-square')).toHaveLength(0);
     expect(root.querySelectorAll('.square-cell')).toHaveLength(64);
-    expect(root.textContent).toContain('Se promedian los aportes de los 4 registros.');
+    expect(root.textContent).toContain('Suma las casillas y divide entre los 4 registros.');
     expect(root.textContent).not.toContain('también los 0');
   });
 
   it('restores the original 3-and-6 evidence in the final report after practice with another mean', () => {
     const fixture = create();
+    fixture.componentRef.setInput('initialState', {
+      stage: 'observe', round: 2, prediction: null, activeIndex: 0,
+      solved: [], helped: false, hintLevel: 0, hintFocus: null, choiceOffset: 0,
+    });
+    fixture.detectChanges();
     const game = fixture.componentInstance;
-    game.choosePrediction('b');
-    game.requestHint();
-    reachReport(game);
-    game.chooseReport('spread');
-    game.continueAfterHelp();
     game.choosePrediction('a');
     game.requestHint();
-    reachReport(game);
-    game.chooseReport('spread');
-    game.continueAfterHelp();
     expect(game.periods()[0].mean).toBe(104);
     reachReport(game);
     game.chooseReport('spread');
@@ -944,7 +998,7 @@ describe('Lesson07Balls', () => {
     expect(report.textContent).not.toContain('104');
   });
 
-  it('emits completion only once and only after independent calculation and report', () => {
+  it('emits completion only once and only after the checked calculations and report', () => {
     const game = create().componentInstance;
     const done = vi.fn();
     game.completed.subscribe(done);

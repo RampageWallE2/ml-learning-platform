@@ -141,8 +141,10 @@ describe('Lesson02Ramp', () => {
     );
     report(game);
     fixture.detectChanges();
-    expect(root.querySelector('.task-card')!.textContent).toContain('organizar las entregas');
+    expect(root.querySelector('.task-card h3')!.textContent).toBe('¿Qué podemos saber con estos promedios?');
+    expect(root.querySelector('.task-card')!.textContent).toContain('Quienes reciben el material piden cargas cercanas a');
     expect(root.querySelector('.task-card')!.textContent).toContain('100 toneladas');
+    expect(root.querySelector('.task-card')!.textContent).toContain('antes de preparar el siguiente turno');
     expect(game.reportChoices().map((choice) => choice.text)).toEqual([
       'Las cargas se parecen igual en los dos turnos.',
       'En B, las cargas son más diferentes.',
@@ -173,6 +175,10 @@ describe('Lesson02Ramp', () => {
     expect(game.exampleTotal).toBe(300);
     expect(game.exampleMean).toBe(100);
     expect(game.turns.map((turn) => [...turn.values])).toEqual(originals);
+    const explanation = fixture.nativeElement.querySelector('.mean-explanation').textContent.replace(/\s+/g, ' ').trim();
+    expect(explanation).toContain('Sumamos las cargas: 90 + 100 + 110 = 300 t.');
+    expect(explanation).toContain('Dividimos entre 3 camiones: 300 ÷ 3 = 100.');
+    expect(explanation).toContain('100 toneladas por camión');
     expect(fixture.nativeElement.textContent).toContain('reparto imaginario');
     expect(fixture.nativeElement.textContent).toContain('90, 100 y 110');
     expect(fixture.nativeElement.querySelectorAll('.example-truck strong').length).toBe(3);
@@ -225,6 +231,7 @@ describe('Lesson02Ramp', () => {
     expect(root.querySelectorAll('.load-record')).toHaveLength(10);
     expect(root.querySelectorAll('.load-point')).toHaveLength(10);
     expect(root.querySelectorAll('.mean-line')).toHaveLength(2);
+    expect(root.querySelector('.task-card')!.textContent).toContain('El encargado te entregó las cargas');
     expect(root.querySelectorAll('.shared-axis')).toHaveLength(1);
     expect(game.turns.map((turn) => game.average(turn.values))).toEqual([100, 100]);
   });
@@ -293,11 +300,12 @@ describe('Lesson02Ramp', () => {
     const root = fixture.nativeElement as HTMLElement;
     practice(game);
     fixture.detectChanges();
-    expect(root.textContent).toContain('Ensayo: informe con solo promedios');
+    expect(root.textContent).toContain('Práctica: solo vemos promedios');
     expect(root.querySelectorAll('.report-sheet')).toHaveLength(2);
     expect(root.querySelectorAll('.value-track, .load-record')).toHaveLength(0);
-    expect(root.querySelector('.task-card')!.textContent).toContain('Prueba 1 de 2');
-    expect(root.querySelector('.task-card')!.textContent).toContain('preparar el siguiente turno');
+    expect(root.querySelector('.task-card')!.textContent).toContain('Primero, mira el resumen');
+    expect(root.querySelector('.task-card')!.textContent).toContain('Por ahora solo ves promedios');
+    expect(root.querySelector('.task-card')!.textContent).not.toContain('Ya tienes la carga de cada camión');
     game.answerPractice('a');
     game.answerPractice('unknown');
     fixture.detectChanges();
@@ -306,7 +314,10 @@ describe('Lesson02Ramp', () => {
     expect(root.querySelectorAll('.report-sheet')).toHaveLength(0);
     expect(root.querySelectorAll('.value-track')).toHaveLength(2);
     expect(root.querySelectorAll('.load-record')).toHaveLength(10);
-    expect(root.querySelector('.task-card')!.textContent).toContain('Prueba 2 de 2');
+    expect(root.querySelector('.task-card')!.textContent).toContain('Ahora, compara las cargas');
+    expect(root.textContent).toContain('Práctica: ya tenemos las cargas');
+    expect(root.querySelector('.task-card')!.textContent).toContain('Ya tienes la carga de cada camión');
+    expect(root.querySelector('.task-card')!.textContent).not.toContain('Por ahora solo ves promedios');
     expect(root.querySelectorAll('.answer-choice')).toHaveLength(3);
     game.answerPractice('b');
     game.explain('summary');
@@ -319,6 +330,7 @@ describe('Lesson02Ramp', () => {
     expect(game.practiceChoices()[1].text).toContain('turno F');
     expect(game.practiceCase()).toBe(0);
     expect(root.querySelector('.value-track')).toBeNull();
+    expect(root.querySelector('.task-card')!.textContent).toContain('Por ahora solo ves promedios');
   });
 
   it('keeps the same practice reports after a hint rather than changing them immediately', () => {

@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { Lesson01Loading } from './lesson-01-loading';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { C1State } from './lesson-01-loading.state';
 
 describe('Lesson01Loading', () => {
-  function create() {
+  function create(state: C1State | null = null) {
     const fixture = TestBed.createComponent(Lesson01Loading);
+    fixture.componentRef.setInput('initialState', state);
     fixture.detectChanges();
     return fixture;
   }
@@ -119,8 +121,9 @@ describe('Lesson01Loading', () => {
     expect(root.querySelector('.value-track')!.getAttribute('aria-label')).toContain('98, 102, 100, 101, 99');
   });
 
-  it('completes only after an independent comparison and explanation, emitting once', () => {
-    const game = create().componentInstance;
+  it('completes an independent comparison and explanation, emitting once', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
     const done = vi.fn();
     game.completed.subscribe(done);
     game.finish();
@@ -128,6 +131,14 @@ describe('Lesson01Loading', () => {
     expect(game.step()).toBe(3);
     expect(game.groups().map(group => group.loads)).toEqual([[110, 111, 112], [90, 100, 110]]);
     game.chooseGroup('D');
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.task-card h3')?.textContent).toContain('¿Qué viste al comparar las cargas?');
+    expect(game.reasons().find(reason => reason.id === 'spread')?.text).toBe(
+      'D: 90, 100, 110 t; C: 110, 111, 112 t. Se parecen menos en D.',
+    );
+    expect([...root.querySelectorAll('.reason-choice')].map(button => button.textContent?.trim()))
+      .toEqual(game.reasons().map(reason => reason.text));
     game.finish();
     expect(game.stage()).toBe('practice-reason');
     expect(done).not.toHaveBeenCalled();
@@ -155,7 +166,8 @@ describe('Lesson01Loading', () => {
   });
 
   it('lets the learner understand a hinted example before offering a fresh check', () => {
-    const game = create().componentInstance;
+    const fixture = create();
+    const game = fixture.componentInstance;
     const done = vi.fn();
     game.completed.subscribe(done);
     practice(game);
@@ -163,6 +175,8 @@ describe('Lesson01Loading', () => {
     game.chooseGroup('D');
     game.chooseReason('spread');
     expect(game.stage()).toBe('practice-review');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Puedes usar las pistas y después terminarás la clase');
     expect(game.practiceRound()).toBe(0);
     expect(game.groups().map(group => group.name)).toEqual(['C', 'D']);
     game.finish();
@@ -174,11 +188,16 @@ describe('Lesson01Loading', () => {
     expect(game.feedback()).toBe('');
     expect(game.selectedGroup()).toBeNull();
     expect(game.practiceHelped()).toBe(false);
+    expect(game.selectedLoad()).toBeNull();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Una práctica más');
+    expect(fixture.nativeElement.textContent).not.toContain('sin ayuda');
     game.chooseGroup('D');
     expect(game.stage()).toBe('practice');
     game.chooseGroup('E');
     game.chooseReason('spread');
     expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(false);
   });
 
   it('keeps the same example after an incorrect reason without marking it mastered', () => {
@@ -186,12 +205,17 @@ describe('Lesson01Loading', () => {
     practice(game);
     game.chooseGroup('D');
     const before = game.groups();
+    const choices = game.reasons();
     game.chooseReason('maximum');
     expect(game.stage()).toBe('practice-reason');
     expect(game.groups()).toBe(before);
     expect(game.feedback()).toContain('Un solo camión');
+    expect(game.feedback()).toContain('D: 90, 100, 110 t; C: 110, 111, 112 t');
+    expect(game.reasons()).toBe(choices);
     game.chooseReason('count');
     expect(game.feedback()).toContain('tres camiones');
+    expect(game.feedback()).toContain('D: 90, 100, 110 t; C: 110, 111, 112 t');
+    expect(game.reasons()).toBe(choices);
     game.chooseReason('spread');
     expect(game.stage()).toBe('practice-review');
     game.continueAfterHelp();
@@ -200,24 +224,86 @@ describe('Lesson01Loading', () => {
     expect(game.stage()).toBe('success');
   });
 
-  it('keeps subsequent supported checks valid and changes the correct group position', () => {
-    const game = create().componentInstance;
-    practice(game);
+  it('keeps later draft data and evidence valid without requiring further rounds', () => {
     for (let round = 0; round < 5; round += 1) {
+      const fixture = create({ stage: 'practice', selectedLoad: null, selectedGroup: null,
+        practiceRound: round, practiceHelped: false });
+      const game = fixture.componentInstance;
       expect(game.practiceRound()).toBe(round);
       expect(game.groups().flatMap(group => group.loads).every(value => value >= 80 && value <= 120)).toBe(true);
       const wrong = game.groups().find(group => group.name !== game.correctGroup())!;
       const correct = game.groups().find(group => group.name === game.correctGroup())!;
+      const choices = game.reasons();
+      const evidence = choices.find(reason => reason.id === 'spread')!.text;
+      expect(evidence).toContain(correct.name + ': ' + correct.loads.join(', ') + ' t');
+      expect(evidence).toContain(wrong.name + ': ' + wrong.loads.join(', ') + ' t');
+      expect(choices.findIndex(reason => reason.id === 'spread')).toBe((1 - round % 3 + 3) % 3);
+      expect(new Set(choices.map(reason => reason.id)).size).toBe(3);
+      expect(choices.find(reason => reason.id === 'maximum')!.text).toContain(
+        correct.name + ' llega a ' + Math.max(...correct.loads) + ' t',
+      );
       expect(Math.max(...correct.loads) - Math.min(...correct.loads)).toBeGreaterThan(Math.max(...wrong.loads) - Math.min(...wrong.loads));
       game.chooseGroup(wrong.name);
       game.chooseGroup(correct.name);
       game.chooseReason('spread');
-      expect(game.stage()).toBe('practice-review');
-      game.continueAfterHelp();
+      expect(game.stage()).toBe(round === 0 ? 'practice-review' : 'success');
+      if (round === 0) {
+        game.continueAfterHelp();
+        expect(game.practiceRound()).toBe(1);
+      } else {
+        expect(game.guidedCompletion()).toBe(true);
+        game.continueAfterHelp();
+        expect(game.practiceRound()).toBe(round);
+      }
+      fixture.destroy();
     }
-    game.chooseGroup(game.correctGroup());
-    game.chooseReason('spread');
-    expect(game.stage()).toBe('success');
+  });
+
+  for (const helpAt of ['group', 'reason'] as const) {
+    it('allows only one additional practice with help at the ' + helpAt + ', still requiring the correct explanation', () => {
+      const fixture = create(); const game = fixture.componentInstance; const done = vi.fn();
+      game.completed.subscribe(done);
+      practice(game); game.chooseGroup('C'); game.chooseGroup('D'); game.chooseReason('spread');
+      game.continueAfterHelp();
+      expect(game.practiceRound()).toBe(1); expect(game.practiceHelped()).toBe(false);
+      const data = game.groups();
+      game.continueAfterHelp(); game.chooseReason('spread'); game.finish();
+      expect(game.stage()).toBe('practice'); expect(done).not.toHaveBeenCalled();
+      if (helpAt === 'group') {
+        game.chooseGroup('F');
+        expect(game.stage()).toBe('practice');
+      }
+      game.chooseGroup('E');
+      if (helpAt === 'reason') game.chooseReason('maximum');
+      expect(game.practiceHelped()).toBe(true); expect(game.groups()).toEqual(data);
+      game.continueAfterHelp(); game.finish();
+      expect(game.stage()).toBe('practice-reason'); expect(done).not.toHaveBeenCalled();
+      game.chooseReason('spread'); fixture.detectChanges();
+      expect(game.stage()).toBe('success'); expect(game.guidedCompletion()).toBe(true);
+      expect(game.practiceHelped()).toBe(true); expect(game.selectedLoad()).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Completaste con ayuda');
+      expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain('Las cargas del grupo B');
+      game.continueAfterHelp(); expect(game.practiceRound()).toBe(1);
+      expect(done).not.toHaveBeenCalled(); game.finish(); game.finish();
+      expect(done).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  it('explicitly closes an older completed review without losing help or adding another practice', () => {
+    const state: C1State = { stage: 'practice-review', practiceRound: 3,
+      selectedGroup: 'G', selectedLoad: 'G1', practiceHelped: true };
+    const fixture = create(state); const game = fixture.componentInstance; const done = vi.fn();
+    game.completed.subscribe(done);
+    expect(game.stage()).toBe('practice-review'); expect(game.practiceRound()).toBe(3);
+    expect(game.needsPractice()).toBe(false); expect(game.selectedLoad()).toBe('G1');
+    expect(fixture.nativeElement.textContent).toContain('sin repetirlo');
+    game.finish(); expect(done).not.toHaveBeenCalled();
+    const button = fixture.nativeElement.querySelector('.task-card .btn--primary') as HTMLButtonElement;
+    expect(button.textContent?.trim()).toBe('Ver el informe →'); button.click(); fixture.detectChanges();
+    expect(game.stage()).toBe('success'); expect(game.guidedCompletion()).toBe(true);
+    expect(game.practiceRound()).toBe(3); expect(game.practiceHelped()).toBe(true);
+    expect(game.selectedGroup()).toBe('G'); expect(game.selectedLoad()).toBeNull();
+    expect(done).not.toHaveBeenCalled(); game.finish(); expect(done).toHaveBeenCalledTimes(1);
   });
 
   it('runs the simple-choice flow through real buttons without written answers', () => {
@@ -234,11 +320,34 @@ describe('Lesson01Loading', () => {
     fixture.detectChanges();
     root.querySelectorAll<HTMLButtonElement>('.group-choice')[1].click();
     fixture.detectChanges();
-    root.querySelectorAll<HTMLButtonElement>('.reason-choice')[1].click();
+    const evidence = fixture.componentInstance.reasons().find(reason => reason.id === 'spread')!.text;
+    const reasonButton = [...root.querySelectorAll<HTMLButtonElement>('.reason-choice')]
+      .find(button => button.textContent?.trim() === evidence);
+    expect(reasonButton).toBeDefined(); reasonButton!.click();
     fixture.detectChanges();
     expect(root.querySelector('.completion-card')).not.toBeNull();
     expect(root.querySelector('.report-card')!.textContent).toContain('Las cargas del grupo B fueron más diferentes');
     expect(root.querySelectorAll('input, textarea')).toHaveLength(0);
+  });
+
+  it('rebuilds concrete evidence and the same option order after reopening a helped later practice', () => {
+    const state: C1State = { stage: 'practice-reason', practiceRound: 3,
+      selectedGroup: 'G', selectedLoad: 'G1', practiceHelped: true };
+    const fixture = create(state); const game = fixture.componentInstance;
+    const done = vi.fn(); game.completed.subscribe(done);
+    const choices = game.reasons();
+    expect(game.evidenceReading()).toBe('G: 82, 96, 110 t; H: 111, 112, 113 t');
+    expect(game.practiceHelped()).toBe(true); game.finish(); expect(done).not.toHaveBeenCalled();
+    fixture.destroy();
+    const restored = create(state); const copy = restored.componentInstance;
+    copy.completed.subscribe(done);
+    expect(copy.reasons()).toEqual(choices); expect(copy.selectedLoad()).toBe('G1');
+    expect(copy.practiceHelped()).toBe(true); expect(done).not.toHaveBeenCalled();
+    copy.chooseReason('spread'); restored.detectChanges();
+    expect(copy.stage()).toBe('success'); expect(done).not.toHaveBeenCalled();
+    expect(copy.guidedCompletion()).toBe(true); expect(copy.practiceHelped()).toBe(true);
+    expect(copy.practiceRound()).toBe(3); expect(copy.selectedLoad()).toBeNull();
+    expect(restored.nativeElement.textContent).toContain('Completaste con ayuda');
   });
 
   it('starts a replay with fresh tutorial and no previous hints or answers', () => {

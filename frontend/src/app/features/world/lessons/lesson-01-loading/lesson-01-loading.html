@@ -144,7 +144,7 @@
               ? 'Compara las cargas'
               : practiceRound() === 0
                 ? 'Ahora tú'
-                : 'Otro ejemplo, sin ayuda'
+                : 'Una práctica más'
           }}</span>
           <h3 id="loading-task-title" #taskHeading tabindex="-1">
             ¿En qué grupo las cargas son más diferentes?
@@ -179,9 +179,9 @@
           </button>
         } @else if (stage() === 'practice-reason') {
           <span class="task-kicker">Elegiste el grupo {{ selectedGroup() }}</span>
-          <h3 id="loading-task-title" #taskHeading tabindex="-1">¿Por qué elegiste ese grupo?</h3>
+          <h3 id="loading-task-title" #taskHeading tabindex="-1">¿Qué viste al comparar las cargas?</h3>
           <div class="reason-choices">
-            @for (reason of reasons; track reason.id) {
+            @for (reason of reasons(); track reason.id) {
               <button type="button" class="btn reason-choice" (click)="chooseReason(reason.id)">
                 {{ reason.text }}
               </button>
@@ -191,12 +191,16 @@
           <span class="task-kicker">Ya lo viste</span>
           <h3 id="loading-task-title" #taskHeading tabindex="-1">Sus cargas se parecen menos</h3>
           <p>
-            En el grupo {{ selectedGroup() }}, los puntos están más separados. Eso indica más
-            dispersión.
+            {{ evidenceReading() }}. En {{ selectedGroup() }}, las cargas se parecen menos.
+            Eso indica más dispersión.
           </p>
-          <p>Ahora prueba otro ejemplo para comprobarlo sin la pista.</p>
+          @if (needsPractice()) {
+            <p>Haremos un ejemplo más. Puedes usar las pistas y después terminarás la clase.</p>
+          } @else {
+            <p>Ya completaste este ejemplo con ayuda. Puedes ver el informe sin repetirlo.</p>
+          }
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
-            Probar otro ejemplo →
+            {{ needsPractice() ? 'Probar otro ejemplo →' : 'Ver el informe →' }}
           </button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
@@ -214,7 +218,9 @@
       <span class="completion-stamp" aria-hidden="true">✓</span>
       <div>
         <span class="task-kicker">Comparación completada</span>
-        <h3 #taskHeading tabindex="-1">Ya puedes reconocer la dispersión</h3>
+        <h3 #taskHeading tabindex="-1">{{
+          guidedCompletion() ? 'Completaste con ayuda' : 'Ya puedes reconocer la dispersión'
+        }}</h3>
         <p>Cargas parecidas: puntos juntos. Cargas más diferentes: puntos más separados.</p>
         <p><strong>Llevar más material no significa tener más dispersión.</strong></p>
       </div>

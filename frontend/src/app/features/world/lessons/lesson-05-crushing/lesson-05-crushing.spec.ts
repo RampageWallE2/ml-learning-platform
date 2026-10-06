@@ -176,7 +176,7 @@ describe('Lesson05Crushing', () => {
     const fixture = create();
     const root: HTMLElement = fixture.nativeElement;
     expect(root.textContent).toContain(
-      'completar el aviso de alimentación para el siguiente turno',
+      'avisar al siguiente turno cuánto material entró en cada hora',
     );
     expect(root.textContent).toContain('Promedio: 100 t/h');
     expect(root.textContent).toContain('no es una meta de producción');
@@ -660,10 +660,10 @@ describe('Lesson05Crushing', () => {
     expect(text).toContain('siguiente turno');
     expect(text).toContain('80, 80, 120 y 120');
     expect(text).toContain('por debajo o por encima del promedio');
-    expect(text).toContain('La desviación lleva −');
-    expect(text).toContain('La separación es 20 t/h en ambos lados');
-    expect(text).toContain('no dicen por qué cambió');
-    expect(text).toContain('no una meta de producción');
+    expect(text).toContain('Uso − para indicar por debajo y + para indicar por encima');
+    expect(text).toContain('La separación es 20 t/h en ambos casos');
+    expect(text).toContain('no explican por qué entraron cantidades distintas');
+    expect(text).toContain('no es una meta');
     expect(text).not.toMatch(
       /coincide con la media|mirar los extremos|determina|explican su causa/i,
     );

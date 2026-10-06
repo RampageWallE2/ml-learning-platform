@@ -16,7 +16,7 @@
     }
     <div class="goal-banner"><span>Meta de ejemplo</span><strong>Promedio de {{ records().goal }} t/h</strong><p>No significa que cada registro deba ser {{ records().goal }}. t/h = toneladas por hora.</p></div>
     <div class="workbench">
-      <section class="data-board" aria-label="Comparación de alimentación en espesadores">
+      <section class="data-board" aria-label="Comparación del material que entra a espesadores">
         <p class="muted">Cada punto = un registro · Misma escala.</p>
         <div class="legend"><span><i class="legend-goal" aria-hidden="true"></i>Meta: {{ records().goal }} t/h</span><span><i class="legend-mean" aria-hidden="true"></i>Promedio</span></div>
         <div class="periods">
@@ -53,7 +53,7 @@
           @case ('recommend') { <p>¿Qué consejo podemos dar con estos datos?</p> }
           @case ('transfer-intro') {
             <p>En esta práctica, <strong>ambos promedios cumplen la meta</strong>. Ningún período tiene todos sus registros iguales.</p>
-            <p>Regla para este caso: si ambos cumplen la meta, <strong>preferimos menor variación</strong> como referencia para el siguiente turno.</p>
+            <p>Regla de este caso: si ambos cumplen la meta, <strong>elegimos el que varió menos</strong>. Lo usamos como referencia: un ejemplo para comparar los datos del siguiente turno.</p>
             <button type="button" class="btn btn--primary" (click)="startTransfer()">Comparar este caso →</button>
           }
           @case ('transfer') { <p>Ambos cumplen la meta. Usaremos como referencia el que varió menos: mira los puntos y compara la desviación estándar.</p> }
@@ -79,8 +79,8 @@
       </aside>
       <details class="additional-measures"><summary>Ver rango, varianza y cómo leer los gráficos</summary>
         @for (period of periods(); track period.id) { <p>Período {{ period.id }}: rango {{ period.range }} t/h · varianza {{ period.variance }} (t/h)².</p> }
-        <p>Seis registros por período, medidos en el mismo punto, con la misma frecuencia y en condiciones parecidas. Las medidas ya están calculadas. Los puntos uno sobre otro tienen el mismo valor.</p>
-        <p>La desviación estándar resume la separación respecto al promedio: un número menor indica menos variación.</p>
+        <p>Hay seis registros por período. Se midieron en el mismo lugar, dejando el mismo tiempo entre mediciones y en condiciones parecidas. Las medidas ya están calculadas. Los puntos uno sobre otro tienen el mismo valor.</p>
+        <p>La desviación estándar resume cuánto se separan los datos del promedio. Un número menor indica que variaron menos.</p>
         <p>Si las líneas de promedio y meta coinciden, el promedio cumple la meta.</p>
       </details>
     </div>
@@ -94,15 +94,15 @@
           <div class="final-period"><strong>Período {{ period.id }}</strong><p>{{ period.values.join(' · ') }} t/h</p><p>Promedio {{ period.mean }} t/h · Rango {{ period.range }} t/h<br>Varianza {{ period.variance }} (t/h)² · Desviación estándar {{ period.standardDeviation }} t/h</p></div>
         }
       </div>
-      <div class="conclusion"><strong>A varió menos. B cumplió la meta de promedio.</strong><p>Usar B como referencia para el siguiente turno y buscar por qué A quedó bajo la meta. Antes de cambiar ajustes, necesitamos saber la causa y cuánto pueden variar los registros.</p></div>
+      <div class="conclusion"><strong>A varió menos. B cumplió la meta de promedio.</strong><p>Usaremos B como ejemplo para comparar el siguiente turno. Investigaremos por qué A quedó bajo la meta. Antes de cambiar los ajustes, necesitamos conocer la causa y los límites permitidos.</p></div>
       <p>Esto muestra lo que pasó, no asegura lo que vendrá. Variar menos o más no significa, por sí solo, trabajar mejor.</p>
       <details class="route-report"><summary>Lo que reunimos durante la ruta</summary>
         <ul>
           <li><strong>Tajo y acarreo:</strong> el promedio solo no muestra cuánto cambian los registros.</li>
-          <li><strong>Botadero y taller:</strong> el rango compara extremos; no describe los valores interiores.</li>
+          <li><strong>Botadero y taller:</strong> el rango mide la diferencia entre el dato menor y el mayor. No muestra cómo son los demás.</li>
           <li><strong>Chancado:</strong> cada registro puede estar por encima o debajo del promedio.</li>
-          <li><strong>SAG y bolas:</strong> la varianza promedia los cuadrados de las desviaciones, incluyendo los ceros.</li>
-          <li><strong>Flotación:</strong> la raíz de la varianza da la desviación estándar en las unidades originales.</li>
+          <li><strong>SAG y bolas:</strong> para calcular la varianza, multiplicamos cada diferencia por sí misma, sumamos y dividimos entre todos los registros, también los que dan cero.</li>
+          <li><strong>Flotación:</strong> al sacar la raíz de la varianza obtenemos la desviación estándar, expresada aquí en toneladas por hora.</li>
           <li><strong>Espesadores:</strong> miramos la meta y la variación juntas; los datos no explican las causas.</li>
         </ul>
         <p>Son conclusiones de cada zona. No comparamos sus números con los de otras zonas. Las prácticas no se añaden a estos datos.</p>
