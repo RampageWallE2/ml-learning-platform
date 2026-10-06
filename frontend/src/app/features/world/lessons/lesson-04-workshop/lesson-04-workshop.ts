@@ -2,6 +2,7 @@ import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, output, signal, viewChild,
 } from '@angular/core';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 type Stage = 'compare' | 'predict' | 'experiment' | 'explain' | 'discovery' | 'practice' | 'evidence' | 'review' | 'success';
 type Comparison = 'a' | 'b' | 'same';
@@ -38,6 +39,7 @@ const PRACTICE_SETS: readonly (readonly RecordGroup[])[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson04Workshop {
+  readonly title = LESSON_NAMES['lesson-04'];
   readonly completed = output<void>();
   readonly stage = signal<Stage>('compare');
   readonly feedback = signal('');

@@ -28,6 +28,15 @@ export const routes: Routes = [
   },
   {
     path: 'progress',
+    pathMatch: 'full',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/world/progress/pages/progress-page/progress-page').then(
+        (module) => module.ProgressPage,
+      ),
+  },
+  {
+    path: 'progress/:zoneId',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/world/progress/pages/progress-page/progress-page').then(

@@ -55,6 +55,17 @@
   }
 }
 
+// Acciones principales de las páginas web; el juego conserva .btn--primary.
+.btn.btn--brand {
+  color: var(--color-forest);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-accent) 86%, var(--color-surface-raised));
+  }
+}
+
 .btn--secondary {
   color: var(--color-text);
   background: var(--color-surface-alt);

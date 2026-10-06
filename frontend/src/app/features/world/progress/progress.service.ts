@@ -3,7 +3,8 @@ import {
   effect,
   Injectable,
   inject,
-  signal
+  signal,
+  untracked
 } from '@angular/core';
 
 import {
@@ -12,8 +13,19 @@ import {
 
 import {
   Observable,
+  EMPTY,
+  catchError,
+  concatMap,
+  defer,
+  filter,
+  finalize,
+  from,
   map,
   of,
+  reduce,
+  shareReplay,
+  switchMap,
+  tap,
   throwError
 } from 'rxjs';
 
@@ -22,6 +34,8 @@ import {
 } from '../../../core/auth/auth.config';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { AuthenticatedUser } from '../../../core/auth/auth.types';
+import { loadPendingProgress, savePendingProgress } from './pending-progress.storage';
 
 import { LEARNING_ZONES } from '../lessons/lesson-catalog';
 
@@ -100,18 +114,24 @@ export class ProgressService {
     signal<string[]>([]);
 
 
-  private activeUserId =
-    this.auth.user()?.id ?? null;
+  private activeUser: AuthenticatedUser | null = null;
+
+  private readonly pendingState = signal<string[]>([]);
+  readonly pendingLessonIds = this.pendingState.asReadonly();
+  readonly pendingStorageAvailable = signal(true);
+  readonly syncingPending = signal(false);
+
+  private readonly saveRequests = new Map<string, {
+    user: AuthenticatedUser;
+    request: Observable<void>;
+  }>();
 
 
   constructor() {
+    this.activateUser(this.auth.user());
     effect(() => {
-      const userId = this.auth.user()?.id ?? null;
-
-      if (userId !== this.activeUserId) {
-        this.reset();
-        this.activeUserId = userId;
-      }
+      const user = this.auth.user();
+      untracked(() => this.activateUser(user));
     });
   }
 
@@ -121,55 +141,34 @@ export class ProgressService {
      ========================= */
 
   loadProgress(): Observable<void> {
+    return defer(() => {
+      const user = this.auth.user();
+      this.activateUser(user);
+      if (!user) return throwError(() => new Error('Se requiere una sesión para cargar el progreso.'));
 
-    /*
-     * Nunca se muestran datos conservados de una sesión anterior mientras
-     * se consulta el progreso del usuario actual.
-     */
-    this.reset();
-
-    return this.http.get<ProgressApiResponse>(
-      `${this.authConfig.apiBaseUrl}/me/progress`,
-      {
-        withCredentials: true
-      }
-    ).pipe(
-      map(response => {
-
-        const completedFromApi =
-          new Set(
-            response.lessons
-              .filter(
-                lesson =>
-                  lesson.status ===
-                  'completed'
-              )
-              .map(
-                lesson =>
-                  lesson.lessonId
-              )
+      this.reset();
+      this.restorePending(user.id);
+      return this.http.get<ProgressApiResponse>(
+        `${this.authConfig.apiBaseUrl}/me/progress`,
+        { withCredentials: true },
+      ).pipe(
+        filter(() => this.auth.user() === user),
+        tap(response => {
+          // Keep confirmations received while this GET was in flight.
+          const confirmed = new Set([
+            ...this.completedLessonIds(),
+            ...response.lessons.filter(item => item.status === 'completed').map(item => item.lessonId),
+          ]);
+          this.completedLessonIds.set(
+            this.orderedLessons.filter(item => confirmed.has(item.lessonId)).map(item => item.lessonId),
           );
-
-
-        const registeredCompleted =
-          this.orderedLessons
-            .filter(
-              lesson =>
-                completedFromApi.has(
-                  lesson.lessonId
-                )
-            )
-            .map(
-              lesson =>
-                lesson.lessonId
-            );
-
-
-        this.completedLessonIds.set(
-          registeredCompleted
-        );
-      })
-    );
+          this.pendingState.update(ids => ids.filter(id => !confirmed.has(id)));
+          this.persistPending(user.id);
+        }),
+        switchMap(() => this.syncPending(user)),
+        catchError(error => this.auth.user() === user ? throwError(() => error) : EMPTY),
+      );
+    });
   }
 
 
@@ -301,73 +300,94 @@ export class ProgressService {
   completeLesson(
     lessonId: string
   ): Observable<void> {
-
-    /*
-     * Si ya está completada,
-     * no hacemos nada.
-     */
-    if (
-      this.isLessonCompleted(
-        lessonId
-      )
-    ) {
-      return of(undefined);
-    }
-
-
-    /*
-     * Impide completar una
-     * lección futura.
-     */
-    if (
-      !this.isLessonAvailable(
-        lessonId
-      )
-    ) {
-      return throwError(
-        () =>
-          new Error(
-            `Lección desconocida: ${lessonId}`
-          )
-      );
-    }
-
-
-    return this.http.put<SaveLessonProgressResponse>(
-      `${this.authConfig.apiBaseUrl}/me/progress/${lessonId}`,
-      {
-        status: 'completed',
-        currentStep: 0
-      },
-      {
-        withCredentials: true
+    return defer(() => {
+      const user = this.auth.user();
+      this.activateUser(user);
+      if (!user) return throwError(() => new Error('Se requiere una sesión para guardar el progreso.'));
+      if (this.isLessonCompleted(lessonId)) return of(undefined);
+      if (!this.isLessonAvailable(lessonId)) {
+        return throwError(() => new Error(`Lección no disponible: ${lessonId}`));
       }
-    ).pipe(
-      map(response => {
 
-        if (
-          response.progress.status !==
-          'completed'
-        ) {
-          throw new Error(
-            'El backend no confirmó la finalización de la lección.'
-          );
+      // Persist before the request: reload or navigation must not lose the result.
+      this.pendingState.update(ids => ids.includes(lessonId) ? ids : [...ids, lessonId]);
+      this.persistPending(user.id);
+      return this.sendCompletion(lessonId, user);
+    });
+  }
+
+  private activateUser(user: AuthenticatedUser | null): void {
+    if (user === this.activeUser) return;
+    this.activeUser = user;
+    this.reset();
+    this.pendingState.set([]);
+    this.syncingPending.set(false);
+    this.pendingStorageAvailable.set(true);
+    if (user) this.restorePending(user.id);
+  }
+
+  private restorePending(userId: string): void {
+    const stored = loadPendingProgress(userId, this.orderedLessons.map(item => item.lessonId));
+    this.pendingState.update(ids => [...new Set([...ids, ...stored.lessonIds])]);
+    this.pendingStorageAvailable.set(stored.available);
+    if (this.pendingState().length) this.persistPending(userId);
+  }
+
+  private persistPending(userId: string): void {
+    this.pendingStorageAvailable.set(savePendingProgress(userId, this.pendingState()));
+  }
+
+  private syncPending(user: AuthenticatedUser): Observable<void> {
+    const pending = this.orderedLessons
+      .filter(item => this.pendingState().includes(item.lessonId)).map(item => item.lessonId);
+    if (!pending.length) return of(undefined);
+    this.syncingPending.set(true);
+    return from(pending).pipe(
+      concatMap(id => {
+        if (this.auth.user() !== user) return of(undefined);
+        if (this.isLessonCompleted(id)) return of(undefined);
+        if (!this.isLessonAvailable(id)) {
+          return throwError(() => new Error('Faltan confirmar las lecciones anteriores.'));
         }
-
-
-        this.completedLessonIds.update(
-          completed =>
-            completed.includes(
-              lessonId
-            )
-              ? completed
-              : [
-                  ...completed,
-                  lessonId
-                ]
-        );
-      })
+        return this.sendCompletion(id, user);
+      }),
+      reduce(() => undefined, undefined as void),
+      filter(() => this.auth.user() === user),
+      finalize(() => {
+        if (this.auth.user() === user) this.syncingPending.set(false);
+      }),
     );
+  }
+
+  private sendCompletion(lessonId: string, user: AuthenticatedUser): Observable<void> {
+    const key = `${user.id}:${lessonId}`;
+    const existing = this.saveRequests.get(key);
+    if (existing?.user === user) return existing.request;
+
+    const request = this.http.put<SaveLessonProgressResponse>(
+      `${this.authConfig.apiBaseUrl}/me/progress/${lessonId}`,
+      { status: 'completed', currentStep: 0 },
+      { withCredentials: true },
+    ).pipe(
+      filter(() => this.auth.user() === user),
+      map(response => {
+        if (response.progress.lessonId !== lessonId || response.progress.status !== 'completed') {
+          throw new Error('El backend no confirmó la finalización de la lección.');
+        }
+        this.completedLessonIds.update(ids => ids.includes(lessonId) ? ids : [...ids, lessonId]);
+        this.pendingState.update(ids => ids.filter(id => id !== lessonId));
+        this.persistPending(user.id);
+      }),
+      catchError(error => this.auth.user() === user ? throwError(() => error) : EMPTY),
+      finalize(() => {
+        if (this.saveRequests.get(key)?.request === request) this.saveRequests.delete(key);
+      }),
+      // Finish an already-started save even if the page is closed. The durable
+      // pending record still protects against reload, which cancels browser HTTP.
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.saveRequests.set(key, { user, request });
+    return request;
   }
 
 

@@ -1,7 +1,7 @@
 <section class="lesson thickeners-lesson" aria-labelledby="thickeners-title">
   <header class="lesson-header">
     <span class="lesson-tag"><span class="lesson-tag__number">C9</span> · Espesadores · Informe final</span>
-    <h2 id="thickeners-title">Una meta, dos períodos</h2>
+    <h2 id="thickeners-title">{{ title }}</h2>
     <p>Prepara el siguiente turno: compara <strong>el promedio y cuánto variaron los registros</strong>.</p>
     <ol class="steps" aria-label="Pasos de la misión">
       @for (label of ['Variación', 'Meta', 'Recomendación', 'Comprobación']; track $index) {
@@ -18,7 +18,7 @@
     <div class="workbench">
       <section class="data-board" aria-label="Comparación de alimentación en espesadores">
         <p class="muted">Cada punto = un registro · Misma escala.</p>
-        <div class="legend"><span><i class="legend-goal" aria-hidden="true"></i>Meta</span><span><i class="legend-mean" aria-hidden="true"></i>Promedio</span></div>
+        <div class="legend"><span><i class="legend-goal" aria-hidden="true"></i>Meta: {{ records().goal }} t/h</span><span><i class="legend-mean" aria-hidden="true"></i>Promedio</span></div>
         <div class="periods">
           @for (period of plots(); track period.id) {
             <section class="period" [attr.aria-labelledby]="'period-' + period.id">

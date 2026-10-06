@@ -181,7 +181,7 @@ describe('Lesson05Crushing', () => {
     expect(root.textContent).toContain('Promedio: 100 t/h');
     expect(root.textContent).toContain('no es una meta de producción');
     expect(root.textContent).toContain('¿Cuánto le falta a 80 para llegar a 100?');
-    expect(root.textContent).not.toContain('Desviación');
+    expect(root.querySelector('.workbench')!.textContent).not.toContain('Desviación');
     expect(root.querySelectorAll('.data-point')).toHaveLength(4);
     expect(root.querySelectorAll('.record-card')).toHaveLength(4);
     expect(root.querySelector('input, textarea, form, select')).toBeNull();
@@ -260,7 +260,7 @@ describe('Lesson05Crushing', () => {
     expect(game.segments().map((segment) => segment.width)).toEqual([50, 50]);
     expect(fixture.nativeElement.textContent).toContain('20 por debajo');
     expect(fixture.nativeElement.textContent).toContain('20 por encima');
-    expect(fixture.nativeElement.textContent).not.toContain('Desviación');
+    expect(fixture.nativeElement.querySelector('.workbench').textContent).not.toContain('Desviación');
     game.compare('higher-farther');
     game.compare('lower-closer');
     expect(game.stage()).toBe('compare');

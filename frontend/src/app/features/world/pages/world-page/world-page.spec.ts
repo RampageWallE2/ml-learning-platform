@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import Phaser from 'phaser';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { clearWorldSession, saveWorldSession } from '../../../../core/world-session/world-session.storage';
@@ -23,10 +23,14 @@ vi.mock('phaser', async () => {
 describe('WorldPage — circular scene loading screen', () => {
   let destroyGame: ReturnType<typeof vi.fn>;
   let zones: ReturnType<typeof signal<ZoneProgressData[]>>;
+  let pending: ReturnType<typeof signal<string[]>>;
+  let storageAvailable: ReturnType<typeof signal<boolean>>;
 
   beforeEach(() => {
     clearWorldSession();
     zones = signal<ZoneProgressData[]>([]);
+    pending = signal<string[]>([]);
+    storageAvailable = signal(true);
     destroyGame = vi.fn();
     vi.spyOn(Phaser, 'Game').mockImplementation(function () {
       return { destroy: destroyGame, scene: { getScenes: () => [] } } as unknown as Phaser.Game;
@@ -37,6 +41,9 @@ describe('WorldPage — circular scene loading screen', () => {
         { provide: AuthService, useValue: { user: signal(null) } },
         { provide: ProgressService, useValue: {
           zoneProgress: zones, currentLesson: signal(null),
+          pendingLessonIds: pending, pendingStorageAvailable: storageAvailable,
+          syncingPending: signal(false), completeLesson: vi.fn(() => of(undefined)),
+          isLessonCompleted: vi.fn(() => false), isLessonAvailable: vi.fn(() => true),
           loadProgress: vi.fn(() => of(undefined)),
         } },
       ],
@@ -58,6 +65,76 @@ describe('WorldPage — circular scene loading screen', () => {
   function report(sceneKey: string, phase: SceneLoadingSnapshot['phase'], progress: number) {
     gameEvents.emit(GameEvents.SCENE_LOADING, { sceneKey, phase, progress } satisfies SceneLoadingSnapshot);
   }
+
+  it('keeps the pending completion and its notice when closing after a failed save', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    report('OpenPitScene', 'ready', 1);
+    page.lessonActive.set({ lessonId: 'lesson-01' });
+    vi.spyOn(page.progress, 'completeLesson').mockImplementation(() => {
+      pending.set(['lesson-01']);
+      return throwError(() => new Error('Offline'));
+    });
+    page.completeLesson('lesson-01');
+    expect(page.lessonSaved()).toBe(false);
+    page.closeLesson(); fixture.detectChanges();
+    expect(page.lessonActive()).toBeNull();
+    expect(pending()).toEqual(['lesson-01']);
+    expect(page.progressSyncError()).not.toBeNull();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.textContent).toContain('Pendiente de guardar');
+    expect(root.textContent).toContain('no necesitas repetirla');
+    expect(root.querySelector('.progress-sync-toast button')).not.toBeNull();
+  });
+
+  it('reads the server on retry and closes the finished lesson after reconciliation', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    pending.set(['lesson-01']); page.lessonActive.set({ lessonId: 'lesson-01' });
+    vi.spyOn(page.progress, 'isLessonCompleted').mockReturnValue(true);
+    const read = vi.spyOn(page.progress, 'loadProgress').mockImplementation(() => {
+      pending.set([]); return of(undefined);
+    });
+    read.mockClear();
+    const save = vi.spyOn(page.progress, 'completeLesson');
+    page.retryProgressSync(); fixture.detectChanges();
+    expect(read).toHaveBeenCalledOnce();
+    expect(save).not.toHaveBeenCalled();
+    expect(page.lessonActive()).toBeNull();
+    expect(page.lessonSaved()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Progreso guardado en tu cuenta');
+  });
+
+  it('retries a locally finished lesson on interaction without replaying its exercise', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    pending.set(['lesson-01']);
+    const read = vi.spyOn(page.progress, 'loadProgress');
+    read.mockClear();
+    gameEvents.emit(GameEvents.OPEN_LESSON, { lessonId: 'lesson-01' });
+    expect(read).toHaveBeenCalledOnce();
+    expect(page.lessonActive()).toBeNull();
+  });
+
+  it('shows confirmed saving only after the completion request succeeds', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const response = new Subject<void>();
+    vi.spyOn(page.progress, 'completeLesson').mockReturnValue(response);
+    page.lessonActive.set({ lessonId: 'lesson-01' });
+    page.completeLesson('lesson-01');
+    expect(page.lessonSaved()).toBe(false);
+    expect(page.savingLesson()).toBe(true);
+    response.next(); response.complete(); fixture.detectChanges();
+    expect(page.lessonSaved()).toBe(true);
+    expect(page.savingLesson()).toBe(false);
+    expect(page.lessonActive()).toBeNull();
+  });
+
+  it('warns when browser storage cannot protect the result after reload', () => {
+    const fixture = create();
+    pending.set(['lesson-01']); storageAvailable.set(false); fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.textContent).toContain('No recargues ni cierres esta página');
+    expect(root.textContent).not.toContain('Puedes cerrar la clase');
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('role')).toBe('alert');
+  });
 
   it('shows a circular 0% indicator before Phaser has loaded any resources', () => {
     const fixture = create(); const root: HTMLElement = fixture.nativeElement;
@@ -227,6 +304,55 @@ describe('WorldPage — circular scene loading screen', () => {
     expect(notices.querySelector('.lesson-locked-toast')).not.toBeNull();
     expect(notices.querySelector('.progress-sync-toast')).not.toBeNull();
     expect(root.querySelector('.world-hud')?.contains(notices)).toBe(false);
+    expect(notices.querySelector('.lesson-locked-icon')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('uses the shared retry control and prevents another click during an ongoing request', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    page.progressSyncError.set('No se pudo recuperar el progreso.'); fixture.detectChanges();
+    const button = root.querySelector<HTMLButtonElement>('.progress-sync-toast button')!;
+    const retry = vi.spyOn(page, 'retryProgressSync').mockImplementation(() => undefined);
+    expect(button.classList.contains('btn')).toBe(true);
+    expect(button.classList.contains('btn--primary')).toBe(true);
+    expect(button.type).toBe('button');
+    expect(button.disabled).toBe(false);
+    button.click(); expect(retry).toHaveBeenCalledOnce();
+    for (const busy of ['loading', 'saving'] as const) {
+      page.loadingProgress.set(busy === 'loading');
+      page.savingLesson.set(busy === 'saving'); fixture.detectChanges();
+      expect(button.disabled).toBe(true);
+      button.click(); expect(retry).toHaveBeenCalledOnce();
+    }
+    page.loadingProgress.set(false); page.savingLesson.set(false); fixture.detectChanges();
+    expect(button.disabled).toBe(false);
+  });
+
+  it('keeps native retry keyboard input away from Phaser without trapping Escape or movement releases', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    page.progressSyncError.set('No se pudo recuperar el progreso.'); fixture.detectChanges();
+    const button = root.querySelector<HTMLButtonElement>('.progress-sync-toast button')!;
+    const keyDown = vi.fn(); const keyUp = vi.fn();
+    document.addEventListener('keydown', keyDown);
+    document.addEventListener('keyup', keyUp);
+    try {
+      for (const key of ['Enter', ' ', 'ArrowDown', 'e']) {
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        button.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+      }
+      expect(keyDown).not.toHaveBeenCalled();
+      button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(keyDown).toHaveBeenCalledOnce();
+      button.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+      expect(keyUp).not.toHaveBeenCalled();
+      button.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true }));
+      expect(keyUp).toHaveBeenCalledOnce();
+    } finally {
+      document.removeEventListener('keydown', keyDown);
+      document.removeEventListener('keyup', keyUp);
+    }
   });
 
   it('allows native HUD keyboard actions without sending them to Phaser', () => {

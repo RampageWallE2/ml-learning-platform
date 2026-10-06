@@ -2,6 +2,7 @@ import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, output, signal, viewChild,
 } from '@angular/core';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 type Stage = 'learn' | 'report' | 'request' | 'records' | 'discovery' | 'practice' | 'reason' | 'review' | 'success';
 type ReportAnswer = 'same' | 'a' | 'b' | 'unknown';
@@ -25,6 +26,7 @@ const PRACTICE_REPORTS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson02Ramp {
+  readonly title = LESSON_NAMES['lesson-02'];
   readonly completed = output<void>();
   readonly stage = signal<Stage>('learn');
   readonly feedback = signal('');

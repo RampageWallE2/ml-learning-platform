@@ -89,7 +89,9 @@
        ACTIVIDAD BLOQUEADA
        ========================= -->
 
-  <div class="world-notices">
+  <div class="world-notices"
+       (keydown)="$event.key !== 'Escape' && $event.stopPropagation()"
+       (keyup)="$event.key === ' ' && $event.stopPropagation()">
 
   @if (
     blockedLessonMessage();
@@ -102,7 +104,7 @@
       aria-live="polite"
     >
 
-      <div class="lesson-locked-icon">
+      <div class="lesson-locked-icon" aria-hidden="true">
         🔒
       </div>
 
@@ -129,23 +131,24 @@
        ========================= -->
 
   @if (
-    progressSyncError();
+    progressSyncMessage();
     as message
   ) {
 
     <div
       class="progress-sync-toast progress-sync-toast--error"
-      role="alert"
+      [attr.role]="progressSyncError() || !progress.pendingStorageAvailable() ? 'alert' : 'status'"
     >
 
       <div>
-        <strong>No se pudo sincronizar</strong>
+        <strong>{{ savingLesson() || progress.syncingPending() ? 'Guardando progreso…' : progress.pendingLessonIds().length ? 'Pendiente de guardar' : 'No se pudo sincronizar' }}</strong>
         <p>{{ message }}</p>
       </div>
 
       <button
         type="button"
         [disabled]="loadingProgress() || savingLesson()"
+        class="btn btn--primary"
         (click)="retryProgressSync()"
       >
         Reintentar
@@ -153,7 +156,7 @@
 
     </div>
 
-  } @else if (savingLesson()) {
+  } @else if (savingLesson() || progress.syncingPending()) {
 
     <div
       class="progress-sync-toast"
@@ -163,6 +166,8 @@
       Guardando progreso…
     </div>
 
+  } @else if (lessonSaved()) {
+    <div class="progress-sync-toast" role="status" aria-live="polite">Progreso guardado en tu cuenta.</div>
   }
 
 

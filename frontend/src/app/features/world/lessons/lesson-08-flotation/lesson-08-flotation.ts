@@ -2,6 +2,7 @@ import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, output, signal, viewChild,
 } from '@angular/core';
+import { LESSON_NAMES } from '../lesson-catalog';
 import { NgTemplateOutlet } from '@angular/common';
 
 type Stage = 'observe' | 'root' | 'checked' | 'locate' | 'located' | 'report' | 'review' | 'success';
@@ -35,6 +36,7 @@ function describe(values: readonly number[]) {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson08Flotation {
+  readonly title = LESSON_NAMES['lesson-08'];
   readonly completed = output<void>();
   readonly stage = signal<Stage>('observe');
   readonly feedback = signal('');

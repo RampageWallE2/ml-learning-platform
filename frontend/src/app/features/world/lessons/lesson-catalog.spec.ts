@@ -1,6 +1,55 @@
-import { LEARNING_ZONES, LESSON_DEFINITIONS } from './lesson-catalog';
+import { TestBed } from '@angular/core/testing';
+import { LEARNING_ZONES, LESSON_DEFINITIONS, LESSON_NAMES } from './lesson-catalog';
+import { Lesson01Loading } from './lesson-01-loading/lesson-01-loading';
+import { Lesson02Ramp } from './lesson-02-ramp/lesson-02-ramp';
+import { Lesson03Haulage } from './lesson-03-haulage/lesson-03-haulage';
+import { Lesson04Workshop } from './lesson-04-workshop/lesson-04-workshop';
+import { Lesson05Crushing } from './lesson-05-crushing/lesson-05-crushing';
+import { Lesson06Sag } from './lesson-06-sag/lesson-06-sag';
+import { Lesson07Balls } from './lesson-07-balls/lesson-07-balls';
+import { Lesson08Flotation } from './lesson-08-flotation/lesson-08-flotation';
+import { Lesson09Thickeners } from './lesson-09-thickeners/lesson-09-thickeners';
 
 describe('lesson catalog', () => {
+  it('names the Open Pit lessons by their mathematical topic', () => {
+    expect(LEARNING_ZONES[0].lessons.map(lesson => lesson.name)).toEqual([
+      'Dispersión de los datos',
+      'Promedio y dispersión',
+      'Cálculo del rango',
+      'Límites del rango',
+      'Desviación respecto al promedio',
+      'Cálculo de la varianza',
+      'Comparación de varianzas',
+      'Desviación estándar',
+      'Promedio, dispersión y metas',
+    ]);
+    for (const zone of LEARNING_ZONES) {
+      for (const lesson of zone.lessons) {
+        expect(LESSON_NAMES[lesson.lessonId]).toBe(lesson.name);
+      }
+    }
+  });
+
+  it.each([
+    ['lesson-01', Lesson01Loading],
+    ['lesson-02', Lesson02Ramp],
+    ['lesson-03', Lesson03Haulage],
+    ['lesson-04', Lesson04Workshop],
+    ['lesson-05', Lesson05Crushing],
+    ['lesson-06', Lesson06Sag],
+    ['lesson-07', Lesson07Balls],
+    ['lesson-08', Lesson08Flotation],
+    ['lesson-09', Lesson09Thickeners],
+  ] as const)('uses the catalog name in the rendered heading of %s', (lessonId, component) => {
+    const fixture = TestBed.createComponent<unknown>(component);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const title = root.querySelector('.lesson-header h2');
+    expect(title?.textContent?.trim()).toBe(LESSON_NAMES[lessonId]);
+    expect(root.querySelector('section')?.getAttribute('aria-labelledby')).toBe(title?.id);
+    expect(root.querySelector('.lesson-tag')?.textContent?.trim()).not.toBe(LESSON_NAMES[lessonId]);
+  });
+
   it('keeps every registered lesson id unique and connected to its definition', () => {
     const lessons = LEARNING_ZONES.flatMap(zone => zone.lessons);
     const lessonIds = lessons.map(lesson => lesson.lessonId);

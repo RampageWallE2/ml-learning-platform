@@ -100,6 +100,15 @@ describe('Login', () => {
       }),
     );
     expect(renderButton).toHaveBeenCalledOnce();
+    expect(renderButton).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({
+        type: 'standard',
+        theme: 'outline',
+        text: 'continue_with',
+        locale: 'es',
+      }),
+    );
   });
 
   it.each([
@@ -115,7 +124,97 @@ describe('Login', () => {
     expect(root.querySelector('#auth-title')?.textContent?.trim()).toBe(title);
     expect(root.querySelector('.auth-card')?.getAttribute('aria-labelledby')).toBe('auth-title');
     expect(submit.classList.contains('btn')).toBe(true);
-    expect(submit.classList.contains('btn--primary')).toBe(true);
+    expect(submit.classList.contains('btn--brand')).toBe(true);
+    expect(submit.classList.contains('btn--primary')).toBe(false);
+  });
+
+  it.each(['login', 'register'])('keeps the same editorial shell and real image for %s', (mode) => {
+    TestBed.inject(ActivatedRoute).snapshot.data = { mode };
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const story = root.querySelector<HTMLElement>('.auth-story')!;
+    const image = story.querySelector<HTMLImageElement>('img')!;
+    const source = story.querySelector<HTMLSourceElement>('source')!;
+
+    expect(root.querySelectorAll('h1')).toHaveLength(1);
+    expect(story.querySelector('.story-brand')?.textContent).toBe('ExploraLab');
+    expect(story.getAttribute('aria-label')).toContain('aprender con datos');
+    expect(story.textContent).toContain('Explora escenarios');
+    expect(story.querySelector('figcaption')?.textContent).toContain(
+      'Primera experiencia disponible',
+    );
+    expect(image.getAttribute('src')).toBe('assets/branding/exploralab-open-pit-map.png');
+    expect(image.alt).toContain('Vista real de Open Pit');
+    expect(image.width).toBe(1536);
+    expect(image.height).toBe(768);
+    expect(image.getAttribute('loading')).toBe('eager');
+    expect(source.type).toBe('image/webp');
+    expect(source.srcset).toContain('exploralab-open-pit-map-640.webp');
+    expect(source.srcset).toContain('exploralab-open-pit-map-960.webp');
+    expect(source.srcset).toContain('exploralab-open-pit-map-1536.webp');
+    expect(root.querySelector('.intro')?.textContent).toContain('tu progreso');
+  });
+
+  it('provides a keyboard shortcut to the form', () => {
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('.skip')?.getAttribute('href')).toBe('#auth-content');
+    expect(root.querySelector('main')?.id).toBe('auth-content');
+    expect(root.querySelector('main')?.getAttribute('tabindex')).toBe('-1');
+    const main = root.querySelector('main')!;
+    const focus = vi.spyOn(main, 'focus');
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    root.querySelector('.skip')!.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(true);
+    expect(focus).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { mode: 'login', destination: '/register' },
+    { mode: 'register', destination: '/login' },
+  ])('preserves the progress destination when leaving $mode', ({ mode, destination }) => {
+    queryParams = { returnUrl: '/progress' };
+    TestBed.inject(ActivatedRoute).snapshot.data = { mode };
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
+      '.switch a',
+    )!;
+
+    expect(link.getAttribute('href')).toBe(`${destination}?returnUrl=%2Fprogress`);
+  });
+
+  it('keeps registration validation connected to each field', () => {
+    TestBed.inject(ActivatedRoute).snapshot.data = { mode: 'register' };
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    root
+      .querySelector('form')!
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    for (const id of [
+      'register-name',
+      'register-email',
+      'register-password',
+      'register-confirm-password',
+    ]) {
+      const input = root.querySelector<HTMLInputElement>(`#${id}`)!;
+      expect(input.getAttribute('aria-invalid')).toBe('true');
+      const descriptions = input.getAttribute('aria-describedby')!.split(' ');
+      expect(descriptions.every((description) => root.querySelector(`#${description}`))).toBe(true);
+    }
+    expect(root.querySelector('#name-error')?.textContent).toContain('Ingresa un nombre');
+    expect(root.querySelector('#register-email-error')?.textContent).toContain(
+      'correo electrónico válido',
+    );
+    expect(root.querySelector('#password-error')?.textContent).toContain('al menos 8 caracteres');
+    expect(root.querySelector('#confirm-error')?.textContent).toContain('deben coincidir');
+    expect(auth.register).not.toHaveBeenCalled();
   });
 
   it('shows and hides the login password through its labelled control', () => {

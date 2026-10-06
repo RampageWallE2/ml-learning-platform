@@ -100,6 +100,49 @@ describe('Lesson09Thickeners', () => {
     expect(root.querySelectorAll('[role="img"][aria-label]')).toHaveLength(2);
   });
 
+  it('labels the goal next to its line pattern and gives both plots the same simple marks', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    expect(game.ticks()).toEqual([80, 90, 100, 110]);
+    expect(root.querySelector('.legend')?.textContent).toContain('Meta: 100 t/h');
+    expect(root.querySelector('.legend-goal')).not.toBeNull();
+    expect([...root.querySelectorAll('.period')].map(period =>
+      [...period.querySelectorAll('.tick')].map(tick => tick.textContent?.trim())))
+      .toEqual([['80', '90', '100', '110'], ['80', '90', '100', '110']]);
+    expect(game.bounds().min).toBeLessThan(80);
+    expect(game.bounds().max).toBeGreaterThan(110);
+  });
+
+  it('adapts the marks and goal label without clipping data or flattening close transfer cases', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    const assertScale = (goal: number, ticks: number[]): void => {
+      fixture.detectChanges();
+      expect(game.records().goal).toBe(goal);
+      expect(game.ticks()).toEqual(ticks);
+      expect(root.querySelector('.legend')?.textContent).toContain('Meta: ' + goal + ' t/h');
+      const positions = [...game.records().A, ...game.records().B, goal, ...ticks]
+        .map(value => game.position(value));
+      expect(positions.every(position => position > 0 && position < 100)).toBe(true);
+      const steps = ticks.slice(1).map((value, index) => value - ticks[index]);
+      expect(new Set(steps).size).toBe(1);
+      expect(root.querySelectorAll('.data-point')).toHaveLength(12);
+      const goals = [...root.querySelectorAll<HTMLElement>('.goal-line')];
+      expect(goals[0].style.left).toBe(goals[1].style.left);
+    };
+    assertScale(100, [80, 90, 100, 110]);
+    game.requestHint(); main(game);
+    assertScale(100, [98, 100, 102]);
+    transfer(game); game.continueAfterHelp();
+    assertScale(120, [100, 110, 120, 130]);
+    game.requestHint(); main(game);
+    assertScale(104, [102, 104, 106]);
+    transfer(game); game.continueAfterHelp();
+    assertScale(90, [70, 80, 90, 100]);
+    main(game);
+    assertScale(120, [115, 120, 125, 130]);
+  });
+
   it('ignores invalid, duplicate and premature actions', () => {
     const game = create().componentInstance; const done = vi.fn(); game.completed.subscribe(done);
     game.choosePeriod('fake' as 'A'); game.chooseRecommendation('reference');

@@ -2,11 +2,23 @@
   <app-site-header />
 
   <main id="contenido" aria-labelledby="progress-title">
-    <a class="back" routerLink="/">← Volver al inicio</a>
+    @if (zoneId()) {
+      <a class="back" routerLink="/progress">← Todos los escenarios</a>
+    } @else {
+      <a class="back" routerLink="/">← Volver al inicio</a>
+    }
 
     <header class="heading">
-      <h1 id="progress-title">Mi progreso</h1>
-      <p>Tus clases completadas y el siguiente objetivo.</p>
+      <h1 id="progress-title">
+        {{ zoneId() ? (selectedZone()?.name ?? 'Escenario no disponible') : 'Mi progreso' }}
+      </h1>
+      @if (!zoneId()) {
+        <p>Selecciona un escenario para ver tu avance.</p>
+      } @else if (selectedZone()) {
+        <p>Tu avance y el siguiente objetivo en este escenario.</p>
+      } @else {
+        <p>Elige un escenario disponible en la lista.</p>
+      }
     </header>
 
     @if (loading()) {
@@ -25,12 +37,56 @@
         </div>
         <button class="btn btn--secondary" type="button" (click)="retry()">Reintentar</button>
       </section>
-    } @else if (openPit(); as zone) {
-      <section class="zone-overview" aria-labelledby="open-pit-title">
+    } @else if (!zoneId()) {
+      <ul class="scenario-list" aria-label="Escenarios disponibles">
+        @for (zone of scenarios(); track zone.id) {
+          <li>
+            <a
+              class="scenario-link"
+              [routerLink]="['/progress', zone.id]"
+              [attr.aria-label]="'Ver mi progreso en ' + zone.name"
+            >
+              @if (zone.id === 'zone-01') {
+                <picture class="scenario-image scenario-image--pit">
+                  <source
+                    type="image/webp"
+                    srcset="assets/branding/exploralab-mining-world-640.webp 640w, assets/branding/exploralab-mining-world-960.webp 960w"
+                    sizes="(max-width: 600px) calc(100vw - 36px), (max-width: 1100px) 45vw, 468px"
+                  />
+                  <img
+                    src="assets/branding/exploralab-mining-world.png"
+                    alt=""
+                    width="1536"
+                    height="1024"
+                    decoding="async"
+                  />
+                </picture>
+              } @else {
+                <span class="scenario-image scenario-image--placeholder" aria-hidden="true">
+                  {{ zone.name.slice(0, 1) }}
+                </span>
+              }
+              <div class="scenario-copy">
+                <h2>{{ zone.name }}</h2>
+                <p>{{ zone.topic }}</p>
+                <span class="btn btn--brand scenario-action" aria-hidden="true">
+                  Ver mi progreso <span>→</span>
+                </span>
+              </div>
+            </a>
+          </li>
+        } @empty {
+          <li class="state-card">
+            <p>Todavía no hay escenarios disponibles.</p>
+          </li>
+        }
+      </ul>
+    } @else if (selectedZone(); as zone) {
+      <section class="zone-overview" aria-labelledby="zone-topic-title">
         <div class="zone-summary">
           <div>
-            <p class="eyebrow">OPEN PIT</p>
-            <h2 id="open-pit-title">{{ zone.topic }}</h2>
+            <p class="eyebrow">TU AVANCE</p>
+            <h2 id="zone-topic-title">{{ zone.topic }}</h2>
             <p>{{ zone.completedLessons }} de {{ zone.totalLessons }} clases completadas</p>
           </div>
 
@@ -40,7 +96,7 @@
         <div
           class="progress-track"
           role="progressbar"
-          aria-label="Progreso de Open Pit"
+          [attr.aria-label]="'Progreso de ' + zone.name"
           aria-valuemin="0"
           aria-valuemax="100"
           [attr.aria-valuenow]="zone.percentage"
@@ -57,26 +113,37 @@
             <p>{{ lesson.objective }}</p>
           </div>
 
-          <a class="btn btn--primary world-link" routerLink="/world">
+          <a class="btn btn--brand world-link" routerLink="/world">
             Continuar en el mundo <span aria-hidden="true">→</span>
           </a>
         </section>
-      } @else {
+      } @else if (zone.completed) {
         <section class="next-step next-step--completed" aria-labelledby="next-step-title">
           <div>
-            <p class="eyebrow">OPEN PIT COMPLETADO</p>
+            <p class="eyebrow">ESCENARIO COMPLETADO</p>
             <h2 id="next-step-title">Terminaste las clases de esta zona.</h2>
             <p>Puedes volver al mundo para seguir explorando.</p>
           </div>
 
-          <a class="btn btn--primary world-link" routerLink="/world">
+          <a class="btn btn--brand world-link" routerLink="/world">
+            Volver al mundo <span aria-hidden="true">→</span>
+          </a>
+        </section>
+      } @else {
+        <section class="next-step" aria-labelledby="next-step-title">
+          <div>
+            <p class="eyebrow">CLASES PENDIENTES</p>
+            <h2 id="next-step-title">Aún tienes clases por completar.</h2>
+            <p>Vuelve al mundo para consultar tu siguiente objetivo.</p>
+          </div>
+          <a class="btn btn--brand world-link" routerLink="/world">
             Volver al mundo <span aria-hidden="true">→</span>
           </a>
         </section>
       }
 
       <section class="lesson-route" aria-labelledby="lesson-route-title">
-        <h2 id="lesson-route-title">Clases de Open Pit</h2>
+        <h2 id="lesson-route-title">Clases de {{ zone.name }}</h2>
 
         <ol class="lesson-list">
           @for (lesson of zone.lessons; track lesson.lessonId; let position = $index) {
@@ -105,6 +172,13 @@
             </li>
           }
         </ol>
+      </section>
+    } @else {
+      <section class="state-card" role="status">
+        <div>
+          <strong>No encontramos este escenario.</strong>
+          <p>Vuelve a la lista para elegir uno disponible.</p>
+        </div>
       </section>
     }
   </main>

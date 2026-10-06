@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Lesson01Loading } from './lesson-01-loading';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 describe('Lesson01Loading', () => {
   function create() {
@@ -19,12 +20,12 @@ describe('Lesson01Loading', () => {
     game.startPractice();
   }
 
-  it('separates the short lesson identity from the learning question', () => {
+  it('separates the lesson number and location from its shared mathematical title', () => {
     const root = create().nativeElement as HTMLElement;
 
     expect(root.querySelector('.lesson-tag__number')?.textContent).toBe('Clase 1');
     expect(root.querySelector('.lesson-tag')?.textContent).toContain('Interior del tajo');
-    expect(root.querySelector('h2')?.textContent).toBe('¿Cargas parecidas o diferentes?');
+    expect(root.querySelector('h2')?.textContent).toBe(LESSON_NAMES['lesson-01']);
     expect(root.querySelector('section')?.getAttribute('aria-labelledby')).toBe('loading-title');
   });
 
@@ -37,7 +38,7 @@ describe('Lesson01Loading', () => {
     expect(root.querySelector('.group-choices')).toBeNull();
     expect(root.querySelectorAll('input, textarea')).toHaveLength(0);
     expect(root.textContent).toContain('Un camión, un punto');
-    expect(root.textContent).not.toContain('dispersión');
+    expect(root.querySelector('.workbench')!.textContent).not.toContain('dispersión');
     expect(root.querySelector<HTMLButtonElement>('.btn--primary')!.disabled).toBe(true);
   });
 

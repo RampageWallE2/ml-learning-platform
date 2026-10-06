@@ -2,6 +2,7 @@ import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, output, signal, viewChild,
 } from '@angular/core';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 type Stage = 'learn' | 'compare' | 'discovery' | 'practice' | 'practice-reason' | 'practice-review' | 'success';
 type Group = { name: string; loads: readonly number[] };
@@ -19,6 +20,7 @@ const INITIAL: readonly Group[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson01Loading {
+  readonly title = LESSON_NAMES['lesson-01'];
   readonly completed = output<void>();
   readonly stage = signal<Stage>('learn');
   readonly feedback = signal('');

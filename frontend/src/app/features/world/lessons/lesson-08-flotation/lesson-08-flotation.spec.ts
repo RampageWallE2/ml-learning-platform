@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Lesson08Flotation } from './lesson-08-flotation';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 function create() {
   const fixture = TestBed.createComponent(Lesson08Flotation);
@@ -49,15 +50,62 @@ describe('Lesson08Flotation', () => {
     expect(root.querySelectorAll('.workbench')).toHaveLength(1);
     expect(root.querySelectorAll('.steps li')).toHaveLength(4);
     expect(root.querySelectorAll('.steps [aria-current="step"]')).toHaveLength(1);
-    expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain('Observa');
+    expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain('Mira');
+    expect(
+      [...root.querySelectorAll('.steps li > span:last-child')].map((label) => label.textContent),
+    ).toEqual(['Mira', 'Lado', 'Franja', 'Aviso']);
 
     fixture.componentInstance.startRoot();
     fixture.detectChanges();
     expect(root.querySelector('.task-card--square')).not.toBeNull();
     expect(root.querySelectorAll('.steps .step--done')).toHaveLength(1);
-    expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain(
-      'Del cuadrado al lado',
+    expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain('Lado');
+  });
+
+  it('keeps the mission, records and unsolved measures visible with supporting notes collapsed', () => {
+    const fixture = create();
+    const root: HTMLElement = fixture.nativeElement;
+    const notes = root.querySelector<HTMLDetailsElement>('.variance-detail')!;
+
+    expect(root.querySelector('h2')?.textContent).toBe(LESSON_NAMES['lesson-08']);
+    expect(root.querySelector('.lesson-header p')?.textContent).toContain('toneladas por hora');
+    expect(root.querySelector('.task-card')?.textContent).toContain('El siguiente turno necesita');
+    expect(root.querySelector('.task-card .btn--primary')?.textContent).toContain('Volver a t/h');
+    expect(root.querySelectorAll('.plot .data-point')).toHaveLength(6);
+    expect(root.querySelector('.measure--squared')?.textContent).toContain('4 (t/h)²');
+    expect(root.querySelector('.measure--linear')?.textContent).toContain('? t/h');
+    expect(root.querySelector('.plot + .records + .muted')?.textContent).toContain(
+      'El promedio no es una meta',
     );
+    expect(notes.open).toBe(false);
+    expect(notes.parentElement?.classList.contains('workbench')).toBe(true);
+    expect(notes.previousElementSibling?.classList.contains('task-card')).toBe(true);
+    expect(notes.querySelector('summary')?.textContent).toBe('Cómo leer los datos y la varianza');
+    expect(notes.textContent).toContain('No son los datos del molino');
+    expect(notes.textContent).toContain('24 ÷ 6 =');
+    expect(notes.querySelector('.root-proof, .square-grid')).toBeNull();
+  });
+
+  it('keeps optional reading notes separate from hints and preserves the active puzzle', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    game.startRoot();
+    fixture.detectChanges();
+    root.querySelector<HTMLDetailsElement>('.variance-detail')!.open = true;
+    fixture.detectChanges();
+
+    expect(game.stage()).toBe('root');
+    expect(game.helped()).toBe(false);
+    expect(game.feedback()).toBe('');
+    expect(game.rootKnown()).toBe(false);
+    expect(root.querySelectorAll('.number-choice')).toHaveLength(3);
+    expect(root.querySelector('.side-label, .root-proof')).toBeNull();
+
+    reachBand(game);
+    fixture.detectChanges();
+    expect(root.querySelector('.variance-detail')).toBeNull();
+    expect(root.querySelectorAll('.record-choice')).toHaveLength(6);
   });
 
   it('keeps the square and native numeric choices in the task without revealing the side or root proof', () => {

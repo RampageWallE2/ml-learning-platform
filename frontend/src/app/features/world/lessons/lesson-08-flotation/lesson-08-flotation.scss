@@ -239,6 +239,9 @@ h3 {
   font-size: 24px;
 }
 .variance-detail {
+  grid-column: 1 / -1;
+  padding: 8px 20px;
+  border-top: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-size: 14px;
   line-height: 1.4;
@@ -421,6 +424,17 @@ h3 {
 }
 @media (max-width: 600px),
   (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  :host .flotation-lesson .steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin: 8px 0 0;
+    padding-bottom: 8px;
+
+    li {
+      align-items: center;
+      padding: 0;
+    }
+  }
   .steps {
     margin-top: 12px;
     li {
@@ -504,8 +518,15 @@ h3 {
   }
 }
 @media (max-width: 600px) {
-  :host .flotation-lesson .steps {
-    padding-right: 48px;
+  // Plot labels belong below the graph, not among the task instructions.
+  :host .flotation-lesson .workbench--locate .task-card > :is(.band-caption, .records, .muted) {
+    order: 0;
+  }
+  // Supporting notes follow the primary action, not the compact plot.
+  :host .flotation-lesson .workbench > .variance-detail {
+    order: 4;
+    padding: 8px 0 0;
+    border-top: 1px solid var(--color-border);
   }
   // Keep the square and its answers together, before the supporting data board.
   :host

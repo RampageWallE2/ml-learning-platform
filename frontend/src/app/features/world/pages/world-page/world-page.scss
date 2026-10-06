@@ -195,142 +195,73 @@
   gap: 12px;
   width: min(390px, calc(100% - 40px));
   max-height: calc(100dvh - 140px);
+  padding: 4px;
+  box-sizing: border-box;
   overflow-y: auto;
   pointer-events: none;
 
   > * { pointer-events: auto; }
 }
 
-.lesson-locked-toast {
-
+.lesson-locked-toast,
+.progress-sync-toast {
   display: flex;
   align-items: center;
-
-  width: 100%;
-
   gap: 12px;
-
+  width: 100%;
   padding: 14px 16px;
-
   box-sizing: border-box;
-
-  border: 2px solid var(--color-earth);
-  border-radius: 8px;
-
+  color: var(--color-text);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
+  box-shadow: var(--shadow-control);
+  font: 14px/1.4 var(--font-body);
 
-  box-shadow:
-    0 5px 0 rgba(40, 51, 45, 0.28),
-    0 10px 22px rgba(0, 0, 0, 0.2);
+  strong { font: 700 14px/1.4 var(--font-body); }
+  p { margin: 5px 0 0; overflow-wrap: anywhere; }
 }
 
+.lesson-locked-toast { border-color: var(--color-earth); }
 
 .lesson-locked-icon {
   display: grid;
   place-items: center;
-
+  flex: 0 0 38px;
   width: 38px;
   height: 38px;
-
-  flex: 0 0 38px;
-
-  border-radius: 7px;
-
-  background:
-    var(--color-surface-alt);
-
+  border-radius: var(--radius-control);
+  background: var(--color-surface-alt);
   font-size: 18px;
 }
 
-
 .lesson-locked-content {
   min-width: 0;
-
-
-  strong {
-    color: var(--color-earth);
-
-    font-family:
-      var(--font-retro);
-
-    font-size: 9px;
-
-    text-transform: uppercase;
-  }
-
-
-  p {
-    margin: 5px 0 0;
-
-    color: var(--color-text);
-
-    font-size: 13px;
-    line-height: 1.4;
-
-    overflow-wrap: break-word;
-  }
+  strong { color: var(--color-earth); }
 }
-
 
 /* =========================
    SINCRONIZACIÓN DE PROGRESO
    ========================= */
 
 .progress-sync-toast {
+  flex-wrap: wrap;
+  order: -1;
 
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  width: 100%;
-  padding: 14px 16px;
-  box-sizing: border-box;
-
-  color: var(--color-text);
-  border: 2px solid var(--color-primary);
-  border-radius: 8px;
-  background: var(--color-surface);
-  box-shadow:
-    0 5px 0 rgba(40, 51, 45, 0.28),
-    0 10px 22px rgba(0, 0, 0, 0.2);
-
-  font-size: 13px;
-  line-height: 1.4;
-
-  strong {
-    color: var(--color-error);
-    font-family: var(--font-retro);
-    font-size: 9px;
-    text-transform: uppercase;
+  > div {
+    flex: 1 1 180px;
+    min-width: 0;
   }
 
-  p {
-    margin: 5px 0 0;
-  }
+  strong { color: var(--color-error); }
 
-  button {
+  .btn {
     flex: 0 0 auto;
-    padding: 9px 12px;
-
-    color: var(--color-surface);
-    border: 0;
-    border-radius: 6px;
-    background: var(--color-primary);
-
-    font: 700 11px/1 var(--font-body);
-    cursor: pointer;
-  }
-
-  button:disabled {
-    cursor: wait;
-    opacity: 0.55;
+    padding-inline: 14px;
   }
 }
 
-
-.progress-sync-toast--error {
-  border-color: var(--color-error);
-}
+.progress-sync-toast--error { border-color: var(--color-error); }
 
 
 /* =========================
@@ -358,22 +289,11 @@
     width: auto;
   }
 
-  .lesson-locked-toast {
-    padding: 12px;
-  }
-
-
-  .lesson-locked-content {
-
-    p {
-      font-size: 12px;
-    }
-  }
-
-
+  .lesson-locked-toast { padding: 12px; }
 }
 
 @media (max-width: 600px) {
+  .progress-sync-toast .btn { width: 100%; }
   .world-hud {
     top: 8px;
     right: 8px;
@@ -388,6 +308,11 @@
     width: min(240px, 100%);
     max-height: min(320px, calc(100dvh - 20px));
   }
+}
+
+@media (max-width: 1024px) and (max-height: 480px) and (orientation: landscape) {
+  .world-notices { max-height: calc(100dvh - 196px); }
+  .progress-sync-toast .btn { width: auto; }
 }
 
 @media (max-width: 1024px) and (max-height: 480px) and (min-width: 601px) {

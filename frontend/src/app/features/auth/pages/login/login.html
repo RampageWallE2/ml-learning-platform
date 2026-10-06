@@ -1,37 +1,52 @@
 <div class="auth-shell">
+  <a class="skip" href="#auth-content" (click)="$event.preventDefault(); authContent.focus()"
+    >Saltar al formulario</a
+  >
   <app-site-header />
 
   <div class="auth-page">
-    <aside class="auth-story" aria-label="Aprendizaje en Open Pit">
+    <aside class="auth-story" aria-label="ExploraLab, un juego para aprender con datos">
       <div class="story-copy">
-        <p class="eyebrow">EXPLORALAB · OPEN PIT</p>
-        <h2>Aprende explorando.</h2>
-        <p>Recorre la mina y descubre qué cuentan los datos.</p>
+        <p class="eyebrow">UN JUEGO PARA APRENDER CON DATOS</p>
+        <p class="story-brand" aria-label="ExploraLab">Explora<span>Lab</span></p>
+        <p>Explora escenarios y aprende con desafíos visuales, paso a paso.</p>
       </div>
-      <img
-        class="story-image"
-        src="assets/branding/exploralab-experience.png"
-        alt="Dos exploradores observan minerales y comparan sus datos"
-        width="1254"
-        height="1254"
-        loading="lazy"
-        decoding="async"
-      />
-      <p class="story-footer">Observa · Compara · Prueba</p>
+      <figure class="story-visual">
+        <picture>
+          <source
+            type="image/webp"
+            srcset="
+              assets/branding/exploralab-open-pit-map-640.webp   640w,
+              assets/branding/exploralab-open-pit-map-960.webp   960w,
+              assets/branding/exploralab-open-pit-map-1536.webp 1536w
+            "
+            sizes="(max-width: 900px) 1px, (max-width: 1200px) 40vw, 520px"
+          />
+          <img
+            src="assets/branding/exploralab-open-pit-map.png"
+            alt="Vista real de Open Pit: caminos, camiones y maquinaria de la mina"
+            width="1536"
+            height="768"
+            loading="eager"
+            decoding="async"
+          />
+        </picture>
+        <figcaption>
+          <strong>Open Pit</strong>
+          <span>Primera experiencia disponible</span>
+        </figcaption>
+      </figure>
     </aside>
-    <main class="auth-main">
+    <main #authContent id="auth-content" class="auth-main" tabindex="-1">
       <section class="auth-card" aria-labelledby="auth-title" [attr.aria-busy]="busy()">
-        <p class="eyebrow">
-          {{ mode() === 'login' ? 'CONTINÚA TU RECORRIDO' : 'EMPIEZA A EXPLORAR' }}
-        </p>
         <h1 id="auth-title">
           {{ mode() === 'login' ? 'Iniciar sesión' : 'Crear cuenta' }}
         </h1>
         <p class="intro">
           {{
             mode() === 'login'
-              ? 'Continúa donde te quedaste.'
-              : 'Crea tu cuenta para comenzar el recorrido.'
+              ? 'Accede a tu cuenta y retoma tu progreso.'
+              : 'Crea tu cuenta para guardar tu progreso.'
           }}
         </p>
         @if (noticeMessage(); as notice) {
@@ -95,7 +110,7 @@
               @if (errorMessage(); as message) {
                 <p class="error" role="alert">{{ message }}</p>
               }
-              <button class="btn btn--primary submit" type="submit">
+              <button class="btn btn--brand submit" type="submit">
                 {{ submittingCredentials() ? 'Ingresando…' : 'Iniciar sesión' }}
                 <span aria-hidden="true">→</span>
               </button>
@@ -205,7 +220,7 @@
               @if (errorMessage(); as message) {
                 <p class="error" role="alert">{{ message }}</p>
               }
-              <button class="btn btn--primary submit" type="submit">
+              <button class="btn btn--brand submit" type="submit">
                 {{ submittingCredentials() ? 'Creando cuenta…' : 'Crear mi cuenta' }}
                 <span aria-hidden="true">→</span>
               </button>
@@ -228,7 +243,6 @@
           >
         </p>
       </section>
-      <p class="auth-footer">Tu progreso se guarda en tu cuenta.</p>
     </main>
   </div>
 </div>

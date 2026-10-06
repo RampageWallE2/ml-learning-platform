@@ -2,6 +2,7 @@ import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, output, signal, viewChild,
 } from '@angular/core';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 type Stage = 'extremes' | 'measure' | 'discovery' | 'practice-extremes' | 'practice-range' | 'practice-meaning' | 'review' | 'success';
 type Meaning = 'separation' | 'maximum' | 'every';
@@ -22,6 +23,7 @@ const PRACTICE_SETS: readonly (readonly TripRecord[])[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson03Haulage {
+  readonly title = LESSON_NAMES['lesson-03'];
   readonly completed = output<void>();
   readonly stage = signal<Stage>('extremes');
   readonly feedback = signal('');

@@ -57,7 +57,7 @@ describe('Lesson06Sag', () => {
     );
     expect(root.textContent).toContain('Promedio: 100 t/h');
     expect(root.textContent).toContain('no una meta de producción');
-    expect(root.textContent).not.toMatch(/varianza/i);
+    expect(root.querySelector('.workbench')!.textContent).not.toMatch(/varianza/i);
     expect(root.querySelectorAll('.data-point')).toHaveLength(4);
     expect(root.querySelectorAll('.record-card')).toHaveLength(4);
     expect(root.querySelector('input, textarea, form, select')).toBeNull();
@@ -350,7 +350,7 @@ describe('Lesson06Sag', () => {
     );
     expect(fixture.nativeElement.textContent).toContain('las separaciones grandes cuentan más');
     expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(0);
-    expect(fixture.nativeElement.textContent).not.toMatch(/varianza/i);
+    expect(fixture.nativeElement.querySelector('.workbench').textContent).not.toMatch(/varianza/i);
   });
 
   it('constructs two 2-by-2 squares and retains both zero-contribution observations', () => {

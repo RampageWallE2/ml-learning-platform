@@ -2,6 +2,7 @@ import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, output, signal, viewChild,
 } from '@angular/core';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 type Stage = 'observe' | 'cancel' | 'squares' | 'weight' | 'duplicate' | 'average' | 'discovery'
   | 'practice-square' | 'practice-average' | 'practice-checked' | 'review' | 'success';
@@ -22,6 +23,7 @@ const PRACTICE_SETS: readonly (readonly number[])[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson06Sag {
+  readonly title = LESSON_NAMES['lesson-06'];
   readonly completed = output<void>();
   readonly stage = signal<Stage>('observe');
   readonly feedback = signal('');

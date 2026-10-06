@@ -311,8 +311,16 @@ export class WorldPage
     );
 
 
-  private failedLessonId:
-    string | null = null;
+  readonly lessonSaved = signal(false);
+
+  readonly pendingSaveMessage = computed(() => {
+    if (!this.progress.pendingLessonIds().length) return null;
+    return this.progress.pendingStorageAvailable()
+      ? 'Terminaste la clase. Falta guardarla en tu cuenta. Puedes cerrar la clase; no necesitas repetirla.'
+      : 'Terminaste la clase, pero este navegador no pudo conservar el pendiente. No recargues ni cierres esta página antes de reintentar.';
+  });
+
+  readonly progressSyncMessage = computed(() => this.pendingSaveMessage() ?? this.progressSyncError());
 
 
   /* =========================
@@ -330,8 +338,7 @@ export class WorldPage
     }
 
 
-    this.failedLessonId =
-      lessonId;
+    this.lessonSaved.set(false);
 
 
     this.progressSyncError.set(
@@ -359,8 +366,7 @@ export class WorldPage
     ).subscribe({
       next: () => {
 
-        this.failedLessonId =
-          null;
+        this.lessonSaved.set(true);
 
 
         this.savingLesson.set(
@@ -384,18 +390,8 @@ export class WorldPage
 
 
   retryProgressSync(): void {
-
-    if (
-      this.failedLessonId
-    ) {
-      this.completeLesson(
-        this.failedLessonId
-      );
-
-      return;
-    }
-
-
+    if (this.loadingProgress() || this.savingLesson()) return;
+    // Read the server first: a lost response may hide a successful save.
     this.loadProgress();
   }
 
@@ -412,18 +408,6 @@ export class WorldPage
       return;
     }
 
-
-    if (
-      this.failedLessonId
-    ) {
-      this.failedLessonId =
-        null;
-
-
-      this.progressSyncError.set(
-        null
-      );
-    }
 
     this.lessonActive.set(
       null
@@ -476,6 +460,13 @@ export class WorldPage
     lesson: OpenLessonRequest
   ): void => {
 
+    // The result is already recorded locally. Retry it instead of replaying
+    // the activity, while still waiting for server confirmation to unlock.
+    if (this.progress.pendingLessonIds().includes(lesson.lessonId)) {
+      this.retryProgressSync();
+      return;
+    }
+
     /*
      * Primero preguntamos al sistema
      * de progreso si esta actividad
@@ -517,6 +508,8 @@ export class WorldPage
      * lo quitamos.
      */
     this.clearBlockedLessonNotice();
+
+    this.lessonSaved.set(false);
 
 
     /*
@@ -638,8 +631,8 @@ export class WorldPage
     }
 
 
-    this.failedLessonId =
-      null;
+    const pendingBeforeLoad = [...this.progress.pendingLessonIds()];
+    this.lessonSaved.set(false);
 
 
     this.progressSyncError.set(
@@ -665,6 +658,13 @@ export class WorldPage
     ).subscribe({
       next: () => {
         this.publishLessonProgress();
+        if (pendingBeforeLoad.length && !this.progress.pendingLessonIds().length) {
+          this.lessonSaved.set(true);
+          const activeId = this.lessonActive()?.lessonId;
+          if (activeId && pendingBeforeLoad.includes(activeId) && this.progress.isLessonCompleted(activeId)) {
+            this.closeLesson();
+          }
+        }
       },
       error: () => {
         this.progressSyncError.set(

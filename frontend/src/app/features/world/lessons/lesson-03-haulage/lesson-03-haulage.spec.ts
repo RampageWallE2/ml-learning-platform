@@ -25,7 +25,7 @@ describe('Lesson03Haulage', () => {
     game.selectTrip(game.records().find((record) => record.time === game.maximum())!.id);
   }
 
-  it('starts with a clear mission and visible records before naming the mathematical tool', () => {
+  it('starts with a clear mission and visible records before explaining the mathematical tool', () => {
     const fixture = create();
     const root = fixture.nativeElement as HTMLElement;
     expect(fixture.componentInstance.stage()).toBe('extremes');
@@ -34,7 +34,7 @@ describe('Lesson03Haulage', () => {
     );
     expect(root.textContent).toContain('desmonte');
     expect(root.textContent).toContain('Selecciona la descarga más corta');
-    expect(root.textContent).not.toMatch(/rango|máximo|mínimo/);
+    expect(root.querySelector('.workbench')!.textContent).not.toMatch(/rango|máximo|mínimo/);
     expect(root.querySelectorAll('.trip-card')).toHaveLength(5);
     expect(root.querySelector('.time-bridge')).toBeNull();
     expect(root.querySelectorAll('input, textarea')).toHaveLength(0);

@@ -2,6 +2,7 @@ import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, output, signal, viewChild,
 } from '@angular/core';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 type Stage = 'explore' | 'compare' | 'notation' | 'practice' | 'review' | 'report' | 'success';
 type Comparison = 'same' | 'lower-closer' | 'higher-farther';
@@ -22,6 +23,7 @@ const PRACTICE_ORDER = [0, 2, 1] as const;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson05Crushing {
+  readonly title = LESSON_NAMES['lesson-05'];
   readonly completed = output<void>();
   readonly stage = signal<Stage>('explore');
   readonly feedback = signal('');

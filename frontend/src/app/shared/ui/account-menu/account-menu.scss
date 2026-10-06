@@ -245,7 +245,10 @@
   .account-menu__panel {
     width: min(270px, calc(100vw - 24px));
   }
+}
 
+/* Keep the account disclosure in flow when SiteHeader stacks its navigation. */
+@media (max-width: 900px) {
   .account-menu--landing {
     width: 100%;
 

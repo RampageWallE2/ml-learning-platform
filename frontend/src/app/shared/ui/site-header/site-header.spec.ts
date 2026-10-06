@@ -36,6 +36,9 @@ describe('SiteHeader', () => {
     expect(element.textContent).toContain('La experiencia');
     expect(element.textContent).toContain('Cómo aprendemos');
     expect(element.querySelector('a[href^="/login"]')).not.toBeNull();
+    const registration = element.querySelector('a[href^="/register"]')!;
+    expect(registration.classList.contains('btn--brand')).toBe(true);
+    expect(registration.classList.contains('btn--primary')).toBe(false);
   });
 
   it('loads a compact WebP logo without changing the brand dimensions or PNG fallback', () => {

@@ -2,6 +2,7 @@ import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, output, signal, viewChild,
 } from '@angular/core';
+import { LESSON_NAMES } from '../lesson-catalog';
 
 type Stage = 'spread' | 'goal' | 'recommend' | 'transfer-intro' | 'transfer' | 'review' | 'success';
 type PeriodId = 'A' | 'B';
@@ -38,6 +39,7 @@ function summarize(records: Records) {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Lesson09Thickeners {
+  readonly title = LESSON_NAMES['lesson-09'];
   readonly completed = output<void>();
   readonly stage = signal<Stage>('spread');
   readonly round = signal(0);
@@ -54,16 +56,24 @@ export class Lesson09Thickeners {
   readonly closerToGoal = computed(() => summarize(this.mainRecords()).reduce((a, b) => a.goalDistance < b.goalDistance ? a : b).id);
   readonly step = computed(() => this.stage() === 'spread' ? 1 : this.stage() === 'goal' ? 2
     : this.stage() === 'recommend' ? 3 : 4);
-  readonly bounds = computed(() => {
-    const all = [...this.records().A, ...this.records().B, this.records().goal];
-    const min = Math.min(...all); const max = Math.max(...all);
-    const padding = Math.max(2, (max - min) * .12);
-    return { min: min - padding, max: max + padding };
-  });
   readonly ticks = computed(() => {
     const all = [...this.records().A, ...this.records().B, this.records().goal];
     const min = Math.min(...all); const max = Math.max(...all);
-    return [min, (min + max) / 2, max];
+    // Aim for three intervals, using simple marks even when the records change.
+    const interval = Math.max(1, (max - min) / 3);
+    const magnitude = 10 ** Math.floor(Math.log10(interval));
+    const step = [1, 2, 5, 10].map(value => value * magnitude)
+      .find(value => value >= interval)!;
+    const first = Math.floor(min / step) * step;
+    const last = Math.ceil(max / step) * step;
+    return Array.from({ length: Math.round((last - first) / step) + 1 },
+      (_, index) => first + index * step);
+  });
+  readonly bounds = computed(() => {
+    const all = [...this.records().A, ...this.records().B, this.records().goal];
+    const padding = Math.max(2, (Math.max(...all) - Math.min(...all)) * .12);
+    const ticks = this.ticks();
+    return { min: ticks[0] - padding, max: ticks[ticks.length - 1] + padding };
   });
   readonly plots = computed(() => this.periods().map(period => ({ ...period,
     points: period.values.map((value, index) => ({ id: index, value, x: this.position(value),
