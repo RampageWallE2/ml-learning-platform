@@ -67,7 +67,7 @@ export class Lesson06Sag implements OnChanges {
   readonly question = computed(() => ({
     observe: '¿Qué pasa al sumar las diferencias?',
     cancel: '¿Todos los datos fueron iguales?',
-    squares: this.squaresFormed() ? '¿Cuántas casillas tiene este cuadrado?' : 'Usemos la separación como lado del cuadrado',
+    squares: this.squaresFormed() ? '¿Cuántas casillas tiene este cuadrado?' : '¿Por qué usamos cuadrados?',
     weight: 'Si la separación pasa de 1 a 2…',
     duplicate: '¿Repetir los datos cambia su separación?',
     average: '¿Qué cálculo usarías para comparar?',

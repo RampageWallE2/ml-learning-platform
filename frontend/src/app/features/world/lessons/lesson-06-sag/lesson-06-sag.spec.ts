@@ -134,6 +134,9 @@ describe('Lesson06Sag', () => {
       expect(root.querySelector('.focus-caption')?.textContent).toContain(
         'Separación: ' + Math.abs(game.deviations()[0]),
       );
+      expect(root.querySelector('.focus-caption')?.textContent).toContain(
+        'Multiplica esa separación por sí misma',
+      );
       expect(root.querySelectorAll('.record-card')).toHaveLength(4);
       expect(
         root.querySelectorAll('.focus-cell, .square-cell, .square-caption, .comparison-box b'),
@@ -365,9 +368,63 @@ describe('Lesson06Sag', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'También podríamos sumar las distancias sin signo',
     );
-    expect(fixture.nativeElement.textContent).toContain('las separaciones grandes cuentan más');
+    expect(fixture.nativeElement.textContent).toContain('Sería otra medida');
     expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(0);
-    expect(fixture.nativeElement.querySelector('.workbench').textContent).not.toMatch(/varianza/i);
+    expect(fixture.nativeElement.querySelector('.workbench').textContent).toMatch(/varianza/i);
+  });
+
+  it('explains the purpose of squaring in visible instructions before drawing any squares', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    game.sumChanges();
+    game.chooseCancellation('balanced');
+    fixture.detectChanges();
+    const task = root.querySelector('.task-card')!;
+    const instructions = Array.from(task.querySelectorAll(':scope > p'), (paragraph) =>
+      paragraph.textContent!.replace(/\s+/g, ' ').trim(),
+    ).join(' ');
+    expect(root.querySelector('#sag-task-title')?.textContent).toBe('¿Por qué usamos cuadrados?');
+    expect(instructions).toContain('−2 y +2 se compensaron');
+    expect(instructions).toContain('98 y 102 sí son distintos');
+    expect(instructions).toContain('multiplicamos cada diferencia por sí misma');
+    expect(instructions).toContain('Eso se llama elevar al cuadrado');
+    expect(instructions).toContain('no una superficie del molino');
+    expect(task.querySelector<HTMLDetailsElement>('details')?.open).toBe(false);
+    expect(task.querySelector('summary')?.textContent).toBe(
+      '¿Es la única forma de resumir las diferencias?',
+    );
+    expect(root.querySelectorAll('.square-cell, .focus-cell')).toHaveLength(0);
+    expect(root.querySelectorAll('.record-card')).toHaveLength(4);
+    expect(game.squaresFormed()).toBe(false);
+    expect(game.variance()).toBe(2);
+    expect(task.querySelector('.btn--primary')?.textContent?.trim()).toBe(
+      'Ver la multiplicación con casillas →',
+    );
+  });
+
+  it('connects the same signed differences to equal positive squares before comparing their size', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    game.sumChanges();
+    game.chooseCancellation('balanced');
+    game.formSquares();
+    fixture.detectChanges();
+    const explanation = root.querySelector('.task-card')!.textContent!.replace(/\s+/g, ' ');
+    expect(explanation).toContain('(−2) × (−2) = 4');
+    expect(explanation).toContain('2 × 2 = 4');
+    expect(explanation).toContain('aporta lo mismo si la separación es igual');
+    expect(root.querySelectorAll('.focus-cell')).toHaveLength(4);
+    game.answerSquare(4);
+    fixture.detectChanges();
+    expect(root.querySelector('.task-kicker')?.textContent).toBe(
+      'Las separaciones grandes cuentan más',
+    );
+    expect(root.querySelector('.task-card')?.textContent).toContain(
+      'Una separación de 1 aporta 1 casilla; una de 2 aporta 4',
+    );
+    expect(game.stage()).toBe('weight');
   });
 
   it('constructs two 2-by-2 squares and retains both zero-contribution observations', () => {
@@ -416,7 +473,7 @@ describe('Lesson06Sag', () => {
     fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
     const form = Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
-      button.textContent?.includes('Formar los cuadrados'),
+      button.textContent?.includes('Ver la multiplicación con casillas'),
     )!;
     form.focus();
     form.click();
@@ -1365,7 +1422,7 @@ describe('Lesson06Sag', () => {
     const labels = [
       'Sumar diferencias →',
       'No. Hay datos distintos, aunque la suma dé 0.',
-      'Formar los cuadrados →',
+      'Ver la multiplicación con casillas →',
       '4 casillas',
       'Cuatro veces: pasa de 1 a 4 casillas.',
       'Duplicar en una copia',

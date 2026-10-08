@@ -83,7 +83,7 @@
             </p>
           } @else {
             <p class="focus-caption">
-              Separación: {{ record.side }}. Imagina un cuadrado con ese lado.
+              Separación: {{ record.side }}. Multiplica esa separación por sí misma.
             </p>
           }
         </figure>
@@ -299,26 +299,39 @@
             }
           </div>
         } @else if (stage() === 'squares') {
-          <span class="task-kicker">Probemos con cuadrados</span>
+          <span class="task-kicker">Que ambas diferencias cuenten</span>
           @if (!squaresFormed()) {
             <p>
-              El dato 98 está a 2 del promedio 100. Dibujemos un cuadrado de lado 2: dos filas de
-              dos casillas.
+              La suma dio 0 porque −2 y +2 se compensaron. Pero 98 y 102 sí son distintos:
+              queremos que ambas diferencias cuenten.
+            </p>
+            <p class="plain-rule">
+              Para calcular la varianza, <strong>multiplicamos cada diferencia por sí misma</strong>.
+              Eso se llama elevar al cuadrado. Así, las diferencias de abajo y de arriba no se
+              compensan.
+            </p>
+            <p>
+              El dato 98 está a 2 del promedio 100. El dibujo mostrará 2 × 2: dos filas de dos
+              casillas. Solo es una ayuda para ver la multiplicación, no una superficie del molino.
             </p>
             <details class="supporting-detail">
-              <summary>¿Por qué usamos cuadrados?</summary>
-              <p class="plain-rule">
-                También podríamos sumar las distancias sin signo. Aquí usamos cuadrados: las
-                separaciones grandes cuentan más.
+              <summary>¿Es la única forma de resumir las diferencias?</summary>
+              <p>
+                No. También podríamos sumar las distancias sin signo. Sería otra medida; aquí
+                aprenderemos a calcular la varianza.
               </p>
             </details>
             <button type="button" class="btn btn--primary" (click)="formSquares()">
-              Formar los cuadrados →
+              Ver la multiplicación con casillas →
             </button>
           } @else {
             <p>
-              El − indica que 98 está por debajo del promedio. El lado mide 2, no −2. Cuenta las
-              casillas del cuadrado.
+              Tanto <strong>(−2) × (−2) = 4</strong> como <strong>2 × 2 = 4</strong>. Estar por
+              debajo o por encima aporta lo mismo si la separación es igual.
+            </p>
+            <p>
+              El − indica que 98 está por debajo del promedio. El lado del dibujo mide 2, no −2.
+              Cuenta las casillas para comprobar la multiplicación.
             </p>
             <div class="choices choices--square">
               @for (option of squareOptions; track option) {
@@ -333,8 +346,11 @@
             </div>
           }
         } @else if (stage() === 'weight') {
-          <span class="task-kicker">Por qué elegimos cuadrados</span>
-          <p>¿Cuántas veces aumenta la cantidad de casillas?</p>
+          <span class="task-kicker">Las separaciones grandes cuentan más</span>
+          <p>
+            Una separación de 1 aporta 1 casilla; una de 2 aporta 4. Al multiplicar cada separación
+            por sí misma, las grandes cuentan más. ¿Cuántas veces aumenta la cantidad de casillas?
+          </p>
           <div class="choices">
             @for (choice of weights; track choice.id) {
               <button
@@ -396,7 +412,7 @@
             }
           </div>
         } @else if (stage() === 'discovery') {
-          <span class="task-kicker">Ahora le ponemos nombre</span>
+          <span class="task-kicker">El cálculo completo</span>
           <div role="group" aria-label="Cálculo de la varianza, paso a paso">
             <div class="calculation-card">
               <span><b>1. Resta el promedio:</b> −2, 0, 0 y +2.</span>
@@ -421,8 +437,8 @@
             round() > 0 ? 'Una última práctica' : 'Ahora te toca a ti'
           }}</span>
           <p>
-            El dato es {{ records()[0] }} y el promedio {{ mean() }}. Mira su separación e imagina
-            un cuadrado con ese lado. Multiplica el lado por sí mismo.
+            El dato es {{ records()[0] }} y el promedio {{ mean() }}. Mira su separación y
+            multiplícala por sí misma. ¿Cuántas casillas representarán esa multiplicación?
           </p>
           <div class="choices choices--square">
             @for (option of practiceSquareOptions(); track option) {
