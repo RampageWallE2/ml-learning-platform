@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 
 const SHAKE_DURATION_MS = 150;
-const MAX_SHAKE_PIXELS = 1.5;
+const MAX_SHAKE_PIXELS = 1.2;
 const MIN_AUDIBLE_STRENGTH = 0.15;
 
 /** Short, bounded pulses driven by machinery audio; never move the player. */

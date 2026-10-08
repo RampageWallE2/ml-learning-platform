@@ -37,14 +37,14 @@ describe('AmbientCameraShake', () => {
     [1000, 600, 1],
     [390, 700, 0.65],
     [844, 390, 1.5],
-  ])('caps the pulse at 1.5 screen pixels at %s × %s and zoom %s', (width, height, zoom) => {
+  ])('caps the pulse at 1.2 screen pixels at %s × %s and zoom %s', (width, height, zoom) => {
     const { shake, camera } = create(width, height, zoom);
     shake.update(1, true);
     expect(camera.shake).toHaveBeenCalledOnce();
     const [duration, intensity, force] = camera.shake.mock.calls[0];
     expect(duration).toBe(150);
     expect(force).toBe(false);
-    expect(intensity * Math.max(width, height) * zoom).toBeCloseTo(1.5);
+    expect(intensity * Math.max(width, height) * zoom).toBeCloseTo(1.2);
   });
 
   it('scales pulses with sound strength and does not restart them every frame or accumulate sources', () => {

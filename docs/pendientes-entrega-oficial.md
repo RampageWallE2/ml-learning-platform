@@ -714,3 +714,8 @@ Todavía no hay pendientes de esta lista cerrados.
 - **Instrucciones:** botón «Ver la multiplicación con casillas» y práctica centrada en multiplicar la separación por sí misma, sin revelar su resultado. Cambiar el encabezado posterior a «El cálculo completo», ya que el nombre varianza se introduce antes.
 - **Verificación acotada:** 54 pruebas aprobadas en los dos archivos de C6, incluida compilación Angular/TypeScript, y lint de los dos TypeScript modificados. Dos regresiones nuevas comprueban explicación visible antes del dibujo y conexión entre diferencias con signo, cuadrados positivos y tamaño. Conservar recorrido completo por botones, foco accesible, cálculos, rondas de práctica y recuperación. Sin batería general, build de producción ni pruebas visuales.
 - **Sin cambios:** estilos, estructura de estados, respuestas correctas, progreso, backend, diálogos, otras lecciones y mapas. Los mapas editados por el usuario quedan fuera del commit.
+
+### Juego — Vibración ambiental más suave
+
+- **Fecha:** 2026-10-07. **Ajuste solicitado:** reducir un poco el temblor tras probar el juego. Bajar su amplitud máxima de 1,5 a 1,2 píxeles de pantalla (20 %), manteniendo pulsos de 150 ms, activación por sonido, pausas durante lectura y respeto de movimiento reducido.
+- **Verificación acotada:** nueve pruebas del controlador de vibración y lint de sus dos TypeScript aprobados. Sin modificar mapas, sonidos, controles ni lecciones; sin suite general ni pruebas visuales.
