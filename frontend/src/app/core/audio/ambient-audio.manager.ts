@@ -60,6 +60,19 @@ export class AmbientAudioManager {
     this.channels = this.createChannels(map, configs);
   }
 
+  /** Actual faded, audible level, normalized for a subtle machinery vibration. */
+  get audibleStrength(): number {
+    if (this.scene.sound.locked || this.scene.sound.mute) return 0;
+    let volume = 0;
+    for (const channel of this.channels) {
+      if (channel.sound.isPlaying && !channel.sound.mute && Number.isFinite(channel.sound.volume)) {
+        volume = Math.max(volume, channel.sound.volume);
+      }
+    }
+    // Overlapping points/channels must not multiply camera movement.
+    return Phaser.Math.Clamp(volume / DEFAULT_VOLUME, 0, 1);
+  }
+
   update(delta: number): void {
     const volumeDelta = Phaser.Math.Clamp(delta, 0, MAX_VOLUME_DELTA_MS);
     const response = 1 - Math.exp(-VOLUME_RESPONSE_PER_SECOND * volumeDelta / 1000);

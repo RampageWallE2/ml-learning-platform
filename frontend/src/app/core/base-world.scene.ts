@@ -11,6 +11,7 @@ import {
 
 import { AmbientAudioManager, preloadAmbientSounds } from './audio/ambient-audio.manager';
 import { MOBILE_WORLD_ZOOM } from './camera/camera-zoom';
+import { AmbientCameraShake } from './camera/ambient-camera-shake';
 
 import { InputController } from './input/input.controller';
 import { usesTouchControls } from './input/touch-controls';
@@ -53,6 +54,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   private interactionManager!: InteractionManager;
 
   private ambientAudioManager: AmbientAudioManager | null = null;
+  private ambientCameraShake: AmbientCameraShake | null = null;
 
   private sceneTransition!: RetroSceneTransition;
 
@@ -131,6 +133,8 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.initializeAmbientAudio(buildResult.map);
 
     this.setupCamera(buildResult.map);
+    this.ambientCameraShake = this.mapConfig.ambientSounds?.length
+      ? new AmbientCameraShake(this.cameras.main) : null;
 
     this.inputController = new InputController(this);
 
@@ -168,6 +172,10 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.playerController.update(this.direction);
 
     this.ambientAudioManager?.update(delta);
+    this.ambientCameraShake?.update(
+      this.ambientAudioManager?.audibleStrength ?? 0,
+      !this.playerController.isLocked() && !this.sceneTransition.isPlaying(),
+    );
 
     const interactionAvailable = this.interactionManager.update(
       interactRequested,
@@ -272,6 +280,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
   private readonly lockPlayer = (): void => {
     this.playerController?.lock();
+    this.ambientCameraShake?.stop();
 
     this.inputController?.reset();
 
@@ -394,6 +403,11 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.runShutdownCleanup('input controls', () => this.inputController?.destroy());
     this.runShutdownCleanup('interactions', () => this.interactionManager?.destroy());
     this.runShutdownCleanup('ambient audio', () => this.ambientAudioManager?.destroy());
+    this.runShutdownCleanup('ambient camera shake', () => {
+      const shake = this.ambientCameraShake;
+      this.ambientCameraShake = null;
+      shake?.destroy();
+    });
     this.runShutdownCleanup('scene transition', () => this.sceneTransition?.destroy());
   }
 

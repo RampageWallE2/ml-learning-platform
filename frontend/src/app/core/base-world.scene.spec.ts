@@ -384,6 +384,43 @@ describe('BaseWorldScene — loading lifecycle', () => {
     expect(warning).toHaveBeenCalledOnce();
   });
 
+  it('passes the audible level to the camera effect and suspends it for locked players or transitions', () => {
+    const { player } = createAmbientScene([ambientPoint()], true);
+    const audio = { update: vi.fn(), audibleStrength: 0.6, destroy: vi.fn() };
+    const cameraShake = { update: vi.fn(), stop: vi.fn(), destroy: vi.fn() };
+    Object.assign(scene, { ambientAudioManager: audio, ambientCameraShake: cameraShake });
+    scene.update(0, 16);
+    expect(audio.update).toHaveBeenCalledWith(16);
+    expect(cameraShake.update).toHaveBeenLastCalledWith(0.6, true);
+    player.isLocked.mockReturnValue(true);
+    scene.update(0, 16);
+    expect(cameraShake.update).toHaveBeenLastCalledWith(0.6, false);
+    player.isLocked.mockReturnValue(false);
+    Reflect.get(scene, 'sceneTransition').isPlaying.mockReturnValue(true);
+    scene.update(0, 16);
+    expect(cameraShake.update).toHaveBeenLastCalledWith(0.6, false);
+    Reflect.get(scene, 'sceneTransition').isPlaying.mockReturnValue(false);
+    Reflect.set(scene, 'ambientAudioManager', null);
+    scene.update(0, 16);
+    expect(cameraShake.update).toHaveBeenLastCalledWith(0, true);
+  });
+
+  it('stops camera vibration immediately on interaction lock and removes it at shutdown even if audio cleanup fails', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    createAmbientScene([ambientPoint()], true);
+    const cameraShake = { update: vi.fn(), stop: vi.fn(), destroy: vi.fn() };
+    Reflect.set(scene, 'ambientCameraShake', cameraShake);
+    gameEvents.on(GameEvents.LOCK_PLAYER, Reflect.get(scene, 'lockForInteraction'));
+    gameEvents.emit(GameEvents.LOCK_PLAYER);
+    expect(cameraShake.stop).toHaveBeenCalledOnce();
+    Reflect.get(scene, 'ambientAudioManager').destroy = () => { throw new Error('Audio cleanup failed'); };
+    lifecycle.emit(Phaser.Scenes.Events.SHUTDOWN);
+    expect(cameraShake.destroy).toHaveBeenCalledOnce();
+    expect(Reflect.get(scene, 'ambientCameraShake')).toBeNull();
+    scene.update(0, 16);
+    expect(cameraShake.update).not.toHaveBeenCalled();
+  });
+
   it('does not let an entrance animation unlock a player while help is still open', () => {
     const player = { lock: vi.fn(), unlock: vi.fn() };
     const input = { reset: vi.fn(), setInteractAvailable: vi.fn() };

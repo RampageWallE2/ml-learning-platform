@@ -96,13 +96,58 @@ describe('AmbientAudioManager', () => {
       return sound;
     };
     const addSound = vi.fn(allocateSound);
-    const scene = { sound: { add: addSound, locked: false } } as unknown as Phaser.Scene;
+    const soundManager = { add: addSound, locked: false, mute: false };
+    const scene = { sound: soundManager } as unknown as Phaser.Scene;
     const map = { getObjectLayer: () => ({ objects }) } as unknown as Phaser.Tilemaps.Tilemap;
     const player = { x: 100, y: 100 } as Phaser.Physics.Arcade.Sprite;
-    return { sounds, liveSounds, allocateSound, addSound,
+    return { sounds, liveSounds, allocateSound, addSound, player, soundManager,
       create: (configuration: readonly AmbientSoundConfig[] = configs) =>
         new AmbientAudioManager(scene, map, player, configuration) };
   }
+
+  it('reports actual audible proximity after the startup guard and fades out when leaving a machine', () => {
+    const fixture = constructionFixture([createAmbientPoint('truck', 100)]);
+    const manager = fixture.create(configs.slice(0, 1));
+    expect(manager.audibleStrength).toBe(0);
+    manager.update(16);
+    manager.update(50);
+    manager.update(50);
+    expect(manager.audibleStrength).toBe(0);
+    for (let index = 0; index < 30; index++) manager.update(50);
+    const near = manager.audibleStrength;
+    expect(near).toBeGreaterThan(0.98);
+    expect(near).toBeLessThanOrEqual(1);
+    fixture.player.x = 350;
+    for (let index = 0; index < 30; index++) manager.update(50);
+    expect(manager.audibleStrength).toBeCloseTo(0.5, 1);
+    expect(manager.audibleStrength).toBeLessThan(near);
+    fixture.player.x = 2000;
+    for (let index = 0; index < 30; index++) manager.update(50);
+    expect(manager.audibleStrength).toBeLessThan(0.05);
+    manager.destroy();
+    expect(manager.audibleStrength).toBe(0);
+  });
+
+  it('uses the strongest audible channel, caps its strength and ignores muted, locked or silent audio', () => {
+    const fixture = constructionFixture();
+    const manager = fixture.create();
+    for (const sound of fixture.sounds) { sound.isPlaying = true; sound.volume = 0.2; }
+    expect(manager.audibleStrength).toBe(0.5);
+    fixture.sounds[0].volume = 1;
+    expect(manager.audibleStrength).toBe(1);
+    fixture.sounds[0].mute = true;
+    expect(manager.audibleStrength).toBe(0.5);
+    fixture.soundManager.mute = true;
+    expect(manager.audibleStrength).toBe(0);
+    fixture.soundManager.mute = false; fixture.soundManager.locked = true;
+    expect(manager.audibleStrength).toBe(0);
+    fixture.soundManager.locked = false;
+    for (const sound of fixture.sounds) sound.isPlaying = false;
+    expect(manager.audibleStrength).toBe(0);
+    fixture.sounds[1].isPlaying = true; fixture.sounds[1].volume = Number.NaN;
+    expect(manager.audibleStrength).toBe(0);
+    manager.destroy();
+  });
 
   const invalidPointCases: readonly [string, TiledObjectLike, string][] = [
     ['a numeric property with the wrong type', {
