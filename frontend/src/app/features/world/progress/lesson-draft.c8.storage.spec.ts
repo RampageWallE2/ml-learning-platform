@@ -21,8 +21,7 @@ describe('C8 drafts — storage and C6 compatibility', () => {
 
   it('preserves an existing v1 C6 draft byte-for-byte when saving, restarting and clearing C8', () => {
     const store = storage();
-    const c6: C6State = { stage: 'squares', squaresFormed: true, duplicated: false, duplicateViewed: false,
-      round: 0, practiceHelped: false, practiceVarianceAnswered: false, choiceOffset: 1 };
+    const c6: C6State = { stage: 'squares', squaresFormed: true, round: 0, practiceHelped: false, practiceVarianceAnswered: false, choiceOffset: 1 };
     const c6Key = 'exploralab.lesson-draft.v1.a.lesson-06';
     const previous = JSON.stringify({ version: 1, lessonVersion: 1, userId: 'a', lessonId: 'lesson-06', step: 1, exercise: c6 });
     store.setItem(c6Key, previous); store.setItem('exploralab.pending-progress.v1.a', '["lesson-08"]');
@@ -57,8 +56,7 @@ describe('C8 drafts — storage and C6 compatibility', () => {
 
   it('does not accept C6 state as C8 or a closing phase without C8 success', () => {
     const store = storage();
-    const wrong = { stage: 'observe', squaresFormed: false, duplicated: false, duplicateViewed: false,
-      round: 0, practiceHelped: false, practiceVarianceAnswered: false, choiceOffset: 0 };
+    const wrong = { stage: 'observe', squaresFormed: false, round: 0, practiceHelped: false, practiceVarianceAnswered: false, choiceOffset: 0 };
     expect(saveLessonDraft('a', 'lesson-08', { step: 1, exercise: wrong } as unknown as C8DraftContent, store)).toBe(false);
     expect(saveLessonDraft('a', 'lesson-08', { step: 2, exercise: state }, store)).toBe(false);
     expect(saveLessonDraft('a', 'lesson-08', { step: 2, exercise: null }, store)).toBe(false);

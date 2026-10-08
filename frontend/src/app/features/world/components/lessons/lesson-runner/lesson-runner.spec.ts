@@ -184,15 +184,15 @@ describe('LessonRunner — SAG lesson', () => {
     const introText = intro.dialogue().messages.map(message => message.text).join(' ');
     expect(introText).toContain('chancado');
     expect(introText).toContain('explicar al siguiente turno cuánto se separan del promedio los datos');
-    expect(introText).toContain('Contar más datos no significa que sean más distintos');
+    expect(introText).toContain('Vamos a resumir sus diferencias con un promedio');
     expect(introText).toContain('98, 100, 100 y 102');
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('dialogue');
     completeDialogue(intro); fixture.detectChanges();
     const game = fixture.debugElement.query(By.directive(Lesson06Sag)).componentInstance as Lesson06Sag;
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('activity');
     game.sumChanges(); game.chooseCancellation('balanced'); game.formSquares(); game.answerSquare(4);
-    game.chooseWeight('four'); game.setDuplicated(true); game.compareCopy(); game.chooseSummary('per-record');
-    game.startPractice(); game.answerPracticeSquare(1); game.choosePracticeSummary('same');
+    game.chooseWeight('four');
+    game.startPractice(); game.answerPracticeSquare(1);
     expect(done).not.toHaveBeenCalled();
     expect(game.stage()).toBe('practice-checked');
     game.finish(); expect(game.stage()).toBe('practice-checked');
@@ -209,7 +209,7 @@ describe('LessonRunner — SAG lesson', () => {
     expect(endText).toContain('2 (t/h)²');
     expect(endText).toContain('no significa 2 t/h');
     expect(endText).toContain('También podríamos usar distancias sin signo');
-    expect(endText).toContain('Repetir los mismos datos en una copia');
+    expect(endText).toContain('8 dividido entre 4 da 2');
     expect(endText).toContain('pero no por qué');
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('dialogue');
     completeDialogue(end);

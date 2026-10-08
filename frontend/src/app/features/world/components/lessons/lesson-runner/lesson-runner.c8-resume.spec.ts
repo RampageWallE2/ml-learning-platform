@@ -165,8 +165,7 @@ describe('LessonRunner — C8 recovery', () => {
 
   it('rejects writes from a replaced same-account session and does not interpret C6 emissions as C8', () => {
     const fixture = create(); fixture.componentInstance.nextStep(); fixture.detectChanges(); write.mockClear();
-    fixture.componentInstance.saveExerciseState('lesson-06', { stage: 'observe', round: 0, squaresFormed: false, duplicated: false,
-      duplicateViewed: false, practiceHelped: false, practiceVarianceAnswered: false, choiceOffset: 0 });
+    fixture.componentInstance.saveExerciseState('lesson-06', { stage: 'observe', round: 0, squaresFormed: false, practiceHelped: false, practiceVarianceAnswered: false, choiceOffset: 0 });
     expect(write).not.toHaveBeenCalled(); user.set({ ...a });
     fixture.componentInstance.saveExerciseState('lesson-08', comparison); expect(write).not.toHaveBeenCalled();
   });

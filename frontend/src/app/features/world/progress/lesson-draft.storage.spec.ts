@@ -1,8 +1,7 @@
 import { C6State } from '../lessons/lesson-06-sag/lesson-06-sag.state';
 import { clearC6Draft, loadC6Draft, saveC6Draft } from './lesson-draft.storage';
 
-const state: C6State = { stage: 'practice-average', squaresFormed: true, duplicated: true,
-  duplicateViewed: true, round: 2, practiceHelped: true, practiceVarianceAnswered: false, choiceOffset: 2 };
+const state: C6State = { stage: 'practice-checked', squaresFormed: true, round: 2, practiceHelped: true, practiceVarianceAnswered: false, choiceOffset: 2 };
 const draftKey = (id: string) => 'exploralab.lesson-draft.v1.' + encodeURIComponent(id) + '.lesson-06';
 function memoryStorage() {
   const items = new Map<string, string>();
@@ -82,4 +81,58 @@ describe('C6 draft storage', () => {
     removeBlocked.setItem(draftKey('a'), 'invalid');
     expect(loadC6Draft('a', removeBlocked).available).toBe(false);
   });
+  it.each(['duplicate', 'average'] as const)('reads an old %s copy draft without rewriting it or completing C6', stage => {
+    const storage = memoryStorage();
+    const legacy = { ...state, stage, round: 0, practiceHelped: false,
+      duplicated: stage === 'average', duplicateViewed: true };
+    const raw = JSON.stringify({ version: 1, lessonVersion: 1, userId: 'a', lessonId: 'lesson-06',
+      step: 1, exercise: legacy });
+    storage.setItem(draftKey('a'), raw);
+    const result = loadC6Draft('a', storage);
+    expect(result.discarded).toBe(false);
+    expect(result.draft?.step).toBe(1);
+    expect(result.draft?.exercise).toEqual({ ...state, stage: 'discovery', round: 0, practiceHelped: false });
+    expect(storage.getItem(draftKey('a'))).toBe(raw);
+  });
+
+  it('preserves old practice help and round, then saves only the new fields on a normal action', () => {
+    const storage = memoryStorage();
+    const legacy = { ...state, stage: 'practice-average', duplicated: true, duplicateViewed: true };
+    const raw = JSON.stringify({ version: 1, lessonVersion: 1, userId: 'a', lessonId: 'lesson-06',
+      step: 1, exercise: legacy });
+    storage.setItem(draftKey('a'), raw);
+    const result = loadC6Draft('a', storage);
+    expect(result.draft?.exercise).toEqual(state);
+    expect(storage.getItem(draftKey('a'))).toBe(raw);
+    expect(saveC6Draft('a', { step: 1, exercise: result.draft!.exercise }, storage)).toBe(true);
+    expect(JSON.parse(storage.getItem(draftKey('a'))!).exercise).toEqual(state);
+    expect(storage.getItem(draftKey('a'))).not.toContain('duplicate');
+    expect(loadC6Draft('a', storage).draft?.exercise).toEqual(state);
+  });
+
+  it('preserves an already successful old closing draft but rejects an unchecked one', () => {
+    const storage = memoryStorage();
+    const legacy = { ...state, stage: 'success', duplicated: true, duplicateViewed: true,
+      practiceVarianceAnswered: true };
+    const raw = JSON.stringify({ version: 1, lessonVersion: 1, userId: 'a', lessonId: 'lesson-06',
+      step: 2, exercise: legacy });
+    storage.setItem(draftKey('a'), raw);
+    expect(loadC6Draft('a', storage).draft?.exercise).toEqual({ ...state, stage: 'success',
+      practiceVarianceAnswered: true });
+    expect(storage.getItem(draftKey('a'))).toBe(raw);
+    storage.setItem(draftKey('a'), JSON.stringify({ ...JSON.parse(raw),
+      exercise: { ...legacy, practiceVarianceAnswered: false } }));
+    expect(loadC6Draft('a', storage).discarded).toBe(true);
+  });
+
+  it.each([{ userId: 'b' }, { version: 2 }, { lessonVersion: 2 },
+    { exercise: { ...state, stage: 'average', duplicated: false, duplicateViewed: true } },
+  ])('rejects corrupt or foreign legacy drafts %j', invalid => {
+    const storage = memoryStorage();
+    storage.setItem(draftKey('a'), JSON.stringify({ version: 1, lessonVersion: 1, userId: 'a',
+      lessonId: 'lesson-06', step: 1, exercise: { ...state, stage: 'practice-average',
+        duplicated: true, duplicateViewed: true }, ...invalid }));
+    expect(loadC6Draft('a', storage)).toEqual({ draft: null, available: true, discarded: true });
+  });
+
 });

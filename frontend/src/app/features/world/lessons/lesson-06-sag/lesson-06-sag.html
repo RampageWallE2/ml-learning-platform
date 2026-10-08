@@ -28,11 +28,7 @@
     <div
       class="workbench"
       [class.workbench--focused]="
-        focusRecord ||
-        stage() === 'cancel' ||
-        stage() === 'weight' ||
-        comparingCopy() ||
-        comparisonVisible()
+        focusRecord || stage() === 'cancel' || stage() === 'weight' || averageVisible()
       "
     >
       @if (stage() === 'cancel') {
@@ -40,6 +36,19 @@
           <span>Sumamos las diferencias</span>
           <strong>{{ deviationExpression() }} = {{ deviationSum() }}</strong>
           <span>El resultado es 0. Compruébalo mirando los cuatro datos.</span>
+        </div>
+      }
+      @if (averageVisible()) {
+        <div
+          class="primary-evidence calculation-card"
+          aria-label="Cuadrados de todos los registros"
+        >
+          <span>Cuadrados de los {{ records().length }} registros</span>
+          <strong>{{ squareExpression() }} = {{ squareSum() }}</strong>
+          <span>Dividimos entre todos los registros: {{ records().length }}.</span>
+          @if (averageSolved()) {
+            <strong>{{ squareSum() }} ÷ {{ records().length }} = {{ variance() }}</strong>
+          }
         </div>
       }
       @if (focusRecord) {
@@ -111,67 +120,11 @@
           </div>
         </div>
       }
-      <ng-template #copyComparison>
-        @if (comparingCopy() || comparisonVisible()) {
-          <div class="primary-evidence comparison-box" aria-label="Original y copia duplicada">
-            <div>
-              <strong>{{ practicing() ? 'Datos de práctica' : 'Original' }}</strong>
-              <dl>
-                <div>
-                  <dt>Registros</dt>
-                  <dd>{{ records().length }}</dd>
-                </div>
-                <div>
-                  <dt>Casillas en total</dt>
-                  <dd>{{ sourceSquareSum() }}</dd>
-                </div>
-              </dl>
-              @if (comparisonSolved()) {
-                <b>{{ sourceSquareSum() }} ÷ {{ records().length }} = {{ variance() }}</b>
-              }
-            </div>
-            <div>
-              <strong>Copia duplicada</strong>
-              <dl>
-                <div>
-                  <dt>Registros</dt>
-                  <dd>
-                    {{ stage() === 'duplicate' && !duplicated() ? '—' : records().length * 2 }}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Casillas en total</dt>
-                  <dd>
-                    {{ stage() === 'duplicate' && !duplicated() ? '—' : sourceSquareSum() * 2 }}
-                  </dd>
-                </div>
-              </dl>
-              @if (comparisonSolved()) {
-                <b>{{ sourceSquareSum() * 2 }} ÷ {{ records().length * 2 }} = {{ variance() }}</b>
-              }
-            </div>
-            <p class="comparison-caption">
-              {{
-                stage() === 'duplicate' && !duplicated()
-                  ? 'Duplica los registros para ver la copia.'
-                  : 'La copia repite estos mismos datos. No son nuevas mediciones.'
-              }}
-            </p>
-          </div>
-        }
-      </ng-template>
-      @if (comparingCopy() || stage() === 'practice-average') {
-        <ng-container [ngTemplateOutlet]="copyComparison" />
-      }
       <ng-template #recordsBoard>
         <div class="data-board">
           <div class="board-heading">
             <strong>{{
-              practicing()
-                ? 'Práctica: otros registros'
-                : comparingCopy() && duplicated()
-                  ? 'Copia de experimento · 8 registros'
-                  : 'Registros originales · 4 horas'
+              practicing() ? 'Práctica: otros registros' : 'Registros originales · 4 horas'
             }}</strong
             ><small>Datos de ejemplo</small>
           </div>
@@ -206,12 +159,6 @@
             </div>
             <p class="axis-label">Toneladas por hora · Escala cercana: 98 a 102</p>
           </div>
-          @if (comparingCopy() && duplicated()) {
-            <p class="copy-note">
-              <strong>Solo una copia.</strong> Repetimos cada registro dos veces; no son nuevas
-              mediciones. Ningún valor cambió.
-            </p>
-          }
           <div class="record-cards" aria-label="Cada registro y su desviación">
             @for (point of points(); track point.id; let index = $index) {
               <article class="record-card" [class.record--focus]="focusRecord && index === 0">
@@ -254,7 +201,7 @@
           @if (squaresVisible()) {
             <div class="totals">
               <span
-                >Registros: <strong>{{ values().length }}</strong></span
+                >Registros: <strong>{{ records().length }}</strong></span
               ><span
                 >Casillas en total: <strong>{{ squareSum() }}</strong></span
               >
@@ -302,13 +249,13 @@
           <span class="task-kicker">Que ambas diferencias cuenten</span>
           @if (!squaresFormed()) {
             <p>
-              La suma dio 0 porque −2 y +2 se compensaron. Pero 98 y 102 sí son distintos:
-              queremos que ambas diferencias cuenten.
+              La suma dio 0 porque −2 y +2 se compensaron. Pero 98 y 102 sí son distintos: queremos
+              que ambas diferencias cuenten.
             </p>
             <p class="plain-rule">
-              Para calcular la varianza, <strong>multiplicamos cada diferencia por sí misma</strong>.
-              Eso se llama elevar al cuadrado. Así, las diferencias de abajo y de arriba no se
-              compensan.
+              Para calcular la varianza,
+              <strong>multiplicamos cada diferencia por sí misma</strong>. Eso se llama elevar al
+              cuadrado. Así, las diferencias de abajo y de arriba no se compensan.
             </p>
             <p>
               El dato 98 está a 2 del promedio 100. El dibujo mostrará 2 × 2: dos filas de dos
@@ -362,73 +309,29 @@
               </button>
             }
           </div>
-        } @else if (stage() === 'duplicate') {
-          <span class="task-kicker">Experimento con una copia</span>
-          <p>
-            Queremos comprobar si más registros significa más diferencias. Repite cada dato dos
-            veces en una copia. Ningún valor cambia.
-          </p>
-          <div class="choices" role="group" aria-label="Experimento de duplicación">
-            <button
-              type="button"
-              class="btn btn--answer answer-choice"
-              [attr.aria-pressed]="!duplicated()"
-              (click)="setDuplicated(false)"
-            >
-              Volver al original
-            </button>
-            <button
-              type="button"
-              class="btn btn--answer answer-choice"
-              [attr.aria-pressed]="duplicated()"
-              (click)="setDuplicated(true)"
-            >
-              Duplicar en una copia
-            </button>
-          </div>
-          <button
-            type="button"
-            class="btn btn--primary"
-            [disabled]="!duplicated()"
-            (click)="compareCopy()"
-          >
-            Comparar original y copia →
-          </button>
-        } @else if (stage() === 'average') {
-          <span class="task-kicker">Repetimos los mismos valores</span>
-          <p>
-            Al repetir los datos, las casillas pasan de 8 a 16 y los registros de 4 a 8. Los valores
-            no cambiaron. ¿Qué cálculo tiene en cuenta cuántos registros hay?
-          </p>
-          <div class="choices">
-            @for (choice of summaries; track choice.id) {
-              <button
-                type="button"
-                class="btn btn--answer answer-choice"
-                (click)="chooseSummary(choice.id)"
-              >
-                {{ choice.text }}
-              </button>
-            }
-          </div>
         } @else if (stage() === 'discovery') {
-          <span class="task-kicker">El cálculo completo</span>
-          <div role="group" aria-label="Cálculo de la varianza, paso a paso">
-            <div class="calculation-card">
-              <span><b>1. Resta el promedio:</b> −2, 0, 0 y +2.</span>
-              <span><b>2. Multiplica cada diferencia por sí misma:</b> 4, 0, 0 y 4.</span>
-              <span><b>3. Suma los cuadrados:</b> 4 + 0 + 0 + 4 = 8.</span>
-              <span><b>4. Divide entre los 4 registros:</b> 8 ÷ 4 = 2.</span>
-            </div>
+          <span class="task-kicker">Del total al promedio</span>
+          <p>
+            Los cuatro registros aportan 4, 0, 0 y 4 casillas: 8 en total. Para saber cuántas
+            aportan por registro, en promedio, dividimos entre los <strong>4 registros</strong>.
+          </p>
+          <p>También contamos los dos registros que aportan 0 casillas.</p>
+          <p class="plain-rule">
+            Este promedio de las diferencias al cuadrado se llama <strong>varianza</strong>. Aquí es
+            <strong>2 (t/h)²</strong>, no una distancia de 2 t/h.
+          </p>
+          <details class="supporting-detail">
+            <summary>Ejemplo opcional: ¿qué pasa si repetimos los datos?</summary>
             <p>
-              La copia da lo mismo: 16 ÷ 8 = 2. Contamos todos los registros, también los que están
-              justo en el promedio.
+              Solo en una copia, repetimos cada registro dos veces. No son nuevas mediciones del
+              molino. Tenemos 16 casillas y 8 registros, pero el promedio sigue siendo 2: 16 ÷ 8 =
+              2.
             </p>
-            <p class="plain-rule">
-              Resultado: <strong>2 (t/h)²</strong>. Al multiplicar las diferencias, también
-              multiplicamos sus unidades. No es una distancia de 2 t/h.
+            <p>
+              La suma creció porque repetimos la información, no porque los datos estén más lejos
+              del promedio. Dividir entre la cantidad de registros evita confundir esas dos cosas.
             </p>
-          </div>
+          </details>
           <button type="button" class="btn btn--primary" (click)="startPractice()">
             Practicar con otros datos →
           </button>
@@ -451,26 +354,12 @@
               </button>
             }
           </div>
-        } @else if (stage() === 'practice-average') {
-          <span class="task-kicker">Piensa en una copia de estos datos</span>
-          <p>La suma y la cantidad de registros se duplican. ¿Qué pasa con la varianza?</p>
-          <div class="choices">
-            @for (choice of practiceSummaries(); track choice.id) {
-              <button
-                type="button"
-                class="btn btn--answer answer-choice"
-                (click)="choosePracticeSummary(choice.id)"
-              >
-                {{ choice.text }}
-              </button>
-            }
-          </div>
         } @else if (stage() === 'practice-checked') {
           <span class="task-kicker">El resumen para el siguiente turno</span>
           @if (!practiceVarianceAnswered()) {
             <p>
               El operador necesita un resumen para el siguiente turno. Las casillas suman
-              <strong>{{ sourceSquareSum() }}</strong> y tenemos
+              <strong>{{ squareSum() }}</strong> y tenemos
               <strong>{{ records().length }} registros</strong>. Divide la suma entre todos los
               registros.
             </p>
@@ -500,8 +389,8 @@
         } @else if (stage() === 'review') {
           <span class="task-kicker">Repasemos la idea</span>
           <p>
-            Los cuadrados no tienen valores negativos. Sumamos sus casillas y dividimos entre todos
-            los registros. Repetir los mismos datos no cambia ese promedio.
+            Sumamos las casillas y dividimos entre todos los registros, también los que aportan 0.
+            Así obtenemos el promedio de las diferencias al cuadrado: la varianza.
           </p>
           <p>
             {{
@@ -523,12 +412,6 @@
           }
         </div>
       </aside>
-      @if (comparisonVisible() && !comparingCopy() && stage() !== 'practice-average') {
-        <details class="supporting-detail copy-review">
-          <summary>Ver la comparación con la copia</summary>
-          <ng-container [ngTemplateOutlet]="copyComparison" />
-        </details>
-      }
       @if (!showMainRecords()) {
         <details class="supporting-detail records-review">
           <summary>Ver todos los registros y sus cuadrados</summary>
@@ -537,10 +420,7 @@
       }
       <details class="reading-notes">
         <summary>Cómo leer los registros</summary>
-        <p>
-          Cada punto es un registro. Los puntos uno sobre otro tienen el mismo valor. Los registros
-          permanecen a la vista.
-        </p>
+        <p>Cada punto es un registro. Los puntos uno sobre otro tienen el mismo valor.</p>
         <p>
           Desviación: dato menos promedio. El − indica que está por debajo; el +, por encima.
           Separación: la distancia al promedio, sin el signo.
@@ -573,7 +453,6 @@
           Cuadrados: 4, 0, 0 y 4. Sumamos 8 y dividimos entre los <strong>4 registros</strong>,
           también los de separación 0.
         </p>
-        <p>Al duplicar los mismos datos en una copia: 16 ÷ 8 = 2. La varianza no cambia.</p>
       </details>
       <p>
         Este número resume las diferencias. No explica por qué ocurrieron ni dice si la cantidad de

@@ -3,7 +3,7 @@ import { C2State, copyC2State, isC2State } from '../lessons/lesson-02-ramp/lesso
 import { C3State, copyC3State, isC3State } from '../lessons/lesson-03-haulage/lesson-03-haulage.state';
 import { C4State, copyC4State, isC4State, readC4State } from '../lessons/lesson-04-workshop/lesson-04-workshop.state';
 import { C5State, copyC5State, isC5State } from '../lessons/lesson-05-crushing/lesson-05-crushing.state';
-import { C6State, copyC6State, isC6State } from '../lessons/lesson-06-sag/lesson-06-sag.state';
+import { C6State, copyC6State, isC6State, readC6State } from '../lessons/lesson-06-sag/lesson-06-sag.state';
 import { C7State, copyC7State, isC7State } from '../lessons/lesson-07-balls/lesson-07-balls.state';
 import { C8State, copyC8State, isC8State } from '../lessons/lesson-08-flotation/lesson-08-flotation.state';
 import { C9State, copyC9State, isC9State } from '../lessons/lesson-09-thickeners/lesson-09-thickeners.state';
@@ -69,10 +69,10 @@ export function loadLessonDraft<Id extends DraftLessonId>(
     if (!raw) return { draft: null, available: true, discarded: false };
     let value: unknown;
     try { value = JSON.parse(raw); } catch { value = null; }
-    if (lessonId === 'lesson-04' && value && typeof value === 'object') {
+    if ((lessonId === 'lesson-04' || lessonId === 'lesson-06') && value && typeof value === 'object') {
       const draft = value as Record<string, unknown>;
       if (draft['exercise'] !== null) {
-        const exercise = readC4State(draft['exercise']);
+        const exercise = lessonId === 'lesson-04' ? readC4State(draft['exercise']) : readC6State(draft['exercise']);
         value = exercise ? { ...draft, exercise } : null;
       }
     }

@@ -12,8 +12,7 @@ import { LessonRunner } from './lesson-runner';
 
 const a: AuthenticatedUser = { id: 'resume-a', displayName: 'A', email: 'a@example.test', avatarUrl: null };
 const b: AuthenticatedUser = { ...a, id: 'resume-b' };
-const practice: C6State = { stage: 'practice-average', squaresFormed: true, duplicated: true,
-  duplicateViewed: true, round: 2, practiceHelped: true, practiceVarianceAnswered: false, choiceOffset: 2 };
+const practice: C6State = { stage: 'practice-checked', squaresFormed: true, round: 2, practiceHelped: true, practiceVarianceAnswered: false, choiceOffset: 2 };
 
 @Component({ imports: [LessonRunner], template: `
   <app-lesson-runner lessonId="lesson-06" [statusTemplate]="notice" />
@@ -54,29 +53,44 @@ describe('LessonRunner — C6 draft recovery', () => {
     fixture.componentInstance.nextStep(); expect(fixture.componentInstance.currentStepIndex()).toBe(0);
     click(fixture, 'Continuar'); await fixture.whenStable();
     const game = exercise(fixture);
-    expect(game.stage()).toBe('practice-average'); expect(game.round()).toBe(2);
-    expect(game.practiceHelped()).toBe(true); expect(game.values()).toEqual([100, 100, 102, 102]);
+    expect(game.stage()).toBe('practice-checked'); expect(game.round()).toBe(2);
+    expect(game.practiceHelped()).toBe(true); expect(game.records()).toEqual([100, 100, 102, 102]);
     expect(loadC6Draft(a.id).draft?.exercise).toEqual(practice);
     expect(done).not.toHaveBeenCalled();
     const panel = fixture.nativeElement.querySelector('[role="dialog"]');
     expect(panel.contains(document.activeElement)).toBe(true);
   });
 
-  it('persists every action, restores after destroying the runner, and does not loop its seed into the child', () => {
+  it('persists the direct explanation and resumes it without looping its seed into the child', () => {
     const fixture = create(); fixture.componentInstance.nextStep(); fixture.detectChanges();
     const game = exercise(fixture);
     game.sumChanges(); game.chooseCancellation('balanced'); game.formSquares(); game.answerSquare(4);
-    game.chooseWeight('four'); game.setDuplicated(true); game.setDuplicated(false);
-    fixture.detectChanges();
-    expect(game.stage()).toBe('duplicate'); expect(game.duplicateViewed()).toBe(true);
-    expect(loadC6Draft(a.id).draft?.exercise?.duplicated).toBe(false);
+    game.chooseWeight('four'); fixture.detectChanges();
+    expect(game.stage()).toBe('discovery');
+    expect(loadC6Draft(a.id).draft?.exercise?.stage).toBe('discovery');
     fixture.destroy();
     const reopened = create(); click(reopened, 'Continuar');
     const copy = exercise(reopened);
-    expect(copy.stage()).toBe('duplicate'); expect(copy.duplicateViewed()).toBe(true);
-    expect(copy.duplicated()).toBe(false);
-    copy.setDuplicated(true); copy.compareCopy(); reopened.detectChanges();
-    expect(copy.stage()).toBe('average'); expect(loadC6Draft(a.id).draft?.exercise?.stage).toBe('average');
+    expect(copy.stage()).toBe('discovery');
+    copy.startPractice(); reopened.detectChanges();
+    expect(copy.stage()).toBe('practice-square');
+    expect(loadC6Draft(a.id).draft?.exercise?.stage).toBe('practice-square');
+  });
+
+  it('offers an old copy draft without writing it and resumes the explanation without completion', () => {
+    const key = 'exploralab.lesson-draft.v1.' + a.id + '.lesson-06';
+    const legacy = { stage: 'duplicate', squaresFormed: true, duplicated: false, duplicateViewed: true,
+      round: 0, practiceHelped: false, practiceVarianceAnswered: false, choiceOffset: 1 };
+    const raw = JSON.stringify({ version: 1, lessonVersion: 1, userId: a.id, lessonId: 'lesson-06',
+      step: 1, exercise: legacy });
+    items.set(key, raw); write.mockClear();
+    const fixture = create(); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
+    expect(write).not.toHaveBeenCalled(); expect(items.get(key)).toBe(raw);
+    click(fixture, 'Continuar');
+    const game = exercise(fixture);
+    expect(game.stage()).toBe('discovery'); expect(done).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('8 ÷ 4 = 2');
+    expect(loadC6Draft(a.id).draft?.exercise).not.toHaveProperty('duplicated');
   });
 
   it('starts again only on request without touching the pending completion key', () => {
@@ -110,8 +124,8 @@ describe('LessonRunner — C6 draft recovery', () => {
     fixture.componentInstance.nextStep(); expect(fixture.componentInstance.currentStepIndex()).toBe(1);
     const game = exercise(fixture);
     game.sumChanges(); game.chooseCancellation('balanced'); game.formSquares(); game.answerSquare(4);
-    game.chooseWeight('four'); game.setDuplicated(true); game.compareCopy(); game.chooseSummary('per-record');
-    game.startPractice(); game.answerPracticeSquare(1); game.choosePracticeSummary('same');
+    game.chooseWeight('four');
+    game.startPractice(); game.answerPracticeSquare(1);
     game.answerPracticeVariance(1); game.continuePractice(); game.finish(); fixture.detectChanges();
     expect(fixture.componentInstance.currentStepIndex()).toBe(2);
     expect(loadC6Draft(a.id).draft?.step).toBe(2);
@@ -121,7 +135,7 @@ describe('LessonRunner — C6 draft recovery', () => {
   it('recovers a guided C6 finish honestly and still requires the closing dialogue before completion', () => {
     saveC6Draft(a.id, { step: 1, exercise: { ...practice, round: 1 } });
     const fixture = create(); click(fixture, 'Continuar'); const game = exercise(fixture);
-    game.choosePracticeSummary('same'); game.answerPracticeVariance(4); game.continuePractice(); fixture.detectChanges();
+     game.answerPracticeVariance(4); game.continuePractice(); fixture.detectChanges();
     expect(game.stage()).toBe('success'); expect(game.guidedCompletion()).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Completaste con ayuda');
     expect(loadC6Draft(a.id).draft?.exercise?.practiceHelped).toBe(true);
@@ -153,7 +167,7 @@ describe('LessonRunner — C6 draft recovery', () => {
     user.set(b); write.mockClear();
     // A stale child callback before the render is ignored; after the render
     // the old child no longer exists and must not be called directly.
-    oldGame.choosePracticeSummary('same'); fixture.detectChanges();
+    oldGame.answerPracticeVariance(oldGame.variance()); fixture.detectChanges();
     await fixture.whenStable();
     expect(fixture.nativeElement.textContent).toContain('La sesión cambió');
     expect(fixture.debugElement.query(By.directive(Lesson06Sag))).toBeNull();
