@@ -1,0 +1,74 @@
+// Shared visual primitives for C1–C7; this module emits no global CSS.
+// Include each block where its original rules lived to preserve the cascade,
+// component encapsulation and the exercises' deferred loading.
+@mixin labels {
+  .lesson-tag {
+    font: 600 12px/1.6 var(--font-body);
+    color: var(--color-text-muted);
+  }
+  .lesson-tag__number {
+    font: 8px/1.8 var(--font-retro);
+    color: var(--color-primary);
+  }
+}
+
+@mixin steps {
+  .lesson-steps {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+    margin: 0;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--color-border);
+    li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-text-muted);
+      font-size: 14px;
+    }
+    span {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius-frame);
+      background: var(--color-primary-tint);
+      font-weight: 700;
+    }
+    .step--active span {
+      background: var(--color-primary);
+      color: var(--color-surface-raised);
+    }
+    .step--done span {
+      background: var(--color-success-soft);
+      color: var(--color-success);
+    }
+  }
+}
+
+@mixin task-kicker {
+  .task-kicker {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+}
+
+@mixin feedback {
+  .feedback-region .feedback {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid var(--color-accent);
+    background: var(--color-hint-surface);
+    // C6 keeps its existing entrance animation in its own stylesheet.
+    @content;
+    strong {
+      color: var(--color-hint);
+      font-size: 13px;
+    }
+  }
+}

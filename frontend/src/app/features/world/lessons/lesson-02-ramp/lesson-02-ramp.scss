@@ -1,3 +1,5 @@
+@use '../../../../../styles/lesson-chrome' as lesson-chrome;
+
 :host {
   display: block;
   min-width: 0;
@@ -28,51 +30,13 @@
   .lesson-header {
     padding-right: 0;
   }
-  .lesson-tag {
-    font: 600 12px/1.6 var(--font-body);
-    color: var(--color-text-muted);
-  }
-  .lesson-tag__number {
-    font: 8px/1.8 var(--font-retro);
-    color: var(--color-primary);
-  }
+  @include lesson-chrome.labels;
   .btn--primary {
     width: 100%;
   }
 }
 
-.lesson-steps {
-  display: flex;
-  gap: 24px;
-  list-style: none;
-  margin: 0;
-  padding: 0 0 12px;
-  border-bottom: 1px solid var(--color-border);
-  li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--color-text-muted);
-    font-size: 14px;
-  }
-  span {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: var(--radius-frame);
-    background: var(--color-primary-tint);
-    font-weight: 700;
-  }
-  .step--active span {
-    background: var(--color-primary);
-    color: var(--color-surface-raised);
-  }
-  .step--done span {
-    background: var(--color-success-soft);
-    color: var(--color-success);
-  }
-}
+@include lesson-chrome.steps;
 
 .workbench {
   display: grid;
@@ -165,14 +129,7 @@
 .task-card p {
   margin: 12px 0;
 }
-.task-kicker {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  text-transform: uppercase;
-  font-weight: 700;
-}
+@include lesson-chrome.task-kicker;
 .report-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -222,19 +179,10 @@
   padding: 12px;
   white-space: normal;
 }
-.feedback-region .feedback {
-  margin-top: 16px;
-  padding: 12px;
-  border: 1px solid var(--color-accent);
-  background: var(--color-hint-surface);
-  strong {
-    color: var(--color-hint);
-    font-size: 13px;
-  }
-  p {
-    margin: 4px 0 0;
-    font-size: 14px;
-  }
+@include lesson-chrome.feedback;
+.feedback-region .feedback p {
+  margin: 4px 0 0;
+  font-size: 14px;
 }
 .shared-scale {
   margin-inline: 14px;

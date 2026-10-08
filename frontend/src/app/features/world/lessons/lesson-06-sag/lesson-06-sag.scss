@@ -1,3 +1,5 @@
+@use '../../../../../styles/lesson-chrome' as lesson-chrome;
+
 @use '../../../../../styles/lesson-focus' as lesson-focus;
 
 :host {
@@ -28,49 +30,11 @@ h3:focus {
 .lesson-header {
   padding-right: 0;
 }
-.lesson-tag {
-  font: 600 12px/1.6 var(--font-body);
-  color: var(--color-text-muted);
-}
-.lesson-tag__number {
-  font: 8px/1.8 var(--font-retro);
-  color: var(--color-primary);
-}
+@include lesson-chrome.labels;
 .btn--primary {
   width: 100%;
 }
-.lesson-steps {
-  display: flex;
-  gap: 24px;
-  list-style: none;
-  margin: 0;
-  padding: 0 0 12px;
-  border-bottom: 1px solid var(--color-border);
-  li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--color-text-muted);
-    font-size: 14px;
-  }
-  span {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: var(--radius-frame);
-    background: var(--color-primary-tint);
-    font-weight: 700;
-  }
-  .step--active span {
-    background: var(--color-primary);
-    color: var(--color-surface-raised);
-  }
-  .step--done span {
-    background: var(--color-success-soft);
-    color: var(--color-success);
-  }
-}
+@include lesson-chrome.steps;
 .workbench {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
@@ -382,14 +346,7 @@ h3:focus {
 .weight-demo > div:first-child .square-grid {
   grid-template-columns: 32px;
 }
-.task-kicker {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  text-transform: uppercase;
-  font-weight: 700;
-}
+@include lesson-chrome.task-kicker;
 .task-card p {
   margin: 12px 0;
 }
@@ -427,16 +384,8 @@ h3:focus {
     font-size: 14px;
   }
 }
-.feedback-region .feedback {
-  margin-top: 16px;
-  padding: 12px;
-  border: 1px solid var(--color-accent);
-  background: var(--color-hint-surface);
+@include lesson-chrome.feedback {
   animation: evidence-enter var(--motion-fast) ease-out both;
-  strong {
-    color: var(--color-hint);
-    font-size: 13px;
-  }
 }
 @keyframes square-enter {
   from {
