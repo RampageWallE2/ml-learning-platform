@@ -43,7 +43,7 @@ describe('C7 — exercise restoration', () => {
         game.answerVariance(0); check(); game.answerVariance(game.activePeriod().squareSum); check();
         game.answerVariance(game.activePeriod().variance); check(); game.continueCalculation(); check();
       }
-      game.chooseReport('better'); check(); game.chooseReport('equal'); check();
+      game.chooseReport('lower'); check(); game.chooseReport('equal'); check();
       game.chooseReport('spread'); check();
       if (round === 0) { game.continueAfterHelp(); check(); }
     }
@@ -83,10 +83,11 @@ describe('C7 — exercise restoration', () => {
       expect(explained.nativeElement.textContent).toContain('Ejemplo explicado'); explained.destroy();
       game.answerVariance(game.activePeriod().variance); game.continueCalculation();
     }
-    game.chooseReport('better'); const context = create(state);
-    expect(context.nativeElement.textContent).toContain('Todavía no sabemos qué meta'); context.destroy();
+    game.chooseReport('lower'); const comparison = create(state);
+    expect(comparison.componentInstance.hintFocus()).toBe('variances');
+    expect(comparison.nativeElement.textContent).toContain('Compara las dos varianzas'); comparison.destroy();
     game.requestHint(); const explanation = create(state);
-    expect(explanation.componentInstance.feedback()).toContain('Variar menos no significa trabajar mejor'); explanation.destroy();
+    expect(explanation.componentInstance.feedback()).toContain('Período B varió más'); explanation.destroy();
   });
 
   it('retains solved A when resuming B, rejects duplicate A answers and requires fresh practice after a hint', () => {

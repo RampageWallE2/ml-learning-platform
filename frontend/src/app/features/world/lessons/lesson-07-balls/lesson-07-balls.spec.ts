@@ -665,12 +665,14 @@ describe('Lesson07Balls', () => {
     expect(game.stage()).toBe('review');
   });
 
-  it('uses a context cue rather than a variance cue when the learner equates stability with a better operation', () => {
+  it('keeps a contextual hint from an older report draft readable without losing its progress', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     const root: HTMLElement = fixture.nativeElement;
-    reachReport(game);
-    game.chooseReport('better');
+    fixture.componentRef.setInput('initialState', {
+      stage: 'report', round: 0, prediction: 'b', activeIndex: 1, solved: ['a', 'b'],
+      helped: true, hintLevel: 1, hintFocus: 'context', choiceOffset: 0,
+    });
     fixture.detectChanges();
     expect(root.querySelector('.context-hint')?.textContent).toContain(
       'Todavía no sabemos qué meta debe cumplir el equipo',
@@ -803,7 +805,7 @@ describe('Lesson07Balls', () => {
       reachReport(game);
       fixture.detectChanges();
       expect(root.textContent).toContain('Tu idea inicial: ' + game.predictionText());
-      expect(root.textContent).toContain('¿Qué aviso explica lo que muestran los datos?');
+      expect(root.textContent).toContain('¿Qué período tuvo más variación en sus registros?');
       expect(game.helped()).toBe(false);
       expect(game.feedback()).toBe('');
       expect(game.prediction()).toBe(answer);
@@ -811,7 +813,7 @@ describe('Lesson07Balls', () => {
       expect(game.prediction()).toBe(answer);
       expect(game.stage()).toBe('report');
       expect(game.reportChoices().find((choice) => choice.id === 'spread')?.text).toBe(
-        'El período B varió más: hay más puntos lejos del promedio.',
+        'El período B varió más: tiene mayor varianza.',
       );
       game.chooseReport('spread');
       game.finish();
@@ -837,23 +839,54 @@ describe('Lesson07Balls', () => {
     expect(game.helped()).toBe(true);
   });
 
-  it('rejects an unsupported best-operation claim rather than equating low variance with quality', () => {
+  it('rejects choosing the lower-variance period as the one with more variation', () => {
     const game = create().componentInstance;
     reachReport(game);
-    game.chooseReport('better');
+    game.chooseReport('lower');
     expect(game.stage()).toBe('report');
-    expect(game.feedback()).toContain('falta la meta del equipo');
+    expect(game.feedback()).toContain('Compara las dos varianzas');
     expect(game.hintLevel()).toBe(1);
-    expect(game.hintFocus()).toBe('context');
+    expect(game.hintFocus()).toBe('variances');
     game.requestHint();
-    expect(game.feedback()).toContain('Variar menos no significa trabajar mejor');
-    expect(game.feedback()).toContain(
-      'Falta saber qué meta debe cumplir el equipo y en qué condiciones trabaja',
-    );
+    expect(game.feedback()).toContain('Período B varió más');
+    expect(game.feedback()).toContain('6 frente a 3');
     game.chooseReport('invalid' as 'spread');
     expect(game.stage()).toBe('report');
     game.chooseReport('spread');
     expect(game.stage()).toBe('review');
+  });
+
+  it.each([0, 1])('offers one evidence-based conclusion about variation in round %s', round => {
+    const fixture = create();
+    fixture.componentRef.setInput('initialState', {
+      stage: 'observe', round, prediction: null, activeIndex: 0, solved: [],
+      helped: false, hintLevel: 0, hintFocus: null, choiceOffset: 0,
+    });
+    fixture.detectChanges();
+    const game = fixture.componentInstance;
+    reachReport(game);
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    const higher = round === 0 ? 'B' : 'A';
+    const lower = round === 0 ? 'A' : 'B';
+    expect(root.querySelector('#balls-task-title')?.textContent?.trim()).toBe(
+      '¿Qué período tuvo más variación en sus registros?',
+    );
+    expect(game.reportChoices().find(choice => choice.id === 'lower')?.text).toBe(
+      'El período ' + lower + ' varió más que el ' + higher + '.',
+    );
+    expect(game.reportChoices().find(choice => choice.id === 'spread')?.text).toBe(
+      'El período ' + higher + ' varió más: tiene mayor varianza.',
+    );
+    expect(game.reportChoices().every(choice => !choice.text.includes('trabajó mejor'))).toBe(true);
+    expect(game.periods().map(period => period.variance)).toEqual(round === 0 ? [3, 6] : [16, 8]);
+    expect(root.querySelectorAll('.choices button')).toHaveLength(3);
+    for (const wrong of ['lower', 'equal'] as const) {
+      game.chooseReport(wrong);
+      expect(game.stage()).toBe('report');
+    }
+    game.chooseReport('spread');
+    expect(game.stage()).toBe(round === 0 ? 'review' : 'success');
   });
 
   it('reaches success after two independent calculations and an evidence-based conclusion', () => {
@@ -862,7 +895,7 @@ describe('Lesson07Balls', () => {
     expect(game.helped()).toBe(false);
     expect(game.higherPeriod().id).toBe('b');
     expect(game.reportChoices().find((choice) => choice.id === 'spread')?.text).toBe(
-      'El período B varió más: hay más puntos lejos del promedio.',
+      'El período B varió más: tiene mayor varianza.',
     );
     game.chooseReport('spread');
     expect(game.stage()).toBe('success');
@@ -946,7 +979,7 @@ describe('Lesson07Balls', () => {
     reachReport(game);
     expect(game.higherPeriod().id).toBe('a');
     expect(game.reportChoices().find((choice) => choice.id === 'spread')?.text).toBe(
-      'El período A varió más: hay más puntos lejos del promedio.',
+      'El período A varió más: tiene mayor varianza.',
     );
     expect(game.helped()).toBe(false);
     game.chooseReport('spread');
@@ -980,7 +1013,7 @@ describe('Lesson07Balls', () => {
     }
     reachReport(game);
     if (helpStage === 'report') {
-      game.chooseReport('better');
+      game.chooseReport('lower');
       game.requestHint();
     }
     game.finish();
@@ -1135,7 +1168,7 @@ describe('Lesson07Balls', () => {
     expect(root.textContent).toContain('Tu idea inicial: Período A');
     expect(root.textContent).not.toContain('Tu idea inicial: Período B');
     expect(game.reportChoices().find((choice) => choice.id === 'spread')?.text).toBe(
-      'El período A varió más: hay más puntos lejos del promedio.',
+      'El período A varió más: tiene mayor varianza.',
     );
   });
 

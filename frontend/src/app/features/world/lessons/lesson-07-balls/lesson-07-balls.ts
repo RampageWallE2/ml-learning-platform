@@ -9,7 +9,7 @@ import { C7_BALLS_RECORDS as ORIGINAL } from '../data/open-pit-original-records'
 import { C7Stage as Stage, C7PeriodId as PeriodId, C7Prediction as Prediction,
   C7HintFocus as HintFocus, C7State, C7_MAX_PRACTICE_ROUNDS, isC7State } from './lesson-07-balls.state';
 
-type ReportChoice = 'equal' | 'spread' | 'better';
+type ReportChoice = 'equal' | 'spread' | 'lower';
 type Pair = readonly [readonly number[], readonly number[]];
 
 const PRACTICE_PAIRS: readonly Pair[] = [
@@ -92,8 +92,8 @@ export class Lesson07Balls implements OnChanges {
   readonly reportChoices = computed<readonly { id: ReportChoice; text: string }[]>(() => {
     const choices: { id: ReportChoice; text: string }[] = [
       { id: 'equal', text: 'Variaron igual: tienen el mismo promedio y rango.' },
-      { id: 'better', text: 'El período ' + this.lowerPeriod().id.toUpperCase() + ' trabajó mejor: tiene menor varianza.' },
-      { id: 'spread', text: 'El período ' + this.higherPeriod().id.toUpperCase() + ' varió más: hay más puntos lejos del promedio.' },
+      { id: 'lower', text: 'El período ' + this.lowerPeriod().id.toUpperCase() + ' varió más que el ' + this.higherPeriod().id.toUpperCase() + '.' },
+      { id: 'spread', text: 'El período ' + this.higherPeriod().id.toUpperCase() + ' varió más: tiene mayor varianza.' },
     ];
     const offset = (this.choiceOffset() + this.round()) % choices.length;
     return choices.map((_, index) => choices[(index + offset) % choices.length]);
@@ -104,7 +104,7 @@ export class Lesson07Balls implements OnChanges {
     observe: '¿En qué período ves más datos lejos del promedio?',
     calculate: `¿Qué varianza tiene el ${this.activePeriod().name}?`,
     checked: `${this.activePeriod().name}: varianza ${this.activePeriod().variance} (t/h)²`,
-    report: '¿Qué aviso explica lo que muestran los datos?',
+    report: '¿Qué período tuvo más variación en sus registros?',
     review: this.needsPractice() ? 'Una práctica más' : 'Cerramos el ejemplo con ayuda',
     success: 'El informe ya muestra la diferencia',
   })[this.stage()]);
@@ -206,7 +206,8 @@ export class Lesson07Balls implements OnChanges {
       this.moveTo(this.needsPractice() ? 'review' : 'success');
       return;
     }
-    this.hint(answer === 'equal' ? 'variances' : 'context');
+    // Both incorrect choices now compare variation. Keep older context hints readable on resume.
+    this.hint('variances');
   }
 
   continueAfterHelp(): void {
