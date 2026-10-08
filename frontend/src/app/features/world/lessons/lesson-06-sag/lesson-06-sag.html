@@ -434,35 +434,61 @@
       </details>
     </div>
   } @else {
-    <div class="completion-card">
-      <span class="task-kicker">Tu aporte al informe del siguiente turno</span>
-      <h3 #taskHeading tabindex="-1">
-        {{ guidedCompletion() ? 'Completaste con ayuda' : 'Construiste la varianza' }}
-      </h3>
-      <p>Usaste todos los registros para resumir sus diferencias con el promedio.</p>
-    </div>
-    <div class="report-card">
-      <span class="task-kicker">Datos originales · Molino SAG</span>
-      <h3>Promedio: 100 t/h · Varianza: 2 (t/h)²</h3>
-      <p>La varianza cuenta todos los registros, también los que están justo en el promedio.</p>
-      <details class="supporting-detail">
+    <section class="lesson-conclusion" aria-labelledby="sag-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker"
+          >Tu aporte al informe del siguiente turno · Datos originales</span
+        >
+        <h3 id="sag-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">
+          La varianza resume las diferencias del grupo.
+        </h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <dl class="conclusion-facts" aria-label="Datos clave">
+        <div>
+          <dt>Promedio</dt>
+          <dd>100 <small>t/h</small></dd>
+        </div>
+        <div>
+          <dt>Varianza</dt>
+          <dd>2 <small>(t/h)²</small></dd>
+        </div>
+      </dl>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="sag-learning-title">
+          <h4 id="sag-learning-title">Qué aprendiste</h4>
+          <p>Contamos todos los registros, incluso los que están justo en el promedio.</p>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="sag-reminder-title">
+          <h4 id="sag-reminder-title">Recuerda</h4>
+          <ul>
+            <li>La varianza tiene unidades al cuadrado: no es una distancia de 2 t/h.</li>
+            <li>No explica por qué ocurrió ni dice si la cantidad de material fue la adecuada.</li>
+          </ul>
+        </aside>
+      </div>
+      <details class="conclusion-details">
         <summary>Ver los registros y el cálculo</summary>
         <p>Registros originales del SAG: 98, 100, 100 y 102 t/h.</p>
-        <p>Desviaciones: −2, 0, 0 y +2. Su suma da 0, pero sí hubo diferencias.</p>
-        <p>
-          Cuadrados: 4, 0, 0 y 4. Sumamos 8 y dividimos entre los <strong>4 registros</strong>,
-          también los de separación 0.
-        </p>
+        <ol class="conclusion-calculation">
+          <li>
+            <strong>Diferencias:</strong> −2, 0, 0 y +2. Su suma da 0, aunque los datos sean
+            distintos.
+          </li>
+          <li><strong>Cuadrados:</strong> 4, 0, 0 y 4.</li>
+          <li><strong>Sumamos:</strong> 4 + 0 + 0 + 4 = 8.</li>
+          <li><strong>Dividimos entre los 4 registros:</strong> 8 ÷ 4 = 2 (t/h)².</li>
+        </ol>
       </details>
-      <p>
-        Este número resume las diferencias. No explica por qué ocurrieron ni dice si la cantidad de
-        material fue la adecuada. Sus unidades están al cuadrado: no es una distancia de 2 t/h.
-      </p>
-    </div>
-    <div class="lesson-actions">
-      <button type="button" class="btn btn--primary" (click)="finish()">
-        Entregar el hallazgo →
-      </button>
-    </div>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar el hallazgo →
+        </button>
+      </footer>
+    </section>
   }
 </section>

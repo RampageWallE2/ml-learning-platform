@@ -370,7 +370,7 @@ describe('Lesson09Thickeners', () => {
     game.requestHint(); main(game); transfer(game); game.continueAfterHelp(); main(game); transfer(game);
     fixture.detectChanges(); const root: HTMLElement = fixture.nativeElement;
     expect(game.records().goal).toBe(100); expect(game.periods().map(period => period.mean)).toEqual([80, 100]);
-    expect(root.querySelector('.report-card')?.textContent).toContain('80 · 80 · 80 · 80 · 80 · 80');
+    expect(root.querySelector('.lesson-conclusion')?.textContent).toContain('80 · 80 · 80 · 80 · 80 · 80');
     expect(root.textContent).toContain('98 · 98 · 98 · 102 · 102 · 102');
     expect(root.textContent).toContain('A varió menos. B cumplió la meta de promedio');
     expect(root.textContent).toContain('Variar menos o más no significa, por sí solo, trabajar mejor');

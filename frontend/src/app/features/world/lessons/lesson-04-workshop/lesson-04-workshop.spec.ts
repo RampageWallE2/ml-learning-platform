@@ -263,9 +263,9 @@ describe('Lesson04Workshop', () => {
     expect(game.practiceHelped()).toBe(true);
     expect(game.round()).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('Completaste con ayuda');
-    const report = fixture.nativeElement.querySelector('.report-card').textContent;
-    expect(report).toContain('A y B tienen rango de 4 minutos');
-    expect(report).toContain('En A hubo tres revisiones de 10 minutos');
+    const report = fixture.nativeElement.querySelector('.lesson-conclusion').textContent;
+    expect(Array.from(fixture.nativeElement.querySelectorAll('.conclusion-comparison tbody tr:first-child td')).map(value => (value as HTMLElement).textContent?.trim())).toEqual(['4 min', '4 min']);
+    expect(Array.from(fixture.nativeElement.querySelectorAll('.conclusion-comparison tbody tr:last-child td')).map(value => (value as HTMLElement).textContent?.trim())).toEqual(['3', '1']);
     expect(report).not.toContain('Equipo F');
     expect(game.records.map((group) => [...group.values])).toEqual([
       [8, 10, 10, 10, 12],
@@ -330,9 +330,9 @@ describe('Lesson04Workshop', () => {
     choice(1); expect(fixture.componentInstance.stage()).toBe('discovery');
     primary(); expect(fixture.componentInstance.stage()).toBe('practice');
     choice(1); choice(0);
-    const report = root.querySelector('.report-card')!.textContent;
+    const report = root.querySelector('.lesson-conclusion')!.textContent;
     expect(report).toContain('organizar las revisiones del siguiente turno');
-    expect(report).toContain('no considerar iguales los tiempos solo porque sus rangos son iguales');
+    expect(report).toContain('No considerar iguales los tiempos solo porque sus rangos son iguales');
     expect(report).toContain('no dice qué equipo trabaja mejor'); expect(report).toContain('ni explica la causa');
     expect(root.querySelectorAll('input, textarea, form')).toHaveLength(0);
     expect(done).not.toHaveBeenCalled(); primary(); expect(done).toHaveBeenCalledOnce();

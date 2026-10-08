@@ -646,12 +646,12 @@ describe('Lesson08Flotation', () => {
     expect(game.helped()).toBe(false);
     expect(game.guidedCompletion()).toBe(false);
     expect(game.records()).toEqual(game.originalStats.values);
-    expect(root.querySelector('.report-card')?.textContent).toContain(
+    expect(root.querySelector('.lesson-conclusion')?.textContent).toContain(
       '96 · 100 · 100 · 100 · 102 · 102',
     );
-    expect(root.querySelector('.report-card')?.textContent).toContain('todos estaban dentro');
-    expect(root.querySelector('.report-card')?.textContent).not.toContain('97 · 97 · 97');
-    expect(root.querySelector('.report-card')?.textContent).not.toContain('undefined');
+    expect(root.querySelector('.lesson-conclusion')?.textContent).toContain('todos estaban dentro');
+    expect(root.querySelector('.lesson-conclusion')?.textContent).not.toContain('97 · 97 · 97');
+    expect(root.querySelector('.lesson-conclusion')?.textContent).not.toContain('undefined');
     game.finish();
     game.finish();
     expect(done).toHaveBeenCalledTimes(1);
@@ -1145,7 +1145,7 @@ describe('Lesson08Flotation', () => {
       expect(game.helped()).toBe(true);
       expect(game.guidedCompletion()).toBe(true);
       expect(game.needsPractice()).toBe(false);
-      expect(root.querySelector('.report-card h3')?.textContent).toContain('Completaste con ayuda');
+      expect(root.querySelector('.conclusion-status')?.textContent).toContain('Completaste con ayuda');
       expect(game.records()).toEqual(game.originalStats.values);
       expect(game.stats().variance).toBe(4);
       expect(game.stats().standardDeviation).toBe(2);
@@ -1196,7 +1196,7 @@ describe('Lesson08Flotation', () => {
     const root: HTMLElement = fixture.nativeElement;
     expect(game.stats().mean).toBe(100);
     expect(game.stats().standardDeviation).toBe(2);
-    expect(root.querySelector('.report-card')?.textContent).toContain(
+    expect(root.querySelector('.lesson-conclusion')?.textContent).toContain(
       '96 · 100 · 100 · 100 · 102 · 102',
     );
     expect(root.textContent).toContain('fuera de la franja de 98 a 102');

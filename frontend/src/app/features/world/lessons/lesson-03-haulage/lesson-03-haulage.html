@@ -295,28 +295,62 @@
       </aside>
     </div>
   } @else {
-    <div class="completion-card">
-      <span class="task-kicker">Tu aviso está listo</span>
-      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'Comprobaste el rango' }}</h3>
-      @if (guidedCompletion()) {
-        <p>Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.</p>
-      }
-      <p>El rango es la separación entre el tiempo más corto y el más largo, no la duración de una descarga.</p>
-    </div>
-    <div class="report-card">
-      <span class="task-kicker">Para organizar las llegadas del siguiente turno</span>
-      <h3>Descargas observadas: de 11 a 18 minutos</h3>
-      <p>
-        <strong>Hubo 7 minutos de separación entre la más corta y la más larga.</strong> Ese es el
-        rango de estos registros.
-      </p>
-      <p>
-        Es lo que ocurrió en estas cinco descargas, no una garantía para las siguientes. Los tiempos
-        tampoco explican por qué variaron.
-      </p>
-    </div>
-    <div class="lesson-actions">
-      <button type="button" class="btn btn--primary" (click)="finish()">Entregar el aviso →</button>
-    </div>
+    <section class="lesson-conclusion" aria-labelledby="haulage-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker"
+          >Para organizar las llegadas del siguiente turno · Datos originales</span
+        >
+        <h3 id="haulage-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">El rango fue de 7 minutos.</h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <dl class="conclusion-facts conclusion-facts--three" aria-label="Datos clave">
+        <div>
+          <dt>Más corta</dt>
+          <dd>11 <small>min</small></dd>
+        </div>
+        <div>
+          <dt>Más larga</dt>
+          <dd>18 <small>min</small></dd>
+        </div>
+        <div>
+          <dt>Rango</dt>
+          <dd>7 <small>min</small></dd>
+        </div>
+      </dl>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="haulage-learning-title">
+          <h4 id="haulage-learning-title">Qué aprendiste</h4>
+          <p>18 − 11 = 7 minutos de separación entre la descarga más corta y la más larga.</p>
+          <p>El rango no es la duración de una descarga.</p>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="haulage-reminder-title">
+          <h4 id="haulage-reminder-title">Recuerda</h4>
+          <ul>
+            <li>
+              Estos tiempos describen lo que pasó, no una garantía para las siguientes descargas.
+            </li>
+            <li>Los tiempos tampoco explican por qué variaron.</li>
+          </ul>
+        </aside>
+      </div>
+      <details class="conclusion-details">
+        <summary>Ver las cinco descargas</summary>
+        <p>Descargas observadas: de 11 a 18 minutos.</p>
+        <ol class="conclusion-records">
+          @for (trip of trips; track trip.id) {
+            <li>{{ trip.time }} minutos</li>
+          }
+        </ol>
+      </details>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar el aviso →
+        </button>
+      </footer>
+    </section>
   }
 </section>

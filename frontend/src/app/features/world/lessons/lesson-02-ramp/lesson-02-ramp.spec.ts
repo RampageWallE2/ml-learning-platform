@@ -505,10 +505,8 @@ describe('Lesson02Ramp', () => {
       { id: 'B', mean: 100 },
     ]);
     expect(game.plots().map((plot) => plot.id)).toEqual(['A', 'B']);
-    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain(
-      'Mismo promedio: 100 t',
-    );
-    expect(fixture.nativeElement.querySelector('.report-card').textContent).not.toContain('95');
+    expect(Array.from(fixture.nativeElement.querySelectorAll('.conclusion-facts dd')).map(value => (value as HTMLElement).textContent?.trim())).toEqual(['100 t', '100 t']);
+    expect(fixture.nativeElement.querySelector('.lesson-conclusion').textContent).not.toContain('95');
   });
 
   it('uses simple narrative language without claiming that the loads explain their cause', () => {
@@ -654,15 +652,15 @@ describe('Lesson02Ramp', () => {
     answer(2);
     answer(1);
     answer(1);
-    expect(root.querySelector('.completion-card')).not.toBeNull();
-    expect(root.querySelector('.completion-card')!.textContent).toContain(
-      'Pide solo la información que falta',
+    expect(root.querySelector('.conclusion-header')).not.toBeNull();
+    expect(root.querySelector('.conclusion-header')!.textContent).toContain(
+      'El promedio no cuenta todo',
     );
-    expect(root.querySelector('.report-card')!.textContent).toContain('Mismo promedio: 100 t');
-    expect(root.querySelector('.report-card')!.textContent).toContain(
+    expect(Array.from(root.querySelectorAll('.conclusion-facts dd')).map(value => value.textContent?.trim())).toEqual(['100 t', '100 t']);
+    expect(root.querySelector('.lesson-conclusion')!.textContent).toContain(
       'antes de decidir sobre el plan',
     );
-    expect(root.querySelector('.report-card')!.textContent).toContain('no nos dicen por qué pasó');
+    expect(root.querySelector('.lesson-conclusion')!.textContent).toContain('no nos dicen por qué pasó');
     expect(root.querySelector('.lesson-actions')!.textContent).toContain('Entregar recomendación');
   });
 

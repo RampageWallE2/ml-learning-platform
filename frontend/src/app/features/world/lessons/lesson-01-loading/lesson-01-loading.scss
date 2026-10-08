@@ -79,9 +79,7 @@
   align-items: start;
 }
 .cargo-board,
-.task-card,
-.completion-card,
-.report-card {
+.task-card {
   padding: 20px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
@@ -339,16 +337,6 @@
     margin: 4px 0 0;
     font-size: 14px;
   }
-}
-.completion-card {
-  background: var(--color-success-soft);
-}
-.completion-stamp {
-  color: var(--color-success);
-  font-size: 32px;
-}
-.report-card {
-  border-left: 5px solid var(--color-accent);
 }
 @media (max-width: 860px) {
   .workbench {

@@ -486,10 +486,10 @@ describe('Lesson03Haulage', () => {
     expect(game.stage()).toBe('success');
     expect(game.guidedCompletion()).toBe(true);
     expect(game.round()).toBe(9);
-    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain(
+    expect(fixture.nativeElement.querySelector('.lesson-conclusion').textContent).toContain(
       'de 11 a 18 minutos',
     );
-    expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain(
+    expect(fixture.nativeElement.querySelector('.lesson-conclusion').textContent).toContain(
       '7 minutos de separación',
     );
     expect(game.trips.map((record) => record.time)).toEqual([11, 12, 11, 18, 12]);
@@ -541,8 +541,8 @@ describe('Lesson03Haulage', () => {
     number(5);
     root.querySelectorAll<HTMLButtonElement>('.meaning-choices button')[1].click();
     fixture.detectChanges();
-    expect(root.querySelector('.completion-card')!.textContent).toContain('Tu aviso está listo');
-    const report = root.querySelector('.report-card')!.textContent;
+    expect(root.querySelector('.conclusion-header')!.textContent).toContain('El rango fue de 7 minutos');
+    const report = root.querySelector('.lesson-conclusion')!.textContent;
     expect(report).toContain('organizar las llegadas');
     expect(report).toContain('11 a 18 minutos');
     expect(report).toContain('7 minutos de separación');

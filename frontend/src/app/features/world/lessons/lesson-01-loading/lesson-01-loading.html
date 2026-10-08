@@ -216,26 +216,56 @@
       </aside>
     </div>
   } @else {
-    <div class="completion-card">
-      <span class="completion-stamp" aria-hidden="true">✓</span>
-      <div>
-        <span class="task-kicker">Comparación completada</span>
-        <h3 #taskHeading tabindex="-1">{{
-          guidedCompletion() ? 'Completaste con ayuda' : 'Ya puedes reconocer la dispersión'
-        }}</h3>
-        <p>Cargas parecidas: puntos juntos. Cargas más diferentes: puntos más separados.</p>
-        <p><strong>Llevar más material no significa tener más dispersión.</strong></p>
+    <section class="lesson-conclusion" aria-labelledby="loading-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker"
+          >Para el informe del siguiente turno · Datos originales</span
+        >
+        <h3 id="loading-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">
+          Las cargas del grupo B fueron más diferentes entre sí.
+        </h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <dl class="conclusion-facts conclusion-facts--reading" aria-label="Comparación de las cargas">
+        <div>
+          <dt>Grupo A</dt>
+          <dd>Cargas más parecidas</dd>
+        </div>
+        <div>
+          <dt>Grupo B</dt>
+          <dd>Cargas más diferentes</dd>
+        </div>
+      </dl>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="loading-learning-title">
+          <h4 id="loading-learning-title">Qué aprendiste</h4>
+          <p>Cargas parecidas: puntos juntos. Cargas más diferentes: puntos más separados.</p>
+          <p>Eso es la dispersión: cuánto se diferencian las cargas entre sí.</p>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="loading-reminder-title">
+          <h4 id="loading-reminder-title">Recuerda</h4>
+          <ul>
+            <li>Llevar más material no significa tener más dispersión.</li>
+          </ul>
+        </aside>
       </div>
-    </div>
-    <div class="report-card">
-      <span class="task-kicker">Para el informe del siguiente turno</span>
-      <h3>Las cargas del grupo B fueron más diferentes entre sí.</h3>
-      <p>El encargado añadirá lo que encontraste al informe.</p>
-    </div>
-    <div class="lesson-actions">
-      <button type="button" class="btn btn--primary" (click)="finish()">
-        Volver con el encargado →
-      </button>
-    </div>
+      <details class="conclusion-details">
+        <summary>Ver las cargas originales</summary>
+        @for (group of groups(); track group.name) {
+          <p>
+            <strong>Grupo {{ group.name }}:</strong> {{ group.loads.join(', ') }} t.
+          </p>
+        }
+      </details>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Volver con el encargado →
+        </button>
+      </footer>
+    </section>
   }
 </section>

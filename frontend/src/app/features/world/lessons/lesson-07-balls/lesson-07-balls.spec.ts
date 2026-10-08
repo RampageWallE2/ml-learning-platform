@@ -1025,8 +1025,8 @@ describe('Lesson07Balls', () => {
     expect(game.helped()).toBe(true);
     expect(game.guidedCompletion()).toBe(true);
     expect(game.solved()).toEqual(['a', 'b']);
-    expect(fixture.nativeElement.querySelector('.completion-card').textContent).toContain('Completaste con ayuda');
-    expect(fixture.nativeElement.querySelector('.completion-card').textContent).not.toContain('sin pistas');
+    expect(fixture.nativeElement.querySelector('.conclusion-header').textContent).toContain('Completaste con ayuda');
+    expect(fixture.nativeElement.querySelector('.conclusion-header').textContent).not.toContain('sin pistas');
     expect(game.originalPeriods.map(period => period.variance)).toEqual([3, 6]);
     game.continueAfterHelp();
     expect(game.stage()).toBe('success');
@@ -1068,7 +1068,7 @@ describe('Lesson07Balls', () => {
     reachReport(game);
     game.chooseReport('spread');
     fixture.detectChanges();
-    const report = fixture.nativeElement.querySelector('.report-card') as HTMLElement;
+    const report = fixture.nativeElement.querySelector('.lesson-conclusion') as HTMLElement;
     expect(game.periods().map((period) => period.mean)).toEqual([100, 100]);
     expect(game.periods().map((period) => period.variance)).toEqual([3, 6]);
     expect(report.textContent).toContain('97, 100, 100, 100, 100, 103');

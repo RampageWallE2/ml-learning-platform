@@ -610,7 +610,7 @@ describe('Lesson05Crushing', () => {
     expect(game.activeIndex()).toBeNull();
     game.chooseReport('observed');
     fixture.detectChanges();
-    const report = fixture.nativeElement.querySelector('.report-card') as HTMLElement;
+    const report = fixture.nativeElement.querySelector('.lesson-conclusion') as HTMLElement;
     expect(report.textContent).toContain('80, 80, 120 y 120');
     expect(report.textContent).toContain('−20, −20, +20 y +20');
     expect(report.textContent).toContain('Las cuatro separaciones son 20 t/h');

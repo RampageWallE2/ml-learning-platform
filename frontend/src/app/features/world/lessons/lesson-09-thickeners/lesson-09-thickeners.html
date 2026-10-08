@@ -233,50 +233,96 @@
       </details>
     </div>
   } @else {
-    <section class="report-card" aria-labelledby="thickeners-task-title">
-      <span class="eyebrow">Informe del siguiente turno · Datos originales</span>
-      <h3 id="thickeners-task-title" #taskHeading tabindex="-1">
-        {{ guidedCompletion() ? 'Completaste con ayuda' : question() }}
-      </h3>
-      @if (guidedCompletion()) {
-        <p>
-          Resolviste la práctica con apoyo, incluida la comparación final. Puedes volver a practicar
-          más adelante.
-        </p>
-      }
-      <div class="conclusion">
-        <strong>A varió menos. B cumplió la meta de promedio.</strong>
-        <p>
-          Usaremos B como ejemplo para comparar el siguiente turno. Investigaremos por qué A quedó
-          bajo la meta. Antes de cambiar los ajustes, necesitamos conocer la causa y los límites
-          permitidos.
-        </p>
+    <section class="lesson-conclusion" aria-labelledby="thickeners-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker">Informe del siguiente turno · Datos originales</span>
+        <h3 id="thickeners-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">
+          B cumplió la meta de promedio.
+        </h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <table class="conclusion-comparison">
+        <caption>
+          Meta del ejemplo: promedio de 100 t/h. No exige que cada registro sea 100.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Medida</th>
+            @for (period of originalPeriods; track period.id) {
+              <th scope="col">Período {{ period.id }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="conclusion-comparison__key">
+            <th scope="row">Promedio</th>
+            @for (period of originalPeriods; track period.id) {
+              <td>{{ period.mean }} <small>t/h</small></td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Desviación estándar</th>
+            @for (period of originalPeriods; track period.id) {
+              <td>{{ period.standardDeviation }} <small>t/h</small></td>
+            }
+          </tr>
+        </tbody>
+      </table>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="thickeners-learning-title">
+          <h4 id="thickeners-learning-title">Qué aprendiste</h4>
+          <p>A varió menos. B cumplió la meta de promedio.</p>
+          <p>Variar menos no basta: también hay que revisar la meta.</p>
+          <h4>Para el siguiente turno</h4>
+          <ul>
+            <li>Usar B como ejemplo para comparar.</li>
+            <li>Investigar por qué A quedó bajo la meta.</li>
+            <li>Conocer la causa y los límites permitidos antes de cambiar ajustes.</li>
+          </ul>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="thickeners-reminder-title">
+          <h4 id="thickeners-reminder-title">Recuerda</h4>
+          <ul>
+            <li>Esto muestra lo que pasó, no asegura lo que vendrá.</li>
+            <li>Variar menos o más no significa, por sí solo, trabajar mejor.</li>
+          </ul>
+        </aside>
       </div>
-      <details class="supporting-detail">
+      <details class="conclusion-details">
         <summary>Ver los datos originales y sus medidas</summary>
-        <p>
-          <strong>Espesadores · Meta de ejemplo: promedio de 100 t/h.</strong> Cada período tiene
-          seis registros tomados en condiciones parecidas.
-        </p>
-        <div class="final-periods">
+        <p>Cada período tiene seis registros tomados en condiciones parecidas.</p>
+        <div class="conclusion-periods">
           @for (period of originalPeriods; track period.id) {
-            <div class="final-period">
-              <strong>Período {{ period.id }}</strong>
-              <p>{{ period.values.join(' · ') }} t/h</p>
-              <p>
-                Promedio {{ period.mean }} t/h · Rango {{ period.range }} t/h<br />Varianza
-                {{ period.variance }} (t/h)² · Desviación estándar
-                {{ period.standardDeviation }} t/h
-              </p>
-            </div>
+            <section>
+              <h4>Período {{ period.id }}</h4>
+              <p>Registros: {{ period.values.join(' · ') }} t/h.</p>
+              <dl class="conclusion-detail-measures">
+                <div>
+                  <dt>Promedio</dt>
+                  <dd>{{ period.mean }} t/h</dd>
+                </div>
+                <div>
+                  <dt>Rango</dt>
+                  <dd>{{ period.range }} t/h</dd>
+                </div>
+                <div>
+                  <dt>Varianza</dt>
+                  <dd>{{ period.variance }} (t/h)²</dd>
+                </div>
+                <div>
+                  <dt>Desviación estándar</dt>
+                  <dd>{{ period.standardDeviation }} t/h</dd>
+                </div>
+              </dl>
+            </section>
           }
         </div>
       </details>
-      <p>
-        Esto muestra lo que pasó, no asegura lo que vendrá. Variar menos o más no significa, por sí
-        solo, trabajar mejor.
-      </p>
-      <details class="route-report">
+      <details class="conclusion-details route-report">
         <summary>Lo que reunimos durante la ruta</summary>
         <ul>
           <li>
@@ -284,23 +330,23 @@
             registros.
           </li>
           <li>
-            <strong>Botadero y taller:</strong> el rango mide la diferencia entre el dato menor y el
-            mayor. No muestra cómo son los demás.
+            <strong>Botadero y taller:</strong> el rango compara el dato menor con el mayor. No
+            muestra cómo son los demás.
           </li>
           <li>
             <strong>Chancado:</strong> cada registro puede estar por encima o debajo del promedio.
           </li>
           <li>
-            <strong>SAG y bolas:</strong> para calcular la varianza, multiplicamos cada diferencia
-            por sí misma, sumamos y dividimos entre todos los registros, también los que dan cero.
+            <strong>SAG y bolas:</strong> multiplicamos cada diferencia por sí misma, sumamos y
+            dividimos entre todos los registros, también los que dan cero.
           </li>
           <li>
-            <strong>Flotación:</strong> al sacar la raíz de la varianza obtenemos la desviación
-            estándar, expresada aquí en toneladas por hora.
+            <strong>Flotación:</strong> la raíz de la varianza da la desviación estándar, aquí en
+            toneladas por hora.
           </li>
           <li>
-            <strong>Espesadores:</strong> miramos la meta y la variación juntas; los datos no
-            explican las causas.
+            <strong>Espesadores:</strong> revisamos la meta y la variación; los datos no explican
+            las causas.
           </li>
         </ul>
         <p>
@@ -308,9 +354,11 @@
           prácticas no se añaden a estos datos.
         </p>
       </details>
-      <button type="button" class="btn btn--primary" (click)="finish()">
-        Entregar el informe →
-      </button>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar el informe →
+        </button>
+      </footer>
     </section>
   }
 </section>

@@ -1,0 +1,354 @@
+// One reading hierarchy for the final reports of C1–C9.
+// Keep essential findings and cautions visible; records remain optional.
+.lesson .lesson-conclusion {
+  box-sizing: border-box;
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 920px;
+  margin-inline: auto;
+  padding: clamp(16px, 2.5vw, 24px);
+  border: 2px solid var(--color-earth);
+  border-radius: var(--radius-frame);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-frame);
+  color: var(--color-text);
+  font-family: var(--font-body);
+
+  h3,
+  h4,
+  p,
+  dl,
+  ul,
+  ol {
+    margin: 0;
+  }
+
+  // Outrank earlier exercise headings after Angular adds its scope attributes.
+  .conclusion-header > .conclusion-title {
+    max-width: 36ch;
+    color: var(--color-primary);
+    font-family: var(--font-body);
+    font-size: clamp(22px, 2.4vw, 28px);
+    font-weight: 700;
+    line-height: 1.25;
+    overflow-wrap: break-word;
+    scroll-margin-top: 12px;
+  }
+
+  h4 {
+    color: var(--color-primary);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  p,
+  li {
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: break-word;
+  }
+
+  ul,
+  ol {
+    padding-inline-start: 20px;
+  }
+
+  li + li {
+    margin-top: 6px;
+  }
+
+  .conclusion-header {
+    display: grid;
+    gap: 8px;
+  }
+
+  .conclusion-kicker {
+    color: var(--color-text-muted);
+    font-family: var(--font-retro);
+    font-size: 9px;
+    line-height: 1.8;
+  }
+
+  .conclusion-status {
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+
+  .conclusion-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding-block: 14px;
+    border-block: 1px solid var(--color-border);
+
+    > div {
+      min-width: 0;
+    }
+
+    dt {
+      margin-bottom: 5px;
+      color: var(--color-text-muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    dd {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 32px);
+      font-weight: 700;
+      line-height: 1.3;
+      font-variant-numeric: tabular-nums;
+    }
+
+    small {
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 400;
+      white-space: nowrap;
+    }
+  }
+
+  .conclusion-facts--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .conclusion-facts--reading dd {
+    font-size: 17px;
+    line-height: 1.4;
+  }
+
+  .conclusion-comparison {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+
+    caption {
+      padding-bottom: 10px;
+      color: var(--color-text-muted);
+      font-size: 13px;
+      line-height: 1.5;
+      text-align: left;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid var(--color-border);
+      overflow-wrap: break-word;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    th:first-child {
+      width: 40%;
+    }
+
+    thead th {
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    td {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    small {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 400;
+      white-space: nowrap;
+    }
+  }
+
+  .conclusion-comparison__key {
+    background: var(--color-primary-tint);
+    color: var(--color-primary);
+  }
+
+  .conclusion-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+
+    > * {
+      min-width: 0;
+    }
+  }
+
+  .conclusion-learning,
+  .conclusion-reminder {
+    display: grid;
+    gap: 8px;
+  }
+
+  .conclusion-reminder {
+    padding-inline-start: 14px;
+    border-inline-start: 3px solid var(--color-accent);
+
+    h4 {
+      color: var(--color-hint);
+    }
+  }
+
+  .conclusion-details {
+    min-width: 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+
+    > summary {
+      min-height: var(--control-min-height);
+      align-content: center;
+      color: var(--color-primary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: 2px solid var(--color-focus);
+        outline-offset: 3px;
+      }
+    }
+
+    > :not(summary) {
+      margin-top: 10px;
+    }
+  }
+
+  .conclusion-records {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+    gap: 6px 12px;
+    padding: 0;
+    list-style-position: inside;
+
+    li {
+      margin: 0;
+    }
+  }
+
+  .conclusion-periods {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+
+    > section {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      min-width: 0;
+    }
+  }
+
+  .conclusion-equation {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  .conclusion-detail-measures {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+
+    > div {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 4px 12px;
+    }
+
+    dt {
+      color: var(--color-text-muted);
+    }
+
+    dd {
+      margin: 0;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .conclusion-actions {
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+
+    .btn {
+      width: 100%;
+      max-width: 340px;
+      min-height: var(--control-min-height);
+      white-space: normal;
+    }
+  }
+}
+
+@media (max-width: 600px),
+  (max-width: 1024px) and (max-height: 560px) and (orientation: landscape) {
+  .lesson .lesson-conclusion {
+    gap: 12px;
+    padding: 12px;
+
+    .conclusion-header > .conclusion-title {
+      font-size: 21px;
+    }
+
+    .conclusion-kicker {
+      font-size: 8px;
+    }
+
+    .conclusion-facts {
+      gap: 8px;
+      padding-block: 10px;
+
+      dd {
+        font-size: 24px;
+      }
+
+      small {
+        font-size: 13px;
+      }
+    }
+
+    .conclusion-facts--reading dd {
+      font-size: 15px;
+    }
+
+    .conclusion-comparison {
+      th,
+      td {
+        padding: 8px 6px;
+      }
+
+      td {
+        font-size: 18px;
+      }
+    }
+
+    .conclusion-body {
+      gap: 16px;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .lesson .lesson-conclusion {
+    .conclusion-body,
+    .conclusion-periods {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .conclusion-actions .btn {
+      max-width: none;
+    }
+  }
+}

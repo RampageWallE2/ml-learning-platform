@@ -383,42 +383,61 @@
       }
     </div>
   } @else {
-    <section class="report-card" aria-labelledby="flotation-task-title">
-      <span class="eyebrow">Para el informe · Datos originales</span>
-      <h3 id="flotation-task-title" #taskHeading tabindex="-1">
-        {{
-          guidedCompletion() ? 'Completaste con ayuda' : 'Ya podemos explicar los cambios en t/h'
-        }}
-      </h3>
-      <div class="final-measures">
-        <div class="measure">
-          <span>Promedio</span><strong>100 <small>t/h</small></strong>
+    <section class="lesson-conclusion" aria-labelledby="flotation-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker"
+          >Para el informe del siguiente turno · Datos originales</span
+        >
+        <h3 id="flotation-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">
+          La desviación estándar se expresa en t/h.
+        </h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <dl class="conclusion-facts" aria-label="Datos clave">
+        <div>
+          <dt>Promedio</dt>
+          <dd>100 <small>t/h</small></dd>
         </div>
-        <div class="measure measure--linear">
-          <span>Desviación estándar</span><strong>2 <small>t/h</small></strong>
+        <div>
+          <dt>Desviación estándar</dt>
+          <dd>2 <small>t/h</small></dd>
         </div>
+      </dl>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="flotation-learning-title">
+          <h4 id="flotation-learning-title">Qué aprendiste</h4>
+          <p>√4 = 2. Al sacar la raíz de la varianza, obtenemos la desviación estándar.</p>
+          <p>Esta medida resume cuánto se separan los registros del promedio.</p>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="flotation-reminder-title">
+          <h4 id="flotation-reminder-title">Recuerda</h4>
+          <ul>
+            <li>
+              La franja no indica si el trabajo está bien o mal ni cómo serán los próximos
+              registros.
+            </li>
+            <li>Menos cambios no significa siempre un mejor resultado.</li>
+          </ul>
+        </aside>
       </div>
-      <p>
-        <strong>√4 = 2.</strong> La desviación estándar resume cuánto se separan los registros del
-        promedio. Aquí se expresa en t/h.
-      </p>
-      <details class="supporting-detail">
+      <details class="conclusion-details">
         <summary>Ver los registros y la comparación</summary>
+        <p>Registros de flotación: {{ originalStats.values.join(' · ') }} t/h.</p>
+        <p>Varianza: 4 (t/h)². Su raíz da 2 t/h.</p>
+        <p>En los datos originales, 96 t/h queda fuera de la franja de 98 a 102.</p>
         <p>
-          Registros de flotación: {{ originalStats.values.join(' · ') }} t/h. Varianza: 4 (t/h)².
-        </p>
-        <p>
-          En los datos originales, 96 t/h queda fuera de la franja de 98 a 102. En el ejemplo de
-          comparación, todos estaban dentro. Hay que revisar cada grupo de datos.
+          En el ejemplo de comparación, todos estaban dentro. Hay que revisar cada grupo de datos.
         </p>
       </details>
-      <p>
-        La franja no indica si el trabajo está bien o mal, ni cómo serán los próximos registros.
-        Menos cambios no significa siempre un mejor resultado.
-      </p>
-      <button type="button" class="btn btn--primary" (click)="finish()">
-        Entregar la explicación →
-      </button>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar la explicación →
+        </button>
+      </footer>
     </section>
   }
 </section>

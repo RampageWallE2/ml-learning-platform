@@ -389,61 +389,87 @@
       </details>
     </div>
   } @else {
-    <div class="completion-card">
-      <span class="task-kicker">Tu aporte al informe del siguiente turno</span>
-      <h3 #taskHeading tabindex="-1">
-        {{ guidedCompletion() ? 'Completaste con ayuda' : 'El informe ya muestra la diferencia' }}
-      </h3>
-      <p>
-        {{
-          guidedCompletion()
-            ? 'Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.'
-            : round() > 0
-              ? 'Resolviste la práctica sin pedir pistas y comprobaste el informe.'
-              : 'Resolviste los cálculos y comprobaste el informe.'
-        }}
-      </p>
-    </div>
-    <div class="report-card">
-      <span class="task-kicker">Datos originales · Bolas e hidrociclones</span>
-      <h3>Mismo promedio y rango, distinta variación</h3>
-      <p>
-        B tuvo mayor varianza: <strong>6 frente a 3 (t/h)²</strong>. Sus registros se separaron más
-        del promedio.
-      </p>
-      <details class="supporting-detail">
+    <section class="lesson-conclusion" aria-labelledby="balls-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker"
+          >Tu aporte al informe del siguiente turno · Datos originales</span
+        >
+        <h3 id="balls-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">B tuvo mayor variación.</h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <table class="conclusion-comparison">
+        <caption>
+          Bolas e hidrociclones · Condiciones de medición parecidas.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Medida</th>
+            @for (period of originalPeriods; track period.id) {
+              <th scope="col">{{ period.name }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Promedio</th>
+            @for (period of originalPeriods; track period.id) {
+              <td>{{ period.mean }} <small>t/h</small></td>
+            }
+          </tr>
+          <tr>
+            <th scope="row">Rango</th>
+            @for (period of originalPeriods; track period.id) {
+              <td>{{ period.range }} <small>t/h</small></td>
+            }
+          </tr>
+          <tr class="conclusion-comparison__key">
+            <th scope="row">Varianza</th>
+            @for (period of originalPeriods; track period.id) {
+              <td>{{ period.variance }} <small>(t/h)²</small></td>
+            }
+          </tr>
+        </tbody>
+      </table>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="balls-learning-title">
+          <h4 id="balls-learning-title">Qué aprendiste</h4>
+          <p>El promedio y el rango eran iguales, pero los registros variaron distinto.</p>
+          <p>La varianza permitió ver esa diferencia.</p>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="balls-reminder-title">
+          <h4 id="balls-reminder-title">Recuerda</h4>
+          <ul>
+            <li>Esto no explica por qué cambió ni qué ajuste hacer.</li>
+            <li>Variar menos no significa trabajar mejor.</li>
+            <li>La varianza no es una distancia en t/h: sus unidades están al cuadrado.</li>
+          </ul>
+        </aside>
+      </div>
+      <details class="conclusion-details">
         <summary>Ver los datos y los cálculos de A y B</summary>
-        <div class="final-periods">
+        <div class="conclusion-periods">
           @for (period of originalPeriods; track period.id) {
-            <article>
-              <strong>{{ period.name }}</strong
-              ><span>{{ period.values.join(', ') }} t/h</span>
-              <span>Promedio: {{ period.mean }} t/h · Rango: {{ period.range }} t/h</span>
-              <span>Cuadrados: {{ period.squares.join(', ') }}</span>
-              <b
-                >{{ period.squareSum }} ÷ {{ period.values.length }} =
-                {{ period.variance }} (t/h)²</b
-              >
-            </article>
+            <section>
+              <h4>{{ period.name }}</h4>
+              <p>Registros: {{ period.values.join(', ') }} t/h.</p>
+              <p>Cuadrados: {{ period.squares.join(', ') }}.</p>
+              <p class="conclusion-equation">
+                {{ period.squareSum }} ÷ {{ period.values.length }} = {{ period.variance }} (t/h)²
+              </p>
+            </section>
           }
         </div>
-        <p>
-          En B, cuatro datos estuvieron a 3 t/h del promedio; en A, solo dos. Por eso B tuvo mayor
-          varianza: 6 frente a 3 (t/h)².
-        </p>
+        <p>En B, cuatro datos estuvieron a 3 t/h del promedio; en A, solo dos.</p>
       </details>
-      <p>
-        Esto no explica por qué cambió ni qué ajuste hacer. Variar menos no significa trabajar
-        mejor.
-      </p>
-      <p class="chart-key">
-        La varianza no es una distancia en t/h: sus unidades están al cuadrado.
-      </p>
-    </div>
-    <div class="lesson-actions">
-      <button type="button" class="btn btn--primary" (click)="finish()">
-        Entregar el informe corregido →
-      </button>
-    </div>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar el informe corregido →
+        </button>
+      </footer>
+    </section>
   }
 </section>

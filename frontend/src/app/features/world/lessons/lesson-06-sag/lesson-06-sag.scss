@@ -438,15 +438,6 @@ h3:focus {
     font-size: 13px;
   }
 }
-.completion-card {
-  padding: 16px 20px;
-  border-radius: var(--radius-panel);
-  background: var(--color-success-soft);
-}
-.report-card {
-  padding: 4px 0 4px 16px;
-  border-left: 3px solid var(--color-accent);
-}
 @keyframes square-enter {
   from {
     opacity: 0;

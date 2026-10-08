@@ -317,33 +317,48 @@
       </aside>
     </div>
   } @else {
-    <div class="completion-card">
-      <span class="task-kicker">Tu recomendación está lista</span>
-      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'Pide solo la información que falta' }}</h3>
-      @if (guidedCompletion()) {
-        <p>Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.</p>
-      }
-      <p>
-        El promedio no cuenta todo. Cuando ya ves las cargas de cada camión, puedes comparar si se
-        parecen o son diferentes.
-      </p>
-    </div>
-    <div class="report-card">
-      <span class="task-kicker">Para el plan del siguiente turno</span>
-      <h3>Mismo promedio: 100 t. En B, las cargas fueron más diferentes.</h3>
-      <p>
-        <strong>Recomendación:</strong> revisar qué pasó en B antes de decidir sobre el plan. Las
-        cargas no nos dicen por qué pasó.
-      </p>
-      <p>
-        El encargado añadirá estos registros al informe y consultará al equipo antes de decidir
-        cambios.
-      </p>
-    </div>
-    <div class="lesson-actions">
-      <button type="button" class="btn btn--primary" (click)="finish()">
-        Entregar recomendación →
-      </button>
-    </div>
+    <section class="lesson-conclusion" aria-labelledby="ramp-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker">Para el plan del siguiente turno · Datos originales</span>
+        <h3 id="ramp-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">El promedio no cuenta todo.</h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <dl class="conclusion-facts" aria-label="Datos clave">
+        <div>
+          <dt>Promedio de A</dt>
+          <dd>100 <small>t</small></dd>
+        </div>
+        <div>
+          <dt>Promedio de B</dt>
+          <dd>100 <small>t</small></dd>
+        </div>
+      </dl>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="ramp-learning-title">
+          <h4 id="ramp-learning-title">Qué aprendiste</h4>
+          <p>En B, las cargas fueron más diferentes, aunque el promedio fue el mismo.</p>
+          <p>
+            Pide solo la información que falta. Con las cargas de cada camión, ya puedes comparar.
+          </p>
+          <h4>Para el siguiente turno</h4>
+          <p>Revisar qué pasó en B y consultar al equipo antes de decidir sobre el plan.</p>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="ramp-reminder-title">
+          <h4 id="ramp-reminder-title">Recuerda</h4>
+          <ul>
+            <li>Las cargas no nos dicen por qué pasó.</li>
+          </ul>
+        </aside>
+      </div>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar recomendación →
+        </button>
+      </footer>
+    </section>
   }
 </section>

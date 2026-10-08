@@ -583,7 +583,7 @@ describe('Lesson06Sag', () => {
     expect(root.textContent).not.toContain('÷');
     expect(root.textContent).not.toContain('1 (t/h)²');
     expect(root.querySelector('input, textarea, form, select')).toBeNull();
-    expect(root.querySelector('.completion-card, .report-card')).toBeNull();
+    expect(root.querySelector('.conclusion-header, .lesson-conclusion')).toBeNull();
     expect(
       Array.from(root.querySelectorAll('button')).some((button) =>
         button.textContent?.includes('Continuar'),
@@ -610,7 +610,7 @@ describe('Lesson06Sag', () => {
       ).filter((text) => text?.includes('÷')),
     ).toEqual(['4 ÷ 4 = 1']);
     expect(root.querySelector('.task-card .answer-choice')).toBeNull();
-    expect(root.querySelector('.completion-card, .report-card')).toBeNull();
+    expect(root.querySelector('.conclusion-header, .lesson-conclusion')).toBeNull();
     game.finish();
     expect(done).not.toHaveBeenCalled();
     click(root, 'Continuar →');
@@ -810,7 +810,7 @@ describe('Lesson06Sag', () => {
       expect(game.practiceHelped()).toBe(true);
       expect(game.practiceVarianceAnswered()).toBe(true);
       expect(game.guidedCompletion()).toBe(true);
-      expect(fixture.nativeElement.querySelector('.completion-card').textContent).toContain(
+      expect(fixture.nativeElement.querySelector('.conclusion-header').textContent).toContain(
         'Completaste con ayuda',
       );
       expect(game.records()).toEqual([98, 100, 100, 102]);
@@ -948,16 +948,16 @@ describe('Lesson06Sag', () => {
         (result) => result.textContent,
       ).filter((text) => text?.includes('÷')),
     ).toEqual(['4 ÷ 4 = 1']);
-    expect(root.querySelector('.report-card')).toBeNull();
+    expect(root.querySelector('.lesson-conclusion')).toBeNull();
     game.continuePractice();
     fixture.detectChanges();
-    const report = fixture.nativeElement.querySelector('.report-card') as HTMLElement;
+    const report = fixture.nativeElement.querySelector('.lesson-conclusion') as HTMLElement;
     expect(game.stage()).toBe('success');
     expect(game.mean()).toBe(100);
     expect(game.records()).toEqual([98, 100, 100, 102]);
     expect(game.variance()).toBe(2);
     expect(report.textContent).toContain('98, 100, 100 y 102');
-    expect(report.textContent).toContain('Promedio: 100 t/h · Varianza: 2 (t/h)²');
+    expect(Array.from(report.querySelectorAll('.conclusion-facts > div')).map(value => [value.querySelector('dt')!.textContent, value.querySelector('dd')!.textContent?.trim()])).toEqual([['Promedio', '100 t/h'], ['Varianza', '2 (t/h)²']]);
     expect(report.textContent).toContain('4 registros');
     expect(report.textContent).toContain('No explica por qué');
     expect(report.textContent).toContain('ni dice si la cantidad');

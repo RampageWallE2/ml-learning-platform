@@ -265,29 +265,58 @@
       </div>
     </div>
   } @else {
-    <div class="completion-card">
-      <span class="task-kicker">Aviso listo para el siguiente turno</span>
-      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'El promedio no cuenta lo que pasó en cada hora' }}</h3>
-      @if (guidedCompletion()) {
-        <p>Resolviste la práctica con apoyo y preparaste el aviso. Puedes volver a practicar más adelante.</p>
-      }
-      <p>Ahora puedes decir cuánto está cada dato por debajo o por encima del promedio.</p>
-    </div>
-    <div class="report-card">
-      <span class="task-kicker">Material que entró en las cuatro horas revisadas</span>
-      <h3>Promedio: 100 t/h · Datos: 80, 80, 120 y 120 t/h</h3>
-      <p>
-        Hubo dos horas <strong>20 t/h por debajo</strong> y dos horas
-        <strong>20 t/h por encima</strong> del promedio.
-      </p>
-      <p>Desviaciones: −20, −20, +20 y +20 t/h. Las cuatro separaciones son 20 t/h.</p>
-      <p>
-        Los datos no dicen por qué cambió la cantidad de material ni si cumple una meta. El promedio es un
-        resumen, no una meta.
-      </p>
-    </div>
-    <div class="lesson-actions">
-      <button type="button" class="btn btn--primary" (click)="finish()">Entregar el aviso →</button>
-    </div>
+    <section class="lesson-conclusion" aria-labelledby="crushing-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker">Aviso para el siguiente turno · Datos originales</span>
+        <h3 id="crushing-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">
+          Cada hora estuvo a 20 t/h del promedio.
+        </h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <dl class="conclusion-facts conclusion-facts--three" aria-label="Datos clave">
+        <div>
+          <dt>Promedio</dt>
+          <dd>100 <small>t/h</small></dd>
+        </div>
+        <div>
+          <dt>Dos horas por debajo</dt>
+          <dd>−20 <small>t/h</small></dd>
+        </div>
+        <div>
+          <dt>Dos horas por encima</dt>
+          <dd>+20 <small>t/h</small></dd>
+        </div>
+      </dl>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="crushing-learning-title">
+          <h4 id="crushing-learning-title">Qué aprendiste</h4>
+          <p>El signo indica la posición: − por debajo, + por encima del promedio.</p>
+          <p>Las cuatro separaciones son 20 t/h: medimos la distancia sin el signo.</p>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="crushing-reminder-title">
+          <h4 id="crushing-reminder-title">Recuerda</h4>
+          <ul>
+            <li>
+              Los datos no dicen por qué cambió la cantidad de material ni si cumple una meta.
+            </li>
+            <li>El promedio es un resumen, no una meta.</li>
+          </ul>
+        </aside>
+      </div>
+      <details class="conclusion-details">
+        <summary>Ver las cuatro horas</summary>
+        <p>Datos originales: 80, 80, 120 y 120 t/h.</p>
+        <p>Desviaciones: −20, −20, +20 y +20 t/h.</p>
+      </details>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar el aviso →
+        </button>
+      </footer>
+    </section>
   }
 </section>

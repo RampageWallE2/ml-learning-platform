@@ -196,35 +196,73 @@
       </aside>
     </div>
   } @else {
-    <div class="completion-card">
-      <span class="task-kicker">Tu corrección está lista</span>
-      <h3 #taskHeading tabindex="-1">
-        {{
-          guidedCompletion() ? 'Completaste con ayuda' : 'El mismo rango puede esconder diferencias'
-        }}
-      </h3>
-      @if (guidedCompletion()) {
-        <p>Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.</p>
-      }
-      <p>
-        El rango mide la diferencia entre el tiempo menor y el mayor. Para comparar, mira también
-        los demás registros.
-      </p>
-    </div>
-    <div class="report-card">
-      <span class="task-kicker">Para organizar las revisiones del siguiente turno</span>
-      <h3>A y B tienen rango de 4 minutos, pero sus tiempos no se repiten igual</h3>
-      <p>En A hubo tres revisiones de 10 minutos; en B, solo una.</p>
-      <p>
-        <strong>Corrección:</strong> no considerar iguales los tiempos solo porque sus rangos son
-        iguales.
-      </p>
-      <p>Esto no dice qué equipo trabaja mejor ni explica la causa de las diferencias.</p>
-    </div>
-    <div class="lesson-actions">
-      <button type="button" class="btn btn--primary" (click)="finish()">
-        Entregar la corrección →
-      </button>
-    </div>
+    <section class="lesson-conclusion" aria-labelledby="workshop-conclusion-title">
+      <header class="conclusion-header">
+        <span class="conclusion-kicker"
+          >Para organizar las revisiones del siguiente turno · Datos originales</span
+        >
+        <h3 id="workshop-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">
+          Mismo rango, tiempos distintos.
+        </h3>
+        @if (guidedCompletion()) {
+          <p class="conclusion-status">
+            Completaste con ayuda. Puedes volver a practicar más adelante.
+          </p>
+        }
+      </header>
+      <table class="conclusion-comparison">
+        <caption>
+          Los dos equipos hicieron la misma tarea.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Medida</th>
+            <th scope="col">Equipo A</th>
+            <th scope="col">Equipo B</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Rango</th>
+            <td>4 <small>min</small></td>
+            <td>4 <small>min</small></td>
+          </tr>
+          <tr class="conclusion-comparison__key">
+            <th scope="row">Revisiones de 10 minutos</th>
+            <td>3</td>
+            <td>1</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="conclusion-body">
+        <section class="conclusion-learning" aria-labelledby="workshop-learning-title">
+          <h4 id="workshop-learning-title">Qué aprendiste</h4>
+          <p>
+            El rango compara el tiempo menor con el mayor. No muestra cómo se repiten los demás
+            tiempos.
+          </p>
+          <p>No considerar iguales los tiempos solo porque sus rangos son iguales.</p>
+        </section>
+        <aside class="conclusion-reminder" aria-labelledby="workshop-reminder-title">
+          <h4 id="workshop-reminder-title">Recuerda</h4>
+          <ul>
+            <li>Esto no dice qué equipo trabaja mejor ni explica la causa de las diferencias.</li>
+          </ul>
+        </aside>
+      </div>
+      <details class="conclusion-details">
+        <summary>Ver los tiempos originales</summary>
+        @for (group of records; track group.id) {
+          <p>
+            <strong>{{ group.name }}:</strong> {{ group.values.join(', ') }} minutos.
+          </p>
+        }
+      </details>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar la corrección →
+        </button>
+      </footer>
+    </section>
   }
 </section>

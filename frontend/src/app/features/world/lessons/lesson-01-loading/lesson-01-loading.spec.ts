@@ -286,7 +286,7 @@ describe('Lesson01Loading', () => {
       expect(game.stage()).toBe('success'); expect(game.guidedCompletion()).toBe(true);
       expect(game.practiceHelped()).toBe(true); expect(game.selectedLoad()).toBeNull();
       expect(fixture.nativeElement.textContent).toContain('Completaste con ayuda');
-      expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain('Las cargas del grupo B');
+      expect(fixture.nativeElement.querySelector('.lesson-conclusion').textContent).toContain('Las cargas del grupo B');
       game.continueAfterHelp(); expect(game.practiceRound()).toBe(1);
       expect(done).not.toHaveBeenCalled(); game.finish(); game.finish();
       expect(done).toHaveBeenCalledTimes(1);
@@ -329,8 +329,8 @@ describe('Lesson01Loading', () => {
       .find(button => button.textContent?.trim() === evidence);
     expect(reasonButton).toBeDefined(); reasonButton!.click();
     fixture.detectChanges();
-    expect(root.querySelector('.completion-card')).not.toBeNull();
-    expect(root.querySelector('.report-card')!.textContent).toContain('Las cargas del grupo B fueron más diferentes');
+    expect(root.querySelector('.conclusion-header')).not.toBeNull();
+    expect(root.querySelector('.lesson-conclusion')!.textContent).toContain('Las cargas del grupo B fueron más diferentes');
     expect(root.querySelectorAll('input, textarea')).toHaveLength(0);
   });
 
