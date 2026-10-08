@@ -51,7 +51,9 @@ export function buildTilemap(
 
   const map =
     scene.make.tilemap({
-      key: config.mapKey
+      key: config.mapKey,
+      // World maps are static: empty cells do not need individual Tile objects.
+      insertNull: true
     });
 
 

@@ -2,14 +2,15 @@ import type Phaser from 'phaser';
 import { buildOpenPitMinimap } from './minimap-data';
 
 describe('minimap data from Tiled', () => {
-  function create() {
+  function create(nullEmptyTiles = false) {
+    const emptyTile = nullEmptyTiles ? null : { index: -1 };
     const lesson = { x: 64, y: 96, width: 32, height: 32, name: 'arbitrary-npc-name', properties: [
       { name: 'interactionType', value: 'lesson' }, { name: 'lessonId', value: 'lesson-01' },
     ] };
     const map = {
       widthInPixels: 320, heightInPixels: 320, tileWidth: 32, tileHeight: 32,
       layers: [{ name: 'Roads/Road_Ground', x: 0, y: 0,
-        data: [[{ index: -1 }, { index: 2 }, { index: 3 }, { index: -1 }, { index: 2 }]] }],
+        data: [[emptyTile, { index: 2 }, { index: 3 }, emptyTile, { index: 2 }]] }],
       getObjectLayer: () => ({ objects: [lesson, { ...lesson }, { ...lesson, properties: [
         { name: 'interactionType', value: 'lesson' }, { name: 'lessonId', value: 'unavailable' },
       ] }] }),
@@ -37,8 +38,8 @@ describe('minimap data from Tiled', () => {
     expect(buildOpenPitMinimap(map)?.supervisor).toEqual({ x: 650, y: 750 });
   });
 
-  it('merges actual road tiles into short SVG paths rather than one DOM node per tile', () => {
-    const { map } = create();
+  it.each([false, true])('merges road tiles into identical SVG paths with null empty cells (%s)', nullEmptyTiles => {
+    const { map } = create(nullEmptyTiles);
     expect(buildOpenPitMinimap(map)!.terrain).toEqual([
       { kind: 'road', path: 'M100,0h200v100h-200zM400,0h100v100h-100z' },
     ]);
