@@ -462,14 +462,9 @@ export class InteractionManager {
     this.introZone = this.interactionZones.find(zone => zone.getData('dialogueId') === OPEN_PIT_INTRO.id) ?? null;
     if (!this.introZone) return;
 
-    // Normal entries start at these authored points. A recovered game inside the
-    // pit must keep its lesson objective, not send the student back to the entrance.
-    const entries = this.map.getObjectLayer('SpawnPoints')?.objects ?? [];
-    this.introPending = entries.some(point =>
-      (point.name === 'player-start' || point.name === 'from-surface-selection')
-      && point.x !== undefined && point.y !== undefined
-      && Math.hypot(this.player.x - point.x, this.player.y - point.y) < 1
-    ) || this.scene.physics.overlap(this.player, this.introZone);
+    // A recovered position is not evidence that the account finished the intro.
+    // The next server snapshot decides whether guidance remains active.
+    this.introPending = true;
 
     this.introPrompt = new LessonProximityPrompt(this.scene);
     this.publishIntroGuidance(this.introPending);
@@ -749,6 +744,7 @@ export class InteractionManager {
   ): void => {
 
     this.lessonProgress = {
+      openPitIntroCompleted: progress.openPitIntroCompleted,
       openPitReportDelivered: progress.openPitReportDelivered,
       currentLessonId:
         progress.currentLessonId,
@@ -757,8 +753,15 @@ export class InteractionManager {
       ],
     };
 
-    if (this.closingReady && this.introPending) this.dismissIntroGuidance();
-    else this.updateGuideTarget();
+    if (this.introZone && typeof progress.openPitIntroCompleted === 'boolean') {
+      const pending = !progress.openPitIntroCompleted;
+      if (pending !== this.introPending) {
+        this.introPending = pending;
+        this.introPrompt?.hide();
+        this.publishIntroGuidance(pending);
+      }
+    }
+    this.updateGuideTarget();
 
 
     for (

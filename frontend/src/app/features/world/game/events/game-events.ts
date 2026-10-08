@@ -8,6 +8,7 @@ export type LessonProgressSnapshot = Readonly<{
   currentLessonId: string | null;
   completedLessonIds: readonly string[];
   openPitReportDelivered?: boolean;
+  openPitIntroCompleted?: boolean | null;
 }>;
 
 export type OpenLessonRequest = Readonly<{

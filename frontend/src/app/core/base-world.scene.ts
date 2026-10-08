@@ -67,6 +67,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   private loadedMap: Phaser.Tilemaps.Tilemap | null = null;
 
   private sceneCreated = false;
+  protected restoredPositionApplied = false;
   private interactionLocked = false;
 
   protected constructor(
@@ -233,6 +234,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
   private createPlayerController(map: Phaser.Tilemaps.Tilemap): void {
     const restoredSession = this.takeRestoredSession();
+    this.restoredPositionApplied = restoredSession !== null;
     const spawn = restoredSession
       ? {
           x: Phaser.Math.Clamp(restoredSession.playerX, 0, map.widthInPixels),

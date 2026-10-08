@@ -50,7 +50,7 @@ def test_liveness_and_readiness_are_distinct(app, client, monkeypatch):
 
 @pytest.mark.parametrize("table_name", [
     "users", "user_identities", "auth_sessions", "learning_profiles",
-    "lesson_progress", "password_login_limits",
+    "lesson_progress", "password_login_limits", "scenario_progress",
 ])
 def test_readiness_detects_each_missing_required_table(app, client, table_name, caplog):
     with _temporarily_missing_schema(app, table_name):
@@ -76,6 +76,7 @@ def test_readiness_detects_each_missing_required_table(app, client, table_name, 
     ("learning_profiles", "user_id"),
     ("lesson_progress", "current_step"),
     ("password_login_limits", "attempts"),
+    ("scenario_progress", "intro_completed_at"),
 ])
 def test_readiness_detects_missing_columns_and_recovers(app, client, table_name, column_name, caplog):
     with _temporarily_missing_schema(app, table_name, column_name):

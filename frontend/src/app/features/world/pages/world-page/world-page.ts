@@ -27,6 +27,7 @@ import {
 
 import { BaseWorldScene } from '../../../../core/base-world.scene';
 import { AuthService } from '../../../../core/auth/auth.service';
+import type { AuthenticatedUser } from '../../../../core/auth/auth.types';
 import { WorldHelp } from '../../components/world-help/world-help';
 import { OpenPitReport } from '../../components/open-pit-report/open-pit-report';
 import { WorldMinimap } from '../../components/world-minimap/world-minimap';
@@ -78,7 +79,6 @@ import {
 } from '../../progress/progress.service';
 import { LessonDraftService } from '../../progress/lesson-draft.service';
 import { isDraftLessonId } from '../../progress/lesson-draft.storage';
-import { hasCompletedOpenPitIntro, rememberOpenPitIntro } from '../../progress/open-pit-intro.storage';
 import { OPEN_PIT_INTRO } from '../../lessons/data/open-pit-intro.data';
 import { OPEN_PIT_CLOSING } from '../../lessons/data/open-pit-closing.data';
 import { hasAllOpenPitLessons, hasDeliveredOpenPitReport, rememberOpenPitReport } from '../../progress/open-pit-closure.storage';
@@ -180,10 +180,14 @@ export class WorldPage
   readonly helpReturnFocus = signal<HTMLElement | null>(null);
   readonly reportOpen = signal(false);
   private readonly introGuidance = signal<IntroGuidanceSnapshot | null>(null);
+  readonly openPitIntroPending = computed(() => this.activeSceneKey() === 'OpenPitScene'
+    && this.introGuidance()?.sceneKey === 'OpenPitScene' && !!this.introGuidance()?.active && !this.openPitReportReady());
   private reportOwnerId: string | null = null;
   private helpOwnerId: string | null = null;
   private readonly dismissedWelcomeOwners = new Set<string>();
-  private readonly completedIntroOwners = new Set<string>();
+  private introDialogueOwner: AuthenticatedUser | null = null;
+  private pendingIntroCompletion = false;
+  readonly savingIntro = signal(false);
   private readonly deliveredReportOwners = signal<ReadonlySet<string>>(new Set());
   private closingDialogueOwnerId: string | null = null;
 
@@ -230,6 +234,7 @@ export class WorldPage
       if (this.helpOpen() && userId !== this.helpOwnerId) this.closeWorldHelp();
       if (this.reportOpen() && userId !== this.reportOwnerId) this.closeReport();
       if (this.activeDialogue()?.id === OPEN_PIT_CLOSING.id && userId !== this.closingDialogueOwnerId) this.closeDialogue();
+      if (this.activeDialogue()?.id === OPEN_PIT_INTRO.id && this.auth.user() !== this.introDialogueOwner) this.closeDialogue(true);
       if (!userId || this.loadingScene() || this.helpOpen() || this.reportOpen() || this.lessonActive() || this.activeDialogue()) return;
       if (!this.dismissedWelcomeOwners.has(userId) && !hasSeenWorldWelcome(userId)) {
         this.openWorldHelp(true);
@@ -403,9 +408,9 @@ export class WorldPage
       : pending ?? this.progressSyncError();
   });
   readonly progressSyncBusy = computed(() =>
-    this.loadingProgress() || this.savingLesson() || this.progress.syncingPending());
+    this.loadingProgress() || this.savingLesson() || this.savingIntro() || this.progress.syncingPending());
   readonly hasProgressNotice = computed(() =>
-    !!this.progressSyncMessage() || this.savingLesson() || this.progress.syncingPending() || this.lessonSaved());
+    !!this.progressSyncMessage() || this.savingLesson() || this.savingIntro() || this.progress.syncingPending() || this.lessonSaved());
 
 
   /* =========================
@@ -512,7 +517,11 @@ export class WorldPage
      CERRAR DIÁLOGO
      ========================= */
 
-  closeDialogue(): void {
+  closeDialogue(force = false): void {
+    if (this.savingIntro() && !force) return;
+    this.pendingIntroCompletion = false;
+    this.introDialogueOwner = null;
+    if (force) this.savingIntro.set(false);
 
     const dialogue =
       this.activeDialogue();
@@ -546,10 +555,11 @@ export class WorldPage
     const sceneKey = this.activeSceneKey();
     const userId = this.auth.user()?.id;
     if (sceneKey === 'OpenPitScene' && dialogue.id === OPEN_PIT_INTRO.id && userId) {
-      // Keep it dismissed during this visit even when browser storage is blocked.
-      this.completedIntroOwners.add(userId);
-      rememberOpenPitIntro(userId);
+      this.pendingIntroCompletion = true;
+      this.saveIntroCompletion();
+      return;
     }
+    if (dialogue.id === OPEN_PIT_INTRO.id) return;
     const delivered = sceneKey === 'OpenPitScene' && dialogue.id === OPEN_PIT_CLOSING.id
       && !!userId && userId === this.closingDialogueOwnerId && this.openPitReportReady();
     if (delivered) {
@@ -559,6 +569,34 @@ export class WorldPage
     this.closeDialogue();
     if (delivered) this.publishLessonProgress();
     gameEvents.emit(GameEvents.DIALOGUE_COMPLETED, { dialogueId: dialogue.id, sceneKey });
+  }
+
+  private saveIntroCompletion(): void {
+    const owner = this.introDialogueOwner;
+    if (!owner || this.auth.user() !== owner || this.savingIntro()
+      || this.activeDialogue()?.id !== OPEN_PIT_INTRO.id || this.activeSceneKey() !== 'OpenPitScene') return;
+    this.progressSyncError.set(null);
+    this.savingIntro.set(true);
+    this.progress.completeOpenPitIntro().pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => {
+        if (this.auth.user() === owner) this.savingIntro.set(false);
+      }),
+    ).subscribe({
+      next: () => {
+        if (this.auth.user() !== owner || this.introDialogueOwner !== owner
+          || this.activeDialogue()?.id !== OPEN_PIT_INTRO.id || this.activeSceneKey() !== 'OpenPitScene') return;
+        this.savingIntro.set(false);
+        this.closeDialogue();
+        this.publishLessonProgress();
+        gameEvents.emit(GameEvents.DIALOGUE_COMPLETED, { dialogueId: OPEN_PIT_INTRO.id, sceneKey: 'OpenPitScene' });
+      },
+      error: (error: unknown) => {
+        if (this.auth.user() === owner && this.introDialogueOwner === owner) {
+          this.recordProgressError(error, 'No se pudo guardar la intro. Usa Reintentar; no necesitas repetir esta conversación.');
+        }
+      },
+    });
   }
 
 
@@ -680,6 +718,7 @@ export class WorldPage
 
 
     this.closingDialogueOwnerId = dialogueId === OPEN_PIT_CLOSING.id ? this.auth.user()?.id ?? null : null;
+    this.introDialogueOwner = dialogueId === OPEN_PIT_INTRO.id ? this.auth.user() : null;
     this.activeDialogue.set(
       dialogue
     );
@@ -714,9 +753,8 @@ export class WorldPage
   };
 
   private readonly handlerIntroGuidance = (guidance: IntroGuidanceSnapshot): void => {
-    const userId = this.auth.user()?.id;
-    if (guidance.sceneKey === 'OpenPitScene' && guidance.active && userId
-      && (this.openPitReportReady() || this.completedIntroOwners.has(userId) || hasCompletedOpenPitIntro(userId))) {
+    if (guidance.sceneKey === 'OpenPitScene' && guidance.active
+      && this.progress.openPitIntroCompleted() === true) {
       this.introGuidance.set({ ...guidance, active: false });
       gameEvents.emit(GameEvents.INTRO_GUIDANCE_DISMISSED, guidance.sceneKey);
       return;
@@ -737,6 +775,7 @@ export class WorldPage
 
 
     const snapshot: LessonProgressSnapshot = {
+      openPitIntroCompleted: this.progress.openPitIntroCompleted(),
       openPitReportDelivered: this.openPitReportDelivered(),
       currentLessonId:
         this.progress.currentLesson()
@@ -813,6 +852,7 @@ export class WorldPage
           }
         }
         this.publishLessonProgress();
+        if (this.pendingIntroCompletion) this.saveIntroCompletion();
         if (pendingBeforeLoad.length && !this.progress.pendingLessonIds().length) {
           this.lessonSaved.set(true);
           const activeId = this.lessonActive()?.lessonId;

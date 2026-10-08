@@ -15,7 +15,6 @@ import { LessonDraftService } from '../../progress/lesson-draft.service';
 import { ZoneProgress as ZoneProgressData } from '../../progress/progress.types';
 import { WorldPage } from './world-page';
 import { Dialogue } from '../../components/dialogue/dialogue';
-import { hasCompletedOpenPitIntro, rememberOpenPitIntro } from '../../progress/open-pit-intro.storage';
 import { hasDeliveredOpenPitReport } from '../../progress/open-pit-closure.storage';
 
 // Phaser's browser feature detection needs canvas; this suite tests the Angular
@@ -33,6 +32,7 @@ describe('WorldPage — circular scene loading screen', () => {
   let zones: ReturnType<typeof signal<ZoneProgressData[]>>;
   let pending: ReturnType<typeof signal<string[]>>;
   let storageAvailable: ReturnType<typeof signal<boolean>>;
+  let introCompleted: ReturnType<typeof signal<boolean | null>>;
   let userState: ReturnType<typeof signal<AuthenticatedUser | null>>;
 
   beforeEach(() => {
@@ -44,6 +44,7 @@ describe('WorldPage — circular scene loading screen', () => {
     zones = signal<ZoneProgressData[]>([]);
     pending = signal<string[]>([]);
     storageAvailable = signal(true);
+    introCompleted = signal<boolean | null>(false);
     destroyGame = vi.fn();
     vi.spyOn(Phaser, 'Game').mockImplementation(function () {
       return { destroy: destroyGame, scene: { getScenes: () => [] } } as unknown as Phaser.Game;
@@ -58,6 +59,8 @@ describe('WorldPage — circular scene loading screen', () => {
           syncingPending: signal(false), completeLesson: vi.fn(() => of(undefined)),
           isLessonCompleted: vi.fn(() => false), isLessonAvailable: vi.fn(() => true),
           loadProgress: vi.fn(() => of(undefined)),
+          openPitIntroCompleted: introCompleted.asReadonly(),
+          completeOpenPitIntro: vi.fn(() => { introCompleted.set(true); return of(undefined); }),
         } },
       ],
     });
@@ -233,7 +236,7 @@ describe('WorldPage — circular scene loading screen', () => {
     gameEvents.emit(GameEvents.OPEN_DIALOGUE, { npcId: 'open-pit-guide', dialogueId: 'open-pit-intro' });
     fixture.detectChanges();
     fixture.debugElement.query(By.directive(Dialogue)).componentInstance.completed.emit();
-    expect(hasCompletedOpenPitIntro('help-a')).toBe(true);
+    expect(page.progress.openPitIntroCompleted()).toBe(true);
     const dismiss = vi.fn(); gameEvents.on(GameEvents.INTRO_GUIDANCE_DISMISSED, dismiss);
     try {
       gameEvents.emit(GameEvents.SCENE_CHANGED, 'HubScene');
@@ -252,7 +255,7 @@ describe('WorldPage — circular scene loading screen', () => {
   });
 
   it('does not hide the Open Pit intro location help for another account', () => {
-    rememberOpenPitIntro('help-a');
+    localStorage.setItem('exploralab.open-pit-intro.v1.help-a', 'completed');
     signIn('help-b'); rememberWorldWelcome('help-b'); zones.set([reportZone()]);
     const fixture = create();
     gameEvents.emit(GameEvents.SCENE_CHANGED, 'OpenPitScene');
@@ -261,6 +264,7 @@ describe('WorldPage — circular scene loading screen', () => {
   });
 
   it('emits the completed Open Pit intro only from the dialogue completion output and does not complete C1', () => {
+    signIn(); rememberWorldWelcome('help-a');
     const fixture = create(); const page = fixture.componentInstance;
     gameEvents.emit(GameEvents.SCENE_CHANGED, 'OpenPitScene'); report('OpenPitScene', 'ready', 1);
     const finished = vi.fn(); const lock = vi.fn();
@@ -297,7 +301,80 @@ describe('WorldPage — circular scene loading screen', () => {
       expect(page.activeDialogue()).toBeNull();
       expect(finished).not.toHaveBeenCalled();
       expect(page.progress.completeLesson).not.toHaveBeenCalled();
-      expect(hasCompletedOpenPitIntro('help-a')).toBe(false);
+      expect(page.progress.openPitIntroCompleted()).toBe(false);
+    } finally { gameEvents.off(GameEvents.DIALOGUE_COMPLETED, finished); }
+  });
+
+  it('ignores an obsolete browser intro mark when the server still reports pending', () => {
+    localStorage.setItem('exploralab.open-pit-intro.v1.help-a', 'completed');
+    const fixture = readyReportRoute();
+    gameEvents.emit(GameEvents.INTRO_GUIDANCE_CHANGED, { sceneKey: 'OpenPitScene', active: true });
+    expect(fixture.componentInstance.progressPanel().objective).toContain('supervisor');
+    expect(fixture.componentInstance.progress.openPitIntroCompleted()).toBe(false);
+  });
+
+  it('passes pending intro guidance to the minimap and removes it after confirmation', () => {
+    const fixture = readyReportRoute();
+    gameEvents.emit(GameEvents.MINIMAP_MAP_CHANGED, { ...minimapData, supervisor: { x: 410, y: 875 } });
+    gameEvents.emit(GameEvents.INTRO_GUIDANCE_CHANGED, { sceneKey: 'OpenPitScene', active: true });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.minimap-supervisor title')?.textContent).toContain('para empezar');
+    introCompleted.set(true);
+    gameEvents.emit(GameEvents.INTRO_GUIDANCE_CHANGED, { sceneKey: 'OpenPitScene', active: true });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.minimap-supervisor')).toBeNull();
+  });
+
+  it.each([false, true])('keeps the last intro message on failure and reconciles before retrying (saved: %s)', saved => {
+    const fixture = readyReportRoute(); const page = fixture.componentInstance;
+    const progress = page.progress;
+    const write = new Subject<void>();
+    vi.mocked(progress.completeOpenPitIntro).mockReturnValue(write);
+    const finished = vi.fn(); gameEvents.on(GameEvents.DIALOGUE_COMPLETED, finished);
+    try {
+      gameEvents.emit(GameEvents.OPEN_DIALOGUE, { npcId: 'open-pit-guide', dialogueId: 'open-pit-intro' });
+      fixture.detectChanges();
+      const dialogue: Dialogue = fixture.debugElement.query(By.directive(Dialogue)).componentInstance;
+      dialogue.currentIndex.set(3);
+      page.completeDialogue(); page.completeDialogue(); page.closeDialogue();
+      fixture.detectChanges();
+      expect(progress.completeOpenPitIntro).toHaveBeenCalledTimes(1);
+      expect(page.savingIntro()).toBe(true);
+      expect(fixture.nativeElement.querySelector('.continue-button').disabled).toBe(true);
+      expect(page.activeDialogue()?.id).toBe('open-pit-intro');
+      expect(finished).not.toHaveBeenCalled();
+      write.error(new TimeoutError()); fixture.detectChanges();
+      expect(page.savingIntro()).toBe(false);
+      expect(page.progressSyncMessage()).toContain('no necesitas repetir');
+      expect(dialogue.currentIndex()).toBe(3);
+
+      const read = new Subject<void>(); const retry = new Subject<void>();
+      vi.mocked(progress.loadProgress).mockReturnValue(read);
+      vi.mocked(progress.completeOpenPitIntro).mockImplementation(() => saved ? of(undefined) : retry);
+      page.retryProgressSync();
+      expect(progress.completeOpenPitIntro).toHaveBeenCalledTimes(1);
+      introCompleted.set(saved); read.next(); read.complete();
+      if (!saved) {
+        expect(finished).not.toHaveBeenCalled();
+        introCompleted.set(true); retry.next(); retry.complete();
+      }
+      expect(page.activeDialogue()).toBeNull();
+      expect(finished).toHaveBeenCalledExactlyOnceWith({ dialogueId: 'open-pit-intro', sceneKey: 'OpenPitScene' });
+      expect(progress.completeLesson).not.toHaveBeenCalled();
+    } finally { gameEvents.off(GameEvents.DIALOGUE_COMPLETED, finished); }
+  });
+
+  it('does not transport a different account when a previous intro save arrives late', () => {
+    const fixture = readyReportRoute(); const page = fixture.componentInstance;
+    const write = new Subject<void>(); vi.mocked(page.progress.completeOpenPitIntro).mockReturnValue(write);
+    const finished = vi.fn(); gameEvents.on(GameEvents.DIALOGUE_COMPLETED, finished);
+    try {
+      gameEvents.emit(GameEvents.OPEN_DIALOGUE, { npcId: 'open-pit-guide', dialogueId: 'open-pit-intro' });
+      page.completeDialogue();
+      signIn('help-b'); rememberWorldWelcome('help-b'); fixture.detectChanges();
+      expect(page.activeDialogue()).toBeNull(); expect(page.savingIntro()).toBe(false);
+      write.next(); write.complete();
+      expect(finished).not.toHaveBeenCalled();
     } finally { gameEvents.off(GameEvents.DIALOGUE_COMPLETED, finished); }
   });
 

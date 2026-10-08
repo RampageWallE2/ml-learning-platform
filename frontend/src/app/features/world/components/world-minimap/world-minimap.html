@@ -31,7 +31,7 @@
         @if (supervisorPoint(); as supervisor) {
           <g class="minimap-marker minimap-marker--current minimap-supervisor"
              [attr.transform]="'translate(' + supervisor.x + ' ' + supervisor.y + ')'">
-            <title>Centro de control: entrega el informe al supervisor</title>
+            <title>{{ introPending() ? 'Centro de control: habla con el supervisor para empezar' : 'Centro de control: entrega el informe al supervisor' }}</title>
             <circle class="minimap-marker__ring" r="55" />
             <circle class="minimap-marker__dot" r="42" />
             <text text-anchor="middle" dominant-baseline="central">S</text>

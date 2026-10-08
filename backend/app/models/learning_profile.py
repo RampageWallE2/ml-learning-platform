@@ -25,6 +25,12 @@ class LearningProfile(db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    scenario_progress = db.relationship(
+        "ScenarioProgress",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     user = db.relationship("User", back_populates="learning_profile")
 
     def to_dict(self) -> dict:

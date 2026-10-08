@@ -72,7 +72,7 @@
     @if (minimapAvailable() && minimap(); as map) {
       <div class="world-hud__minimap">
         <app-world-minimap [map]="map" [player]="minimapPlayer()" [zone]="progressPanel().zone"
-          [loadingProgress]="loadingProgress()" [returnToSupervisor]="returnToSupervisor()" [returnFocusTarget]="gameViewport" />
+          [loadingProgress]="loadingProgress()" [introPending]="openPitIntroPending()" [returnToSupervisor]="returnToSupervisor()" [returnFocusTarget]="gameViewport" />
       </div>
     }
 
@@ -175,7 +175,7 @@
 
     </div>
 
-  } @else if (savingLesson() || progress.syncingPending()) {
+  } @else if (savingIntro() || savingLesson() || progress.syncingPending()) {
 
     <div
       class="progress-sync-toast"
@@ -267,6 +267,7 @@
 
       <app-dialogue
         [dialogue]="dialogue"
+        [busy]="progressSyncBusy()"
         (completed)="completeDialogue()"
       />
 

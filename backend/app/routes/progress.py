@@ -2,18 +2,19 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from flask import Blueprint, g, jsonify, request
-from sqlalchemy import case
+from sqlalchemy import case, func
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 
 from ..auth import require_auth
 from ..extensions import db
-from ..models import LearningProfile, LessonProgress
+from ..models import LearningProfile, LessonProgress, ScenarioProgress
 from ..lesson_catalog import LESSON_IDS, MAX_CURRENT_STEP, prerequisites
 
 
 progress_blueprint = Blueprint("progress", __name__, url_prefix="/api/v1")
 
 VALID_STATUSES = {"in_progress", "completed"}
+SCENARIO_KEYS = {"open-pit"}
 
 
 def _error(message: str, status_code: int, code: str | None = None):
@@ -37,10 +38,17 @@ def get_progress():
         .all()
     )
 
+    scenarios = db.session.scalars(
+        db.select(ScenarioProgress)
+        .where(ScenarioProgress.profile_id == profile.id)
+        .order_by(ScenarioProgress.scenario_key)
+    ).all()
+
     return jsonify(
         {
             "profileId": str(profile.id),
             "lessons": [item.to_dict() for item in progress],
+            "scenarios": [item.to_dict() for item in scenarios],
         }
     )
 
@@ -119,3 +127,40 @@ def save_lesson_progress(lesson_id: str):
     result = progress.to_dict()
     db.session.commit()
     return jsonify({"progress": result}), 201 if created else 200
+
+
+@progress_blueprint.put("/me/scenarios/<scenario_key>/intro")
+@require_auth
+def complete_scenario_intro(scenario_key: str):
+    if scenario_key not in SCENARIO_KEYS:
+        return _error("Unknown scenario.", 400, "unknown_scenario")
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or set(payload) != {"completed"} or payload["completed"] is not True:
+        return _error("Send only completed: true.", 400, "invalid_intro_fields")
+
+    # The authenticated account owns the profile; callers cannot supply an ID
+    # or completion time. Match lesson writes' cross-worker serialization.
+    profile = g.current_user.learning_profile
+    db.session.execute(
+        db.select(LearningProfile.id)
+        .where(LearningProfile.id == profile.id)
+        .with_for_update()
+    ).scalar_one()
+    existing = db.session.get(ScenarioProgress, (profile.id, scenario_key))
+    created = existing is None
+    table = ScenarioProgress.__table__
+    statement = postgres_insert(ScenarioProgress).values(
+        profile_id=profile.id,
+        scenario_key=scenario_key,
+        intro_completed_at=datetime.now(timezone.utc),
+    )
+    statement = statement.on_conflict_do_update(
+        index_elements=[table.c.profile_id, table.c.scenario_key],
+        set_={"intro_completed_at": func.coalesce(
+            table.c.intro_completed_at, statement.excluded.intro_completed_at,
+        )},
+    ).returning(ScenarioProgress)
+    progress = db.session.scalars(statement, execution_options={"populate_existing": True}).one()
+    result = progress.to_dict()
+    db.session.commit()
+    return jsonify({"scenario": result}), 201 if created else 200

@@ -16,14 +16,15 @@ export class WorldMinimap {
   readonly zone = input<ZoneProgress | null>(null);
   readonly loadingProgress = input(false);
   readonly returnToSupervisor = input(false);
-  readonly supervisorPoint = computed(() => !this.loadingProgress() && this.returnToSupervisor()
+  readonly introPending = input(false);
+  readonly supervisorPoint = computed(() => !this.loadingProgress() && (this.introPending() || this.returnToSupervisor())
     ? this.map().supervisor ?? null : null);
   readonly returnFocusTarget = input<HTMLElement | null>(null);
   private readonly compactMedia = window.matchMedia?.('(max-width: 750px), (max-height: 480px)');
   readonly expanded = signal(!this.compactMedia?.matches);
   private readonly toggleButton = viewChild<ElementRef<HTMLButtonElement>>('toggleButton');
 
-  readonly nextLesson = computed(() => this.loadingProgress() ? null
+  readonly nextLesson = computed(() => this.loadingProgress() || this.introPending() ? null
     : this.zone()?.lessons.find(lesson => lesson.status !== 'completed') ?? null);
   readonly nextLessonNumber = computed(() => this.map().lessons.find(
     lesson => lesson.lessonId === this.nextLesson()?.lessonId,

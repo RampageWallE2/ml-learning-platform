@@ -53,6 +53,19 @@ describe('world minimap', () => {
     expect(root.querySelector('.minimap-supervisor')).toBeNull();
   });
 
+  it('prioritizes the supervisor while the intro is pending, then reveals the next class', () => {
+    const fixture = create(); const root: HTMLElement = fixture.nativeElement;
+    fixture.componentRef.setInput('map', { ...map, supervisor: { x: 410, y: 875 } });
+    fixture.componentRef.setInput('introPending', true); fixture.detectChanges();
+    expect(root.querySelector('.minimap-supervisor')?.getAttribute('transform')).toBe('translate(410 875)');
+    expect(root.querySelector('.minimap-supervisor title')?.textContent).toContain('para empezar');
+    expect(root.querySelector('.minimap-next')?.textContent).toContain('Supervisor');
+    expect(root.querySelector('[data-lesson-id].minimap-marker--current')).toBeNull();
+    fixture.componentRef.setInput('introPending', false); fixture.detectChanges();
+    expect(root.querySelector('.minimap-supervisor')).toBeNull();
+    expect(root.querySelector('.minimap-next')?.textContent).toContain('C1');
+  });
+
   it('moves only the player marker, keeps the terrain and class data stable and ignores another scene', () => {
     const fixture = create(); const component = fixture.componentInstance;
     const markers = component.markers();

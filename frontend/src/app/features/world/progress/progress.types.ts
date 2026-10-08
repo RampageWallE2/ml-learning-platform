@@ -46,6 +46,16 @@ export type StoredLessonProgress = Readonly<{
 export type ProgressApiResponse = Readonly<{
   profileId: string;
   lessons: StoredLessonProgress[];
+  scenarios: StoredScenarioProgress[];
+}>;
+
+export type StoredScenarioProgress = Readonly<{
+  scenarioKey: string;
+  introCompletedAt: string | null;
+}>;
+
+export type SaveScenarioIntroResponse = Readonly<{
+  scenario: StoredScenarioProgress;
 }>;
 
 

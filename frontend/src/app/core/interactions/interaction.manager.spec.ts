@@ -171,16 +171,16 @@ describe('InteractionManager — next lesson guide', () => {
   it('guides the final return to the authored intro zone and reuses it without triggering the intro', () => {
     const { manager, scene } = create('OpenPitScene', false, true);
     const completedLessonIds = Array.from({ length: 9 }, (_, index) => `lesson-0${index + 1}`);
-    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-09', completedLessonIds: completedLessonIds.slice(0, -1) });
+    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-09', completedLessonIds: completedLessonIds.slice(0, -1), openPitIntroCompleted: true });
     expect(guideCalls.setTarget).not.toHaveBeenLastCalledWith({ label: 'Centro de control', x: 1590, y: 3351 });
-    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: null, completedLessonIds });
+    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: null, completedLessonIds, openPitIntroCompleted: true });
     expect(guideCalls.setTarget).toHaveBeenLastCalledWith({ label: 'Centro de control', x: 1590, y: 3351 });
     const open = vi.fn(); gameEvents.on(GameEvents.OPEN_DIALOGUE, open);
     try {
       scene.physics.overlap.mockReturnValue(true);
       manager.update(true, false);
       expect(open).toHaveBeenLastCalledWith({ dialogueId: 'open-pit-closing', npcId: 'open-pit-guide' });
-      gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: null, completedLessonIds, openPitReportDelivered: true });
+      gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: null, completedLessonIds, openPitReportDelivered: true, openPitIntroCompleted: true });
       expect(guideCalls.setTarget).toHaveBeenLastCalledWith(null);
       manager.update(true, false);
       expect(open).toHaveBeenLastCalledWith({ dialogueId: 'open-pit-closing', npcId: 'open-pit-guide' });
@@ -241,10 +241,15 @@ describe('InteractionManager — next lesson guide', () => {
     } finally { gameEvents.off(GameEvents.INTRO_GUIDANCE_CHANGED, guidance); }
   });
 
-  it('does not send a recovered player inside the pit back to the introduction', () => {
+  it('keeps the supervisor objective for a recovered player whose server intro is pending', () => {
     create('OpenPitScene', false, true, true);
-    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-05', completedLessonIds: [] });
+    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-05', completedLessonIds: [], openPitIntroCompleted: false });
+    expect(guideCalls.setTarget).toHaveBeenLastCalledWith({ label: 'Supervisor', x: 1590, y: 3351 });
+    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-05', completedLessonIds: [], openPitIntroCompleted: true });
     expect(guideCalls.setTarget).toHaveBeenLastCalledWith({ lessonId: 'lesson-05', x: 2560, y: 850 });
+    // A full server reset must reactivate guidance, even in this same visit.
+    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-01', completedLessonIds: [], openPitIntroCompleted: false });
+    expect(guideCalls.setTarget).toHaveBeenLastCalledWith({ label: 'Supervisor', x: 1590, y: 3351 });
   });
 
   it('accepts previously completed guidance during construction and keeps the next lesson instead', () => {

@@ -41,7 +41,7 @@
   </div>
 
   <div class="dialogue-stage">
-    <button type="button" class="btn btn--secondary continue-button" autofocus (click)="next()">
+    <button type="button" class="btn btn--secondary continue-button" autofocus [disabled]="busy()" (click)="next()">
       <span>
         {{ isTyping() ? 'Mostrar texto' : isLastMessage() ? 'Continuar' : 'Siguiente' }}
       </span>

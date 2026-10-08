@@ -44,6 +44,7 @@ import { LEARNING_ZONES } from '../lessons/lesson-catalog';
 import {
   LessonProgressItem,
   ProgressApiResponse,
+  SaveScenarioIntroResponse,
   SaveLessonProgressResponse,
   ZoneProgress
 } from './progress.types';
@@ -117,6 +118,10 @@ export class ProgressService {
 
 
   private activeUser: AuthenticatedUser | null = null;
+  private readonly introState = signal<boolean | null>(null);
+  // null means not loaded: never treat a failed read as a confirmed intro.
+  readonly openPitIntroCompleted = this.introState.asReadonly();
+  private introConfirmationVersion = 0;
 
   private readonly pendingState = signal<string[]>([]);
   readonly pendingLessonIds = this.pendingState.asReadonly();
@@ -152,6 +157,7 @@ export class ProgressService {
 
       // Keep this session's confirmed progress visible if the refresh fails.
       const completedBeforeLoad = new Set(this.completedLessonIds());
+      const introVersionBeforeLoad = this.introConfirmationVersion;
       this.restorePending(user.id);
       return this.http.get<ProgressApiResponse>(
         `${this.authConfig.apiBaseUrl}/me/progress`,
@@ -160,6 +166,12 @@ export class ProgressService {
         timeout({ first: API_REQUEST_TIMEOUT_MS }),
         filter(() => this.auth.user() === user),
         tap(response => {
+          if (!Array.isArray(response.scenarios)) {
+            throw new Error('El servidor no devolvió el estado de los escenarios.');
+          }
+          if (introVersionBeforeLoad === this.introConfirmationVersion) {
+            this.introState.set(!!response.scenarios.find(item => item.scenarioKey === 'open-pit')?.introCompletedAt);
+          }
           // Keep confirmations received while this GET was in flight.
           const confirmed = new Set([
             ...this.completedLessonIds().filter(id => !completedBeforeLoad.has(id)),
@@ -332,6 +344,43 @@ export class ProgressService {
     if (user) this.restorePending(user.id);
   }
 
+  completeOpenPitIntro(): Observable<void> {
+    return defer(() => {
+      const user = this.auth.user();
+      this.activateUser(user);
+      if (!user) return throwError(() => new Error('Se requiere una sesión para guardar la intro.'));
+      if (this.introState() === true) return of(undefined);
+      const key = `${user.id}:scenario:open-pit:intro`;
+      const existing = this.saveRequests.get(key);
+      if (existing?.user === user) return existing.request;
+
+      const request = this.http.put<SaveScenarioIntroResponse>(
+        `${this.authConfig.apiBaseUrl}/me/scenarios/open-pit/intro`,
+        { completed: true },
+        { withCredentials: true },
+      ).pipe(
+        timeout({ first: API_REQUEST_TIMEOUT_MS }),
+        filter(() => this.auth.user() === user),
+        map(response => {
+          const scenario = response.scenario;
+          if (scenario?.scenarioKey !== 'open-pit' || !scenario.introCompletedAt
+            || !Number.isFinite(Date.parse(scenario.introCompletedAt))) {
+            throw new Error('El servidor no confirmó la intro.');
+          }
+          this.introConfirmationVersion += 1;
+          this.introState.set(true);
+        }),
+        catchError(error => this.auth.user() === user ? throwError(() => error) : EMPTY),
+        finalize(() => {
+          if (this.saveRequests.get(key)?.request === request) this.saveRequests.delete(key);
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+      this.saveRequests.set(key, { user, request });
+      return request;
+    });
+  }
+
   private restorePending(userId: string): void {
     const stored = loadPendingProgress(userId, this.orderedLessons.map(item => item.lessonId));
     this.pendingState.update(ids => [...new Set([...ids, ...stored.lessonIds])]);
@@ -458,6 +507,8 @@ export class ProgressService {
 
   reset(): void {
     this.completedLessonIds.set([]);
+    this.introState.set(null);
+    this.introConfirmationVersion += 1;
   }
 
 

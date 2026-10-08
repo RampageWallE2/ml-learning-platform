@@ -61,6 +61,17 @@ describe('Dialogue', () => {
     expect(completed).toHaveBeenCalledOnce();
   });
 
+  it('cannot advance or complete while the server confirmation is in flight', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const completed = vi.fn(); page.completed.subscribe(completed);
+    fixture.componentRef.setInput('busy', true); fixture.detectChanges();
+    page.next(); expect(page.currentIndex()).toBe(0);
+    expect(fixture.nativeElement.querySelector('.continue-button').disabled).toBe(true);
+    page.currentIndex.set(1); page.next(); expect(completed).not.toHaveBeenCalled();
+    fixture.componentRef.setInput('busy', false); fixture.detectChanges();
+    page.next(); expect(completed).toHaveBeenCalledOnce();
+  });
+
   it('types each message and uses the first click to reveal it completely', () => {
     const fixture = create(data, false);
     const page = fixture.componentInstance;

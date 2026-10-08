@@ -60,12 +60,14 @@ def test_postgresql_migrations_from_empty_and_previous_schema_preserve_accounts(
             user_id = user.id
             upgrade(directory=MIGRATIONS)
             assert "password_login_limits" in inspect(db.engine).get_table_names()
+            assert "scenario_progress" in inspect(db.engine).get_table_names()
             assert db.session.get(User, user_id).email == "migration@example.com"
             downgrade(directory=MIGRATIONS, revision="20260920_0003")
             assert "password_login_limits" not in inspect(db.engine).get_table_names()
+            assert "scenario_progress" not in inspect(db.engine).get_table_names()
             upgrade(directory=MIGRATIONS)
             assert db.session.get(User, user_id).id == user_id
-            assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "20261006_0004"
+            assert db.session.scalar(text("SELECT version_num FROM alembic_version")) == "20261007_0005"
             db.session.remove()
             db.engine.dispose()
     finally:

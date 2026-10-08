@@ -17,6 +17,66 @@ class MinimapTestScene extends OpenPitScene {
 }
 
 describe('Open Pit minimap event bridge', () => {
+  it.each([false, true])('enters the pit on a confirmed normal visit, but preserves a restored position (%s)', restored => {
+    const scene = new MinimapTestScene(); let locked = true;
+    Object.assign(scene, {
+      restoredPositionApplied: restored,
+      playerController: { isLocked: () => locked, sprite: { x: 100, y: 200, anims: {} } },
+      time: { now: 0 },
+    });
+    const map = { widthInPixels: 3840, heightInPixels: 3840, layers: [],
+      getObjectLayer: (name: string) => name === 'SpawnPoints'
+        ? { objects: [{ name: 'pit-intro-arrival', x: 736, y: 1424 }] } : null,
+    } as unknown as Phaser.Tilemaps.Tilemap;
+    scene.build(map);
+    try {
+      gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-01', completedLessonIds: [], openPitIntroCompleted: null });
+      scene.tick(); expect(scene.teleports).not.toHaveBeenCalled();
+      gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-01', completedLessonIds: [], openPitIntroCompleted: true });
+      scene.tick(); expect(scene.teleports).not.toHaveBeenCalled();
+      locked = false; scene.tick(); scene.tick();
+      if (restored) expect(scene.teleports).not.toHaveBeenCalled();
+      else expect(scene.teleports).toHaveBeenCalledExactlyOnceWith({ x: 736, y: 1424 });
+    } finally { scene.close(); }
+  });
+
+  it('does not auto-enter with a pending intro or after leaving the scene', () => {
+    const scene = new MinimapTestScene();
+    Object.assign(scene, {
+      playerController: { isLocked: () => false, sprite: { x: 100, y: 200, anims: {} } },
+      time: { now: 0 },
+    });
+    const map = { widthInPixels: 3840, heightInPixels: 3840, layers: [],
+      getObjectLayer: (name: string) => name === 'SpawnPoints'
+        ? { objects: [{ name: 'pit-intro-arrival', x: 736, y: 1424 }] } : null,
+    } as unknown as Phaser.Tilemaps.Tilemap;
+    const count = gameEvents.listenerCount(GameEvents.LESSON_PROGRESS_CHANGED);
+    scene.build(map);
+    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-01', completedLessonIds: [], openPitIntroCompleted: false });
+    scene.tick(); expect(scene.teleports).not.toHaveBeenCalled();
+    scene.close(); expect(gameEvents.listenerCount(GameEvents.LESSON_PROGRESS_CHANGED)).toBe(count);
+    gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-01', completedLessonIds: [], openPitIntroCompleted: true });
+    scene.tick(); expect(scene.teleports).not.toHaveBeenCalled();
+  });
+
+  it('cancels an entry queued during the fade if a fresh server read resets the intro', () => {
+    const scene = new MinimapTestScene(); let locked = true;
+    Object.assign(scene, {
+      playerController: { isLocked: () => locked, sprite: { x: 100, y: 200, anims: {} } }, time: { now: 0 },
+    });
+    const map = { widthInPixels: 3840, heightInPixels: 3840, layers: [],
+      getObjectLayer: (name: string) => name === 'SpawnPoints'
+        ? { objects: [{ name: 'pit-intro-arrival', x: 736, y: 1424 }] } : null,
+    } as unknown as Phaser.Tilemaps.Tilemap;
+    scene.build(map);
+    try {
+      gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-01', completedLessonIds: [], openPitIntroCompleted: true });
+      scene.tick();
+      gameEvents.emit(GameEvents.LESSON_PROGRESS_CHANGED, { currentLessonId: 'lesson-01', completedLessonIds: [], openPitIntroCompleted: false });
+      locked = false; scene.tick(); expect(scene.teleports).not.toHaveBeenCalled();
+    } finally { scene.close(); }
+  });
+
   it('publishes map coordinates once, limits player updates to five per second and clears on shutdown', () => {
     const scene = new MinimapTestScene();
     const sprite = { x: 100, y: 200, anims: { currentAnim: { key: 'player-postman-3-idle-down' } } };
@@ -51,7 +111,7 @@ describe('Open Pit minimap event bridge', () => {
   it('handles only the completed Open Pit intro, reads its Tiled arrival point and removes the listener on exit', () => {
     const scene = new MinimapTestScene();
     Object.assign(scene, {
-      playerController: { sprite: { x: 100, y: 200, anims: { currentAnim: { key: 'idle-down' } } } },
+      playerController: { isLocked: () => false, sprite: { x: 100, y: 200, anims: { currentAnim: { key: 'idle-down' } } } },
       time: { now: 0 },
     });
     const map = { widthInPixels: 3840, heightInPixels: 3840, layers: [],
@@ -65,6 +125,7 @@ describe('Open Pit minimap event bridge', () => {
       gameEvents.emit(GameEvents.DIALOGUE_COMPLETED, { dialogueId: 'open-pit-intro', sceneKey: 'HubScene' });
       expect(scene.teleports).not.toHaveBeenCalled();
       gameEvents.emit(GameEvents.DIALOGUE_COMPLETED, { dialogueId: 'open-pit-intro', sceneKey: 'OpenPitScene' });
+      scene.tick();
       expect(scene.teleports).toHaveBeenCalledExactlyOnceWith({ x: 736, y: 1424 });
       expect(gameEvents.listenerCount(GameEvents.DIALOGUE_COMPLETED)).toBe(previousListeners + 1);
       scene.close();

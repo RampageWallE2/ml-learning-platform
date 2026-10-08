@@ -178,3 +178,17 @@ Consultar [distribución y soporte](distribucion-soporte.md). Antes de publicar:
 Para cPanel: frontend estático y rutas Angular son solo una parte; confirmar Python compatible, Passenger/WSGI, variables privadas, PostgreSQL y migraciones con el proveedor. No asumir que permite Docker o que copiar `dist` entrega el backend. Si no ofrece estas funciones, hará falta otra ubicación para la API o una arquitectura aprobada; no se cambió a MySQL/PHP ni se rediseñó autenticación. Referencia: [Application Manager de cPanel](https://docs.cpanel.net/cpanel/software/application-manager/).
 
 Bases técnicas: [producción en Flask](https://flask.palletsprojects.com/en/stable/deploying/), [Compose en producción](https://docs.docker.com/compose/how-tos/production/), [pg_restore](https://www.postgresql.org/docs/current/app-pgrestore.html).
+
+## Intro de Open Pit: progreso narrativo en PostgreSQL
+
+Aplicado localmente el 2026-10-07: migración `20261007_0005`, sobre `20261006_0004`. La evidencia anterior corresponde a su versión histórica; no se repitió aquí todo el ensayo de producción.
+
+- `scenario_progress`: `profile_id` (FK a `learning_profiles.id`, borrado en cascada), `scenario_key` y `intro_completed_at` nullable con zona horaria. Clave primaria compuesta `(profile_id, scenario_key)`; no duplicar usuario ni guardar otro booleano. Para `open-pit`, ausencia de fila o fecha nula significa intro pendiente.
+- GET `/api/v1/me/progress` incluye `scenarios`, separado de `lessons`. PUT `/api/v1/me/scenarios/open-pit/intro` acepta únicamente `{ "completed": true }`. Perfil y fecha los decide el servidor autenticado. Reintentos y solicitudes concurrentes preservan la primera fecha.
+- La marca antigua `exploralab.open-pit-intro.v1.*` ya no se lee ni se escribe; no migrarla como evidencia de una intro completada. Mantener las preferencias de bienvenida y las posiciones existentes. Una posición recuperada dentro del tajo no oculta la guía si el servidor informa intro pendiente.
+- Intro pendiente: objetivo, señal del supervisor y minimapa. Finalizar la conversación espera confirmación antes de transportarse a `pit-intro-arrival` del mapa. Si falla, conservar la última parte del diálogo y reintentar desde la misma página; primero consultar el servidor por si se perdió una respuesta exitosa. No hay una cola offline persistente para la intro: si se cierra antes de guardarse, no se asume completada.
+- Entrada normal con intro confirmada: trasladarse al tajo una vez terminado el fundido inicial. Al retomar una posición guardada, conservarla. Respuestas de sesiones anteriores no completan ni transportan otra cuenta. La intro no cuenta como clase ni cambia los porcentajes de las nueve lecciones.
+
+Un reinicio completo de progreso debe eliminar `lesson_progress` y `scenario_progress` en la misma transacción, preservando `users`, `learning_profiles`, identidades y sesiones. Este cambio no ejecutó un nuevo borrado. Antes de un reinicio administrativo, evitar que pestañas abiertas o pendientes locales de clases vuelvan a subir avances; no confundir este procedimiento con cerrar una cuenta. No se añadió un endpoint público de reinicio.
+
+Comprobación acotada: 41 pruebas de API/progreso/concurrencia/migración y 69 de disponibilidad en PostgreSQL aislado. Pruebas Angular de servicio, página, diálogos, escena, guía y minimapa; lint de los archivos TypeScript modificados. No se ensayó nube, recorrido completo C1–C9 ni teléfono físico para este cambio.

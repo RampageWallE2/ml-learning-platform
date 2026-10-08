@@ -84,6 +84,93 @@ describe('ProgressService — Open Pit MVP', () => {
     return loadPendingProgress(id, ['lesson-01', 'lesson-02']).lessonIds;
   }
 
+  const introUrl = 'http://api.test/api/v1/me/scenarios/open-pit/intro';
+  const introScenario = { scenarioKey: 'open-pit', introCompletedAt: '2026-10-07T12:00:00+00:00' };
+
+  it('uses server intro progress without counting it as a completed lesson', () => {
+    expect(progress.openPitIntroCompleted()).toBeNull();
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: [], scenarios: [introScenario],
+    });
+    expect(progress.openPitIntroCompleted()).toBe(true);
+    expect(progress.zoneProgress()[0].completedLessons).toBe(0);
+    expect(progress.currentLesson()?.lessonId).toBe('lesson-01');
+    progress.completeOpenPitIntro().subscribe(); http.expectNone(introUrl);
+    // A full server reset overrides previously confirmed session state.
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [], scenarios: [] });
+    expect(progress.openPitIntroCompleted()).toBe(false);
+  });
+
+  it('shares intro writes and only marks completed after a valid confirmation', () => {
+    const done = vi.fn();
+    progress.completeOpenPitIntro().subscribe(done);
+    progress.completeOpenPitIntro().subscribe(done);
+    const request = http.expectOne(introUrl);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ completed: true });
+    expect(request.request.withCredentials).toBe(true);
+    expect(progress.openPitIntroCompleted()).toBeNull();
+    request.flush({ scenario: introScenario });
+    expect(progress.openPitIntroCompleted()).toBe(true);
+    expect(done).toHaveBeenCalledTimes(2);
+    expect(progress.pendingLessonIds()).toEqual([]);
+  });
+
+  it('does not let an older GET override an intro confirmed while the read was in flight', () => {
+    progress.loadProgress().subscribe();
+    const read = http.expectOne('http://api.test/api/v1/me/progress');
+    progress.completeOpenPitIntro().subscribe();
+    http.expectOne(introUrl).flush({ scenario: introScenario });
+    read.flush({ profileId: 'a', lessons: [], scenarios: [] });
+    expect(progress.openPitIntroCompleted()).toBe(true);
+  });
+
+  it.each([{ scenarioKey: 'quarries', introCompletedAt: introScenario.introCompletedAt },
+    { scenarioKey: 'open-pit', introCompletedAt: null },
+    { scenarioKey: 'open-pit', introCompletedAt: 'invalid-date' },
+  ])('rejects an invalid intro confirmation: %o', scenario => {
+    const failed = vi.fn(); progress.completeOpenPitIntro().subscribe({ error: failed });
+    http.expectOne(introUrl).flush({ scenario });
+    expect(failed).toHaveBeenCalledOnce();
+    expect(progress.openPitIntroCompleted()).toBeNull();
+  });
+
+  it('bounds failed intro writes and reconciles a lost response before retrying', () => {
+    vi.useFakeTimers(); const failed = vi.fn();
+    progress.completeOpenPitIntro().subscribe({ error: failed });
+    const request = http.expectOne(introUrl);
+    vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS);
+    expect(request.cancelled).toBe(true); expect(failed).toHaveBeenCalledOnce();
+    expect(progress.openPitIntroCompleted()).toBeNull();
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [], scenarios: [introScenario] });
+    progress.completeOpenPitIntro().subscribe(); http.expectNone(introUrl);
+    expect(progress.openPitIntroCompleted()).toBe(true);
+  });
+
+  it('ignores stale intro reads and writes after changing account', () => {
+    progress.completeOpenPitIntro().subscribe(); const write = http.expectOne(introUrl);
+    progress.loadProgress().subscribe(); const read = http.expectOne('http://api.test/api/v1/me/progress');
+    user.set(studentB);
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', lessons: [], scenarios: [] });
+    write.flush({ scenario: introScenario });
+    read.flush({ profileId: 'a', lessons: [], scenarios: [introScenario] });
+    expect(progress.openPitIntroCompleted()).toBe(false);
+    progress.completeOpenPitIntro().subscribe();
+    http.expectOne(introUrl).flush({ scenario: introScenario });
+    expect(progress.openPitIntroCompleted()).toBe(true);
+  });
+
+  it('keeps intro status unknown on read failure and rejects a missing scenario contract', () => {
+    const failed = vi.fn(); progress.loadProgress().subscribe({ error: failed });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [] });
+    expect(failed).toHaveBeenCalledOnce();
+    expect(progress.openPitIntroCompleted()).toBeNull();
+  });
+
   it('exposes readable flags without external mutation methods', () => {
     expect(progress.pendingStorageAvailable()).toBe(true);
     expect(progress.syncingPending()).toBe(false);
@@ -97,7 +184,7 @@ describe('ProgressService — Open Pit MVP', () => {
     vi.useFakeTimers();
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+      profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')],
     });
     failSave('lesson-02');
     const failed = vi.fn();
@@ -114,7 +201,7 @@ describe('ProgressService — Open Pit MVP', () => {
     http.expectNone('http://api.test/api/v1/me/progress/lesson-02');
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: ['lesson-01', 'lesson-02'].map(id => storedLesson(id, 'completed')),
+      profileId: 'a', scenarios: [], lessons: ['lesson-01', 'lesson-02'].map(id => storedLesson(id, 'completed')),
     });
     expect(progress.pendingLessonIds()).toEqual([]);
     expect(progress.isLessonCompleted('lesson-02')).toBe(true);
@@ -145,7 +232,7 @@ describe('ProgressService — Open Pit MVP', () => {
     progress.loadProgress().subscribe();
     http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: alreadySaved ? [storedLesson('lesson-01', 'completed')] : [],
+      profileId: 'a', scenarios: [], lessons: alreadySaved ? [storedLesson('lesson-01', 'completed')] : [],
     });
     if (alreadySaved) {
       http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
@@ -166,7 +253,7 @@ describe('ProgressService — Open Pit MVP', () => {
     progress.loadProgress().subscribe({ error: failed });
     const read = http.expectOne('http://api.test/api/v1/me/progress');
     vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS - 1);
-    read.flush({ profileId: 'a', lessons: [] });
+    read.flush({ profileId: 'a', scenarios: [], lessons: [] });
     const write = http.expectOne('http://api.test/api/v1/me/progress/lesson-01');
     expect(progress.syncingPending()).toBe(true);
     vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS - 1);
@@ -192,7 +279,7 @@ describe('ProgressService — Open Pit MVP', () => {
     expect(progress.isLessonCompleted('lesson-01')).toBe(false);
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+      profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')],
     });
     expect(progress.pendingLessonIds()).toEqual([]);
     http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
@@ -207,7 +294,7 @@ describe('ProgressService — Open Pit MVP', () => {
     const previous = http.expectOne('http://api.test/api/v1/me/progress/lesson-01');
     user.set(studentB);
     progress.loadProgress().subscribe();
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', scenarios: [], lessons: [] });
     vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS);
     expect(previous.cancelled).toBe(true);
     expect(received).not.toHaveBeenCalled();
@@ -236,7 +323,7 @@ describe('ProgressService — Open Pit MVP', () => {
     let recovered = false;
     progress.loadProgress().subscribe(() => { recovered = true; });
     http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', scenarios: [], lessons: [] });
     expect(progress.syncingPending()).toBe(true);
     expect(progress.isLessonAvailable('lesson-02')).toBe(false);
     http.expectOne('http://api.test/api/v1/me/progress/lesson-01').flush({ progress: storedLesson('lesson-01', 'completed') });
@@ -252,7 +339,7 @@ describe('ProgressService — Open Pit MVP', () => {
     TestBed.resetTestingModule(); boot();
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+      profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')],
     });
     http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
     expect(readStored()).toEqual([]);
@@ -266,7 +353,7 @@ describe('ProgressService — Open Pit MVP', () => {
     expect(readStored()).toEqual(['lesson-01']);
     http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
     progress.loadProgress().subscribe({ error: () => undefined });
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', scenarios: [], lessons: [] });
     http.expectOne('http://api.test/api/v1/me/progress/lesson-01').error(new ProgressEvent('error'));
     expect(progress.syncingPending()).toBe(false);
     expect(readStored()).toEqual(['lesson-01']);
@@ -276,13 +363,13 @@ describe('ProgressService — Open Pit MVP', () => {
     failSave();
     user.set(studentB);
     progress.loadProgress().subscribe();
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', scenarios: [], lessons: [] });
     expect(progress.pendingLessonIds()).toEqual([]);
     http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
     expect(readStored()).toEqual(['lesson-01']);
     user.set(studentA);
     progress.loadProgress().subscribe();
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', scenarios: [], lessons: [] });
     http.expectOne('http://api.test/api/v1/me/progress/lesson-01').flush({ progress: storedLesson('lesson-01', 'completed') });
     expect(readStored()).toEqual([]);
   });
@@ -292,7 +379,7 @@ describe('ProgressService — Open Pit MVP', () => {
     const oldSave = http.expectOne('http://api.test/api/v1/me/progress/lesson-01');
     user.set(studentB);
     progress.loadProgress().subscribe();
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', scenarios: [], lessons: [] });
     oldSave.flush({ progress: storedLesson('lesson-01', 'completed') });
     expect(progress.isLessonCompleted('lesson-01')).toBe(false);
     expect(progress.pendingLessonIds()).toEqual([]);
@@ -305,7 +392,7 @@ describe('ProgressService — Open Pit MVP', () => {
     const oldRead = http.expectOne('http://api.test/api/v1/me/progress');
     user.set(studentB);
     progress.loadProgress().subscribe();
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', scenarios: [], lessons: [] });
     oldRead.error(new ProgressEvent('error'));
     expect(failed).toBe(false);
     expect(progress.isLessonCompleted('lesson-01')).toBe(false);
@@ -325,13 +412,13 @@ describe('ProgressService — Open Pit MVP', () => {
   it('preserves a confirmation received while an older GET is in flight', () => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+      profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')],
     });
     progress.loadProgress().subscribe();
     const read = http.expectOne('http://api.test/api/v1/me/progress');
     progress.completeLesson('lesson-02').subscribe();
     http.expectOne('http://api.test/api/v1/me/progress/lesson-02').flush({ progress: storedLesson('lesson-02', 'completed') });
-    read.flush({ profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')] });
+    read.flush({ profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')] });
     expect(progress.isLessonCompleted('lesson-01')).toBe(true);
     expect(progress.isLessonCompleted('lesson-02')).toBe(true);
     expect(progress.isLessonAvailable('lesson-03')).toBe(true);
@@ -343,7 +430,7 @@ describe('ProgressService — Open Pit MVP', () => {
     expect(progress.pendingStorageAvailable()).toBe(false);
     expect(progress.pendingLessonIds()).toEqual(['lesson-01']);
     progress.loadProgress().subscribe();
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', scenarios: [], lessons: [] });
     http.expectOne('http://api.test/api/v1/me/progress/lesson-01').flush({ progress: storedLesson('lesson-01', 'completed') });
     expect(progress.pendingLessonIds()).toEqual([]);
   });
@@ -368,7 +455,7 @@ describe('ProgressService — Open Pit MVP', () => {
   it('recovers multiple stored results in pedagogical order without skipping prerequisites', () => {
     savePendingProgress(studentA.id, ['lesson-02', 'lesson-01']);
     progress.loadProgress().subscribe();
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', scenarios: [], lessons: [] });
     http.expectNone('http://api.test/api/v1/me/progress/lesson-02');
     http.expectOne('http://api.test/api/v1/me/progress/lesson-01').flush({ progress: storedLesson('lesson-01', 'completed') });
     http.expectOne('http://api.test/api/v1/me/progress/lesson-02').flush({ progress: storedLesson('lesson-02', 'completed') });
@@ -395,7 +482,7 @@ describe('ProgressService — Open Pit MVP', () => {
   it('unlocks the workshop after C3 and then ROM/chancado after C4', () => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: ['lesson-01', 'lesson-02', 'lesson-03'].map(id => storedLesson(id, 'completed'))
     });
     expect(progress.isLessonAvailable('lesson-04')).toBe(true);
@@ -443,7 +530,7 @@ describe('ProgressService — Open Pit MVP', () => {
   it('resumes at C6 after persisted C5 and waits for API confirmation to unlock C7', () => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: ['lesson-01', 'lesson-02', 'lesson-03', 'lesson-04', 'lesson-05']
         .map(id => storedLesson(id, 'completed')),
     });
@@ -469,7 +556,7 @@ describe('ProgressService — Open Pit MVP', () => {
   it('resumes at C7 after persisted C6 and unlocks C8 only after successful API confirmation', () => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: ['lesson-01', 'lesson-02', 'lesson-03', 'lesson-04', 'lesson-05', 'lesson-06']
         .map(id => storedLesson(id, 'completed')),
     });
@@ -497,7 +584,7 @@ describe('ProgressService — Open Pit MVP', () => {
   it('resumes at C8 and unlocks C9 only after confirmation, without finishing the zone', () => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: Array.from({ length: 7 }, (_, index) => storedLesson('lesson-0' + (index + 1), 'completed')),
     });
     expect(progress.currentLesson()?.lessonId).toBe('lesson-08');
@@ -527,7 +614,7 @@ describe('ProgressService — Open Pit MVP', () => {
   it('resumes at C9 and finishes Open Pit only after the backend confirms its final report', () => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: Array.from({ length: 8 }, (_, index) => storedLesson('lesson-0' + (index + 1), 'completed')),
     });
     expect(progress.currentLesson()?.lessonId).toBe('lesson-09');
@@ -561,7 +648,7 @@ describe('ProgressService — Open Pit MVP', () => {
     expect(request.request.withCredentials).toBe(true);
 
     request.flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: [
         storedLesson('lesson-01', 'completed'),
         storedLesson('lesson-02', 'in_progress'),
@@ -580,7 +667,7 @@ describe('ProgressService — Open Pit MVP', () => {
   it.each(['server', 'network'] as const)('preserves confirmed progress while refreshing and after a %s failure', failure => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: [storedLesson('lesson-01', 'completed'), storedLesson('lesson-02', 'completed')]
     });
 
@@ -610,7 +697,7 @@ describe('ProgressService — Open Pit MVP', () => {
 
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: [storedLesson('lesson-01', 'completed'), storedLesson('lesson-02', 'completed'),
         storedLesson('lesson-03', 'completed')],
     });
@@ -621,7 +708,7 @@ describe('ProgressService — Open Pit MVP', () => {
   it('keeps confirmed and pending results separate when a sync retry fails', () => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+      profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')],
     });
     failSave('lesson-02');
 
@@ -640,12 +727,12 @@ describe('ProgressService — Open Pit MVP', () => {
   it('replaces the previous snapshot only after a successful progress read', () => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+      profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')],
     });
 
     progress.loadProgress().subscribe();
     expect(progress.isLessonCompleted('lesson-01')).toBe(true);
-    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [] });
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', scenarios: [], lessons: [] });
     expect(progress.isLessonCompleted('lesson-01')).toBe(false);
     expect(progress.isLessonAvailable('lesson-02')).toBe(false);
   });
@@ -656,7 +743,7 @@ describe('ProgressService — Open Pit MVP', () => {
   ] as const)('clears previous confirmations for %s even if its read fails', (_, nextUser) => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
-      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+      profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')],
     });
     progress.loadProgress().subscribe();
     const oldRead = http.expectOne('http://api.test/api/v1/me/progress');
@@ -665,7 +752,7 @@ describe('ProgressService — Open Pit MVP', () => {
     progress.loadProgress().subscribe({ error: () => undefined });
     expect(progress.isLessonCompleted('lesson-01')).toBe(false);
     http.expectOne('http://api.test/api/v1/me/progress').error(new ProgressEvent('error'));
-    oldRead.flush({ profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')] });
+    oldRead.flush({ profileId: 'a', scenarios: [], lessons: [storedLesson('lesson-01', 'completed')] });
     expect(progress.isLessonCompleted('lesson-01')).toBe(false);
     expect(progress.isLessonAvailable('lesson-02')).toBe(false);
   });
@@ -723,7 +810,7 @@ describe('ProgressService — Open Pit MVP', () => {
     http.expectOne(
       'http://api.test/api/v1/me/progress'
     ).flush({
-      profileId: 'profile-id',
+      profileId: 'profile-id', scenarios: [],
       lessons: [
         storedLesson('lesson-01', 'completed')
       ]

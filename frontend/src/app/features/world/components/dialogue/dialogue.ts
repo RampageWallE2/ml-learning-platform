@@ -26,6 +26,7 @@ const TYPEWRITER_INTERVAL_MS = 22;
 export class Dialogue implements OnChanges, OnDestroy {
 
   dialogue = input.required<DialogueData>();
+  busy = input(false);
 
   completed = output<void>();
 
@@ -99,6 +100,7 @@ export class Dialogue implements OnChanges, OnDestroy {
   }
 
   next(): void {
+    if (this.busy()) return;
     if (this.isTyping()) {
       this.revealCurrentMessage();
       return;
