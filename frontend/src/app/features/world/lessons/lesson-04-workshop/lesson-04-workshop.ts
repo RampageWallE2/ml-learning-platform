@@ -5,11 +5,9 @@ import {
 import { LESSON_NAMES } from '../lesson-catalog';
 import { calculateRange } from '../lesson-statistics';
 import { C4_WORKSHOP_RECORDS as RECORDS, type OpenPitRecordGroup as RecordGroup } from '../data/open-pit-original-records';
-import { C4Stage as Stage, C4ExperimentMode as ExperimentMode, C4RangePrediction as RangePrediction,
-  C4State, C4_MAX_PRACTICE_ROUNDS, isC4State } from './lesson-04-workshop.state';
+import { C4Stage as Stage, C4State, C4_MAX_PRACTICE_ROUNDS, readC4State } from './lesson-04-workshop.state';
 
 type Comparison = 'a' | 'b' | 'same';
-type Explanation = 'extremes' | 'unchanged' | 'useless';
 type Claim = 'same' | 'different' | 'unknown';
 type Evidence = 'a' | 'b' | 'range';
 const PRACTICE_SETS: readonly (readonly RecordGroup[])[] = [
@@ -40,9 +38,6 @@ export class Lesson04Workshop implements OnChanges {
   readonly stateChanged = output<C4State>();
   readonly stage = signal<Stage>('compare');
   readonly feedback = signal('');
-  readonly experimentMode = signal<ExperimentMode>('together');
-  readonly rangePrediction = signal<RangePrediction | null>(null);
-  readonly separatedViewed = signal(false);
   readonly round = signal(0);
   readonly practiceHelped = signal(false);
   readonly needsPractice = computed(() => this.practiceHelped() && this.round() < C4_MAX_PRACTICE_ROUNDS);
@@ -50,18 +45,10 @@ export class Lesson04Workshop implements OnChanges {
   readonly records = RECORDS;
   readonly ticks = [6, 7, 8, 9, 10, 11, 12, 13, 14];
   readonly practicing = computed(() => ['practice', 'evidence', 'review'].includes(this.stage()));
-  readonly experimentVisible = computed(() => ['predict', 'experiment', 'explain', 'discovery'].includes(this.stage()));
   readonly practiceRecords = computed(() => PRACTICE_SETS[this.round() % PRACTICE_SETS.length]);
-  readonly simulated = computed(() => this.experimentMode() === 'together' ? [8, 10, 10, 10, 12] : [8, 8, 10, 12, 12]);
-  readonly simulatedRange = computed(() => this.range(this.simulated()));
-  readonly step = computed(() => this.stage() === 'compare' ? 1 : this.experimentVisible() ? 2 : 3);
-  readonly groups = computed<readonly RecordGroup[]>(() => this.practicing() ? this.practiceRecords() : this.experimentVisible() ? [
-    { ...this.records[0], name: 'Original de A' },
-    { id: 'copy', name: 'Copia de A · experimento', values: this.simulated() },
-  ] : this.records);
+  readonly step = computed(() => this.stage() === 'compare' ? 1 : this.stage() === 'discovery' ? 2 : 3);
+  readonly groups = computed<readonly RecordGroup[]>(() => this.practicing() ? this.practiceRecords() : this.records);
   readonly plots = computed(() => this.groups().map(group => {
-    // Keep unchanged copy records anchored; stack the two moving records above them.
-    const stackOrder = group.id === 'copy' ? [0, 4, 2, 1, 3] : group.values.map((_, index) => index);
     return {
       ...group,
       minimum: Math.min(...group.values),
@@ -70,9 +57,8 @@ export class Lesson04Workshop implements OnChanges {
       description: group.name + ': ' + group.values.join(', ') + ' minutos. Cada punto es una revisión; los puntos uno sobre otro tienen el mismo tiempo. Escala común de 6 a 14 minutos. Rango de ' + this.range(group.values) + ' minutos.',
       points: group.values.map((value, index) => ({
         id: group.id + '-' + (index + 1), value, x: this.position(value),
-        bottom: 14 + stackOrder.slice(0, stackOrder.indexOf(index)).filter(previous => group.values[previous] === value).length * 20,
-        movable: group.id === 'copy' && (index === 1 || index === 3),
-        pinned: this.experimentVisible() && (index === 0 || index === 4),
+        bottom: 14 + group.values.slice(0, index).filter(previous => previous === value).length * 20,
+        pinned: this.stage() === 'discovery' && (index === 0 || index === group.values.length - 1),
       })),
     };
   }));
@@ -88,23 +74,6 @@ export class Lesson04Workshop implements OnChanges {
     { id: 'a', text: 'En A hay más revisiones de 10 minutos que en B.' },
     { id: 'b', text: 'En B hay más revisiones de 10 minutos que en A.' },
   ];
-  readonly predictions: readonly { id: RangePrediction; text: string }[] = [
-    { id: 'increase', text: 'Será mayor' },
-    { id: 'same', text: 'Seguirá igual' },
-    { id: 'decrease', text: 'Será menor' },
-  ];
-  readonly predictionText = computed(() => this.predictions.find(choice => choice.id === this.rangePrediction())?.text ?? '');
-  readonly predictionOutcome = computed(() => {
-    if (this.experimentMode() !== 'apart' || !this.rangePrediction()) return '';
-    const result = 'El rango sigue siendo ' + this.simulatedRange() + ' minutos.';
-    return this.rangePrediction() === 'same' ? 'Tu idea coincide con lo que pasó. ' + result
-      : 'Pensabas que sería ' + (this.rangePrediction() === 'increase' ? 'mayor' : 'menor') + '. ' + result;
-  });
-  readonly explanations: readonly { id: Explanation; text: string }[] = [
-    { id: 'unchanged', text: 'Porque ningún tiempo cambió.' },
-    { id: 'extremes', text: 'Porque el tiempo menor y el mayor siguen siendo 8 y 12.' },
-    { id: 'useless', text: 'Porque el rango no sirve para nada.' },
-  ];
   readonly claims: readonly { id: Claim; text: string }[] = [
     { id: 'same', text: 'Mantener: con el mismo rango, cada tiempo se repite igual.' },
     { id: 'different', text: 'Corregir: el rango es igual, pero los tiempos no se repiten igual.' },
@@ -117,23 +86,21 @@ export class Lesson04Workshop implements OnChanges {
   ]);
   private readonly injector = inject(Injector);
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
-  private readonly separateButton = viewChild<ElementRef<HTMLButtonElement>>('separateButton');
   private finished = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['initialState']) return;
-    const state = this.initialState();
-    if (state !== null && !isC4State(state)) return;
+    const initial = this.initialState();
+    const state = initial === null ? null : readC4State(initial);
+    if (initial !== null && state === null) return;
     if (state) {
-      this.stage.set(state.stage); this.experimentMode.set(state.experimentMode); this.rangePrediction.set(state.rangePrediction);
-      this.separatedViewed.set(state.separatedViewed); this.round.set(state.round); this.practiceHelped.set(state.practiceHelped);
+      this.stage.set(state.stage); this.round.set(state.round); this.practiceHelped.set(state.practiceHelped);
     }
     this.feedback.set(''); this.finished = false; this.publishState();
   }
 
   private publishState(): void {
-    this.stateChanged.emit({ stage: this.stage(), experimentMode: this.experimentMode(), rangePrediction: this.rangePrediction(),
-      separatedViewed: this.separatedViewed(), round: this.round(), practiceHelped: this.practiceHelped() });
+    this.stateChanged.emit({ stage: this.stage(), round: this.round(), practiceHelped: this.practiceHelped() });
   }
 
   position(value: number): number { return (value - 6) / 8 * 100; }
@@ -141,39 +108,8 @@ export class Lesson04Workshop implements OnChanges {
 
   compare(answer: Comparison): void {
     if (this.stage() !== 'compare' || !this.compareChoices.some(choice => choice.id === answer)) return;
-    if (answer === 'a') this.moveTo('predict');
+    if (answer === 'a') this.moveTo('discovery');
     else this.hint('Mira los puntos de 10 minutos: en A hay tres y en B hay uno. El tiempo menor y el mayor son iguales en ambos, pero los demás tiempos no.');
-  }
-
-  predictRange(answer: RangePrediction): void {
-    if (this.stage() !== 'predict' || !this.predictions.some(choice => choice.id === answer)) return;
-    this.rangePrediction.set(answer);
-    this.moveTo('experiment');
-  }
-
-  setExperiment(mode: ExperimentMode): void {
-    if (this.stage() !== 'experiment' || !this.rangePrediction() || !['together', 'apart'].includes(mode)) return;
-    this.experimentMode.set(mode);
-    if (mode === 'apart') this.separatedViewed.set(true);
-    this.feedback.set('');
-    this.publishState();
-  }
-
-  showChanges(): void {
-    if (this.stage() !== 'experiment' || !this.rangePrediction()) return;
-    if (!this.separatedViewed() || this.experimentMode() !== 'apart') {
-      this.hint('Pulsa «Separar tiempos» para ver cómo cambian los dos puntos de la copia.');
-      return;
-    }
-    this.moveTo('explain');
-  }
-
-  explain(answer: Explanation): void {
-    if (this.stage() !== 'explain' || !this.explanations.some(choice => choice.id === answer)) return;
-    if (answer === 'extremes') this.moveTo('discovery');
-    else this.hint(answer === 'unchanged'
-      ? 'Dos tiempos de la copia cambiaron de lugar: de 10 a 8 y a 12. Lo que se mantuvo fue el tiempo menor y el mayor.'
-      : 'El rango sí muestra cuánto separa al tiempo menor del mayor. No muestra cómo son los demás tiempos.');
   }
 
   startPractice(): void {
@@ -224,13 +160,7 @@ export class Lesson04Workshop implements OnChanges {
   }
 
   private focusTask(): void {
-    afterNextRender(() => {
-      const target = this.stage() === 'experiment' ? this.separateButton() : this.taskHeading();
-      target?.nativeElement.focus();
-      if (this.stage() === 'experiment') {
-        target?.nativeElement.scrollIntoView?.({ block: 'center', inline: 'nearest', behavior: 'instant' });
-      }
-    }, { injector: this.injector });
+    afterNextRender(() => this.taskHeading()?.nativeElement.focus(), { injector: this.injector });
   }
 
   finish(): void {

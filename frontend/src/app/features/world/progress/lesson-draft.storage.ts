@@ -1,7 +1,7 @@
 import { C1State, copyC1State, isC1State } from '../lessons/lesson-01-loading/lesson-01-loading.state';
 import { C2State, copyC2State, isC2State } from '../lessons/lesson-02-ramp/lesson-02-ramp.state';
 import { C3State, copyC3State, isC3State } from '../lessons/lesson-03-haulage/lesson-03-haulage.state';
-import { C4State, copyC4State, isC4State } from '../lessons/lesson-04-workshop/lesson-04-workshop.state';
+import { C4State, copyC4State, isC4State, readC4State } from '../lessons/lesson-04-workshop/lesson-04-workshop.state';
 import { C5State, copyC5State, isC5State } from '../lessons/lesson-05-crushing/lesson-05-crushing.state';
 import { C6State, copyC6State, isC6State } from '../lessons/lesson-06-sag/lesson-06-sag.state';
 import { C7State, copyC7State, isC7State } from '../lessons/lesson-07-balls/lesson-07-balls.state';
@@ -69,6 +69,13 @@ export function loadLessonDraft<Id extends DraftLessonId>(
     if (!raw) return { draft: null, available: true, discarded: false };
     let value: unknown;
     try { value = JSON.parse(raw); } catch { value = null; }
+    if (lessonId === 'lesson-04' && value && typeof value === 'object') {
+      const draft = value as Record<string, unknown>;
+      if (draft['exercise'] !== null) {
+        const exercise = readC4State(draft['exercise']);
+        value = exercise ? { ...draft, exercise } : null;
+      }
+    }
     if (!isDraft(value, userId, lessonId)) {
       storage.removeItem(key(userId, lessonId));
       return { draft: null, available: true, discarded: true };

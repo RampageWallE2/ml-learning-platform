@@ -8,7 +8,7 @@
   </header>
 
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
-    @for (label of ['Compara', 'Explora', 'Prueba']; track label; let index = $index) {
+    @for (label of ['Compara', 'Comprende', 'Corrige']; track label; let index = $index) {
       <li
         [class.step--active]="step() === index + 1"
         [class.step--done]="step() > index + 1 || stage() === 'success'"
@@ -27,11 +27,7 @@
       <div class="time-board" role="region" aria-labelledby="workshop-evidence-title">
         <div class="board-heading">
           <strong id="workshop-evidence-title">{{
-            experimentVisible()
-              ? 'Experimento: original y copia'
-              : practicing()
-                ? 'Ensayo: otros dos equipos'
-                : 'Tiempos de la misma revisión'
+            practicing() ? 'Ensayo: otros dos equipos' : 'Tiempos de la misma revisión'
           }}</strong
           ><small>Datos de ejemplo</small>
         </div>
@@ -40,7 +36,6 @@
             <section
               class="time-row"
               [class.time-row--second]="second"
-              [class.time-row--copy]="plot.id === 'copy'"
               [attr.aria-labelledby]="'workshop-plot-' + plot.id"
             >
               <div class="group-heading">
@@ -63,7 +58,6 @@
                 @for (point of plot.points; track point.id) {
                   <span
                     class="time-point"
-                    [class.point--movable]="point.movable"
                     [class.point--pinned]="point.pinned"
                     [style.left.%]="point.x"
                     [style.bottom.px]="point.bottom"
@@ -84,60 +78,13 @@
                 </div>
                 <p class="axis-label">Tiempo de revisión en minutos · min = minutos</p>
               }
-              @if (plot.id === 'copy' && stage() === 'experiment') {
-                <div
-                  class="experiment-controls"
-                  role="group"
-                  aria-label="Cambiar dos tiempos de la copia"
-                >
-                  <button
-                    type="button"
-                    class="btn btn--answer answer-choice"
-                    [attr.aria-pressed]="experimentMode() === 'together'"
-                    (click)="setExperiment('together')"
-                  >
-                    Juntar tiempos
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn--answer answer-choice"
-                    #separateButton
-                    [attr.aria-pressed]="experimentMode() === 'apart'"
-                    (click)="setExperiment('apart')"
-                  >
-                    Separar tiempos
-                  </button>
-                </div>
-                <p class="prediction-note">
-                  <strong>Tu idea: {{ predictionText() }}.</strong><br />Pulsa «Separar tiempos» y
-                  mira los dos rombos.
-                </p>
-                <div class="range-reading" aria-live="polite" aria-atomic="true">
-                  <strong>Rango: {{ simulatedRange() }} minutos</strong>
-                  @if (experimentMode() === 'apart') {
-                    <span>{{ predictionOutcome() }}</span>
-                    <span
-                      >Los dos rombos se movieron. El menor sigue en 8 y el mayor en 12: 12 − 8 =
-                      4.</span
-                    >
-                  } @else {
-                    <span>La copia tiene los tiempos originales de A.</span>
-                  }
-                </div>
-              }
             </section>
           }
         </div>
         <p class="chart-key">
-          Cada punto es una revisión. Los puntos uno sobre otro tienen el mismo tiempo. Ambos gráficos
-          usan la misma escala.
+          Cada punto es una revisión. Los puntos uno sobre otro tienen el mismo tiempo. Ambos
+          gráficos usan la misma escala.
         </p>
-        @if (experimentVisible()) {
-          <p class="experiment-note">
-            <strong>Solo cambia la copia.</strong> Sus dos rombos representan las revisiones que
-            pueden cambiar; los círculos con borde señalan el tiempo menor y el mayor.
-          </p>
-        }
       </div>
 
       <aside class="task-card" aria-labelledby="workshop-task-title">
@@ -162,65 +109,23 @@
               </button>
             }
           </div>
-        } @else if (stage() === 'predict') {
-          <span class="task-kicker">Antes de probar</span>
-          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Cambiará el rango?</h3>
-          <p>En una copia de A, cambiaremos dos tiempos de 10 minutos: uno a 8 y otro a 12.</p>
-          <p>El rango actual es 4 minutos. ¿Qué crees que ocurrirá al separar esos dos puntos?</p>
-          <div class="choices choices--prediction" role="group" aria-label="Tu idea sobre el rango">
-            @for (prediction of predictions; track prediction.id) {
-              <button
-                type="button"
-                class="btn btn--answer answer-choice"
-                (click)="predictRange(prediction.id)"
-              >
-                {{ prediction.text }}
-              </button>
-            }
-          </div>
-          <p class="chart-key">
-            Elige una idea y luego compruébala. Todavía no cambiamos los datos.
-          </p>
-        } @else if (stage() === 'experiment') {
-          <span class="task-kicker">Pon tu idea a prueba</span>
-          <h3 id="workshop-task-title" #taskHeading tabindex="-1">Observa qué cambia</h3>
-          <p>Usa los botones debajo de la copia. Puedes separar y volver a juntar los tiempos.</p>
-          <p>Después, explica el resultado mirando el tiempo menor y el mayor.</p>
-          <button
-            type="button"
-            class="btn btn--primary"
-            [disabled]="experimentMode() !== 'apart'"
-            (click)="showChanges()"
-          >
-            Explicar lo que cambió →
-          </button>
-        } @else if (stage() === 'explain') {
-          <span class="task-kicker">Los puntos cambiaron, el rango no</span>
-          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Por qué el rango sigue siendo 4 minutos?</h3>
-          <div class="choices">
-            @for (explanation of explanations; track explanation.id) {
-              <button
-                type="button"
-                class="btn btn--answer answer-choice"
-                (click)="explain(explanation.id)"
-              >
-                {{ explanation.text }}
-              </button>
-            }
-          </div>
         } @else if (stage() === 'discovery') {
-          <span class="task-kicker">Lo descubriste</span>
-          <h3 id="workshop-task-title" #taskHeading tabindex="-1">El rango no muestra todo</h3>
-          <p>
-            La separación entre 8 y 12 sigue siendo <strong>4 minutos</strong>, aunque los otros
-            tiempos cambien.
-          </p>
+          <span class="task-kicker">Lo que muestra el rango</span>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">
+            El rango solo mira dos tiempos
+          </h3>
+          <p>En ambos equipos, la revisión más corta duró 8 minutos y la más larga, 12.</p>
           <div class="range-reading">
-            <strong>Mismo rango, tiempos distintos</strong
-            ><span>También necesitamos mirar los otros tiempos y cuántas veces se repiten.</span>
+            <strong>12 − 8 = 4 minutos</strong>
+            <span>Ese es el rango de A y de B.</span>
           </div>
+          <p>
+            Si el tiempo menor y el mayor no cambian, el rango seguirá igual, aunque haya más
+            registros entre ellos.
+          </p>
+          <p><strong>Mismo rango no significa mismos tiempos.</strong></p>
           <button type="button" class="btn btn--primary" (click)="startPractice()">
-            Probar con otros equipos →
+            Corregir otro informe →
           </button>
         } @else if (stage() === 'practice') {
           <span class="task-kicker">{{
@@ -269,9 +174,13 @@
             {{ practiceRecords()[0].id }} y {{ centerCounts()[1] }} en
             {{ practiceRecords()[1].id }}. Los tiempos no se repiten igual.
           </p>
-          <p>{{ needsPractice()
-            ? 'Harás una sola práctica adicional. Puedes usar las pistas; no habrá otra ronda obligatoria.'
-            : 'Ya resolviste la práctica con apoyo. Puedes continuar sin otra ronda.' }}</p>
+          <p>
+            {{
+              needsPractice()
+                ? 'Harás una sola práctica adicional. Puedes usar las pistas; no habrá otra ronda obligatoria.'
+                : 'Ya resolviste la práctica con apoyo. Puedes continuar sin otra ronda.'
+            }}
+          </p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
             {{ needsPractice() ? 'Probar otro registro →' : 'Ver el informe →' }}
           </button>
@@ -289,13 +198,17 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu corrección está lista</span>
-      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'El mismo rango puede esconder diferencias' }}</h3>
+      <h3 #taskHeading tabindex="-1">
+        {{
+          guidedCompletion() ? 'Completaste con ayuda' : 'El mismo rango puede esconder diferencias'
+        }}
+      </h3>
       @if (guidedCompletion()) {
         <p>Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.</p>
       }
       <p>
-        El rango mide la diferencia entre el tiempo menor y el mayor. Para comparar, mira también los
-        demás registros.
+        El rango mide la diferencia entre el tiempo menor y el mayor. Para comparar, mira también
+        los demás registros.
       </p>
     </div>
     <div class="report-card">
@@ -303,8 +216,8 @@
       <h3>A y B tienen rango de 4 minutos, pero sus tiempos no se repiten igual</h3>
       <p>En A hubo tres revisiones de 10 minutos; en B, solo una.</p>
       <p>
-        <strong>Corrección:</strong> no considerar iguales los tiempos solo porque sus rangos
-        son iguales.
+        <strong>Corrección:</strong> no considerar iguales los tiempos solo porque sus rangos son
+        iguales.
       </p>
       <p>Esto no dice qué equipo trabaja mejor ni explica la causa de las diferencias.</p>
     </div>

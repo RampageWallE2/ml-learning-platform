@@ -267,9 +267,8 @@ describe('LessonRunner — workshop lesson', () => {
     expect(introText).toContain('cada tiempo se repite igual porque ambos equipos tienen el mismo rango');
     completeDialogue(intro); fixture.detectChanges();
     const game = fixture.debugElement.query(By.directive(Lesson04Workshop)).componentInstance as Lesson04Workshop;
-    game.compare('a'); game.setExperiment('apart'); game.showChanges();
-    expect(game.stage()).toBe('predict'); expect(done).not.toHaveBeenCalled();
-    game.predictRange('increase'); game.setExperiment('apart'); game.showChanges(); game.explain('extremes');
+    game.compare('a');
+    expect(game.stage()).toBe('discovery'); expect(done).not.toHaveBeenCalled();
     game.startPractice(); game.chooseClaim('different'); game.chooseEvidence('a');
     game.finish(); fixture.detectChanges(); expect(done).not.toHaveBeenCalled();
     const end = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;

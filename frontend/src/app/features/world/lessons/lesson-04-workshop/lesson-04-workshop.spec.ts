@@ -8,18 +8,8 @@ describe('Lesson04Workshop', () => {
     return fixture;
   }
 
-  function experiment(game: Lesson04Workshop) {
-    game.compare('a');
-    game.predictRange('same');
-  }
-  function explain(game: Lesson04Workshop) {
-    experiment(game);
-    game.setExperiment('apart');
-    game.showChanges();
-  }
   function practice(game: Lesson04Workshop) {
-    explain(game);
-    game.explain('extremes');
+    game.compare('a');
     game.startPractice();
   }
 
@@ -51,95 +41,8 @@ describe('Lesson04Workshop', () => {
     expect(root.textContent).not.toMatch(/distribución interior|simétricamente/);
   });
 
-  it('uses the shared theme with one named evidence region and two individually labelled plots', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    const root = fixture.nativeElement as HTMLElement;
-    const check = (title: string) => {
-      expect(root.querySelectorAll('.workbench')).toHaveLength(1);
-      expect(root.querySelectorAll('#workshop-evidence-title')).toHaveLength(1);
-      expect(root.querySelector('#workshop-evidence-title')!.textContent?.trim()).toBe(title);
-      expect(root.querySelector('.time-board')!.getAttribute('role')).toBe('region');
-      expect(root.querySelector('.time-board')!.getAttribute('aria-labelledby')).toBe(
-        'workshop-evidence-title',
-      );
-      for (const row of Array.from(root.querySelectorAll('.time-row'))) {
-        expect(row.getAttribute('aria-labelledby')).toBe(row.querySelector('h3')!.id);
-        expect(root.querySelectorAll('[id="' + row.querySelector('h3')!.id + '"]')).toHaveLength(1);
-      }
-      expect(root.querySelectorAll('.shared-axis')).toHaveLength(1);
-      expect(root.querySelectorAll('.time-point')).toHaveLength(10);
-    };
-    expect(root.querySelector('.lesson')!.classList.contains('workshop-lesson')).toBe(false);
-    expect(root.querySelector('.lesson-tag__number')!.textContent).toBe('Clase 4');
-    check('Tiempos de la misma revisión');
-    game.compare('a');
-    fixture.detectChanges();
-    check('Experimento: original y copia');
-    game.predictRange('same');
-    game.setExperiment('apart');
-    game.showChanges();
-    game.explain('extremes');
-    game.startPractice();
-    fixture.detectChanges();
-    check('Ensayo: otros dos equipos');
-    expect(root.querySelector('.time-row--copy')).toBeNull();
-  });
 
-  it('places the experiment controls and live result only beside the copied plot', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    experiment(game);
-    fixture.detectChanges();
-    const root = fixture.nativeElement as HTMLElement;
-    const copy = root.querySelector('.time-row--copy')!;
-    const original = root.querySelectorAll('.time-row')[0];
-    expect(copy.querySelector('h3')!.textContent).toBe('Copia de A · experimento');
-    expect(original.querySelector('h3')!.textContent).toBe('Original de A');
-    expect(original.querySelector('.experiment-controls')).toBeNull();
-    expect(original.querySelector('.prediction-note')).toBeNull();
-    expect(copy.querySelectorAll('.experiment-controls .btn--answer[type="button"]')).toHaveLength(
-      2,
-    );
-    expect(copy.querySelector('.range-reading')!.getAttribute('aria-live')).toBe('polite');
-    expect(copy.querySelectorAll('.point--movable')).toHaveLength(2);
-    expect(original.querySelectorAll('.point--movable')).toHaveLength(0);
-    const controls = copy.querySelectorAll<HTMLButtonElement>('.experiment-controls button');
-    controls[1].click();
-    fixture.detectChanges();
-    expect(controls[1].getAttribute('aria-pressed')).toBe('true');
-    expect(copy.querySelector('.range-reading')!.textContent).toContain(
-      'El rango sigue siendo 4 minutos',
-    );
-    expect(game.records[0].values).toEqual([8, 10, 10, 10, 12]);
-    controls[0].click();
-    fixture.detectChanges();
-    expect(controls[0].getAttribute('aria-pressed')).toBe('true');
-    expect(copy.querySelector('.range-reading')!.textContent).toContain(
-      'La copia tiene los tiempos originales',
-    );
-  });
 
-  it('shares answer styles and keeps all three prediction choices before showing any outcome', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelectorAll('.choices .btn--answer[type="button"]')).toHaveLength(3);
-    game.compare('a');
-    fixture.detectChanges();
-    expect(root.querySelectorAll('.choices--prediction .btn--answer[type="button"]')).toHaveLength(
-      3,
-    );
-    expect(root.querySelector('.range-reading')).toBeNull();
-    expect(game.rangePrediction()).toBeNull();
-    game.predictRange('increase');
-    game.setExperiment('apart');
-    game.showChanges();
-    fixture.detectChanges();
-    expect(root.querySelectorAll('.choices .btn--answer[type="button"]')).toHaveLength(3);
-    expect(root.querySelector('.choices--prediction')).toBeNull();
-    expect(root.querySelectorAll('input, textarea, form')).toHaveLength(0);
-  });
 
   it('preserves original and first-practice data on one common numeric scale', () => {
     const game = create().componentInstance;
@@ -188,329 +91,22 @@ describe('Lesson04Workshop', () => {
     expect(game.groups()).toBe(before);
     expect(game.practiceHelped()).toBe(false);
     game.compare('a');
-    expect(game.stage()).toBe('predict');
-    expect(game.feedback()).toBe('');
-  });
-
-  it('ignores invalid answers and prevents skipping required stages', () => {
-    const game = create().componentInstance;
-    const done = vi.fn();
-    game.completed.subscribe(done);
-    game.compare('invalid' as 'a');
-    game.predictRange('same');
-    game.setExperiment('apart');
-    game.showChanges();
-    game.explain('extremes');
-    game.startPractice();
-    game.chooseClaim('different');
-    game.chooseEvidence('a');
-    game.continueAfterHelp();
-    game.finish();
-    expect(game.stage()).toBe('compare');
-    expect(game.experimentMode()).toBe('together');
-    expect(done).not.toHaveBeenCalled();
-    experiment(game);
-    game.setExperiment('invalid' as 'apart');
-    expect(game.experimentMode()).toBe('together');
-    expect(game.separatedViewed()).toBe(false);
-  });
-
-  it('shows only the original of A and its clearly labelled experimental copy', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    experiment(game);
-    fixture.detectChanges();
-    expect(game.groups().map((group) => group.name)).toEqual([
-      'Original de A',
-      'Copia de A · experimento',
-    ]);
-    expect(game.groups()[0].values).toBe(game.records[0].values);
-    expect(game.groups()[1].values).toEqual(game.records[0].values);
-    expect(fixture.nativeElement.querySelectorAll('.time-row')).toHaveLength(2);
-    expect(fixture.nativeElement.querySelector('.experiment-note').textContent).toContain(
-      'Solo cambia la copia',
-    );
-    expect(fixture.nativeElement.querySelectorAll('.point--movable')).toHaveLength(2);
-    expect(fixture.nativeElement.querySelectorAll('.point--pinned')).toHaveLength(4);
-  });
-
-  it('requires a prediction before changing the copy, without showing the outcome in advance', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    game.compare('a');
-    fixture.detectChanges();
-    const root = fixture.nativeElement as HTMLElement;
-    expect(game.stage()).toBe('predict');
-    expect(game.step()).toBe(2);
-    expect(game.rangePrediction()).toBeNull();
-    expect(game.predictionOutcome()).toBe('');
-    expect(root.querySelector('.task-card h3')!.textContent).toContain('¿Cambiará el rango?');
-    expect(root.querySelectorAll('.choices button')).toHaveLength(3);
-    expect(root.querySelector('.experiment-controls')).toBeNull();
-    expect(root.querySelector('.range-reading')).toBeNull();
-    game.predictRange('invalid' as 'same');
-    game.setExperiment('apart');
-    game.showChanges();
-    expect(game.stage()).toBe('predict');
-    expect(game.rangePrediction()).toBeNull();
-    expect(game.simulated()).toEqual([8, 10, 10, 10, 12]);
-    expect(game.separatedViewed()).toBe(false);
-    expect(game.feedback()).toBe('');
-  });
-
-  it.each(['increase', 'same', 'decrease'] as const)(
-    'accepts prediction %s as a hypothesis and contrasts it only after the experiment',
-    (prediction) => {
-      const fixture = create();
-      const game = fixture.componentInstance;
-      const done = vi.fn();
-      game.completed.subscribe(done);
-      game.compare('a');
-      game.predictRange(prediction);
-      fixture.detectChanges();
-      expect(game.stage()).toBe('experiment');
-      expect(game.rangePrediction()).toBe(prediction);
-      expect(game.predictionOutcome()).toBe('');
-      expect(game.feedback()).toBe('');
-      expect(game.practiceHelped()).toBe(false);
-      expect(game.experimentMode()).toBe('together');
-      game.predictRange(prediction === 'same' ? 'increase' : 'same');
-      expect(game.rangePrediction()).toBe(prediction);
-      game.showChanges();
-      expect(game.stage()).toBe('experiment');
-      game.setExperiment('apart');
-      fixture.detectChanges();
-      const result = fixture.nativeElement.querySelector('.range-reading').textContent;
-      expect(result).toContain('El rango sigue siendo 4 minutos');
-      expect(result).toContain('12 − 8 = 4');
-      expect(result).toContain(prediction === 'same' ? 'Tu idea coincide' : 'Pensabas que sería');
-      expect(game.practiceHelped()).toBe(false);
-      expect(done).not.toHaveBeenCalled();
-      game.setExperiment('together');
-      expect(game.predictionOutcome()).toBe('');
-      expect(game.rangePrediction()).toBe(prediction);
-      expect(game.simulated()).toEqual(game.records[0].values);
-    },
-  );
-
-  it('preserves DOM points for animation and moves only the two copy diamonds, not the fixed records', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    experiment(game);
-    fixture.detectChanges();
-    const root = fixture.nativeElement as HTMLElement;
-    const rows = root.querySelectorAll('.time-row');
-    const original = [...rows[0].querySelectorAll<HTMLElement>('.time-point')];
-    const copy = [...rows[1].querySelectorAll<HTMLElement>('.time-point')];
-    const positions = (points: HTMLElement[]) =>
-      points.map((point) => point.style.left + ':' + point.style.bottom);
-    const originalPositions = positions(original);
-    const copyPositions = positions(copy);
-    expect(rows[0].querySelector('.point--movable')).toBeNull();
-    expect(rows[1].querySelectorAll('.point--movable')).toHaveLength(2);
-    expect(fixture.nativeElement.querySelector('.time-board .experiment-controls')).not.toBeNull();
-    game.setExperiment('apart');
-    fixture.detectChanges();
-    const changed = [...rows[1].querySelectorAll<HTMLElement>('.time-point')];
-    changed.forEach((point, index) => expect(point).toBe(copy[index]));
-    expect(positions(original)).toEqual(originalPositions);
-    for (const index of [0, 2, 4]) expect(positions(changed)[index]).toBe(copyPositions[index]);
-    for (const index of [1, 3]) expect(positions(changed)[index]).not.toBe(copyPositions[index]);
-    expect(new Set(positions(changed)).size).toBe(5);
-    expect(game.plots()[1].points.map((point) => point.id)).toEqual([
-      'copy-1',
-      'copy-2',
-      'copy-3',
-      'copy-4',
-      'copy-5',
-    ]);
-  });
-
-  it('lets an incorrect hypothesis lead to learning without bypassing explanation or independent evidence', () => {
-    const game = create().componentInstance;
-    const done = vi.fn();
-    game.completed.subscribe(done);
-    game.compare('a');
-    game.predictRange('increase');
-    game.setExperiment('apart');
-    game.startPractice();
-    game.finish();
-    expect(game.stage()).toBe('experiment');
-    game.showChanges();
-    game.startPractice();
-    expect(game.stage()).toBe('explain');
-    game.explain('extremes');
-    game.startPractice();
-    expect(game.stage()).toBe('practice');
-    expect(game.practiceHelped()).toBe(false);
-    game.chooseClaim('different');
-    game.finish();
-    expect(done).not.toHaveBeenCalled();
-    game.chooseEvidence('a');
-    expect(game.stage()).toBe('success');
-    expect(game.round()).toBe(0);
-    expect(game.records[0].values).toEqual([8, 10, 10, 10, 12]);
-    game.finish();
-    expect(done).toHaveBeenCalledTimes(1);
-  });
-
-  it('focuses the nearby experiment button after predicting and the explanation heading after observing', async () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    game.compare('a');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(document.activeElement).toBe(
-      fixture.nativeElement.querySelector('#workshop-task-title'),
-    );
-    game.predictRange('decrease');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const buttons = fixture.nativeElement.querySelectorAll('.experiment-controls button');
-    expect(document.activeElement).toBe(buttons[1]);
-    buttons[1].click();
-    fixture.detectChanges();
-    fixture.nativeElement.querySelector('.btn--primary').click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(document.activeElement).toBe(
-      fixture.nativeElement.querySelector('#workshop-task-title'),
-    );
-    expect(document.activeElement?.textContent).toContain('¿Por qué el rango sigue siendo 4 minutos?');
-  });
-
-  it('centers the experiment controls so the nearby copied graph remains in view after predicting', async () => {
-    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView');
-    const scroll = vi.fn();
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-      configurable: true,
-      value: scroll,
-    });
-    const fixture = create();
-    const game = fixture.componentInstance;
-    try {
-      game.compare('a');
-      fixture.detectChanges();
-      await fixture.whenStable();
-      expect(scroll).not.toHaveBeenCalled();
-      game.predictRange('same');
-      fixture.detectChanges();
-      await fixture.whenStable();
-      expect(scroll).toHaveBeenCalledExactlyOnceWith({
-        block: 'center',
-        inline: 'nearest',
-        behavior: 'instant',
-      });
-      expect(document.activeElement?.textContent?.trim()).toBe('Separar tiempos');
-    } finally {
-      fixture.destroy();
-      if (descriptor) Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', descriptor);
-      else Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
-    }
-  });
-
-  it('changes only two copied values while preserving extrema, range, count and mean', () => {
-    const game = create().componentInstance;
-    experiment(game);
-    const originals = game.records.map((group) => [...group.values]);
-    for (const mode of ['apart', 'together', 'apart'] as const) {
-      game.setExperiment(mode);
-      expect(game.simulated()).toEqual(mode === 'apart' ? [8, 8, 10, 12, 12] : [8, 10, 10, 10, 12]);
-      expect(game.simulated()).toHaveLength(5);
-      expect(Math.min(...game.simulated())).toBe(8);
-      expect(Math.max(...game.simulated())).toBe(12);
-      expect(game.simulatedRange()).toBe(4);
-      expect(game.simulated().reduce((sum, value) => sum + value, 0) / 5).toBe(10);
-      expect(game.simulated()[0]).toBe(8);
-      expect(game.simulated()[2]).toBe(10);
-      expect(game.simulated()[4]).toBe(12);
-      expect(game.records.map((group) => [...group.values])).toEqual(originals);
-      expect(game.groups()[0].values).toBe(game.records[0].values);
-    }
-  });
-
-  it('uses two real buttons instead of writing or dragging to change the copy', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    experiment(game);
-    fixture.detectChanges();
-    const root = fixture.nativeElement as HTMLElement;
-    const controls = root.querySelectorAll<HTMLButtonElement>('.experiment-controls button');
-    const primary = root.querySelector<HTMLButtonElement>('.btn--primary')!;
-    expect(primary.disabled).toBe(true);
-    expect(controls[0].getAttribute('aria-pressed')).toBe('true');
-    controls[1].click();
-    fixture.detectChanges();
-    expect(game.experimentMode()).toBe('apart');
-    expect(controls[1].getAttribute('aria-pressed')).toBe('true');
-    expect(primary.disabled).toBe(false);
-    expect(root.querySelector('.range-reading')!.textContent).toContain(
-      'Tu idea coincide con lo que pasó',
-    );
-    expect(root.querySelector('.range-reading')!.textContent).toContain(
-      'El rango sigue siendo 4 minutos',
-    );
-    controls[0].click();
-    fixture.detectChanges();
-    expect(game.simulated()).toEqual([8, 10, 10, 10, 12]);
-    expect(primary.disabled).toBe(true);
-    expect(root.querySelectorAll('input, textarea')).toHaveLength(0);
-  });
-
-  it('requires observing a changed copy before asking why the range stayed the same', () => {
-    const game = create().componentInstance;
-    experiment(game);
-    game.showChanges();
-    expect(game.stage()).toBe('experiment');
-    expect(game.feedback()).toContain('Separar tiempos');
-    game.setExperiment('apart');
-    game.setExperiment('together');
-    game.showChanges();
-    expect(game.stage()).toBe('experiment');
-    game.setExperiment('apart');
-    game.showChanges();
-    expect(game.stage()).toBe('explain');
-    const before = game.simulated();
-    game.setExperiment('together');
-    expect(game.simulated()).toBe(before);
-  });
-
-  it('corrects the ideas that no values changed or that range is useless', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    explain(game);
-    game.explain('unchanged');
-    expect(game.feedback()).toContain('Dos tiempos de la copia cambiaron');
-    game.explain('useless');
-    expect(game.feedback()).toContain('El rango sí muestra cuánto separa al tiempo menor del mayor');
-    game.explain('invalid' as 'extremes');
-    expect(game.stage()).toBe('explain');
-    game.explain('extremes');
-    fixture.detectChanges();
     expect(game.stage()).toBe('discovery');
-    expect(fixture.nativeElement.textContent).toContain('El rango no muestra todo');
-    expect(game.simulatedRange()).toBe(4);
     expect(game.feedback()).toBe('');
   });
 
-  it('starts independent practice with the original planned pair and no copied hints', () => {
-    const fixture = create();
-    const game = fixture.componentInstance;
-    explain(game);
-    game.explain('unchanged');
-    game.explain('extremes');
-    game.startPractice();
-    fixture.detectChanges();
-    expect(game.stage()).toBe('practice');
-    expect(game.step()).toBe(3);
-    expect(game.groups()).toBe(game.practiceRecords());
-    expect(game.groups().map((group) => group.id)).toEqual(['C', 'D']);
-    expect(game.practiceHelped()).toBe(false);
-    expect(game.feedback()).toBe('');
-    expect(game.plots().map((plot) => plot.range)).toEqual([4, 4]);
-    expect(fixture.nativeElement.querySelector('.experiment-controls')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.experiment-note')).toBeNull();
-  });
+
+
+
+
+
+
+
+
+
+
+
+
 
   it('requires both a correction and supporting evidence before completion', () => {
     const game = create().componentInstance;
@@ -677,65 +273,104 @@ describe('Lesson04Workshop', () => {
     ]);
   });
 
-  it('runs through actual buttons and delivers a correction without ranking teams or inventing causes', () => {
-    const fixture = create();
+
+  it('explains the range directly while preserving both original teams and removing experimental actions', () => {
+    const fixture = create(); const game = fixture.componentInstance;
     const root = fixture.nativeElement as HTMLElement;
-    const done = vi.fn();
-    fixture.componentInstance.completed.subscribe(done);
+    const before = game.records.map(group => [...group.values]);
+    game.compare('a'); fixture.detectChanges();
+    expect(game.stage()).toBe('discovery'); expect(game.step()).toBe(2);
+    expect(game.groups()).toBe(game.records);
+    expect(game.records.map(group => [...group.values])).toEqual(before);
+    expect(game.groups().map(group => group.name)).toEqual(['Equipo A', 'Equipo B']);
+    const explanation = root.querySelector('.task-card')!.textContent!.replace(/\s+/g, ' ');
+    expect(explanation).toContain('El rango solo mira dos tiempos');
+    expect(explanation).toContain('la revisión más corta duró 8 minutos y la más larga, 12');
+    expect(explanation).toContain('12 − 8 = 4 minutos');
+    expect(explanation).toContain('Si el tiempo menor y el mayor no cambian');
+    expect(explanation).toContain('aunque haya más registros entre ellos');
+    expect(explanation).toContain('Mismo rango no significa mismos tiempos');
+    expect(root.querySelectorAll('.choices, .experiment-controls, .time-row--copy, .point--movable')).toHaveLength(0);
+    expect(root.querySelectorAll('.point--pinned')).toHaveLength(4);
+    expect(root.textContent).not.toMatch(/¿Cambiará el rango\?|Separar tiempos|Juntar tiempos|Copia de A/);
+    expect(root.querySelector('.btn--primary')!.textContent).toContain('Corregir otro informe');
+  });
+
+  it('keeps labelled plots and moves focus to the explanation heading', async () => {
+    const fixture = create(); const root = fixture.nativeElement as HTMLElement;
+    fixture.componentInstance.compare('a'); fixture.detectChanges(); await fixture.whenStable();
+    expect(root.querySelectorAll('#workshop-evidence-title')).toHaveLength(1);
+    expect(root.querySelector('.time-board')!.getAttribute('role')).toBe('region');
+    expect(root.querySelector('.time-board')!.getAttribute('aria-labelledby')).toBe('workshop-evidence-title');
+    for (const row of Array.from(root.querySelectorAll('.time-row'))) {
+      expect(row.getAttribute('aria-labelledby')).toBe(row.querySelector('h3')!.id);
+    }
+    expect(root.querySelectorAll('.shared-axis')).toHaveLength(1);
+    expect(document.activeElement).toBe(root.querySelector('#workshop-task-title'));
+  });
+
+  it('rejects invalid answers and attempts to skip comparison or evidence', () => {
+    const game = create().componentInstance; const done = vi.fn(); game.completed.subscribe(done);
+    game.compare('invalid' as 'a'); game.startPractice(); game.chooseClaim('different');
+    game.chooseEvidence('a'); game.continueAfterHelp(); game.finish();
+    expect(game.stage()).toBe('compare'); expect(done).not.toHaveBeenCalled();
+    game.compare('a'); game.chooseClaim('different'); game.chooseEvidence('a'); game.finish();
+    expect(game.stage()).toBe('discovery'); expect(done).not.toHaveBeenCalled();
+  });
+
+  it('runs the shorter route through real buttons and waits for explicit delivery', () => {
+    const fixture = create(); const root = fixture.nativeElement as HTMLElement;
+    const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
     const choice = (index: number) => {
-      root.querySelectorAll<HTMLButtonElement>('.choices .answer-choice')[index].click();
-      fixture.detectChanges();
-      expect(root.querySelectorAll('input, textarea, form')).toHaveLength(0);
+      root.querySelectorAll<HTMLButtonElement>('.choices .answer-choice')[index].click(); fixture.detectChanges();
     };
     const primary = () => {
-      root.querySelector<HTMLButtonElement>('.btn--primary')!.click();
-      fixture.detectChanges();
+      root.querySelector<HTMLButtonElement>('.btn--primary')!.click(); fixture.detectChanges();
     };
-    choice(1);
-    choice(0);
-    expect(root.querySelector('.prediction-note')!.textContent).toContain('Será mayor');
-    root.querySelectorAll<HTMLButtonElement>('.experiment-controls button')[1].click();
-    fixture.detectChanges();
-    primary();
-    choice(1);
-    primary();
-    choice(1);
-    choice(0);
-    expect(root.querySelector('.completion-card')!.textContent).toContain(
-      'Tu corrección está lista',
-    );
+    choice(1); expect(fixture.componentInstance.stage()).toBe('discovery');
+    primary(); expect(fixture.componentInstance.stage()).toBe('practice');
+    choice(1); choice(0);
     const report = root.querySelector('.report-card')!.textContent;
     expect(report).toContain('organizar las revisiones del siguiente turno');
     expect(report).toContain('no considerar iguales los tiempos solo porque sus rangos son iguales');
-    expect(report).toContain('no dice qué equipo trabaja mejor');
-    expect(report).toContain('ni explica la causa');
-    expect(root.querySelector('.btn--primary')!.textContent).toContain('Entregar la corrección');
-    expect(done).not.toHaveBeenCalled();
-    primary();
-    expect(done).toHaveBeenCalledTimes(1);
+    expect(report).toContain('no dice qué equipo trabaja mejor'); expect(report).toContain('ni explica la causa');
+    expect(root.querySelectorAll('input, textarea, form')).toHaveLength(0);
+    expect(done).not.toHaveBeenCalled(); primary(); expect(done).toHaveBeenCalledOnce();
   });
 
-  it('resets comparison, experimental copy, hints and practice progress on replay', () => {
-    const fixture = create();
-    practice(fixture.componentInstance);
-    fixture.componentInstance.chooseClaim('same');
-    fixture.componentInstance.chooseClaim('different');
-    fixture.componentInstance.chooseEvidence('a');
-    fixture.componentInstance.continueAfterHelp();
-    fixture.componentInstance.chooseClaim('different');
-    fixture.componentInstance.chooseEvidence('b');
-    fixture.componentInstance.finish();
-    fixture.destroy();
-    const game = create().componentInstance;
-    expect(game.stage()).toBe('compare');
-    expect(game.experimentMode()).toBe('together');
-    expect(game.rangePrediction()).toBeNull();
-    expect(game.simulated()).toEqual([8, 10, 10, 10, 12]);
-    expect(game.separatedViewed()).toBe(false);
-    expect(game.practiceHelped()).toBe(false);
-    expect(game.round()).toBe(0);
-    expect(game.feedback()).toBe('');
-    expect(game.groups()).toBe(game.records);
-    expect(game.step()).toBe(1);
+  it('emits only the simplified state and restores a clean comparison on replay', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    const saved = vi.fn(); game.stateChanged.subscribe(saved);
+    game.compare('a');
+    expect(saved).toHaveBeenLastCalledWith({ stage: 'discovery', round: 0, practiceHelped: false });
+    game.startPractice(); expect(game.feedback()).toBe(''); expect(game.practiceHelped()).toBe(false);
+    game.chooseClaim('different'); game.chooseEvidence('a'); game.finish(); fixture.destroy();
+    const fresh = create().componentInstance;
+    expect(fresh.stage()).toBe('compare'); expect(fresh.round()).toBe(0);
+    expect(fresh.practiceHelped()).toBe(false); expect(fresh.groups()).toBe(fresh.records);
+  });
+
+  it.each(['predict', 'experiment', 'explain'])('recovers the retired %s stage at the explanation without completing', stage => {
+    const fixture = create(); const game = fixture.componentInstance;
+    const done = vi.fn(); game.completed.subscribe(done);
+    const saved = vi.fn(); game.stateChanged.subscribe(saved);
+    fixture.componentRef.setInput('initialState', {
+      stage, round: 0, practiceHelped: false,
+      experimentMode: stage === 'predict' ? 'together' : 'apart',
+      rangePrediction: stage === 'predict' ? null : 'same', separatedViewed: stage !== 'predict',
+    });
+    fixture.detectChanges();
+    expect(game.stage()).toBe('discovery'); expect(game.groups()).toBe(game.records);
+    expect(saved).toHaveBeenLastCalledWith({ stage: 'discovery', round: 0, practiceHelped: false });
+    expect(done).not.toHaveBeenCalled();
+  });
+
+  it('restores a current practice state and ignores invalid input without erasing it', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    fixture.componentRef.setInput('initialState', { stage: 'practice', round: 1, practiceHelped: true });
+    fixture.detectChanges();
+    fixture.componentRef.setInput('initialState', { stage: 'practice', round: -1, practiceHelped: true });
+    fixture.detectChanges();
+    expect(game.stage()).toBe('practice'); expect(game.round()).toBe(1); expect(game.practiceHelped()).toBe(true);
   });
 });

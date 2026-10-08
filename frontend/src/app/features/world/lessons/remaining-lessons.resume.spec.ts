@@ -89,11 +89,11 @@ describe('Exercise snapshots at every action — C1–C5 and C9', () => {
     copy.answerRange(5); copy.explainRange('separation'); expect(copy.stage()).toBe('review');
     copy.finish(); expect(done).not.toHaveBeenCalled(); reopened.destroy();
   });
-  it('C4 remembers a viewed experiment even after resetting its visual position', () => {
+  it('C4 preserves the direct explanation, practice evidence and assistance across reloads', () => {
     const { game: g, run, finish } = exercise(Lesson04Workshop, 'lesson-04');
-    run(() => g.compare('a')); run(() => g.predictRange('increase')); run(() => g.setExperiment('apart'));
-    run(() => g.setExperiment('together')); run(() => g.setExperiment('apart')); run(() => g.showChanges());
-    run(() => g.explain('extremes')); run(() => g.startPractice());
+    run(() => g.compare('a'));
+    expect(g.stage()).toBe('discovery');
+    run(() => g.startPractice());
     for (let round = 0; round < 2; round++) {
       run(() => g.chooseClaim('same'));
       run(() => g.chooseClaim('different')); run(() => g.chooseEvidence(g.concentratedSide()));
