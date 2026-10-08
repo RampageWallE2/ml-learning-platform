@@ -3,17 +3,76 @@ import { LessonDefinition } from '../lesson.types';
 export const LESSON_04_WORKSHOP: LessonDefinition = {
   id: 'lesson-04',
   steps: [
-    { type: 'dialogue', dialogue: { id: 'lesson-04-workshop-intro', messages: [
-      { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Me comentaron que ayudaste a medir el rango en el botadero. Estoy organizando las revisiones del siguiente turno.' },
-      { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Estos dos equipos hicieron la misma tarea. El informe dice que cada tiempo se repite igual porque ambos equipos tienen el mismo rango.' },
-      { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Antes de usar esa comparación para organizar las revisiones, ayúdame a comprobarla con todos los registros.' },
-    ] } },
+    {
+      type: 'dialogue',
+      dialogue: {
+        id: 'lesson-04-workshop-intro',
+        messages: [
+          {
+            speaker: 'npc',
+            characterId: 'npc-default',
+            name: 'Encargado del taller',
+            text: 'Me comentaron que ayudaste en el botadero. Estoy organizando las revisiones del siguiente turno.',
+          },
+          {
+            speaker: 'npc',
+            characterId: 'npc-default',
+            name: 'Encargado del taller',
+            text: 'Estos dos equipos hicieron la misma tarea y tienen el mismo rango.',
+          },
+          {
+            speaker: 'npc',
+            characterId: 'npc-default',
+            name: 'Encargado del taller',
+            text: 'El informe dice que, por eso, sus tiempos se repiten igual. Ayúdame a comprobarlo con todos los registros.',
+          },
+        ],
+      },
+    },
     { type: 'exercise', exerciseId: 'workshop-range-limits' },
-    { type: 'dialogue', dialogue: { id: 'lesson-04-workshop-end', messages: [
-      { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Corregiré el informe: ambos rangos son de 4 minutos, pero en A hubo tres revisiones de 10 minutos y en B solo una.' },
-      { speaker: 'player', characterId: 'player', name: 'Tú', text: 'El rango solo mide la diferencia entre el tiempo menor y el mayor. También necesitamos mirar los demás tiempos.' },
-      { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Usaré los registros completos para organizar las revisiones, no solo el rango. Esto no dice qué equipo trabaja mejor ni explica la causa de las diferencias.' },
-      { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Ve a ROM / chancado y habla con el operador. Allí quieren comparar todos los registros, no solo el menor y el mayor.' },
-    ] } },
+    {
+      type: 'dialogue',
+      dialogue: {
+        id: 'lesson-04-workshop-end',
+        messages: [
+          {
+            speaker: 'npc',
+            characterId: 'npc-default',
+            name: 'Encargado del taller',
+            text: 'Corregiré el informe: ambos rangos son de 4 minutos, pero sus tiempos no se repiten igual.',
+          },
+          {
+            speaker: 'npc',
+            characterId: 'npc-default',
+            name: 'Encargado del taller',
+            text: 'En A hubo tres revisiones de 10 minutos y en B solo una.',
+          },
+          {
+            speaker: 'player',
+            characterId: 'player',
+            name: 'Tú',
+            text: 'El rango solo mide la diferencia entre el tiempo menor y el mayor. También necesitamos mirar los demás tiempos.',
+          },
+          {
+            speaker: 'npc',
+            characterId: 'npc-default',
+            name: 'Encargado del taller',
+            text: 'Usaré los registros completos para organizar las revisiones, no solo el rango.',
+          },
+          {
+            speaker: 'npc',
+            characterId: 'npc-default',
+            name: 'Encargado del taller',
+            text: 'Esto no dice qué equipo trabaja mejor ni explica la causa de las diferencias.',
+          },
+          {
+            speaker: 'npc',
+            characterId: 'npc-default',
+            name: 'Encargado del taller',
+            text: 'Ve a ROM / chancado. Allí necesitan comparar todos los registros.',
+          },
+        ],
+      },
+    },
   ],
 };

@@ -61,6 +61,34 @@ describe('Dialogue', () => {
     expect(completed).toHaveBeenCalledOnce();
   });
 
+  it('keeps consecutive fragments with the same speaker separate until the final advance', () => {
+    const fixture = create({
+      id: 'short-fragments',
+      messages: [
+        { speaker: 'npc', name: 'Operador', text: 'Los cuadrados suman 8.' },
+        { speaker: 'npc', name: 'Operador', text: 'Tenemos 4 registros.' },
+        { speaker: 'npc', name: 'Operador', text: '8 dividido entre 4 da 2.' },
+      ],
+    });
+    const page = fixture.componentInstance;
+    const completed = vi.fn();
+    page.completed.subscribe(completed);
+
+    for (let index = 0; index < page.dialogue().messages.length; index++) {
+      const currentText = page.dialogue().messages[index].text;
+      if (page.isTyping()) page.next();
+      fixture.detectChanges();
+      expect(page.currentIndex()).toBe(index);
+      expect(page.displayedText()).toBe(currentText);
+      expect(page.npcMessage()?.name).toBe('Operador');
+      expect(fixture.nativeElement.querySelectorAll('.dialogue-copy')).toHaveLength(1);
+      expect(completed).not.toHaveBeenCalled();
+      page.next();
+    }
+
+    expect(completed).toHaveBeenCalledOnce();
+  });
+
   it('cannot advance or complete while the server confirmation is in flight', () => {
     const fixture = create(); const page = fixture.componentInstance;
     const completed = vi.fn(); page.completed.subscribe(completed);

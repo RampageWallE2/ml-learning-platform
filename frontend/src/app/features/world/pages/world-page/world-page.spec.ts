@@ -170,7 +170,13 @@ describe('WorldPage — circular scene loading screen', () => {
       expect(finished).not.toHaveBeenCalled();
       gameEvents.emit(GameEvents.OPEN_DIALOGUE, { dialogueId: 'open-pit-closing', npcId: 'open-pit-guide' });
       fixture.detectChanges();
-      fixture.debugElement.query(By.directive(Dialogue)).componentInstance.completed.emit();
+      const dialogue: Dialogue = fixture.debugElement.query(By.directive(Dialogue)).componentInstance;
+      for (let index = 0; index < dialogue.dialogue().messages.length; index++) {
+        if (dialogue.isTyping()) dialogue.next();
+        expect(hasDeliveredOpenPitReport('help-a')).toBe(false);
+        expect(finished).not.toHaveBeenCalled();
+        dialogue.next();
+      }
       expect(hasDeliveredOpenPitReport('help-a')).toBe(true);
       expect(page.returnToSupervisor()).toBe(false);
       expect(finished).toHaveBeenCalledExactlyOnceWith({ dialogueId: 'open-pit-closing', sceneKey: 'OpenPitScene' });
@@ -335,8 +341,16 @@ describe('WorldPage — circular scene loading screen', () => {
       gameEvents.emit(GameEvents.OPEN_DIALOGUE, { npcId: 'open-pit-guide', dialogueId: 'open-pit-intro' });
       fixture.detectChanges();
       const dialogue: Dialogue = fixture.debugElement.query(By.directive(Dialogue)).componentInstance;
-      dialogue.currentIndex.set(3);
-      page.completeDialogue(); page.completeDialogue(); page.closeDialogue();
+      const lastIndex = dialogue.dialogue().messages.length - 1;
+      for (let index = 0; index < lastIndex; index++) {
+        if (dialogue.isTyping()) dialogue.next();
+        dialogue.next();
+        expect(progress.completeOpenPitIntro).not.toHaveBeenCalled();
+        expect(finished).not.toHaveBeenCalled();
+      }
+      if (dialogue.isTyping()) dialogue.next();
+      expect(progress.completeOpenPitIntro).not.toHaveBeenCalled();
+      dialogue.next(); page.completeDialogue(); page.closeDialogue();
       fixture.detectChanges();
       expect(progress.completeOpenPitIntro).toHaveBeenCalledTimes(1);
       expect(page.savingIntro()).toBe(true);
@@ -346,7 +360,7 @@ describe('WorldPage — circular scene loading screen', () => {
       write.error(new TimeoutError()); fixture.detectChanges();
       expect(page.savingIntro()).toBe(false);
       expect(page.progressSyncMessage()).toContain('no necesitas repetir');
-      expect(dialogue.currentIndex()).toBe(3);
+      expect(dialogue.currentIndex()).toBe(lastIndex);
 
       const read = new Subject<void>(); const retry = new Subject<void>();
       vi.mocked(progress.loadProgress).mockReturnValue(read);

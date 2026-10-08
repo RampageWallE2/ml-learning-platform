@@ -126,7 +126,7 @@ describe('LessonRunner — flotation lesson', () => {
     const end = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     const endText = end.dialogue().messages.map(message => message.text).join(' ');
     expect(endText).toContain('desviación estándar de 2 t/h');
-    expect(endText).toContain('no el promedio de las separaciones');
+    expect(endText).toContain('No es el promedio de las separaciones');
     expect(endText).toContain('96 queda fuera');
     expect(endText).toContain('En el otro ejemplo estaban todos dentro');
     expect(endText).toContain('ni qué pasará después');
@@ -243,7 +243,7 @@ describe('LessonRunner — crushing lesson', () => {
     const end = fixture.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
     expect(end.currentMessage()!.text).toContain('20 t/h');
     const endText = end.dialogue().messages.map(message => message.text).join(' ');
-    expect(endText).toContain('Dos horas estuvieron 20 t/h por debajo');
+    expect(endText).toContain('dos horas estuvieron 20 t/h por debajo');
     expect(endText).toContain('La separación es 20 t/h en ambos casos');
     expect(endText).toContain('no explican por qué');
     expect(endText).toContain('no es una meta');
@@ -264,7 +264,8 @@ describe('LessonRunner — workshop lesson', () => {
     expect(introText).toContain('organizando las revisiones del siguiente turno');
     expect(introText).toContain('la misma tarea');
     expect(introText).toContain('todos los registros');
-    expect(introText).toContain('cada tiempo se repite igual porque ambos equipos tienen el mismo rango');
+    expect(introText).toContain('tienen el mismo rango');
+    expect(introText).toContain('El informe dice que, por eso, sus tiempos se repiten igual');
     completeDialogue(intro); fixture.detectChanges();
     const game = fixture.debugElement.query(By.directive(Lesson04Workshop)).componentInstance as Lesson04Workshop;
     game.compare('a');

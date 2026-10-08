@@ -1,6 +1,8 @@
 :root {
   --font-body: 'Inter', sans-serif;
   --font-retro: 'Press Start 2P', monospace;
+  /* Fuente de terminal para conversaciones; los ejercicios conservan Inter. */
+  --font-dialogue: 'VT323', 'Courier New', monospace;
 
   /* Una misma paleta para superficies oscuras y claras. */
   --color-forest: #18251e;
