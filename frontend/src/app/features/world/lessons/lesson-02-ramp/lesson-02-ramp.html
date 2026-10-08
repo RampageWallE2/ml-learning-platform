@@ -179,7 +179,7 @@
           }
         } @else if (stage() === 'report') {
           <span class="task-kicker">Antes de cerrar el plan</span>
-          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Qué podemos saber con estos promedios?</h3>
+          <h3 id="ramp-task-title" #taskHeading tabindex="-1">¿Estos promedios bastan para saber qué turno tuvo las cargas más cercanas a {{ reports()[0].mean }} toneladas?</h3>
           <p>
             Quienes reciben el material piden cargas cercanas a
             <strong>{{ reports()[0].mean }} toneladas.</strong>
@@ -299,9 +299,11 @@
             Si solo ves promedios, faltan las cargas. Si ya están todas, puedes compararlas sin
             pedirlas otra vez.
           </p>
-          <p>Prueba con otros datos, sin la pista.</p>
+          <p>{{ needsPractice()
+            ? 'Harás una sola práctica adicional. Puedes usar las pistas; no habrá otra ronda obligatoria.'
+            : 'Ya resolviste la práctica con apoyo. Puedes continuar sin otra ronda.' }}</p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
-            Probar con otros datos →
+            {{ needsPractice() ? 'Probar con otros datos →' : 'Ver el informe →' }}
           </button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
@@ -317,7 +319,10 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu recomendación está lista</span>
-      <h3 #taskHeading tabindex="-1">Pide solo la información que falta</h3>
+      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'Pide solo la información que falta' }}</h3>
+      @if (guidedCompletion()) {
+        <p>Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.</p>
+      }
       <p>
         El promedio no cuenta todo. Cuando ya ves las cargas de cada camión, puedes comparar si se
         parecen o son diferentes.

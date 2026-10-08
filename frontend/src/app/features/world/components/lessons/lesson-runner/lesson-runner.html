@@ -71,21 +71,21 @@
         @case ('sag-build-variance') {
           <app-lesson-06-sag
             [initialState]="initialExerciseState()"
-            (stateChanged)="saveC6State($event)"
+            (stateChanged)="saveExerciseState('lesson-06', $event)"
             (completed)="nextStep()" />
         }
 
         @case ('balls-apply-variance') {
           <app-lesson-07-balls
             [initialState]="initialC7State()"
-            (stateChanged)="saveC7State($event)"
+            (stateChanged)="saveExerciseState('lesson-07', $event)"
             (completed)="nextStep()" />
         }
 
         @case ('flotation-standard-deviation') {
           <app-lesson-08-flotation
             [initialState]="initialC8State()"
-            (stateChanged)="saveC8State($event)"
+            (stateChanged)="saveExerciseState('lesson-08', $event)"
             (completed)="nextStep()" />
         }
 

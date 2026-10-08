@@ -87,7 +87,7 @@ describe('LessonRunner — thickeners lesson', () => {
     expect(endText).toContain('desviación estándar de 2 t/h');
     expect(endText).toContain('Investigaremos por qué A quedó por debajo y los límites permitidos');
     expect(endText).toContain('no reemplazan los del informe');
-    expect(endText).toContain('variar menos no basta para trabajar mejor');
+    expect(endText).toContain('Variar menos no basta: también hay que revisar la meta.');
     completeDialogue(end); expect(done).toHaveBeenCalledExactlyOnceWith('lesson-09');
   });
 });
@@ -264,6 +264,7 @@ describe('LessonRunner — workshop lesson', () => {
     expect(introText).toContain('organizando las revisiones del siguiente turno');
     expect(introText).toContain('la misma tarea');
     expect(introText).toContain('todos los registros');
+    expect(introText).toContain('cada tiempo se repite igual porque ambos equipos tienen el mismo rango');
     completeDialogue(intro); fixture.detectChanges();
     const game = fixture.debugElement.query(By.directive(Lesson04Workshop)).componentInstance as Lesson04Workshop;
     game.compare('a'); game.setExperiment('apart'); game.showChanges();

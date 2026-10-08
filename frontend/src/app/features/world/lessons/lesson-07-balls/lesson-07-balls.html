@@ -4,7 +4,11 @@
       ><span class="lesson-tag__number">Clase 7</span> · Bolas e hidrociclones</span
     >
     <h2 id="balls-title">{{ title }}</h2>
-    <p>Misión: corregir el informe del siguiente turno. ¿Los dos grupos de datos cambiaron igual?</p>
+    @if (stage() === 'observe') {
+      <p>
+        Misión: corregir el informe del siguiente turno. ¿Los dos grupos de datos cambiaron igual?
+      </p>
+    }
   </header>
   <ol class="lesson-steps" aria-label="Pasos de la actividad">
     @for (label of ['Mira', 'Calcula', 'Explica']; track label; let index = $index) {
@@ -21,13 +25,14 @@
     }
   </ol>
   @if (stage() !== 'success') {
+    <h3 class="step-prompt" id="balls-task-title" #taskHeading tabindex="-1">{{ question() }}</h3>
     <div
       class="workbench"
       [class.workbench--focused]="stage() === 'calculate' || stage() === 'checked'"
       [class.workbench--checked]="stage() === 'checked'"
       [class.workbench--squares]="squaresVisible()"
     >
-      @if (stage() === 'calculate' || stage() === 'checked') {
+      <ng-template #activeRecords>
         <div
           class="active-records primary-evidence"
           role="region"
@@ -94,98 +99,116 @@
               <span
                 >Registros: <strong>{{ activePeriod().values.length }}</strong></span
               ><span
-                >Suma de cuadrados: <strong>{{ activePeriod().squareSum }}</strong></span
+                >Casillas en total: <strong>{{ activePeriod().squareSum }}</strong></span
               >
             </div>
             <p class="chart-key">
-              Las casillas muestran el cálculo al cuadrado, no toneladas físicas. Los registros con
-              separación 0 también cuentan al calcular el promedio.
+              Las casillas muestran el cálculo al cuadrado, no toneladas de material. Los registros
+              con 0 casillas también cuentan al calcular el promedio.
             </p>
           }
         </div>
+      </ng-template>
+      @if (stage() === 'calculate') {
+        <ng-container [ngTemplateOutlet]="activeRecords" />
       }
-      <div class="data-board">
-        <div class="board-heading">
-          <strong>{{
-            round() > 0 ? 'Ensayo: otros registros' : 'Material que entra al circuito · Datos de ejemplo'
-          }}</strong>
-        </div>
-        <div class="comparison-plots">
-          @for (period of periods(); track period.id) {
-            <article
-              class="period-plot"
-              [class.period--active]="
-                ['calculate', 'checked'].includes(stage()) && activePeriod().id === period.id
-              "
-              [attr.aria-current]="
-                ['calculate', 'checked'].includes(stage()) && activePeriod().id === period.id
-                  ? 'true'
-                  : null
-              "
-            >
-              <div class="period-heading">
-                <strong>{{ period.name }}</strong
-                ><small>{{ period.values.length }} registros</small>
-              </div>
-              <div class="period-summary">
-                <span
-                  >Promedio: <b>{{ period.mean }} t/h</b></span
-                ><span
-                  >Rango: <b>{{ period.range }} t/h</b></span
-                >
-              </div>
-              <div class="shared-scale">
-                <div class="value-track" role="img" [attr.aria-label]="plotDescription(period)">
-                  @for (tick of ticks(); track tick) {
-                    <span
-                      class="grid-line"
-                      [style.left.%]="position(tick)"
-                      aria-hidden="true"
-                    ></span>
-                  }
-                  <span class="track-line" aria-hidden="true"></span>
-                  <span
-                    class="mean-line"
-                    [style.left.%]="position(period.mean)"
-                    aria-hidden="true"
-                  ></span>
-                  <span class="mean-label" [style.left.%]="position(period.mean)" aria-hidden="true"
-                    >Promedio {{ period.mean }}</span
-                  >
-                  @for (point of points(period); track point.id) {
-                    <span
-                      class="data-point"
-                      [class.point--hint]="
-                        period.id === activePeriod().id && isHintRecord(point.deviation)
-                      "
-                      [style.left.%]="point.x"
-                      [style.bottom.px]="point.bottom"
-                      aria-hidden="true"
-                    ></span>
-                  }
-                  <div class="shared-axis" aria-hidden="true">
-                    @for (tick of ticks(); track tick) {
-                      <span [style.left.%]="position(tick)">{{ tick }}</span>
-                    }
-                  </div>
-                </div>
-              </div>
-              <p
-                class="variance-summary"
-                [class.variance--solved]="isSolved(period.id)"
-                [class.variance--hint]="
-                  stage() === 'report' && hintLevel() === 1 && hintFocus() === 'variances'
+      <ng-template #comparisonBoard>
+        <div class="data-board">
+          <div class="board-heading">
+            <strong>{{
+              round() > 0
+                ? 'Práctica: otros datos'
+                : 'Material que entra al circuito · Datos de ejemplo'
+            }}</strong>
+          </div>
+          <div class="comparison-plots">
+            @for (period of periods(); track period.id) {
+              <article
+                class="period-plot"
+                [class.period--active]="
+                  ['calculate', 'checked'].includes(stage()) && activePeriod().id === period.id
+                "
+                [attr.aria-current]="
+                  ['calculate', 'checked'].includes(stage()) && activePeriod().id === period.id
+                    ? 'true'
+                    : null
                 "
               >
-                Varianza:
-                <strong>{{
-                  isSolved(period.id) ? period.variance + ' (t/h)²' : 'por calcular'
-                }}</strong>
-              </p>
-            </article>
-          }
+                <div class="period-heading">
+                  <strong>{{ period.name }}</strong
+                  ><small>{{ period.values.length }} registros</small>
+                </div>
+                <div class="period-summary">
+                  <span
+                    >Promedio: <b>{{ period.mean }} t/h</b></span
+                  >
+                  @if (stage() === 'report') {
+                    <span
+                      >Rango: <b>{{ period.range }} t/h</b></span
+                    >
+                  }
+                </div>
+                <div class="shared-scale">
+                  <div class="value-track" role="img" [attr.aria-label]="plotDescription(period)">
+                    @for (tick of ticks(); track tick) {
+                      <span
+                        class="grid-line"
+                        [style.left.%]="position(tick)"
+                        aria-hidden="true"
+                      ></span>
+                    }
+                    <span class="track-line" aria-hidden="true"></span>
+                    <span
+                      class="mean-line"
+                      [style.left.%]="position(period.mean)"
+                      aria-hidden="true"
+                    ></span>
+                    <span
+                      class="mean-label"
+                      [style.left.%]="position(period.mean)"
+                      aria-hidden="true"
+                      >Promedio {{ period.mean }}</span
+                    >
+                    @for (point of points(period); track point.id) {
+                      <span
+                        class="data-point"
+                        [class.point--hint]="
+                          period.id === activePeriod().id && isHintRecord(point.deviation)
+                        "
+                        [style.left.%]="point.x"
+                        [style.bottom.px]="point.bottom"
+                        aria-hidden="true"
+                      ></span>
+                    }
+                    <div class="shared-axis" aria-hidden="true">
+                      @for (tick of ticks(); track tick) {
+                        <span [style.left.%]="position(tick)">{{ tick }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+                @if (stage() !== 'observe') {
+                  <p
+                    class="variance-summary"
+                    [class.variance--solved]="isSolved(period.id)"
+                    [class.variance--hint]="
+                      stage() === 'report' && hintLevel() === 1 && hintFocus() === 'variances'
+                    "
+                  >
+                    Varianza:
+                    <strong>{{
+                      isSolved(period.id) ? period.variance + ' (t/h)²' : 'por calcular'
+                    }}</strong>
+                  </p>
+                }
+              </article>
+            }
+          </div>
         </div>
-      </div>
+      </ng-template>
+      @if (stage() === 'observe' || stage() === 'report') {
+        <ng-container [ngTemplateOutlet]="comparisonBoard" />
+      }
       <aside
         class="task-card"
         [class.task-card--calculate]="stage() === 'calculate'"
@@ -193,11 +216,9 @@
       >
         @if (stage() === 'observe') {
           <span class="task-kicker">Primero, mira los puntos</span>
-          <h3 id="balls-task-title" #taskHeading tabindex="-1">
-            ¿Dónde ves más registros alejados del promedio?
-          </h3>
           <p>
-            El borrador dice que variaron igual. Elige tu idea; luego compruébala con la varianza.
+            A y B son dos momentos de trabajo. El borrador dice que variaron igual. Elige tu primera
+            idea; luego la comprobaremos con la varianza.
           </p>
           <div
             class="choices choices--prediction"
@@ -216,19 +237,12 @@
           </div>
         } @else if (stage() === 'calculate') {
           <span class="task-kicker"
-            >{{ round() > 0 ? 'Otros datos, sin la pista · ' : '' }}Cálculo
-            {{ activeIndex() + 1 }} de 2</span
+            >{{ round() > 0 ? 'Una última práctica · ' : '' }}Cálculo {{ activeIndex() + 1 }} de
+            2</span
           >
-          <h3 id="balls-task-title" #taskHeading tabindex="-1">
-            ¿Qué varianza tiene el {{ activePeriod().name }}?
-          </h3>
-          <p>Recuerda C6: si la diferencia es −2, su cuadrado es 4 (−2 × −2 = 4).</p>
           <div class="plain-rule">
-            <strong>Varianza = suma de cuadrados ÷ cantidad de registros</strong
-            ><span
-              >Multiplica cada diferencia por sí misma. Suma los resultados y divide entre todos los
-              registros. También cuentan los que dan 0.</span
-            >
+            <strong>Suma las casillas y divide entre todos los registros.</strong>
+            <span>Ese promedio es la varianza. También cuentan los registros con 0 casillas.</span>
           </div>
           <div class="choices choices--variance" role="group" aria-label="Opciones de varianza">
             @for (option of options(); track option) {
@@ -248,9 +262,6 @@
           }
         } @else if (stage() === 'checked') {
           <span class="task-kicker">Resultado comprobado</span>
-          <h3 id="balls-task-title" #taskHeading tabindex="-1">
-            {{ activePeriod().name }}: varianza {{ activePeriod().variance }} (t/h)²
-          </h3>
           <div class="calculation-card">
             <span>Casillas de cada cuadrado: {{ activePeriod().squares.join(', ') }}</span
             ><strong
@@ -262,7 +273,9 @@
             Suma las casillas y divide entre los {{ activePeriod().values.length }}
             {{
               activePeriod().zeroCount > 0
-                ? 'registros. También cuenta los ' + activePeriod().zeroCount + ' que tienen 0 casillas.'
+                ? 'registros. También cuenta los ' +
+                  activePeriod().zeroCount +
+                  ' que tienen 0 casillas.'
                 : 'registros.'
             }}
           </p>
@@ -275,16 +288,16 @@
           </button>
         } @else if (stage() === 'report') {
           <span class="task-kicker">Los dos cálculos ya están comprobados</span>
-          <h3 id="balls-task-title" #taskHeading tabindex="-1">
-            ¿Qué aviso explica lo que muestran los datos?
-          </h3>
+          <details class="supporting-detail">
+            <summary>Mi primera idea</summary>
+            <p>
+              Tu idea inicial: <strong>{{ predictionText() }}</strong
+              >.
+            </p>
+          </details>
           <p>
-            Tu idea inicial: <strong>{{ predictionText() }}</strong
-            >.
-          </p>
-          <p>
-            El promedio y el rango son iguales. Elige un aviso que también explique la diferencia
-            entre los puntos.
+            El promedio y el rango son iguales. Compara las varianzas: ¿cuál es mayor? Elige el
+            aviso que coincida con los números y los puntos.
           </p>
           @if (hintLevel() === 1 && hintFocus() === 'context') {
             <p class="context-hint">Todavía no sabemos qué meta debe cumplir el equipo.</p>
@@ -307,15 +320,16 @@
           }
         } @else if (stage() === 'review') {
           <span class="task-kicker">El ejemplo con ayuda ya está resuelto</span>
-          <h3 id="balls-task-title" #taskHeading tabindex="-1">{{ needsPractice() ? 'Una práctica más' : 'Cerramos el ejemplo con ayuda' }}</h3>
           <p>
             La varianza usa todos los registros. Aunque el promedio y el rango sean iguales, la
             varianza puede ser distinta.
           </p>
           <p>
-            {{ needsPractice()
-              ? 'Prueba una vez con otros datos. Puedes pedir ayuda: si la necesitas otra vez, terminaremos con un cierre guiado.'
-              : 'Ya resolviste la práctica con apoyo. No necesitas repetir otra ronda.' }}
+            {{
+              needsPractice()
+                ? 'Prueba una vez con otros datos. Puedes pedir ayuda: si la necesitas otra vez, terminaremos con un cierre guiado.'
+                : 'Ya resolviste la práctica con apoyo. No necesitas repetir otra ronda.'
+            }}
             Los datos originales del informe no cambian.
           </p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
@@ -338,11 +352,23 @@
           }
         </div>
       </aside>
-      <div
-        class="evidence-context"
-        role="group"
+      @if (stage() === 'checked') {
+        <details class="supporting-detail records-review">
+          <summary>Ver los cuadrados que usamos</summary>
+          <ng-container [ngTemplateOutlet]="activeRecords" />
+        </details>
+      }
+      @if (stage() !== 'observe' && stage() !== 'report') {
+        <details class="supporting-detail comparison-review">
+          <summary>Ver los dos períodos</summary>
+          <ng-container [ngTemplateOutlet]="comparisonBoard" />
+        </details>
+      }
+      <details
+        class="evidence-context supporting-detail"
         aria-label="Registros completos y lectura de los gráficos"
       >
+        <summary>Ver registros y cómo leer los gráficos</summary>
         <div class="record-lists">
           @for (period of periods(); track period.id) {
             <p class="record-list">
@@ -356,42 +382,56 @@
           {{ bounds().max }}.
         </p>
         <p class="chart-key">
-          Mismo punto de medición y condiciones parecidas. Cada punto es un registro; los puntos
-          uno sobre otro tienen el mismo valor. La línea azul de trazos marca el promedio. No es una meta
-          de producción.
+          Mismo punto de medición y condiciones parecidas. Cada punto es un registro; los puntos uno
+          sobre otro tienen el mismo valor. La línea azul de trazos marca el promedio. No es una
+          meta de producción.
         </p>
-      </div>
+      </details>
     </div>
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu aporte al informe del siguiente turno</span>
-      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'El informe ya muestra la diferencia' }}</h3>
-      <p>{{ guidedCompletion()
-        ? 'Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.'
-        : round() > 0
-          ? 'Resolviste la práctica sin pistas y comprobaste el informe.'
-          : 'Resolviste los cálculos y comprobaste el informe.' }}</p>
+      <h3 #taskHeading tabindex="-1">
+        {{ guidedCompletion() ? 'Completaste con ayuda' : 'El informe ya muestra la diferencia' }}
+      </h3>
+      <p>
+        {{
+          guidedCompletion()
+            ? 'Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.'
+            : round() > 0
+              ? 'Resolviste la práctica sin pedir pistas y comprobaste el informe.'
+              : 'Resolviste los cálculos y comprobaste el informe.'
+        }}
+      </p>
     </div>
     <div class="report-card">
       <span class="task-kicker">Datos originales · Bolas e hidrociclones</span>
       <h3>Mismo promedio y rango, distinta variación</h3>
-      <div class="final-periods">
-        @for (period of originalPeriods; track period.id) {
-          <article>
-            <strong>{{ period.name }}</strong
-            ><span>{{ period.values.join(', ') }} t/h</span>
-            <span>Promedio: {{ period.mean }} t/h · Rango: {{ period.range }} t/h</span>
-            <span>Cuadrados: {{ period.squares.join(', ') }}</span>
-            <b
-              >{{ period.squareSum }} ÷ {{ period.values.length }} = {{ period.variance }} (t/h)²</b
-            >
-          </article>
-        }
-      </div>
       <p>
-        El período B varió más: su varianza fue 6 frente a 3 (t/h)². Tuvo más registros lejos del
-        promedio.
+        B tuvo mayor varianza: <strong>6 frente a 3 (t/h)²</strong>. Sus registros se separaron más
+        del promedio.
       </p>
+      <details class="supporting-detail">
+        <summary>Ver los datos y los cálculos de A y B</summary>
+        <div class="final-periods">
+          @for (period of originalPeriods; track period.id) {
+            <article>
+              <strong>{{ period.name }}</strong
+              ><span>{{ period.values.join(', ') }} t/h</span>
+              <span>Promedio: {{ period.mean }} t/h · Rango: {{ period.range }} t/h</span>
+              <span>Cuadrados: {{ period.squares.join(', ') }}</span>
+              <b
+                >{{ period.squareSum }} ÷ {{ period.values.length }} =
+                {{ period.variance }} (t/h)²</b
+              >
+            </article>
+          }
+        </div>
+        <p>
+          En B, cuatro datos estuvieron a 3 t/h del promedio; en A, solo dos. Por eso B tuvo mayor
+          varianza: 6 frente a 3 (t/h)².
+        </p>
+      </details>
       <p>
         Esto no explica por qué cambió ni qué ajuste hacer. Variar menos no significa trabajar
         mejor.

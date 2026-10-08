@@ -56,7 +56,9 @@ La cabecera es un **marcador público**, no un token secreto ni una contraseña.
 
 La cookie de sesión, su validación y su revocación siguen siendo necesarias. No es protección contra XSS, robo de cookies, automatizaciones que falsifiquen las cabeceras ni abuso desde un origen autorizado. No se implementaron límites de intentos, límites de tamaño de cuerpos, recuperación de contraseña ni cambios de permisos/reglas de progreso. No hay nuevas dependencias ni migraciones.
 
-## Comprobaciones realizadas
+## Comprobaciones originales (históricas)
+
+Esta sección conserva la evidencia del incremento original. Desde 2026-10-07, las pruebas de backend con base de datos usan únicamente PostgreSQL desechable; las menciones a SQLite describen comprobaciones anteriores, no el funcionamiento actual. Ver [preparación de producción](preparacion-produccion.md).
 
 - **Backend:** 124 pruebas aprobadas sobre SQLite en memoria, con el filtro activo también durante las pruebas. Incluyen orígenes inválidos, ausentes y `null`, cabecera ausente/incorrecta, fallback a Referer, puertos/protocolos, configuración inválida, futuro API, formularios, preflight, proxy y origen LAN autorizado de forma explícita. Se verifica que rechazar no crea cuentas/sesiones, no revoca la sesión existente y no crea ni actualiza progreso.
 - **Frontend:** 896 pruebas aprobadas en 57 archivos, incluidas 39 nuevas pruebas del interceptor y su integración con los proveedores reales de la aplicación, AuthService y ProgressService. Un 403 no se interpreta como sesión vencida; el guardado pendiente se conserva para reintentar.
@@ -64,10 +66,12 @@ La cookie de sesión, su validación y su revocación siguen siendo necesarias. 
 - **Navegador:** servicios e interceptores reales de Angular con Flask real y base temporal SQLite en memoria. Registro y guardado por proxy con `Host` reescrito y `Origin` conservado; acceso, PUT idempotente y salida directos con preflight autorizado. Un formulario sin cabecera, incluso con cookie, obtiene 403 y conserva la sesión. Un origen no autorizado obtiene 403 por proxy; su solicitud directa queda bloqueada en el navegador tras preflight sin permiso CORS y no llega como POST. El cierre legítimo devuelve 200 y la comprobación posterior devuelve 401. No se usaron cuentas reales, PostgreSQL real, Google real ni Phaser.
 - **Evidencia local:** `frontend/tmp/csrf-qa/browser-proof.jpg` y `browser-proof-final.jpg`, ignorados por Git. Los servidores temporales y pestañas de prueba quedaron cerrados; sus datos en memoria no persisten.
 
-Comandos ejecutados desde `backend` y `frontend`, respectivamente:
+Comandos actuales: backend desde la raíz del proyecto; frontend desde su directorio.
 
-```powershell
-& './.venv/Scripts/python.exe' -B -m pytest -p no:cacheprovider -q
+```text
+docker compose -f compose.verify.yml up -d --wait database
+docker compose -f compose.verify.yml run --build --rm tests
+docker compose -f compose.verify.yml down
 ```
 
 ```text

@@ -3,6 +3,7 @@ import { screenToFixedCameraPoint } from '../camera/camera-zoom';
 
 import {
   calculateMobileControlLayout,
+  MOBILE_JOYSTICK_HIT_SIZE,
   type MobileVisibleViewport,
 } from './mobile-control-layout';
 import { usesTouchControls } from './touch-controls';
@@ -47,7 +48,7 @@ export class InputController {
 
 
   private readonly joystickRadius =
-    45;
+    36;
 
 
   /* =========================
@@ -427,13 +428,14 @@ export class InputController {
       this.scene.add.circle(
         0,
         0,
-        55,
-        0x000000,
-        0.25
+        44,
+        0x315b48,
+        0.26
       );
 
 
     this.joystickBase
+      .setStrokeStyle(1, 0x8b6246, 0.6)
       .setScrollFactor(0)
       .setDepth(1000);
 
@@ -442,9 +444,9 @@ export class InputController {
       this.scene.add.circle(
         0,
         0,
-        25,
-        0xffffff,
-        0.55
+        20,
+        0xf4ebd8,
+        0.85
       );
 
 
@@ -457,8 +459,8 @@ export class InputController {
       this.scene.add.zone(
         0,
         0,
-        160,
-        160
+        MOBILE_JOYSTICK_HIT_SIZE,
+        MOBILE_JOYSTICK_HIT_SIZE
       );
 
 
@@ -513,13 +515,14 @@ export class InputController {
       this.scene.add.circle(
         0,
         0,
-        40,
-        0x000000,
-        0.4
+        32,
+        0x315b48,
+        0.9
       );
 
 
     this.mobileInteractButton
+      .setStrokeStyle(1, 0x8b6246, 1)
       .setScrollFactor(0)
       .setDepth(1000)
       .setInteractive();
@@ -531,8 +534,9 @@ export class InputController {
         0,
         'E',
         {
-          fontSize: '24px',
-          color: '#ffffff'
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '20px',
+          color: '#f4ebd8'
         }
       );
 

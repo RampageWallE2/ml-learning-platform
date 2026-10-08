@@ -2,11 +2,48 @@ import Phaser from 'phaser';
 
 import {
   createStaticZonesFromLayer,
-  getTiledCircle
+  getTiledCircle,
+  getTiledProperty,
+  getTiledStringProperty,
+  getTiledNumberProperty
 } from './tiled.utils';
 
 
 describe('tiled.utils', () => {
+
+  describe('typed property readers', () => {
+    it('keeps absent properties optional', () => {
+      expect(getTiledStringProperty({}, 'lessonId')).toBeUndefined();
+      expect(getTiledNumberProperty({}, 'radius')).toBeUndefined();
+      expect(getTiledProperty({}, 'active')).toBeUndefined();
+    });
+
+    it('preserves valid text and does not silently trim identifiers', () => {
+      const object = { properties: [{ name: 'lessonId', value: ' lesson-01 ' }] };
+      expect(getTiledStringProperty(object, 'lessonId')).toBe(' lesson-01 ');
+      expect(getTiledStringProperty({ properties: [{ name: 'npcId', value: '' }] }, 'npcId')).toBe('');
+    });
+
+    it.each([42, true, false])('rejects non-text identifier %s', value => {
+      const object = { name: 'encargado', properties: [{ name: 'lessonId', value }] };
+      expect(() => getTiledStringProperty(object, 'lessonId')).toThrow(
+        'La propiedad "lessonId" del objeto "encargado" debe ser texto',
+      );
+    });
+
+    it.each([0, -1, 0.4, 400])('preserves finite number %s for domain validation', value => {
+      expect(getTiledNumberProperty({ properties: [{ name: 'radius', value }] }, 'radius')).toBe(value);
+    });
+
+    it.each(['400', true, false, NaN, Infinity, -Infinity])('rejects non-finite or non-numeric value %s', value => {
+      expect(() => getTiledNumberProperty({ name: 'camión', properties: [{ name: 'radius', value }] }, 'radius'))
+        .toThrow('La propiedad "radius" del objeto "camión" debe ser un número finito');
+    });
+
+    it('keeps the raw primitive reader available without a generic type assertion', () => {
+      expect(getTiledProperty({ properties: [{ name: 'active', value: false }] }, 'active')).toBe(false);
+    });
+  });
 
   describe('getTiledCircle', () => {
 

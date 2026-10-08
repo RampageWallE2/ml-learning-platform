@@ -147,18 +147,18 @@ describe('LessonRunner — C7 recovery', () => {
     expect(fixture.nativeElement.textContent).toContain('La sesión cambió');
     expect(fixture.debugElement.query(By.directive(Lesson07Balls))).toBeNull();
     expect(fixture.nativeElement.querySelector('[role="dialog"]').contains(document.activeElement)).toBe(true);
-    fixture.componentInstance.saveC7State(second); fixture.componentInstance.nextStep(); fixture.componentInstance.restartDraft();
+    fixture.componentInstance.saveExerciseState('lesson-07', second); fixture.componentInstance.nextStep(); fixture.componentInstance.restartDraft();
     expect(write).not.toHaveBeenCalled(); expect(loadLessonDraft(b.id, 'lesson-07').draft).toBeNull();
     fixture.destroy(); const other = create(); expect(other.componentInstance.resumeOffer()).toBeNull();
     expect(loadLessonDraft(a.id, 'lesson-07').draft?.exercise).toEqual(second);
   });
 
   it('rejects old same-account sessions and emissions for the wrong lesson or stage', () => {
-    const fixture = create(); write.mockClear(); fixture.componentInstance.saveC7State(second); expect(write).not.toHaveBeenCalled();
+    const fixture = create(); write.mockClear(); fixture.componentInstance.saveExerciseState('lesson-07', second); expect(write).not.toHaveBeenCalled();
     fixture.componentInstance.nextStep(); fixture.detectChanges(); write.mockClear();
-    fixture.componentInstance.saveC8State({ stage: 'observe', round: 0, helped: false, selectedRecord: null, comparing: false, choiceOffset: 0 });
-    fixture.componentInstance.saveC7State({ ...second, solved: [] }); expect(write).not.toHaveBeenCalled();
-    user.set({ ...a }); fixture.componentInstance.saveC7State(second); expect(write).not.toHaveBeenCalled();
+    fixture.componentInstance.saveExerciseState('lesson-08', { stage: 'observe', round: 0, helped: false, selectedRecord: null, comparing: false, choiceOffset: 0 });
+    fixture.componentInstance.saveExerciseState('lesson-07', { ...second, solved: [] }); expect(write).not.toHaveBeenCalled();
+    user.set({ ...a }); fixture.componentInstance.saveExerciseState('lesson-07', second); expect(write).not.toHaveBeenCalled();
   });
 
   it('keeps the exercise usable and warns honestly when storage fails', () => {

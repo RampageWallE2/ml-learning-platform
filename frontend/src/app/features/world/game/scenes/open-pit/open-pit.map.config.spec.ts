@@ -16,9 +16,28 @@ describe('OPEN_PIT_MAP_CONFIG', () => {
     }
   });
 
-  it('does not try to create the camp layers removed in Tiled', () => {
+  it('does not try to create the area NPC or camp layers removed in Tiled', () => {
     expect(OPEN_PIT_MAP_CONFIG.layers.some(layer => layer.name.startsWith('Campament/')))
       .toBe(false);
+    for (const area of ['Water', 'Pit', 'Electrical_Substation', 'Gas_Station',
+      'Repair_Shop', 'Waste_Dump', 'Control_Center', 'Processing_Area']) {
+      expect(OPEN_PIT_MAP_CONFIG.layers.some(layer => layer.name === `${area}/NPC`))
+        .toBe(false);
+    }
+  });
+
+  it('renders the new global NPC layer and helmets above their characters', () => {
+    expect(OPEN_PIT_MAP_CONFIG.tilesets).toContainEqual({
+      id: 'worker_helmet', tiledName: 'worker_helmet', textureKey: 'worker_helmet',
+      imagePath: 'assets/game/characters/worker_helmet.png',
+    });
+    const characters = OPEN_PIT_MAP_CONFIG.layers.find(layer => layer.name === 'NPC/Character')!;
+    const accessories = OPEN_PIT_MAP_CONFIG.layers.find(layer => layer.name === 'NPC/Accesories')!;
+    expect(characters.tilesets).toEqual(['character_postman_1']);
+    expect(accessories.tilesets).toEqual(['worker_helmet']);
+    expect(accessories.depth).toBeGreaterThan(characters.depth);
+    const environment = OPEN_PIT_MAP_CONFIG.layers.filter(layer => !layer.name.startsWith('NPC/'));
+    expect(characters.depth).toBeGreaterThan(Math.max(...environment.map(layer => layer.depth)));
   });
 
   it('registers the textures used by the updated water area and terrain details', () => {
@@ -42,7 +61,7 @@ describe('OPEN_PIT_MAP_CONFIG', () => {
     const layers = OPEN_PIT_MAP_CONFIG.layers.filter(layer => layer.name.startsWith('Water/'));
     expect(layers.map(layer => layer.name)).toEqual([
       'Water/Ground', 'Water/Ground_2', 'Water/Props', 'Water/Props_2',
-      'Water/Buildings', 'Water/NPC',
+      'Water/Buildings',
     ]);
     expect(layers.slice(0, 4).map(layer => layer.tilesets)).toEqual([
       ['camping'], ['camping'], ['camping'], ['camping'],

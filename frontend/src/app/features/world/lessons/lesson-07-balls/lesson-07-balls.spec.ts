@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Lesson07Balls } from './lesson-07-balls';
+import { C7_BALLS_RECORDS } from '../data/open-pit-original-records';
 
 describe('Lesson07Balls', () => {
   function create() {
@@ -37,22 +38,26 @@ describe('Lesson07Balls', () => {
     expect(primary.querySelector('h4')!.textContent).toContain('Período A');
     expect(primary.querySelector('.mean-summary')!.textContent).toContain('100 t/h');
     expect(primary.querySelectorAll('.record-card')).toHaveLength(6);
-    expect(primary.querySelectorAll('.square-cell')).toHaveLength(0);
-    expect(primary.querySelector('.totals')).toBeNull();
-    expect(primary.textContent).not.toMatch(/Varianza:|Suma de cuadrados:/);
+    expect(primary.querySelectorAll('.square-cell')).toHaveLength(18);
+    expect(primary.querySelector('.totals')!.textContent).toContain('Casillas en total: 18');
+    expect(primary.textContent).not.toContain('Varianza:');
+    expect(root.textContent).not.toContain('18 ÷ 6');
+    expect(game.helped()).toBe(false);
+    expect(game.hintLevel()).toBe(0);
+    expect(game.solved()).toEqual([]);
     expect(root.querySelector('.data-board .active-records')).toBeNull();
     expect(root.querySelectorAll('.data-point')).toHaveLength(12);
     const options = [...game.options()];
     game.requestHint();
     fixture.detectChanges();
     expect(primary.querySelectorAll('.record--hint')).toHaveLength(2);
-    expect(primary.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(primary.querySelectorAll('.square-cell')).toHaveLength(18);
     expect(game.options()).toEqual(options);
     game.requestHint();
     fixture.detectChanges();
     expect(root.querySelector('.workbench--squares')).not.toBeNull();
     expect(primary.querySelectorAll('.square-cell')).toHaveLength(18);
-    expect(primary.querySelector('.totals')!.textContent).toContain('Suma de cuadrados:');
+    expect(primary.querySelector('.totals')!.textContent).toContain('Casillas en total:');
   });
 
   it('switches the focused evidence to B and returns to the two-period report without duplicate records', () => {
@@ -69,7 +74,8 @@ describe('Lesson07Balls', () => {
     expect(primary.querySelector('h4')!.textContent).toContain('Período B');
     expect(primary.querySelectorAll('.record-card')).toHaveLength(6);
     expect(root.querySelectorAll('.record-card')).toHaveLength(6);
-    expect(primary.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(primary.querySelectorAll('.square-cell')).toHaveLength(36);
+    expect(root.textContent).not.toContain('36 ÷ 6');
     game.answerVariance(6);
     game.continueCalculation();
     fixture.detectChanges();
@@ -84,13 +90,15 @@ describe('Lesson07Balls', () => {
     const root: HTMLElement = fixture.nativeElement;
     expect(root.textContent).toContain('informe del siguiente turno');
     expect(root.textContent).toContain('El borrador dice que variaron igual');
-    expect(root.textContent).toContain('¿Dónde ves más registros alejados del promedio?');
+    expect(root.textContent).toContain('¿En qué período ves más datos lejos del promedio?');
+    expect(root.textContent).toContain('A y B son dos momentos de trabajo');
+    expect(root.textContent).toContain('Elige tu primera idea');
     expect(root.textContent).toContain('condiciones parecidas');
     expect(root.textContent).toContain('97, 100, 100, 100, 100, 103');
     expect(root.textContent).toContain('97, 97, 100, 100, 103, 103');
     expect(root.textContent).toContain('No es una meta de producción');
     expect(root.querySelectorAll('.data-point')).toHaveLength(12);
-    expect(root.querySelectorAll('.variance-summary strong')).toHaveLength(2);
+    expect(root.querySelectorAll('.variance-summary strong')).toHaveLength(0);
     expect(root.querySelectorAll('.square-cell')).toHaveLength(0);
     for (const result of root.querySelectorAll('.variance-summary'))
       expect(result.textContent).toContain('por calcular');
@@ -189,6 +197,7 @@ describe('Lesson07Balls', () => {
     const [a, b] = game.periods();
     expect(a.values).toEqual([97, 100, 100, 100, 100, 103]);
     expect(b.values).toEqual([97, 97, 100, 100, 103, 103]);
+    expect(a.values).toBe(C7_BALLS_RECORDS[0]); expect(b.values).toBe(C7_BALLS_RECORDS[1]);
     expect([a.mean, b.mean]).toEqual([100, 100]);
     expect([a.range, b.range]).toEqual([6, 6]);
     expect(a.deviations).toEqual([-3, 0, 0, 0, 0, 3]);
@@ -237,7 +246,8 @@ describe('Lesson07Balls', () => {
       'Período A',
     );
     expect(root.querySelector('.task-card--calculate')).not.toBeNull();
-    expect(root.querySelectorAll('.square-cell, .variance--solved')).toHaveLength(0);
+    expect(root.querySelectorAll('.square-cell')).toHaveLength(18);
+    expect(root.querySelectorAll('.variance--solved')).toHaveLength(0);
     game.answerVariance(3);
     fixture.detectChanges();
     expect(root.querySelector('.task-card--calculate')).toBeNull();
@@ -252,7 +262,7 @@ describe('Lesson07Balls', () => {
     );
     expect(root.querySelectorAll('.value-track')).toHaveLength(2);
     expect(root.querySelectorAll('.variance--solved')).toHaveLength(1);
-    expect(root.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(root.querySelectorAll('.square-cell')).toHaveLength(36);
     game.answerVariance(6);
     game.continueCalculation();
     fixture.detectChanges();
@@ -304,7 +314,7 @@ describe('Lesson07Balls', () => {
     expect(root.querySelector('.empty-square')).toBeNull();
   });
 
-  it('keeps numeric answer labels and hint controls accessible without showing a calculation in the first hint', () => {
+  it('keeps numeric answer labels and hint controls accessible without solving the first hint', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     const root: HTMLElement = fixture.nativeElement;
@@ -323,7 +333,10 @@ describe('Lesson07Balls', () => {
     game.requestHint();
     fixture.detectChanges();
     expect(root.querySelector('.feedback-region .feedback')).not.toBeNull();
-    expect(root.querySelector('.totals, .square-cell, .calculation-card')).toBeNull();
+    expect(root.querySelectorAll('.square-cell')).toHaveLength(18);
+    expect(root.querySelector('.totals')!.textContent).toContain('Casillas en total: 18');
+    expect(root.querySelector('.calculation-card')).toBeNull();
+    expect(root.querySelector('.feedback')!.textContent).not.toContain('18 ÷ 6');
     expect(root.querySelectorAll('.choices--variance .btn--answer')).toHaveLength(3);
     expect(root.querySelectorAll('.variance--solved')).toHaveLength(0);
     reachReport(game);
@@ -331,7 +344,7 @@ describe('Lesson07Balls', () => {
     expect(root.querySelectorAll('.task-card .btn--answer')).toHaveLength(3);
   });
 
-  it('starts an autonomous calculation with a reminder but no displayed square sum or solved variance', () => {
+  it('starts a calculation with visible squares and totals but no solved variance or requested help', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     game.choosePrediction('b');
@@ -339,16 +352,49 @@ describe('Lesson07Balls', () => {
     const root: HTMLElement = fixture.nativeElement;
     expect(game.stage()).toBe('calculate');
     expect(game.activePeriod().id).toBe('a');
-    expect(root.textContent).toContain('Varianza = suma de cuadrados ÷ cantidad de registros');
+    expect(root.textContent).toContain('Suma las casillas y divide entre todos los registros');
     const reminder = root.querySelector('.task-card')!.textContent!.replace(/\s+/g, ' ');
-    expect(reminder).toContain('Recuerda C6: si la diferencia es −2, su cuadrado es 4 (−2 × −2 = 4)');
-    expect(reminder).toContain('Multiplica cada diferencia por sí misma. Suma los resultados y divide entre todos los registros. También cuentan los que dan 0.');
+    expect(root.querySelector('.step-prompt')?.textContent).toContain('¿Qué varianza tiene el Período A?');
+    expect(root.querySelector<HTMLDetailsElement>('.comparison-review')?.open).toBe(false);
+    expect(reminder).toContain('Ese promedio es la varianza. También cuentan los registros con 0 casillas');
     expect(root.querySelectorAll('.record-card')).toHaveLength(6);
-    expect(root.querySelector('.totals')).toBeNull();
-    expect(root.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(root.querySelector('.totals')!.textContent).toContain('Registros: 6');
+    expect(root.querySelector('.totals')!.textContent).toContain('Casillas en total: 18');
+    expect(root.querySelectorAll('.square-cell')).toHaveLength(18);
+    expect(root.querySelectorAll('.empty-square')).toHaveLength(4);
+    expect(root.textContent).not.toContain('18 ÷ 6');
     expect(root.querySelectorAll('.variance--solved')).toHaveLength(0);
     expect([...game.options()].sort((a, b) => a - b)).toEqual([0, 3, 18]);
     expect(game.helped()).toBe(false);
+  });
+
+  it('restores visual support on an unsolved calculation without changing saved help or solving a period', () => {
+    for (const { round, activeIndex, helped, solved, sum, mean } of [
+      { round: 0, activeIndex: 0, helped: false, solved: [], sum: 18, mean: 100 },
+      { round: 2, activeIndex: 1, helped: true, solved: ['a'], sum: 36, mean: 104 },
+    ]) {
+      const fixture = create();
+      fixture.componentRef.setInput('initialState', {
+        stage: 'calculate', round, prediction: 'b', activeIndex, solved,
+        helped, hintLevel: 0, hintFocus: null, choiceOffset: 1,
+      });
+      fixture.detectChanges();
+      const game = fixture.componentInstance;
+      const root: HTMLElement = fixture.nativeElement;
+      expect(game.stage()).toBe('calculate');
+      expect(game.round()).toBe(round);
+      expect(game.activePeriod().mean).toBe(mean);
+      expect(game.solved()).toEqual(solved);
+      expect(game.helped()).toBe(helped);
+      expect(game.hintLevel()).toBe(0);
+      expect(game.feedback()).toBe('');
+      expect(root.querySelectorAll('.square-cell')).toHaveLength(sum);
+      expect(root.querySelector('.totals')!.textContent).toContain('Casillas en total: ' + sum);
+      expect(root.querySelector('.period--active .variance-summary')!.textContent).toContain('por calcular');
+      expect(root.querySelector('.calculation-card')).toBeNull();
+      expect(root.textContent).not.toContain(sum + ' ÷ 6');
+      fixture.destroy();
+    }
   });
 
   it('ignores invalid and out-of-order actions without recording help or completion', () => {
@@ -396,7 +442,7 @@ describe('Lesson07Balls', () => {
     expect(root.querySelector('.variance--solved')?.textContent).toContain('3 (t/h)²');
     expect(root.querySelectorAll('.variance--solved')).toHaveLength(1);
     expect(root.textContent).toContain('18 ÷ 6 = 3');
-    expect(root.textContent).toContain('no toneladas físicas');
+    expect(root.textContent).toContain('no toneladas de material');
     expect(root.textContent).toContain('No es una distancia de 3 t/h');
     expect(game.helped()).toBe(false);
     game.answerVariance(3);
@@ -449,8 +495,8 @@ describe('Lesson07Balls', () => {
     expect(game.feedback()).toContain('por debajo o por encima del promedio');
     expect(game.hintLevel()).toBe(1);
     expect(game.hintFocus()).toBe('deviations');
-    expect(game.squaresVisible()).toBe(false);
-    expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(game.squaresVisible()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.square-cell')).toHaveLength(18);
     expect(fixture.nativeElement.querySelectorAll('.record--hint')).toHaveLength(2);
     game.requestHint();
     fixture.detectChanges();
@@ -471,7 +517,7 @@ describe('Lesson07Balls', () => {
     expect(game.hintLevel()).toBe(1);
     expect(game.hintFocus()).toBe('count');
     expect(game.feedback()).toContain('Cuenta todas las tarjetas');
-    expect(game.squaresVisible()).toBe(false);
+    expect(game.squaresVisible()).toBe(true);
     game.requestHint();
     expect(game.feedback()).toContain('total de casillas. Todavía falta dividir');
     expect(game.feedback()).toContain('6 registros');
@@ -513,7 +559,7 @@ describe('Lesson07Balls', () => {
     expect(game.helped()).toBe(true);
     expect(root.querySelectorAll('.record--hint')).toHaveLength(2);
     expect(root.querySelectorAll('.point--hint')).toHaveLength(2);
-    expect(root.querySelector('.totals')).toBeNull();
+    expect(root.querySelector('.totals')!.textContent).toContain('Casillas en total: 18');
     expect(root.querySelector('.feedback')?.textContent).not.toContain('18 ÷ 6');
     expect(root.querySelector('.feedback')?.textContent).not.toContain('3 (t/h)²');
     expect(document.activeElement).toBe(root.querySelector('.feedback'));
@@ -538,7 +584,7 @@ describe('Lesson07Balls', () => {
     expect(game.options()).toBe(options);
   });
 
-  it('highlights every denominator record, including zero contributions, without giving the sum or result in the first hint', () => {
+  it('highlights every denominator record, including zero contributions, without solving the first hint', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     const root: HTMLElement = fixture.nativeElement;
@@ -552,8 +598,8 @@ describe('Lesson07Balls', () => {
         (marker) => marker.textContent === 'También cuenta',
       ),
     ).toHaveLength(4);
-    expect(root.querySelector('.totals')).toBeNull();
-    expect(root.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(root.querySelector('.totals')!.textContent).toContain('Registros: 6');
+    expect(root.querySelectorAll('.square-cell')).toHaveLength(18);
     expect(root.querySelector('.feedback')?.textContent).not.toContain('18');
     expect(game.solved()).toEqual([]);
     expect(game.hintLevel()).toBe(1);
@@ -579,7 +625,7 @@ describe('Lesson07Balls', () => {
     expect(game.hintShown()).toBe(false);
     game.requestHint();
     expect(game.hintLevel()).toBe(1);
-    expect(game.squaresVisible()).toBe(false);
+    expect(game.squaresVisible()).toBe(true);
     game.answerVariance(6);
     game.continueCalculation();
     expect(game.stage()).toBe('report');
@@ -683,7 +729,7 @@ describe('Lesson07Balls', () => {
     },
   );
 
-  it('starts B without revealing its squares and retains the checked A result', () => {
+  it('starts B with its own squares but no solved variance and retains the checked A result', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     game.choosePrediction('b');
@@ -694,7 +740,9 @@ describe('Lesson07Balls', () => {
     expect(game.activePeriod().id).toBe('b');
     expect(game.stage()).toBe('calculate');
     expect([...game.options()].sort((a, b) => a - b)).toEqual([0, 6, 36]);
-    expect(root.querySelectorAll('.square-cell')).toHaveLength(0);
+    expect(root.querySelectorAll('.square-cell')).toHaveLength(36);
+    expect(root.querySelector('.totals')!.textContent).toContain('Casillas en total: 36');
+    expect(root.textContent).not.toContain('36 ÷ 6');
     expect(root.querySelectorAll('.record-card')).toHaveLength(6);
     expect(root.querySelectorAll('.variance--solved')).toHaveLength(1);
     expect(root.querySelector('.variance--solved')?.textContent).toContain('3 (t/h)²');
@@ -718,7 +766,7 @@ describe('Lesson07Balls', () => {
     expect(game.helped()).toBe(true);
     expect(game.hintShown()).toBe(false);
     expect(game.feedback()).toBe('');
-    expect(game.squaresVisible()).toBe(false);
+    expect(game.squaresVisible()).toBe(true);
     game.answerVariance(6);
     game.continueCalculation();
     game.chooseReport('spread');
@@ -993,6 +1041,7 @@ describe('Lesson07Balls', () => {
     expect(report.textContent).toContain('97, 100, 100, 100, 100, 103');
     expect(report.textContent).toContain('18 ÷ 6 = 3 (t/h)²');
     expect(report.textContent).toContain('36 ÷ 6 = 6 (t/h)²');
+    expect(report.textContent).toContain('En B, cuatro datos estuvieron a 3 t/h del promedio; en A, solo dos');
     expect(report.textContent).toContain('no explica por qué cambió ni qué ajuste hacer');
     expect(report.textContent).toContain('Variar menos no significa trabajar mejor');
     expect(report.textContent).not.toContain('104');
@@ -1060,7 +1109,7 @@ describe('Lesson07Balls', () => {
     click(root, 'Probar otros registros →');
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(root.textContent).toContain('Ensayo: otros registros');
+    expect(root.textContent).toContain('Práctica: otros datos');
     expect(root.querySelectorAll('.data-point')).toHaveLength(8);
     expect(root.querySelectorAll('.variance--solved')).toHaveLength(0);
     expect(root.querySelectorAll('.square-cell')).toHaveLength(0);
@@ -1069,12 +1118,15 @@ describe('Lesson07Balls', () => {
     expect(game.prediction()).toBeNull();
     expect(document.activeElement).toBe(root.querySelector('#balls-task-title'));
     expect(document.activeElement?.textContent).toContain(
-      '¿Dónde ves más registros alejados del promedio?',
+      '¿En qué período ves más datos lejos del promedio?',
     );
     expect(root.textContent).not.toContain('Tu idea inicial:');
     click(root, 'Período A');
     fixture.detectChanges();
     expect(root.querySelectorAll('.record-card')).toHaveLength(4);
+    expect(root.querySelectorAll('.square-cell')).toHaveLength(64);
+    expect(root.textContent).toContain('Una última práctica');
+    expect(root.textContent).not.toContain('sin la pista');
     expect(game.prediction()).toBe('a');
     expect(game.helped()).toBe(false);
     expect(root.textContent).not.toContain('Primera pista');

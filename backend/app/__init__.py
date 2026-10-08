@@ -6,6 +6,7 @@ from .extensions import cors, db, migrate
 from .request_security import REQUEST_HEADER, init_request_security
 from .request_limits import init_request_limits
 from .auth.login_limit import validate_login_limit_config
+from .operations import init_operations, validate_production_config
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -15,8 +16,10 @@ def create_app(test_config: dict | None = None) -> Flask:
     if test_config:
         app.config.update(test_config)
 
+    init_operations(app)
     validate_login_limit_config(app)
     init_request_security(app)
+    validate_production_config(app)
     init_request_limits(app)
     db.init_app(app)
     migrate.init_app(app, db)
@@ -42,6 +45,6 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     @app.get("/api/v1/health")
     def health():
-        return jsonify({"status": "ok"})
+        return jsonify({"status": "ok", "version": app.config["APP_VERSION"]})
 
     return app

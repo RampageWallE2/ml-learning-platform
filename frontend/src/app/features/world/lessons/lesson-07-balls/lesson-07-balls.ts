@@ -1,18 +1,17 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { calculatePopulationStatistics, calculateRange } from '../lesson-statistics';
+import { C7_BALLS_RECORDS as ORIGINAL } from '../data/open-pit-original-records';
 import { C7Stage as Stage, C7PeriodId as PeriodId, C7Prediction as Prediction,
   C7HintFocus as HintFocus, C7State, C7_MAX_PRACTICE_ROUNDS, isC7State } from './lesson-07-balls.state';
 
 type ReportChoice = 'equal' | 'spread' | 'better';
 type Pair = readonly [readonly number[], readonly number[]];
 
-const ORIGINAL: Pair = [
-  [97, 100, 100, 100, 100, 103],
-  [97, 97, 100, 100, 103, 103],
-];
 const PRACTICE_PAIRS: readonly Pair[] = [
   [[96, 96, 104, 104], [96, 100, 100, 104]],
   [[101, 104, 104, 104, 104, 107], [101, 101, 104, 104, 107, 107]],
@@ -20,14 +19,11 @@ const PRACTICE_PAIRS: readonly Pair[] = [
 ];
 
 function describePeriod(id: PeriodId, values: readonly number[]) {
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-  const deviations = values.map(value => value - mean);
-  const squares = deviations.map(value => value * value);
-  const squareSum = squares.reduce((sum, value) => sum + value, 0);
+  const { mean, deviations, squares, squareSum, variance } = calculatePopulationStatistics(values);
   return {
     id, name: id === 'a' ? 'Período A' : 'Período B', values, mean, deviations, squares, squareSum,
-    range: Math.max(...values) - Math.min(...values),
-    variance: squareSum / values.length,
+    range: calculateRange(values),
+    variance,
     zeroCount: deviations.filter(value => value === 0).length,
     records: values.map((value, index) => ({
       id: id + '-' + index, value, deviation: deviations[index], square: squares[index],
@@ -40,6 +36,7 @@ type Period = ReturnType<typeof describePeriod>;
 
 @Component({
   selector: 'app-lesson-07-balls',
+  imports: [NgTemplateOutlet],
   templateUrl: './lesson-07-balls.html',
   styleUrl: './lesson-07-balls.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -86,8 +83,8 @@ export class Lesson07Balls implements OnChanges {
     const offset = (this.choiceOffset() + this.round() + this.activeIndex()) % answers.length;
     return answers.map((_, index) => answers[(index + offset) % answers.length]);
   });
-  readonly squaresVisible = computed(() => this.stage() === 'checked'
-    || this.stage() === 'calculate' && this.hintShown());
+  // C7 compares variances; the squares support the calculation, not a memory test.
+  readonly squaresVisible = computed(() => ['calculate', 'checked'].includes(this.stage()));
   readonly higherPeriod = computed(() => this.periods()[0].variance > this.periods()[1].variance
     ? this.periods()[0] : this.periods()[1]);
   readonly lowerPeriod = computed(() => this.periods()[0].variance < this.periods()[1].variance
@@ -103,6 +100,14 @@ export class Lesson07Balls implements OnChanges {
   });
   readonly step = computed(() => this.stage() === 'observe' ? 1
     : ['calculate', 'checked'].includes(this.stage()) ? 2 : 3);
+  readonly question = computed(() => ({
+    observe: '¿En qué período ves más datos lejos del promedio?',
+    calculate: `¿Qué varianza tiene el ${this.activePeriod().name}?`,
+    checked: `${this.activePeriod().name}: varianza ${this.activePeriod().variance} (t/h)²`,
+    report: '¿Qué aviso explica lo que muestran los datos?',
+    review: this.needsPractice() ? 'Una práctica más' : 'Cerramos el ejemplo con ayuda',
+    success: 'El informe ya muestra la diferencia',
+  })[this.stage()]);
   private readonly injector = inject(Injector);
   private readonly taskHeading = viewChild<ElementRef<HTMLHeadingElement>>('taskHeading');
   private readonly hintMessage = viewChild<ElementRef<HTMLDivElement>>('hintMessage');

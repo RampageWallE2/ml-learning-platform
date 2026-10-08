@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import { AmbientSoundConfig } from '../../features/world/game/tiled/tilemap-config.types';
 
-import { getObjectLayerOrThrow, getTiledProperty } from '../tiled/tiled.utils';
+import { getObjectLayerOrThrow, getTiledNumberProperty, getTiledStringProperty } from '../tiled/tiled.utils';
 import { TiledObjectLike } from '../tiled/tiled.types';
 
 const AMBIENT_SOUND_LAYER = 'Ambient_Sounds';
@@ -120,11 +120,15 @@ export class AmbientAudioManager {
   }
 
   destroy(): void {
-    for (const channel of this.channels) {
-      channel.sound.destroy();
+    // Detach before calling external destructors, including on failure/reentry.
+    const channels = this.channels.splice(0);
+    for (const channel of channels) {
+      try {
+        channel.sound.destroy();
+      } catch (error) {
+        console.warn('Failed to destroy ambient audio.', error);
+      }
     }
-
-    this.channels.length = 0;
   }
 
   private createChannels(
@@ -139,7 +143,8 @@ export class AmbientAudioManager {
     const objectsBySoundId = this.groupObjectsBySoundId(objectLayer.objects);
     const configuredIds = new Set<string>();
 
-    return configs.map(config => {
+    // Validate the entire configuration before allocating any Phaser sounds.
+    const definitions = configs.map(config => {
       if (configuredIds.has(config.id)) {
         throw new Error(`El sonido ambiental "${config.id}" está configurado más de una vez`);
       }
@@ -154,17 +159,34 @@ export class AmbientAudioManager {
         );
       }
 
-      const sound = this.scene.sound.add(config.id, {
-        loop: true,
-        volume: 0,
-      }) as AdjustableSound;
-
       return {
-        sound,
+        soundId: config.id,
         points: objects.map(object => this.createPoint(config.id, object)),
-        startupMuteRemaining: 0,
       };
     });
+
+    const channels: AmbientSoundChannel[] = [];
+    try {
+      for (const definition of definitions) {
+        const sound = this.scene.sound.add(definition.soundId, {
+          loop: true,
+          volume: 0,
+        }) as AdjustableSound;
+        channels.push({ sound, points: definition.points, startupMuteRemaining: 0 });
+      }
+      return channels;
+    } catch (error) {
+      // Only remove sounds owned by this construction attempt.
+      for (const channel of channels) {
+        try {
+          channel.sound.destroy();
+        } catch (cleanupError) {
+          // One failed destructor must not prevent cleanup of the other sounds.
+          console.warn('Failed to destroy partially initialized ambient audio.', cleanupError);
+        }
+      }
+      throw error;
+    }
   }
 
   private createPoint(
@@ -175,8 +197,8 @@ export class AmbientAudioManager {
       throw new Error(`El punto de sonido "${object.name ?? soundId}" no tiene coordenadas`);
     }
 
-    const radius = getTiledProperty<number>(object, 'radius') ?? DEFAULT_RADIUS;
-    const maxVolume = getTiledProperty<number>(object, 'volume') ?? DEFAULT_VOLUME;
+    const radius = getTiledNumberProperty(object, 'radius') ?? DEFAULT_RADIUS;
+    const maxVolume = getTiledNumberProperty(object, 'volume') ?? DEFAULT_VOLUME;
 
     if (!Number.isFinite(radius) || radius <= 0) {
       throw new Error(`El sonido "${object.name ?? soundId}" debe tener un radius mayor que 0`);
@@ -216,7 +238,7 @@ export class AmbientAudioManager {
   }
 
   private getSoundId(object: TiledObjectLike): string | undefined {
-    return getTiledProperty<string>(object, 'soundId') ?? object.name;
+    return getTiledStringProperty(object, 'soundId') ?? object.name;
   }
 
   private calculateTargetVolume(points: readonly AmbientSoundPoint[]): number {

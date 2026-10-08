@@ -1,4 +1,6 @@
-<section class="lesson intuitive-loading" aria-labelledby="loading-title">
+<section class="lesson intuitive-loading"
+  [class.intuitive-loading--comparison]="stage() !== 'learn' && stage() !== 'success'"
+  aria-labelledby="loading-title">
   <header class="lesson-header">
     <span class="lesson-tag"
       ><span class="lesson-tag__number">Clase 1</span> · Interior del tajo</span
@@ -179,7 +181,7 @@
           </button>
         } @else if (stage() === 'practice-reason') {
           <span class="task-kicker">Elegiste el grupo {{ selectedGroup() }}</span>
-          <h3 id="loading-task-title" #taskHeading tabindex="-1">¿Qué viste al comparar las cargas?</h3>
+          <h3 id="loading-task-title" #taskHeading tabindex="-1">{{ reasonQuestion() }}</h3>
           <div class="reason-choices">
             @for (reason of reasons(); track reason.id) {
               <button type="button" class="btn reason-choice" (click)="chooseReason(reason.id)">

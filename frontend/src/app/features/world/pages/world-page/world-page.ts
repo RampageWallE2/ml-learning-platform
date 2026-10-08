@@ -4,6 +4,7 @@ import {
   DestroyRef,
   OnDestroy,
   computed,
+  effect,
   inject,
   signal
 } from '@angular/core';
@@ -25,6 +26,11 @@ import {
 } from '../../game/config/game.config';
 
 import { BaseWorldScene } from '../../../../core/base-world.scene';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { WorldHelp } from '../../components/world-help/world-help';
+import { OpenPitReport } from '../../components/open-pit-report/open-pit-report';
+import { WorldMinimap } from '../../components/world-minimap/world-minimap';
+import { hasSeenWorldWelcome, rememberWorldWelcome } from '../../components/world-help/world-welcome.storage';
 
 import {
   clearWorldSession,
@@ -40,7 +46,10 @@ import {
   GameEvents,
   LessonProgressSnapshot,
   OpenLessonRequest,
-  type SceneLoadingSnapshot
+  type SceneLoadingSnapshot,
+  type MinimapMapData,
+  type MinimapPlayerPosition,
+  type IntroGuidanceSnapshot
 } from '../../game/events/game-events';
 
 import {
@@ -69,6 +78,10 @@ import {
 } from '../../progress/progress.service';
 import { LessonDraftService } from '../../progress/lesson-draft.service';
 import { isDraftLessonId } from '../../progress/lesson-draft.storage';
+import { hasCompletedOpenPitIntro, rememberOpenPitIntro } from '../../progress/open-pit-intro.storage';
+import { OPEN_PIT_INTRO } from '../../lessons/data/open-pit-intro.data';
+import { OPEN_PIT_CLOSING } from '../../lessons/data/open-pit-closing.data';
+import { hasAllOpenPitLessons, hasDeliveredOpenPitReport, rememberOpenPitReport } from '../../progress/open-pit-closure.storage';
 
 import {
   ZoneProgress
@@ -77,12 +90,7 @@ import {
 import {
   AccountMenu
 } from '../../../../shared/ui/account-menu/account-menu';
-
-
-type SceneZoneMetadata = {
-  zoneId: string;
-  name: string;
-};
+import { getWorldProgressPanel, type SceneZoneMetadata } from './world-progress-panel';
 
 
 const SCENE_ZONES: Record<
@@ -117,6 +125,9 @@ const SCENE_ZONES: Record<
     Dialogue,
     InteractionPanel,
     ZoneProgress,
+    WorldHelp,
+    OpenPitReport,
+    WorldMinimap,
     AccountMenu
   ],
 
@@ -130,6 +141,7 @@ export class WorldPage
     inject(ProgressService);
 
   private readonly drafts = inject(LessonDraftService);
+  private readonly auth = inject(AuthService);
 
 
   private readonly destroyRef =
@@ -158,16 +170,139 @@ export class WorldPage
     return SCENE_ZONES[key]?.name ?? 'escenario';
   });
 
+  readonly helpOpen = signal(false);
+  readonly minimap = signal<MinimapMapData | null>(null);
+  readonly minimapPlayer = signal<MinimapPlayerPosition | null>(null);
+  readonly minimapAvailable = computed(() => this.activeSceneKey() === 'OpenPitScene'
+    && this.minimap()?.sceneKey === 'OpenPitScene' && !this.loadingScene());
+  readonly firstWelcome = signal(false);
+  readonly helpTouchControls = signal(false);
+  readonly helpReturnFocus = signal<HTMLElement | null>(null);
+  readonly reportOpen = signal(false);
+  private readonly introGuidance = signal<IntroGuidanceSnapshot | null>(null);
+  private reportOwnerId: string | null = null;
+  private helpOwnerId: string | null = null;
+  private readonly dismissedWelcomeOwners = new Set<string>();
+  private readonly completedIntroOwners = new Set<string>();
+  private readonly deliveredReportOwners = signal<ReadonlySet<string>>(new Set());
+  private closingDialogueOwnerId: string | null = null;
+
+  readonly openPitReportReady = computed(() => hasAllOpenPitLessons(
+    this.progress.zoneProgress().find(zone => zone.id === 'zone-01')?.lessons
+      .filter(lesson => lesson.status === 'completed').map(lesson => lesson.lessonId) ?? [],
+  ));
+  readonly openPitReportDelivered = computed(() => {
+    const owner = this.auth.user()?.id;
+    return !!owner && (this.deliveredReportOwners().has(owner) || hasDeliveredOpenPitReport(owner));
+  });
+  readonly returnToSupervisor = computed(() => this.openPitReportReady() && !this.openPitReportDelivered());
+
+  readonly reportAvailable = computed(() => this.activeSceneKey() === 'OpenPitScene'
+    && this.progressPanel().zone?.id === 'zone-01');
+  readonly reportConfirmedLessonIds = computed(() => {
+    if (!this.reportOpen() || this.auth.user()?.id !== this.reportOwnerId) return [];
+    return this.progress.zoneProgress().find(zone => zone.id === 'zone-01')?.lessons
+      .filter(lesson => lesson.status === 'completed').map(lesson => lesson.lessonId) ?? [];
+  });
+  readonly reportPendingLessonIds = computed(() => this.reportOpen() && this.auth.user()?.id === this.reportOwnerId
+    ? this.progress.pendingLessonIds() : []);
+
+  readonly helpNextStep = computed(() => {
+    switch (this.sceneLoading().sceneKey) {
+      case 'HubScene':
+        return 'Acércate al acceso de Minería de Superficie. Allí podrás entrar a Tajo Abierto / Open Pit.';
+      case 'SurfaceSelectionScene':
+        return 'Acércate al acceso de Tajo Abierto / Open Pit para entrar al escenario.';
+      case 'OpenPitScene': {
+        if (this.introGuidance()?.active) return 'Habla con el supervisor para empezar. Sigue la señal «Supervisor».';
+        const zone = this.progressPanel().zone;
+        if (zone) return this.progressPanel().objective;
+        return 'Para empezar C1, ve al fondo del tajo y busca al encargado del carguío. Sigue la señal C1.';
+      }
+      default:
+        return 'Las lecciones disponibles están en Open Pit. Vuelve al HUB y entra por Minería de Superficie.';
+    }
+  });
+
+  constructor() {
+    effect(() => {
+      const userId = this.auth.user()?.id ?? null;
+      if (this.helpOpen() && userId !== this.helpOwnerId) this.closeWorldHelp();
+      if (this.reportOpen() && userId !== this.reportOwnerId) this.closeReport();
+      if (this.activeDialogue()?.id === OPEN_PIT_CLOSING.id && userId !== this.closingDialogueOwnerId) this.closeDialogue();
+      if (!userId || this.loadingScene() || this.helpOpen() || this.reportOpen() || this.lessonActive() || this.activeDialogue()) return;
+      if (!this.dismissedWelcomeOwners.has(userId) && !hasSeenWorldWelcome(userId)) {
+        this.openWorldHelp(true);
+      }
+    });
+  }
+
+  openWorldHelp(firstVisit = false): void {
+    const owner = this.auth.user();
+    if (!owner || this.loadingScene() || this.helpOpen() || this.reportOpen() || this.lessonActive() || this.activeDialogue()) return;
+    this.helpOwnerId = owner.id;
+    this.firstWelcome.set(firstVisit);
+    const focused = document.activeElement;
+    this.helpReturnFocus.set(focused instanceof HTMLElement && focused.matches('.account-menu__trigger') ? focused : null);
+    const hasTouch = this.game?.device?.input.touch || navigator.maxTouchPoints > 0;
+    this.helpTouchControls.set(!!hasTouch && !!window.matchMedia?.('(pointer: coarse)').matches);
+    this.helpOpen.set(true);
+    gameEvents.emit(GameEvents.LOCK_PLAYER);
+  }
+
+  closeWorldHelp(): void {
+    if (!this.helpOpen()) return;
+    if (this.firstWelcome() && this.helpOwnerId && this.auth.user()?.id === this.helpOwnerId) {
+      // Avoid another popup in this visit even if browser storage is blocked.
+      this.dismissedWelcomeOwners.add(this.helpOwnerId);
+      rememberWorldWelcome(this.helpOwnerId);
+    }
+    this.helpOpen.set(false);
+    this.helpOwnerId = null;
+    if (!this.lessonActive() && !this.activeDialogue() && !this.reportOpen()) gameEvents.emit(GameEvents.UNLOCK_PLAYER);
+  }
+
+  openReport(): void {
+    const owner = this.auth.user();
+    if (!owner || !this.reportAvailable() || this.loadingScene() || this.reportOpen()
+      || this.helpOpen() || this.lessonActive() || this.activeDialogue()) return;
+    this.reportOwnerId = owner.id;
+    this.reportOpen.set(true);
+    gameEvents.emit(GameEvents.LOCK_PLAYER);
+  }
+
+  closeReport(): void {
+    if (!this.reportOpen()) return;
+    this.reportOpen.set(false);
+    this.reportOwnerId = null;
+    if (!this.lessonActive() && !this.activeDialogue() && !this.helpOpen()) gameEvents.emit(GameEvents.UNLOCK_PLAYER);
+  }
+
   reloadWorld(): void {
     window.location.reload();
   }
 
   private readonly handlerSceneLoading = (snapshot: SceneLoadingSnapshot): void => {
+    if (snapshot.phase !== 'ready') {
+      this.minimap.set(null);
+      this.minimapPlayer.set(null);
+    }
     this.sceneLoading.set({
       ...snapshot,
       progress: Number.isFinite(snapshot.progress)
         ? Math.min(1, Math.max(0, snapshot.progress)) : 0,
     });
+  };
+
+  private readonly handlerMinimapMap = (map: MinimapMapData | null): void => {
+    this.minimap.set(map);
+    this.minimapPlayer.set(null);
+  };
+
+  private readonly handlerMinimapPlayer = (player: MinimapPlayerPosition): void => {
+    if (player.sceneKey === this.minimap()?.sceneKey && Number.isFinite(player.x + player.y + player.heading)) {
+      this.minimapPlayer.set(player);
+    }
   };
 
 
@@ -179,87 +314,18 @@ export class WorldPage
     signal('HubScene');
 
 
-  readonly progressPanel =
-    computed(() => {
-
-      const sceneKey =
-        this.activeSceneKey();
-
-
-      if (sceneKey === 'HubScene') {
-        return {
-          name: 'HUB',
-          topic: 'Selección principal',
-          objective:
-            'Elige un ámbito para comenzar tu recorrido.',
-          zone: null
-        };
-      }
-
-
-      if (sceneKey === 'SurfaceSelectionScene') {
-        return {
-          name: 'Minería de Superficie',
-          topic: 'Selección de modalidad',
-          objective:
-            'Elige Tajo Abierto / Open Pit para entrar al escenario.',
-          zone: null
-        };
-      }
-
-
-      const sceneZone =
-        SCENE_ZONES[sceneKey];
-
-
-      if (!sceneZone) {
-        return {
-          name: 'Mundo',
-          topic: 'Exploración',
-          objective:
-            'Continúa explorando el escenario.',
-          zone: null
-        };
-      }
-
-
-      const zone =
-        this.progress.zoneProgress()
-          .find(
-            item =>
-              item.id ===
-              sceneZone.zoneId
-          ) ?? null;
-
-
-      if (!zone) {
-        return {
-          name: sceneZone.name,
-          topic: 'Próximamente',
-          objective:
-            'Esta zona todavía no tiene actividades configuradas.',
-          zone: null
-        };
-      }
-
-
-      const nextLesson =
-        zone.lessons.find(
-          lesson =>
-            lesson.status !==
-            'completed'
-        );
-
-
-      return {
-        name: zone.name,
-        topic: zone.topic,
-        objective:
-          nextLesson?.objective ??
-          'Has completado todas las actividades de esta zona.',
-        zone
-      };
+  readonly progressPanel = computed(() => {
+    const sceneKey = this.activeSceneKey();
+    const intro = this.introGuidance();
+    return getWorldProgressPanel({
+      sceneKey,
+      sceneZone: SCENE_ZONES[sceneKey] ?? null,
+      zones: this.progress.zoneProgress(),
+      introActive: intro?.sceneKey === sceneKey && intro.active,
+      reportReady: this.openPitReportReady(),
+      returnToSupervisor: sceneKey === 'OpenPitScene' && this.returnToSupervisor(),
     });
+  });
 
 
   /* =========================
@@ -466,11 +532,33 @@ export class WorldPage
     this.activeDialogue.set(
       null
     );
+    this.closingDialogueOwnerId = null;
 
 
     gameEvents.emit(
       GameEvents.UNLOCK_PLAYER
     );
+  }
+
+  completeDialogue(): void {
+    const dialogue = this.activeDialogue();
+    if (!dialogue) return;
+    const sceneKey = this.activeSceneKey();
+    const userId = this.auth.user()?.id;
+    if (sceneKey === 'OpenPitScene' && dialogue.id === OPEN_PIT_INTRO.id && userId) {
+      // Keep it dismissed during this visit even when browser storage is blocked.
+      this.completedIntroOwners.add(userId);
+      rememberOpenPitIntro(userId);
+    }
+    const delivered = sceneKey === 'OpenPitScene' && dialogue.id === OPEN_PIT_CLOSING.id
+      && !!userId && userId === this.closingDialogueOwnerId && this.openPitReportReady();
+    if (delivered) {
+      this.deliveredReportOwners.update(owners => new Set([...owners, userId]));
+      rememberOpenPitReport(userId);
+    }
+    this.closeDialogue();
+    if (delivered) this.publishLessonProgress();
+    gameEvents.emit(GameEvents.DIALOGUE_COMPLETED, { dialogueId: dialogue.id, sceneKey });
   }
 
 
@@ -481,6 +569,8 @@ export class WorldPage
   private readonly handlerOpenLesson = (
     lesson: OpenLessonRequest
   ): void => {
+
+    if (this.helpOpen() || this.reportOpen()) return;
 
     // The result is already recorded locally. Retry it instead of replaying
     // the activity, while still waiting for server confirmation to unlock.
@@ -556,10 +646,26 @@ export class WorldPage
     request: DialogueRequest
   ): void => {
 
-    const dialogue =
-      DIALOGUES[
-        request.dialogueId
-      ];
+    if (this.helpOpen() || this.reportOpen()) return;
+
+    if (this.activeSceneKey() === 'OpenPitScene' && request.dialogueId === OPEN_PIT_INTRO.id
+      && !this.openPitReportReady() && hasAllOpenPitLessons([
+        ...this.progress.zoneProgress().find(zone => zone.id === 'zone-01')?.lessons
+          .filter(lesson => lesson.status === 'completed').map(lesson => lesson.lessonId) ?? [],
+        ...this.progress.pendingLessonIds(),
+      ])) {
+      this.showBlockedLessonNotice('Falta guardar la última clase antes de entregar el informe. Usa Reintentar.');
+      return;
+    }
+
+    const dialogueId = this.activeSceneKey() === 'OpenPitScene'
+      && request.dialogueId === OPEN_PIT_INTRO.id && this.openPitReportReady()
+      ? OPEN_PIT_CLOSING.id : request.dialogueId;
+    if (dialogueId === OPEN_PIT_CLOSING.id && (!this.openPitReportReady() || this.activeSceneKey() !== 'OpenPitScene')) {
+      this.showBlockedLessonNotice('Completa y guarda las clases antes de entregar el informe.');
+      return;
+    }
+    const dialogue = DIALOGUES[dialogueId];
 
 
     if (!dialogue) {
@@ -573,6 +679,7 @@ export class WorldPage
     }
 
 
+    this.closingDialogueOwnerId = dialogueId === OPEN_PIT_CLOSING.id ? this.auth.user()?.id ?? null : null;
     this.activeDialogue.set(
       dialogue
     );
@@ -596,8 +703,25 @@ export class WorldPage
       sceneKey
     );
 
+    if (sceneKey !== this.minimap()?.sceneKey) {
+      this.minimap.set(null);
+      this.minimapPlayer.set(null);
+    }
+
 
     this.publishLessonProgress();
+    if (this.helpOpen() || this.reportOpen()) gameEvents.emit(GameEvents.LOCK_PLAYER);
+  };
+
+  private readonly handlerIntroGuidance = (guidance: IntroGuidanceSnapshot): void => {
+    const userId = this.auth.user()?.id;
+    if (guidance.sceneKey === 'OpenPitScene' && guidance.active && userId
+      && (this.openPitReportReady() || this.completedIntroOwners.has(userId) || hasCompletedOpenPitIntro(userId))) {
+      this.introGuidance.set({ ...guidance, active: false });
+      gameEvents.emit(GameEvents.INTRO_GUIDANCE_DISMISSED, guidance.sceneKey);
+      return;
+    }
+    this.introGuidance.set(guidance);
   };
 
 
@@ -613,6 +737,7 @@ export class WorldPage
 
 
     const snapshot: LessonProgressSnapshot = {
+      openPitReportDelivered: this.openPitReportDelivered(),
       currentLessonId:
         this.progress.currentLesson()
           ?.lessonId ?? null,
@@ -792,6 +917,9 @@ export class WorldPage
 
   ngAfterViewInit(): void {
     gameEvents.on(GameEvents.SCENE_LOADING, this.handlerSceneLoading);
+    gameEvents.on(GameEvents.MINIMAP_MAP_CHANGED, this.handlerMinimapMap);
+    gameEvents.on(GameEvents.MINIMAP_PLAYER_CHANGED, this.handlerMinimapPlayer);
+    gameEvents.on(GameEvents.INTRO_GUIDANCE_CHANGED, this.handlerIntroGuidance);
 
     gameEvents.on(
       GameEvents.OPEN_LESSON,
@@ -845,6 +973,9 @@ export class WorldPage
 
   ngOnDestroy(): void {
     gameEvents.off(GameEvents.SCENE_LOADING, this.handlerSceneLoading);
+    gameEvents.off(GameEvents.MINIMAP_MAP_CHANGED, this.handlerMinimapMap);
+    gameEvents.off(GameEvents.MINIMAP_PLAYER_CHANGED, this.handlerMinimapPlayer);
+    gameEvents.off(GameEvents.INTRO_GUIDANCE_CHANGED, this.handlerIntroGuidance);
 
     this.worldSessionLifecycle?.stop();
 

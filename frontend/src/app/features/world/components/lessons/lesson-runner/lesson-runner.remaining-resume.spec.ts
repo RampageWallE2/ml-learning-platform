@@ -11,6 +11,7 @@ import { Lesson03Haulage } from '../../../lessons/lesson-03-haulage/lesson-03-ha
 import { Lesson04Workshop } from '../../../lessons/lesson-04-workshop/lesson-04-workshop';
 import { Lesson05Crushing } from '../../../lessons/lesson-05-crushing/lesson-05-crushing';
 import { Lesson09Thickeners } from '../../../lessons/lesson-09-thickeners/lesson-09-thickeners';
+import { LESSON_NAMES } from '../../../lessons/lesson-catalog';
 import { DraftLessonId, LessonExerciseState, isDraftLessonId, isLessonExerciseState,
   loadLessonDraft, saveLessonDraft } from '../../../progress/lesson-draft.storage';
 import { LessonDraftService } from '../../../progress/lesson-draft.service';
@@ -21,6 +22,8 @@ interface Recoverable {
   stateChanged: OutputEmitterRef<LessonExerciseState>;
   completed: OutputEmitterRef<void>;
   stage: () => string;
+  guidedCompletion: () => boolean;
+  continueAfterHelp(): void;
   finish(): void;
 }
 const cases: readonly { id: DraftLessonId; type: Type<Recoverable>; state: LessonExerciseState; success: LessonExerciseState }[] = [
@@ -29,19 +32,19 @@ const cases: readonly { id: DraftLessonId; type: Type<Recoverable>; state: Lesso
     success: { stage: 'success', selectedLoad: null, selectedGroup: 'D', practiceRound: 0, practiceHelped: false } },
   { id: 'lesson-02', type: Lesson02Ramp,
     state: { stage: 'practice', redistributed: true, round: 1, practiceCase: 1, practiceHelped: true, selectedLoad: 'E1' },
-    success: { stage: 'success', redistributed: true, round: 1, practiceCase: 1, practiceHelped: false, selectedLoad: 'E1' } },
+    success: { stage: 'success', redistributed: true, round: 1, practiceCase: 1, practiceHelped: true, selectedLoad: 'E1' } },
   { id: 'lesson-03', type: Lesson03Haulage,
     state: { stage: 'practice-extremes', selectedMinId: 'practice-1-2', selectedMaxId: null, round: 1, practiceHelped: true },
-    success: { stage: 'success', selectedMinId: 'practice-1-2', selectedMaxId: 'practice-1-3', round: 1, practiceHelped: false } },
+    success: { stage: 'success', selectedMinId: 'practice-1-2', selectedMaxId: 'practice-1-3', round: 1, practiceHelped: true } },
   { id: 'lesson-04', type: Lesson04Workshop,
     state: { stage: 'experiment', experimentMode: 'together', rangePrediction: 'increase', separatedViewed: true, round: 0, practiceHelped: false },
-    success: { stage: 'success', experimentMode: 'apart', rangePrediction: 'increase', separatedViewed: true, round: 1, practiceHelped: false } },
+    success: { stage: 'success', experimentMode: 'apart', rangePrediction: 'increase', separatedViewed: true, round: 1, practiceHelped: true } },
   { id: 'lesson-05', type: Lesson05Crushing,
     state: { stage: 'practice', selected: 2, round: 2, solvedCount: 2, practiceHelped: true },
-    success: { stage: 'success', selected: 2, round: 2, solvedCount: 3, practiceHelped: false } },
+    success: { stage: 'success', selected: 2, round: 2, solvedCount: 3, practiceHelped: true } },
   { id: 'lesson-09', type: Lesson09Thickeners,
     state: { stage: 'recommend', round: 1, helped: true, answered: true, feedbackKind: 'answer' },
-    success: { stage: 'success', round: 1, helped: false, answered: false, feedbackKind: 'none' } },
+    success: { stage: 'success', round: 1, helped: true, answered: false, feedbackKind: 'none' } },
 ];
 
 describe('Remaining Open Pit draft recovery', () => {
@@ -61,6 +64,23 @@ describe('Remaining Open Pit draft recovery', () => {
     fixture.componentRef.setInput('lessonId', id); fixture.detectChanges(); return fixture;
   }
 
+  it.each(Object.keys(LESSON_NAMES).filter(isDraftLessonId))(
+    '%s uses the catalog title in the resume prompt without changing its draft',
+    id => {
+      expect(saveLessonDraft(account.id, id, { step: 1, exercise: null })).toBe(true);
+      const saved = loadLessonDraft(account.id, id).draft;
+      write.mockClear();
+      const fixture = create(id);
+      const label = fixture.nativeElement.querySelector('.draft-label') as HTMLElement;
+      expect(label.textContent?.trim()).toBe('C' + Number(id.slice(-2)) + ' · ' + LESSON_NAMES[id]);
+      expect(fixture.nativeElement.textContent).toContain(
+        'Retoma el ejercicio de ' + LESSON_NAMES[id].toLowerCase() + ' donde lo dejaste.',
+      );
+      expect(write).not.toHaveBeenCalled();
+      expect(loadLessonDraft(account.id, id).draft).toEqual(saved);
+    },
+  );
+
   for (const item of cases) {
     it(item.id + ' restores its exact exercise, without emitting completion or resetting its seed', () => {
       expect(saveLessonDraft(account.id, item.id, { step: 1, exercise: item.state })).toBe(true);
@@ -78,7 +98,10 @@ describe('Remaining Open Pit draft recovery', () => {
       expect(child.stage()).toBe(item.state.stage); // Child outputs never become new initial inputs.
       fixture.destroy();
       const reopened = create(item.id); reopened.componentInstance.resumeDraft(); reopened.detectChanges();
-      expect((reopened.debugElement.query(By.directive(item.type)).componentInstance as Recoverable).stage()).toBe('success');
+      const copy = reopened.debugElement.query(By.directive(item.type)).componentInstance as Recoverable;
+      expect(copy.stage()).toBe('success');
+      expect(copy.guidedCompletion()).toBe(item.id !== 'lesson-01');
+      expect(loadLessonDraft(account.id, item.id).draft?.exercise).toEqual(item.success);
     });
 
     it(item.id + ' restarts only this draft, preserving pending progress and other accounts/classes', () => {
@@ -140,6 +163,56 @@ describe('Remaining Open Pit draft recovery', () => {
         expect(loadLessonDraft(account.id, item.id).discarded).toBe(true); expect(items.has(key)).toBe(false);
       }
     });
+  }
+  for (const item of cases.filter(item => item.id !== 'lesson-01')) {
+    it(item.id + ' keeps a recovered guided finish assisted and requires the entire closing conversation', () => {
+      expect(saveLessonDraft(account.id, item.id, { step: 1, exercise: item.success })).toBe(true);
+      const fixture = create(item.id); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
+      fixture.componentInstance.resumeDraft(); fixture.detectChanges();
+      const child = fixture.debugElement.query(By.directive(item.type)).componentInstance as Recoverable;
+      expect(child.guidedCompletion()).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('Completaste con ayuda');
+      expect(done).not.toHaveBeenCalled(); child.finish(); fixture.detectChanges();
+      expect(loadLessonDraft(account.id, item.id).draft).toMatchObject({ step: 2, exercise: item.success });
+      expect(done).not.toHaveBeenCalled(); fixture.destroy();
+
+      const closing = create(item.id); closing.componentInstance.completed.subscribe(done);
+      closing.componentInstance.resumeDraft(); closing.detectChanges();
+      const dialogue = closing.debugElement.query(By.directive(Dialogue)).componentInstance as Dialogue;
+      expect(done).not.toHaveBeenCalled();
+      for (let index = 0; index < dialogue.dialogue().messages.length; index++) {
+        if (dialogue.isTyping()) dialogue.next(); dialogue.next();
+      }
+      expect(done).toHaveBeenCalledExactlyOnceWith(item.id);
+      expect(loadLessonDraft(account.id, item.id).draft?.exercise).toEqual(item.success);
+      TestBed.inject(LessonDraftService).clearConfirmed(item.id, account);
+      expect(loadLessonDraft(account.id, item.id).draft).toBeNull();
+    });
+
+    for (const round of [1, 4]) {
+      it(item.id + ' closes a recovered resolved review explicitly without adding round ' + (round + 1), () => {
+        const review = { ...item.success, stage: 'review', round } as LessonExerciseState;
+        expect(saveLessonDraft(account.id, item.id, { step: 1, exercise: review })).toBe(true);
+        const fixture = create(item.id); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
+        fixture.componentInstance.resumeDraft(); fixture.detectChanges();
+        const child = fixture.debugElement.query(By.directive(item.type)).componentInstance as Recoverable;
+        expect(child.stage()).toBe('review'); expect(child.guidedCompletion()).toBe(false);
+        child.finish(); expect(done).not.toHaveBeenCalled(); expect(child.stage()).toBe('review');
+        const button = [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+          .find(button => button.textContent?.includes(item.id === 'lesson-05' ? 'Preparar el aviso' : 'Ver el informe'))!;
+        expect(button).toBeDefined(); button.click(); fixture.detectChanges();
+        if (item.id === 'lesson-05') {
+          expect(child.stage()).toBe('report'); child.finish(); expect(done).not.toHaveBeenCalled();
+          (child as Lesson05Crushing).chooseReport('observed'); fixture.detectChanges();
+        }
+        const success = { ...item.success, round };
+        expect(child.stage()).toBe('success'); expect(child.guidedCompletion()).toBe(true);
+        expect(loadLessonDraft(account.id, item.id).draft?.exercise).toEqual(success);
+        expect(done).not.toHaveBeenCalled(); child.continueAfterHelp(); child.finish(); fixture.detectChanges();
+        expect(loadLessonDraft(account.id, item.id).draft).toMatchObject({ step: 2, exercise: success });
+        expect(done).not.toHaveBeenCalled();
+      });
+    }
   }
   it('C1 preserves a guided finish after reopening and still requires the closing conversation', () => {
     const practice: C1State = { stage: 'practice', practiceRound: 1, practiceHelped: false,

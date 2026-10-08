@@ -2,12 +2,16 @@
   class="interaction-overlay"
   [class.interaction-overlay--dialogue]="mode() === 'dialogue'"
   [class.interaction-overlay--activity]="mode() === 'activity'"
+  [class.interaction-overlay--help]="mode() === 'help'"
+  [class.interaction-overlay--report]="mode() === 'report'"
 >
   <div
     #panel
     class="interaction-panel"
     [class.interaction-panel--dialogue]="mode() === 'dialogue'"
     [class.interaction-panel--activity]="mode() === 'activity'"
+    [class.interaction-panel--help]="mode() === 'help'"
+    [class.interaction-panel--report]="mode() === 'report'"
     [class.interaction-panel--with-status]="!!statusTemplate()"
     role="dialog"
     tabindex="-1"
@@ -15,13 +19,13 @@
     (keydown)="onKeydown($event)"
     (focusin)="rememberFocus($event)"
     (keyup)="$event.key === ' ' && $event.stopPropagation()"
-    [attr.aria-label]="mode() === 'dialogue' ? 'Conversación' : 'Actividad'"
+    [attr.aria-label]="labels().label"
   >
     <button
       type="button"
       class="close-button"
       [class.close-button--dialogue]="mode() === 'dialogue'"
-      [attr.aria-label]="mode() === 'dialogue' ? 'Cerrar diálogo' : 'Cerrar actividad'"
+      [attr.aria-label]="labels().close"
       (click)="closed.emit()"
     >
       ×
@@ -31,6 +35,8 @@
       class="interaction-content"
       [class.interaction-content--dialogue]="mode() === 'dialogue'"
       [class.interaction-content--activity]="mode() === 'activity'"
+      [class.interaction-content--help]="mode() === 'help'"
+      [class.interaction-content--report]="mode() === 'report'"
     >
       <div
         class="interaction-content-inner"

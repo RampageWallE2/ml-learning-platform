@@ -23,13 +23,13 @@ import { C3State } from '../../../lessons/lesson-03-haulage/lesson-03-haulage.st
 import { C4State } from '../../../lessons/lesson-04-workshop/lesson-04-workshop.state';
 import { C5State } from '../../../lessons/lesson-05-crushing/lesson-05-crushing.state';
 import { C9State } from '../../../lessons/lesson-09-thickeners/lesson-09-thickeners.state';
-import { C6State, isC6State } from '../../../lessons/lesson-06-sag/lesson-06-sag.state';
-import { C7State, isC7State } from '../../../lessons/lesson-07-balls/lesson-07-balls.state';
-import { C8State, isC8State } from '../../../lessons/lesson-08-flotation/lesson-08-flotation.state';
+import { C6State } from '../../../lessons/lesson-06-sag/lesson-06-sag.state';
+import { C7State } from '../../../lessons/lesson-07-balls/lesson-07-balls.state';
+import { C8State } from '../../../lessons/lesson-08-flotation/lesson-08-flotation.state';
 
 import { Dialogue } from '../../dialogue/dialogue';
 import { InteractionPanel } from '../../interaction-panel/interaction-panel';
-import { LESSON_DEFINITIONS } from '../../../lessons/lesson-catalog';
+import { LESSON_DEFINITIONS, LESSON_NAMES } from '../../../lessons/lesson-catalog';
 import { Lesson01Loading } from '../../../lessons/lesson-01-loading/lesson-01-loading';
 
 import { Lesson02Ramp } from '../../../lessons/lesson-02-ramp/lesson-02-ramp';
@@ -89,16 +89,9 @@ export class LessonRunner implements OnChanges {
   readonly initialC9State = signal<C9State | null>(null);
   readonly initialC7State = signal<C7State | null>(null);
   readonly initialC8State = signal<C8State | null>(null);
-  private readonly draftTopics: Record<DraftLessonId, string> = {
-    'lesson-01': 'Dispersión de los datos', 'lesson-02': 'Promedio y dispersión',
-    'lesson-03': 'Cálculo del rango', 'lesson-04': 'Límites del rango',
-    'lesson-05': 'Desviación respecto al promedio', 'lesson-06': 'Varianza',
-    'lesson-07': 'Comparación de varianzas', 'lesson-08': 'Desviación estándar',
-    'lesson-09': 'Promedio, dispersión y metas',
-  };
   readonly resumeTitle = computed(() => {
     const id = this.draftLessonId();
-    return id ? 'C' + Number(id.slice(-2)) + ' · ' + this.draftTopics[id] : '';
+    return id ? 'C' + Number(id.slice(-2)) + ' · ' + LESSON_NAMES[id] : '';
   });
   readonly sessionChanged = computed(() => !!this.draftLessonId()
     && this.owner() !== this.drafts.currentUser());
@@ -110,7 +103,7 @@ export class LessonRunner implements OnChanges {
   readonly resumeLocation = computed(() => {
     const draft = this.resumeOffer();
     return draft?.step === 2 ? 'Terminaste el ejercicio. Falta la conversación final.'
-      : draft?.step === 1 ? 'Retoma el ejercicio de ' + this.draftTopics[draft.lessonId].toLowerCase() + ' donde lo dejaste.'
+      : draft?.step === 1 ? 'Retoma el ejercicio de ' + LESSON_NAMES[draft.lessonId].toLowerCase() + ' donde lo dejaste.'
       : 'Retoma la conversación inicial.';
   });
 
@@ -190,27 +183,6 @@ export class LessonRunner implements OnChanges {
     this.currentStepIndex.set(0);
     this.persistDraft();
     this.focusResumedContent();
-  }
-
-  saveC6State(state: C6State): void {
-    if (this.lessonId() !== 'lesson-06' || this.sessionChanged() || this.resumeOffer()
-      || this.currentStepIndex() !== 1 || !isC6State(state)) return;
-    this.exerciseState = state;
-    this.persistDraft();
-  }
-
-  saveC7State(state: C7State): void {
-    if (this.lessonId() !== 'lesson-07' || this.sessionChanged() || this.resumeOffer()
-      || this.currentStepIndex() !== 1 || !isC7State(state)) return;
-    this.exerciseState = state;
-    this.persistDraft();
-  }
-
-  saveC8State(state: C8State): void {
-    if (this.lessonId() !== 'lesson-08' || this.sessionChanged() || this.resumeOffer()
-      || this.currentStepIndex() !== 1 || !isC8State(state)) return;
-    this.exerciseState = state;
-    this.persistDraft();
   }
 
   saveExerciseState(id: DraftLessonId, state: LessonExerciseState): void {

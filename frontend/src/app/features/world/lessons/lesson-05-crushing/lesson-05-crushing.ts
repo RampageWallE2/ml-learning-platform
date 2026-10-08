@@ -3,14 +3,15 @@ import {
   inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
-import { C5Stage as Stage, C5State, isC5State } from './lesson-05-crushing.state';
+import { calculateMean } from '../lesson-statistics';
+import { C5_CRUSHING_RECORDS as ORIGINAL } from '../data/open-pit-original-records';
+import { C5Stage as Stage, C5State, C5_MAX_PRACTICE_ROUNDS, isC5State } from './lesson-05-crushing.state';
 
 type Comparison = 'same' | 'lower-closer' | 'higher-farther';
 type ReadingId = 'a' | 'b' | 'c';
 type Report = 'observed' | 'constant' | 'cause';
 type Reading = Readonly<{ id: ReadingId; deviation: number; distance: number }>;
 
-const ORIGINAL = [80, 80, 120, 120] as const;
 const PRACTICE_SETS: readonly (readonly number[])[] = [
   [80, 100, 110, 110], [90, 110, 120, 120], [90, 100, 120, 90],
 ];
@@ -33,18 +34,25 @@ export class Lesson05Crushing implements OnChanges {
   readonly round = signal(0);
   readonly solvedCount = signal(0);
   readonly practiceHelped = signal(false);
+  readonly needsPractice = computed(() => this.practiceHelped() && this.round() < C5_MAX_PRACTICE_ROUNDS);
+  readonly guidedCompletion = computed(() => this.stage() === 'success' && this.practiceHelped());
   readonly original = ORIGINAL;
   readonly ticks = [80, 90, 100, 110, 120];
   readonly distanceOptions = [10, 20, 80];
   readonly practicing = computed(() => ['practice', 'review'].includes(this.stage()));
   readonly values = computed<readonly number[]>(() => this.practicing()
     ? PRACTICE_SETS[this.round() % PRACTICE_SETS.length] : this.original);
-  readonly mean = computed(() => this.values().reduce((sum, value) => sum + value, 0) / this.values().length);
+  readonly mean = computed(() => calculateMean(this.values()));
   readonly activeIndex = computed<number | null>(() => this.practicing()
     ? PRACTICE_ORDER[Math.min(this.solvedCount(), 2)]
     : this.stage() === 'explore' ? this.selected() : null);
   readonly current = computed(() => this.activeIndex() === null ? null : this.values()[this.activeIndex()!]);
   readonly delta = computed(() => (this.current() ?? this.mean()) - this.mean());
+  readonly previousReading = computed(() => {
+    if (this.stage() !== 'practice' || this.solvedCount() === 0) return null;
+    const value = this.values()[PRACTICE_ORDER[this.solvedCount() - 1]];
+    return { value, deviation: value - this.mean() };
+  });
   readonly step = computed(() => this.stage() === 'explore' ? 1 : ['compare', 'notation'].includes(this.stage()) ? 2 : 3);
   readonly plotDescription = computed(() => 'Datos: ' + this.values().join(', ')
     + ' toneladas por hora. Promedio ' + this.mean() + '. Cada punto es un dato; los puntos uno sobre otro tienen el mismo valor. Escala de 80 a 120.'
@@ -110,6 +118,10 @@ export class Lesson05Crushing implements OnChanges {
 
   position(value: number): number { return (value - 80) / 40 * 100; }
   signed(value: number): string { return value < 0 ? '−' + Math.abs(value) : value > 0 ? '+' + value : '0'; }
+  describeDeviation(value: number): string {
+    return value === 0 ? 'En el promedio'
+      : Math.abs(value) + ' t/h ' + (value < 0 ? 'por debajo' : 'por encima') + ' del promedio';
+  }
 
   select(index: number): void {
     if (this.stage() !== 'explore' || !Number.isInteger(index) || index < 0 || index >= this.original.length) return;
@@ -156,12 +168,17 @@ export class Lesson05Crushing implements OnChanges {
           + '. Por eso su desviación es ' + this.signed(delta) + ' t/h.');
     } else {
       this.solvedCount.update(count => count + 1);
-      this.moveTo(this.solvedCount() < 3 ? 'practice' : this.practiceHelped() ? 'review' : 'report');
+      this.moveTo(this.solvedCount() < 3 ? 'practice' : this.needsPractice() ? 'review' : 'report');
     }
   }
 
   continueAfterHelp(): void {
     if (this.stage() !== 'review') return;
+    // Old reviews have solved their readings, but still require the final report.
+    if (!this.needsPractice()) {
+      this.moveTo('report');
+      return;
+    }
     this.round.update(round => round + 1);
     this.solvedCount.set(0);
     this.practiceHelped.set(false);

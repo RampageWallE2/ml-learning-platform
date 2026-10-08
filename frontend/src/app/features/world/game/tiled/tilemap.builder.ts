@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 
 import {
   TilemapBuildResult,
@@ -19,10 +19,9 @@ export function preloadTilemap(
      MAPA
      ========================= */
 
-  scene.load.tilemapTiledJSON(
-    config.mapKey,
-    config.mapPath
-  );
+  if (!scene.cache.tilemap.exists(config.mapKey)) {
+    scene.load.tilemapTiledJSON(config.mapKey, config.mapPath);
+  }
 
 
   /* =========================
@@ -34,10 +33,9 @@ export function preloadTilemap(
     of config.tilesets
   ) {
 
-    scene.load.image(
-      tileset.textureKey,
-      tileset.imagePath
-    );
+    if (!scene.textures.exists(tileset.textureKey)) {
+      scene.load.image(tileset.textureKey, tileset.imagePath);
+    }
   }
 }
 

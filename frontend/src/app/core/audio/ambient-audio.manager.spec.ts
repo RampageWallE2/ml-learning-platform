@@ -1,6 +1,8 @@
 import type Phaser from 'phaser';
 
 import { AmbientAudioManager } from './ambient-audio.manager';
+import type { TiledObjectLike } from '../tiled/tiled.types';
+import type { AmbientSoundConfig } from '../../features/world/game/tiled/tilemap-config.types';
 
 vi.mock('phaser', () => ({
   default: {
@@ -60,13 +62,13 @@ function createFakeSound(): FakeSound {
   return sound;
 }
 
-function createAmbientPoint(name: string, x: number) {
+function createAmbientPoint(name: string, x: number, soundId = 'dump_truck') {
   return {
     name,
     x,
     y: 100,
     properties: [
-      { name: 'soundId', value: 'dump_truck' },
+      { name: 'soundId', value: soundId },
       { name: 'radius', value: 500 },
       { name: 'volume', value: 0.4 },
     ],
@@ -74,6 +76,163 @@ function createAmbientPoint(name: string, x: number) {
 }
 
 describe('AmbientAudioManager', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const configs: readonly AmbientSoundConfig[] = [
+    { id: 'dump_truck', audioPath: 'truck.mp3' },
+    { id: 'mill', audioPath: 'mill.mp3' },
+    { id: 'excavator', audioPath: 'excavator.mp3' },
+  ];
+
+  function constructionFixture(objects: readonly TiledObjectLike[] = configs.map(config =>
+    createAmbientPoint(config.id, 100, config.id))) {
+    const sounds: FakeSound[] = [];
+    const liveSounds = new Set<FakeSound>();
+    const allocateSound = (_id: string, _config: Phaser.Types.Sound.SoundConfig) => {
+      const sound = createFakeSound();
+      sound.destroy.mockImplementation(() => { liveSounds.delete(sound); });
+      sounds.push(sound);
+      liveSounds.add(sound);
+      return sound;
+    };
+    const addSound = vi.fn(allocateSound);
+    const scene = { sound: { add: addSound, locked: false } } as unknown as Phaser.Scene;
+    const map = { getObjectLayer: () => ({ objects }) } as unknown as Phaser.Tilemaps.Tilemap;
+    const player = { x: 100, y: 100 } as Phaser.Physics.Arcade.Sprite;
+    return { sounds, liveSounds, allocateSound, addSound,
+      create: (configuration: readonly AmbientSoundConfig[] = configs) =>
+        new AmbientAudioManager(scene, map, player, configuration) };
+  }
+
+  const invalidPointCases: readonly [string, TiledObjectLike, string][] = [
+    ['a numeric property with the wrong type', {
+      ...createAmbientPoint('mill', 100, 'mill'),
+      properties: [{ name: 'soundId', value: 'mill' }, { name: 'volume', value: '0.4' }],
+    }, 'debe ser un número finito'],
+    ['a radius outside its range', {
+      ...createAmbientPoint('mill', 100, 'mill'),
+      properties: [{ name: 'soundId', value: 'mill' }, { name: 'radius', value: 0 }],
+    }, 'radius mayor que 0'],
+    ['missing coordinates', { ...createAmbientPoint('mill', 100, 'mill'), x: undefined }, 'no tiene coordenadas'],
+  ];
+
+  it.each(invalidPointCases)('validates every point before allocating audio when a later point has %s', (_, invalidPoint, message) => {
+    const fixture = constructionFixture([createAmbientPoint('truck', 100), invalidPoint]);
+    expect(() => fixture.create(configs.slice(0, 2))).toThrow(message);
+    expect(fixture.addSound).not.toHaveBeenCalled();
+    expect(fixture.liveSounds.size).toBe(0);
+  });
+
+  it('rejects duplicate configurations before allocating the first sound', () => {
+    const fixture = constructionFixture();
+    expect(() => fixture.create([configs[0], configs[0]])).toThrow('configurado más de una vez');
+    expect(fixture.addSound).not.toHaveBeenCalled();
+  });
+
+  it('rejects a missing later sound point before allocating the first sound', () => {
+    const fixture = constructionFixture([createAmbientPoint('truck', 100)]);
+    expect(() => fixture.create(configs)).toThrow('No se encontró el punto de sonido "mill"');
+    expect(fixture.addSound).not.toHaveBeenCalled();
+  });
+
+  it('destroys all sounds from a partial construction without touching unrelated audio', () => {
+    const fixture = constructionFixture();
+    const unrelatedSound = createFakeSound();
+    fixture.liveSounds.add(unrelatedSound);
+    const failure = new Error('Audio allocation failed');
+    fixture.addSound.mockImplementationOnce(fixture.allocateSound)
+      .mockImplementationOnce(fixture.allocateSound)
+      .mockImplementationOnce(() => { throw failure; });
+    let receivedError: unknown;
+    try { fixture.create(); } catch (error) { receivedError = error; }
+    expect(receivedError).toBe(failure);
+    expect(fixture.sounds).toHaveLength(2);
+    for (const sound of fixture.sounds) {
+      expect(sound.destroy).toHaveBeenCalledOnce();
+      expect(sound.play).not.toHaveBeenCalled();
+    }
+    expect(fixture.liveSounds).toEqual(new Set([unrelatedSound]));
+    expect(unrelatedSound.destroy).not.toHaveBeenCalled();
+  });
+
+  it('continues cleanup and preserves the allocation error if one destructor also fails', () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fixture = constructionFixture();
+    const failure = new Error('Audio allocation failed');
+    const cleanupFailure = new Error('Audio cleanup failed');
+    fixture.addSound.mockImplementationOnce((id, soundConfig) => {
+      const sound = fixture.allocateSound(id, soundConfig);
+      sound.destroy.mockImplementation(() => { throw cleanupFailure; });
+      return sound;
+    }).mockImplementationOnce(fixture.allocateSound)
+      .mockImplementationOnce(() => { throw failure; });
+    let receivedError: unknown;
+    try { fixture.create(); } catch (error) { receivedError = error; }
+    expect(receivedError).toBe(failure);
+    expect(fixture.sounds[0].destroy).toHaveBeenCalledOnce();
+    expect(fixture.sounds[1].destroy).toHaveBeenCalledOnce();
+    expect(fixture.liveSounds.has(fixture.sounds[1])).toBe(false);
+    expect(warning).toHaveBeenCalledOnce();
+    expect(warning.mock.calls[0][1]).toBe(cleanupFailure);
+  });
+
+  it.each([0, 1, 2])('continues normal teardown when sound %i fails and does not destroy it twice', failedIndex => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fixture = constructionFixture();
+    const manager = fixture.create();
+    const unrelatedSound = createFakeSound();
+    fixture.liveSounds.add(unrelatedSound);
+    const failure = new Error('Sound teardown failed', { cause: new Error('Device unavailable') });
+    const failedSound = fixture.sounds[failedIndex];
+    failedSound.destroy.mockImplementation(() => { throw failure; });
+
+    expect(() => manager.destroy()).not.toThrow();
+    for (const sound of fixture.sounds) expect(sound.destroy).toHaveBeenCalledOnce();
+    expect(fixture.liveSounds).toEqual(new Set([failedSound, unrelatedSound]));
+    expect(unrelatedSound.destroy).not.toHaveBeenCalled();
+    expect(warning).toHaveBeenCalledExactlyOnceWith('Failed to destroy ambient audio.', failure);
+    expect(warning.mock.calls[0][1].cause).toBe(failure.cause);
+
+    expect(() => manager.destroy()).not.toThrow();
+    expect(() => manager.update(16)).not.toThrow();
+    for (const sound of fixture.sounds) {
+      expect(sound.destroy).toHaveBeenCalledOnce();
+      expect(sound.play).not.toHaveBeenCalled();
+    }
+    expect(warning).toHaveBeenCalledOnce();
+  });
+
+  it('attempts every sound and keeps each original error when several destructors fail', () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fixture = constructionFixture();
+    const manager = fixture.create();
+    const firstFailure = new Error('First sound failed');
+    const lastFailure = { reason: 'Third-party sound failure' };
+    fixture.sounds[0].destroy.mockImplementation(() => { throw firstFailure; });
+    fixture.sounds[2].destroy.mockImplementation(() => { throw lastFailure; });
+
+    expect(() => manager.destroy()).not.toThrow();
+    for (const sound of fixture.sounds) expect(sound.destroy).toHaveBeenCalledOnce();
+    expect(fixture.liveSounds.has(fixture.sounds[1])).toBe(false);
+    expect(warning).toHaveBeenCalledTimes(2);
+    expect(warning.mock.calls[0][1]).toBe(firstFailure);
+    expect(warning.mock.calls[1][1]).toBe(lastFailure);
+    manager.destroy();
+    expect(warning).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps valid multi-channel audio playable and destroys each sound only once', () => {
+    const fixture = constructionFixture();
+    const manager = fixture.create();
+    expect(fixture.addSound.mock.calls.map(call => call[0])).toEqual(configs.map(config => config.id));
+    manager.update(16);
+    for (const sound of fixture.sounds) expect(sound.play).toHaveBeenCalledOnce();
+    manager.destroy();
+    manager.destroy();
+    expect(fixture.liveSounds.size).toBe(0);
+    for (const sound of fixture.sounds) expect(sound.destroy).toHaveBeenCalledOnce();
+  });
+
   it('uses one playback channel for duplicated points with the same soundId', () => {
     const sound = createFakeSound();
     const addSound = vi.fn(() => sound);

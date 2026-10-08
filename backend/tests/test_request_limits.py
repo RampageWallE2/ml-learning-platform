@@ -1,4 +1,4 @@
-"""API body limits with real Flask routes and disposable SQLite only."""
+"""API body limits with real Flask routes and disposable PostgreSQL only."""
 
 import io
 import json
@@ -238,16 +238,16 @@ def test_allowed_preflight_and_cors_headers_remain_on_413(app):
 
 
 @pytest.mark.parametrize("value", [None, 0, -1, True, False, "65536", 1.5])
-def test_invalid_limit_cannot_disable_the_guard(value):
+def test_invalid_limit_cannot_disable_the_guard(test_database_url, value):
     with pytest.raises(ValueError, match="API_MAX_REQUEST_BYTES"):
-        create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+        create_app({"TESTING": True, "APP_ENV": "development", "SQLALCHEMY_DATABASE_URI": test_database_url,
                     "SQLALCHEMY_ENGINE_OPTIONS": {}, "CORS_ORIGINS": [HEADERS["Origin"]],
                     "API_MAX_REQUEST_BYTES": value})
 
 
-def test_default_and_custom_limits():
+def test_default_and_custom_limits(test_database_url):
     assert Config.API_MAX_REQUEST_BYTES == LIMIT
-    configured = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+    configured = create_app({"TESTING": True, "APP_ENV": "development", "SQLALCHEMY_DATABASE_URI": test_database_url,
                              "SQLALCHEMY_ENGINE_OPTIONS": {}, "CORS_ORIGINS": [HEADERS["Origin"]],
                              "CSRF_TRUSTED_ORIGINS": [HEADERS["Origin"]], "API_MAX_REQUEST_BYTES": 10})
     client = configured.test_client()

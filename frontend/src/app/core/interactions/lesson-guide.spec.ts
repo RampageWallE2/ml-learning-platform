@@ -129,6 +129,14 @@ describe('LessonGuide display lifecycle', () => {
     expect(scene.add.text).toHaveBeenCalledTimes(1);
   });
 
+  it('supports the supervisor as an initial destination without inventing a class number', () => {
+    const { guide, camera, label } = create();
+    guide.setTarget({ label: 'Supervisor', x: 700, y: 400 });
+    guide.update({ x: 500, y: 400 }, camera);
+    expect(label['setText']).toHaveBeenLastCalledWith('Supervisor');
+    expect(label['setVisible']).toHaveBeenLastCalledWith(true);
+  });
+
   it('hides during activities and proximity prompts, then resumes when free to explore', () => {
     const { guide, camera, arrow } = create();
     guide.setTarget({ lessonId: 'lesson-03', x: -500, y: 400 });

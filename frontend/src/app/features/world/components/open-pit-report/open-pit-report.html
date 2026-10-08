@@ -1,0 +1,226 @@
+<header class="report-header">
+  <span class="report-context">OPEN PIT · C1–C9</span>
+  <h1>Informe del turno</h1>
+  <p>Cada nota conserva los registros originales de su área.</p>
+</header>
+
+<label class="report-navigation">
+  <span>Consultar clase</span>
+  <select class="report-select" (change)="onLessonChange($event)">
+    @for (note of notes; track note.lessonId) {
+      <option [value]="note.lessonId" [selected]="selectedLessonId() === note.lessonId">C{{ note.number }} · {{ note.title }} · {{ statusLabel(note.lessonId) }}</option>
+    }
+  </select>
+  <small class="report-selection-status">{{ statusLabel(selectedLessonId()) }}</small>
+</label>
+
+<section class="report-note" aria-label="Nota seleccionada" aria-live="polite" aria-atomic="true">
+  @let note = selectedNote();
+  <div class="report-note-heading">
+    <span class="report-area">{{ note.area }}</span>
+    <h2>C{{ note.number }} · {{ note.title }}</h2>
+  </div>
+
+  @if (loadingProgress()) {
+    <p class="report-empty">Consultando tu progreso… Las notas aparecerán cuando se confirme qué clases están guardadas.</p>
+  } @else if (confirmed()) {
+    <p class="report-finding">{{ note.finding }}</p>
+
+    @if (loadGraph(); as graph) {
+      <figure class="report-figure">
+        <figcaption>Cargas por camión · toneladas</figcaption>
+        <svg viewBox="0 0 400 132" role="img" [attr.aria-label]="graphDescription()">
+          @if (graph.mean !== null) {
+            <line class="report-mean" [attr.x1]="loadPosition(graph.mean)" y1="16" [attr.x2]="loadPosition(graph.mean)" y2="86" />
+          }
+          @for (series of graph.series; track series.label; let row = $index) {
+            <text class="report-group-label" x="0" [attr.y]="36 + row * 46">{{ series.label }}</text>
+            <line class="report-axis" x1="72" x2="380" [attr.y1]="32 + row * 46" [attr.y2]="32 + row * 46" />
+            @for (value of series.values; track $index) {
+              <circle class="report-point" [attr.cx]="loadPosition(value)" [attr.cy]="32 + row * 46" r="3.5" />
+            }
+          }
+          @for (tick of loadTicks; track tick) {
+            <line class="report-axis" [attr.x1]="loadPosition(tick)" [attr.x2]="loadPosition(tick)" y1="99" y2="104" />
+            <text class="report-tick" [attr.x]="loadPosition(tick)" y="124">{{ tick }}</text>
+          }
+        </svg>
+        <p class="report-graph-note">Un punto por camión. Las dos líneas usan la misma escala.</p>
+        @if (graph.mean !== null) {
+          <p class="report-graph-note">La línea vertical marca el promedio de ambos: {{ graph.mean }} toneladas por camión.</p>
+        }
+        <details class="report-records">
+          <summary>Ver los registros originales</summary>
+          @for (series of graph.series; track series.label) {
+            <p>{{ series.label }}: {{ series.values.join(', ') }} toneladas.</p>
+          }
+        </details>
+      </figure>
+    }
+
+    @if (rangeGraph(); as graph) {
+      <figure class="report-figure">
+        <figcaption>Tiempo de cinco descargas · minutos</figcaption>
+        <svg viewBox="0 0 400 132" role="img" [attr.aria-label]="graphDescription()">
+          <line class="report-axis" x1="32" x2="368" y1="60" y2="60" />
+          <text class="report-tick" x="32" y="28">{{ graph.min }}</text>
+          <text class="report-tick" x="368" y="28">{{ graph.max }}</text>
+          @for (point of rangePoints(); track $index) {
+            <circle class="report-point" [attr.cx]="point.x" [attr.cy]="point.y" r="5.5" />
+          }
+          <path class="report-range" d="M32 79 V89 H368 V79" />
+          <text class="report-tick report-range-label" x="200" y="118">{{ graph.range }} min de diferencia</text>
+        </svg>
+        <p class="report-graph-note">Un punto por descarga. Los puntos apilados tienen el mismo tiempo.</p>
+        <p class="report-graph-note">Registros: {{ graph.values.join(', ') }} minutos.</p>
+      </figure>
+    }
+
+    @if (workshopGraph(); as graph) {
+      <figure class="report-figure">
+        <figcaption>Duración de las revisiones · minutos</figcaption>
+        <svg viewBox="0 0 400 166" role="img" [attr.aria-label]="graphDescription()">
+          @for (plot of workshopPlots(); track plot.label; let row = $index) {
+            <text class="report-group-label" x="0" [attr.y]="54 + row * 62">{{ plot.label }}</text>
+            <line class="report-axis" x1="84" x2="376" [attr.y1]="50 + row * 62" [attr.y2]="50 + row * 62" />
+            @for (point of plot.points; track $index) {
+              <circle class="report-point" [attr.cx]="point.x" [attr.cy]="point.y" r="5.5" />
+            }
+          }
+          @for (tick of graph.ticks; track tick) {
+            <line class="report-axis" [attr.x1]="workshopPosition(tick)" [attr.x2]="workshopPosition(tick)" y1="137" y2="142" />
+            <text class="report-tick" [attr.x]="workshopPosition(tick)" y="160">{{ tick }}</text>
+          }
+        </svg>
+        <p class="report-graph-note">Un punto por revisión. Los puntos apilados tienen el mismo tiempo. Ambas líneas usan la misma escala.</p>
+        <details class="report-records">
+          <summary>Ver los registros originales</summary>
+          @for (series of graph.series; track series.label) {
+            <p>{{ series.label }}: {{ series.values.join(', ') }} minutos.</p>
+          }
+        </details>
+      </figure>
+    }
+
+    @if (deviationGraph(); as graph) {
+      <figure class="report-figure">
+        <figcaption>Entrada de material por hora · t/h</figcaption>
+        <svg viewBox="0 0 400 144" role="img" [attr.aria-label]="graphDescription()">
+          <text class="report-tick report-distance-label" [attr.x]="deviationPosition(graph.mean)" y="16">Promedio {{ graph.mean }}</text>
+          <line class="report-mean" [attr.x1]="deviationPosition(graph.mean)" [attr.x2]="deviationPosition(graph.mean)" y1="22" y2="62" />
+          <line class="report-axis" x1="32" x2="368" y1="48" y2="48" />
+          @for (point of deviationPoints(); track $index) {
+            <circle class="report-point" [attr.cx]="point.x" [attr.cy]="point.y" r="5.5" />
+          }
+          <path class="report-range" [attr.d]="'M32 62 V74 H' + deviationPosition(graph.mean) + ' V62'" />
+          <path class="report-range" [attr.d]="'M' + deviationPosition(graph.mean) + ' 62 V74 H368 V62'" />
+          <text class="report-tick report-distance-label" [attr.x]="(32 + deviationPosition(graph.mean)) / 2" y="98">{{ graph.mean - graph.min }} t/h debajo</text>
+          <text class="report-tick report-distance-label" [attr.x]="(368 + deviationPosition(graph.mean)) / 2" y="98">{{ graph.max - graph.mean }} t/h encima</text>
+          @for (tick of graph.ticks; track tick) {
+            <line class="report-axis" [attr.x1]="deviationPosition(tick)" [attr.x2]="deviationPosition(tick)" y1="112" y2="117" />
+            <text class="report-tick" [attr.x]="deviationPosition(tick)" y="140">{{ tick }}</text>
+          }
+        </svg>
+        <p class="report-graph-note">Un punto por hora. Los puntos apilados tienen el mismo valor.</p>
+        <p class="report-graph-note">Registros: {{ graph.values.join(', ') }} t/h. t/h significa toneladas por hora.</p>
+      </figure>
+    }
+
+    @if (varianceGraph(); as graph) {
+      <figure class="report-figure">
+        <figcaption>Registros del SAG · t/h · promedio {{ graph.mean }}</figcaption>
+        <svg viewBox="0 0 400 130" role="img" [attr.aria-label]="graphDescription()">
+          @for (record of varianceRecords(); track $index; let index = $index) {
+            <text class="report-tick report-square-label" [attr.x]="record.x" y="14">Hora {{ index + 1 }}</text>
+            <text class="report-tick" [attr.x]="record.x" y="36">{{ record.value }} t/h</text>
+            @for (cell of record.cells; track $index) {
+              <rect class="report-square-cell" [attr.x]="cell.x" [attr.y]="cell.y" width="10" height="10" />
+            }
+            @if (record.square === 0) {
+              <text class="report-tick report-zero" [attr.x]="record.x" y="69">0</text>
+            }
+            <text class="report-tick report-square-label" [attr.x]="record.x" y="94">{{ record.side }} × {{ record.side }}</text>
+            <text class="report-tick report-square-label" [attr.x]="record.x" y="118">{{ record.square }} casillas</text>
+          }
+        </svg>
+        <p class="report-graph-note">Cada cuadrado usa la separación al promedio como lado. Las casillas muestran el cálculo, no toneladas de material.</p>
+        <p class="report-graph-note">Sumamos las casillas: {{ graph.squares.join(' + ') }} = {{ graph.sum }}.</p>
+        <p class="report-calculation">{{ graph.sum }} ÷ {{ graph.values.length }} registros = {{ graph.variance }} (t/h)²</p>
+      </figure>
+    }
+
+    @if (comparisonGraph(); as graph) {
+      <figure class="report-figure">
+        <figcaption>Registros de los períodos A y B · t/h</figcaption>
+        <svg viewBox="0 0 400 214" role="img" [attr.aria-label]="graphDescription()">
+          @let reference = graph.goal ?? graph.series[0].mean;
+          <text class="report-tick report-distance-label" [attr.x]="comparisonPosition(reference)" y="16">{{ graph.goal === null ? 'Promedio' : 'Meta del promedio' }} {{ reference }}</text>
+          <line class="report-mean" [attr.x1]="comparisonPosition(reference)" [attr.x2]="comparisonPosition(reference)" y1="22" y2="182" />
+          @for (plot of comparisonPlots(); track plot.label; let row = $index) {
+            <text class="report-group-label" x="0" [attr.y]="98 + row * 78">{{ plot.label }}</text>
+            <line class="report-axis" x1="84" x2="376" [attr.y1]="94 + row * 78" [attr.y2]="94 + row * 78" />
+            @for (point of plot.points; track $index) {
+              <circle class="report-point" [attr.cx]="point.x" [attr.cy]="point.y" r="5.5" />
+            }
+          }
+          @for (tick of graph.ticks; track tick) {
+            <line class="report-axis" [attr.x1]="comparisonPosition(tick)" [attr.x2]="comparisonPosition(tick)" y1="187" y2="192" />
+            <text class="report-tick" [attr.x]="comparisonPosition(tick)" y="210">{{ tick }}</text>
+          }
+        </svg>
+        <p class="report-graph-note">Un punto por hora. Los repetidos se apilan. Las dos líneas usan la misma escala. t/h significa toneladas por hora.</p>
+        @if (graph.kind === 'variance-comparison') {
+          <p class="report-calculation">Varianza: A = {{ graph.series[0].variance }} · B = {{ graph.series[1].variance }} (t/h)²</p>
+        } @else {
+          @for (series of graph.series; track series.label) {
+            <p class="report-stat">{{ series.label }}: promedio {{ series.mean }} t/h · desviación estándar {{ series.standardDeviation }} t/h.</p>
+          }
+          <p class="report-graph-note">La meta es del promedio, no de cada registro.</p>
+        }
+        <details class="report-records">
+          <summary>Ver los registros originales</summary>
+          @for (series of graph.series; track series.label) {
+            <p>{{ series.label }}: {{ series.values.join(', ') }} t/h.</p>
+            @if (graph.kind === 'variance-comparison') {
+              <p>Varianza: {{ series.squareSum }} ÷ {{ series.values.length }} registros = {{ series.variance }} (t/h)². También contamos los que están en el promedio.</p>
+            }
+          }
+        </details>
+      </figure>
+    }
+
+    @if (standardDeviationGraph(); as graph) {
+      <figure class="report-figure">
+        <figcaption>Registros de flotación · t/h · promedio {{ graph.mean }}</figcaption>
+        <svg viewBox="0 0 400 134" role="img" [attr.aria-label]="graphDescription()">
+          <rect class="report-band" [attr.x]="standardDeviationPosition(graph.lower)" y="24"
+            [attr.width]="standardDeviationPosition(graph.upper) - standardDeviationPosition(graph.lower)" height="56" />
+          <text class="report-tick report-distance-label" [attr.x]="(standardDeviationPosition(graph.lower) + standardDeviationPosition(graph.upper)) / 2" y="16">Franja {{ graph.lower }}–{{ graph.upper }}</text>
+          <line class="report-mean" [attr.x1]="standardDeviationPosition(graph.mean)" [attr.x2]="standardDeviationPosition(graph.mean)" y1="24" y2="80" />
+          <line class="report-axis" x1="32" x2="368" y1="68" y2="68" />
+          @for (point of standardDeviationPoints(); track $index) {
+            <circle class="report-point" [class.report-point--outside]="point.outside" [attr.cx]="point.x" [attr.cy]="point.y" r="5.5" />
+          }
+          @for (tick of graph.ticks; track tick) {
+            <line class="report-axis" [attr.x1]="standardDeviationPosition(tick)" [attr.x2]="standardDeviationPosition(tick)" y1="94" y2="99" />
+            <text class="report-tick" [attr.x]="standardDeviationPosition(tick)" y="124">{{ tick }}</text>
+          }
+        </svg>
+        <p class="report-calculation">√{{ graph.variance }} = {{ graph.standardDeviation }} → {{ graph.standardDeviation }} t/h de desviación estándar</p>
+        <p class="report-graph-note">Un punto por hora; los repetidos se apilan. El punto hueco (96) está fuera. Los extremos {{ graph.lower }} y {{ graph.upper }} están incluidos.</p>
+        <p class="report-graph-note">Registros: {{ graph.values.join(', ') }} t/h. t/h significa toneladas por hora.</p>
+      </figure>
+    }
+
+    <p class="report-reminder"><strong>Recuérdalo:</strong> {{ note.reminder }}</p>
+  } @else if (pending()) {
+    <p class="report-empty">Terminaste esta clase, pero falta confirmar el guardado en tu cuenta. Usa «Reintentar» en el aviso; no necesitas repetirla.</p>
+  } @else {
+    <p class="report-empty">Aquí aparecerá la nota de C{{ note.number }} cuando completes la clase y se confirme su guardado.</p>
+  }
+</section>
+
+<footer class="report-footer">
+  <p>Son casos de ejemplo, no una prueba de cuánto sabes. Los datos no explican por sí solos las causas.</p>
+  <button type="button" class="btn btn--primary" (click)="closed.emit()">Volver al mapa</button>
+</footer>

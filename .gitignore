@@ -1,1 +1,7 @@
 .codex-remote-attachments/
+.env
+.env.*
+!.env.production.example
+infra/.local/
+infra/backups/
+.pytest_cache/

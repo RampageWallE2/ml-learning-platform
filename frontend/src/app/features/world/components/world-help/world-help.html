@@ -1,0 +1,50 @@
+<header>
+  <span class="help-label">EXPLORALAB · GUÍA BREVE</span>
+  <h1>{{ firstVisit() ? 'Antes de comenzar' : 'Cómo jugar' }}</h1>
+  <p>En Open Pit, ayudas al equipo a revisar sus registros y preparar información clara para el siguiente turno. Aprenderás paso a paso.</p>
+</header>
+
+<section aria-label="Orientación en el mapa">
+  <h2>Tu siguiente paso</h2>
+  <p class="help-next-step">{{ nextStep() }}</p>
+</section>
+
+<section aria-label="Controles del juego">
+  <h2>Cómo moverte y hablar</h2>
+  <dl class="help-controls">
+    <div>
+      <dt>Moverte</dt>
+      <dd>
+        @if (touchControls()) {
+          Arrastra el círculo de la parte inferior izquierda.
+        } @else {
+          Usa las flechas del teclado <span class="help-keys" aria-hidden="true">↑ ↓ ← →</span>.
+        }
+      </dd>
+    </div>
+    <div>
+      <dt>Hablar o entrar</dt>
+      <dd>
+        @if (touchControls()) {
+          Acércate a una persona o acceso y toca el botón <kbd>E</kbd> cuando aparezca a la derecha.
+        } @else {
+          Acércate a una persona o acceso y pulsa <kbd>E</kbd> cuando aparezca el aviso.
+        }
+      </dd>
+    </div>
+  </dl>
+</section>
+
+<details class="help-save">
+  <summary>Cómo se guarda tu avance</summary>
+  <p><strong>Ejercicio sin terminar:</strong> si el navegador permite guardar, puedes retomarlo aquí con la misma cuenta. No cuenta como clase completada ni se pasa a otro dispositivo.</p>
+  <p><strong>Clase terminada:</strong> espera el aviso «Progreso guardado en tu cuenta» para saber que quedó confirmada.</p>
+  <p>Si aparece «Pendiente de guardar», pulsa «Reintentar». Si el aviso dice que no pudo conservar el avance, no cierres ni recargues antes de reintentar.</p>
+</details>
+
+<footer>
+  <button type="button" class="btn btn--primary" (click)="closed.emit()">
+    {{ firstVisit() ? 'Comenzar recorrido' : 'Volver al mapa' }}
+  </button>
+  <p class="help-return">Puedes consultar esta guía en Cuenta → Cómo jugar.</p>
+</footer>

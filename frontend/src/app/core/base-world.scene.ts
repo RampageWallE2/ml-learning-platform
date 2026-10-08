@@ -16,10 +16,13 @@ import { InputController } from './input/input.controller';
 import { usesTouchControls } from './input/touch-controls';
 
 import { InteractionManager } from './interactions/interaction.manager';
+import { isWorldSceneInPreparation } from './world-session/world-scene-availability';
 
 import { PlayerController } from './player/player.controller';
+import { PLAYER_AVATAR } from './player/player-avatar';
 
 import { createStaticZonesFromLayer, findSpawnPoint } from './tiled/tiled.utils';
+import type { TiledPoint } from './tiled/tiled.types';
 
 import { RetroSceneTransition } from './transitions/retro-scene-transition';
 import {
@@ -49,7 +52,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
   private interactionManager!: InteractionManager;
 
-  private ambientAudioManager!: AmbientAudioManager;
+  private ambientAudioManager: AmbientAudioManager | null = null;
 
   private sceneTransition!: RetroSceneTransition;
 
@@ -58,8 +61,11 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   private spawnId = 'player-start';
 
   private loadingFailed = false;
+  private loadStarted = 0;
+  private loadedMap: Phaser.Tilemaps.Tilemap | null = null;
 
   private sceneCreated = false;
+  private interactionLocked = false;
 
   protected constructor(
     sceneKey: string,
@@ -74,6 +80,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
   preload(): void {
     this.loadingFailed = false;
+    this.loadStarted = performance.now();
     this.sceneCreated = false;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
@@ -82,36 +89,46 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, this.handleLoadError);
     this.reportLoading('loading', 0);
 
-    if (!this.textures.exists('player')) {
-      this.load.spritesheet('player', 'assets/game/characters/character2.png', {
-        frameWidth: 32,
-        frameHeight: 32,
+    if (!this.textures.exists(PLAYER_AVATAR.texture)) {
+      this.load.spritesheet(PLAYER_AVATAR.texture, PLAYER_AVATAR.path, {
+        frameWidth: PLAYER_AVATAR.frameWidth,
+        frameHeight: PLAYER_AVATAR.frameHeight,
+        endFrame: PLAYER_AVATAR.endFrame,
       });
     }
 
     preloadTilemap(this, this.mapConfig);
 
-    preloadAmbientSounds(this, this.mapConfig.ambientSounds);
+    // Optional ambience loads only after the map's first render.
   }
 
   create(): void {
     // Keep the error screen visible rather than constructing an incomplete map.
     if (this.loadingFailed) return;
 
-    gameEvents.on(GameEvents.LOCK_PLAYER, this.lockPlayer);
+    try {
+      this.createReadyScene();
+    } catch (error) {
+      this.loadingFailed = true;
+      this.lockPlayer();
+      this.reportLoading('error', this.load.progress);
+      console.warn(`World scene construction failed in "${this.scene.key}". Reload the map to retry.`, error);
+    }
+  }
 
-    gameEvents.on(GameEvents.UNLOCK_PLAYER, this.unlockPlayer);
+  private createReadyScene(): void {
+
+    this.interactionLocked = false;
+    gameEvents.on(GameEvents.LOCK_PLAYER, this.lockForInteraction);
+
+    gameEvents.on(GameEvents.UNLOCK_PLAYER, this.unlockFromInteraction);
 
     const buildResult = buildTilemap(this, this.mapConfig);
+    this.loadedMap = buildResult.map;
 
     this.createPlayerController(buildResult.map);
 
-    this.ambientAudioManager = new AmbientAudioManager(
-      this,
-      buildResult.map,
-      this.playerController.sprite,
-      this.mapConfig.ambientSounds,
-    );
+    this.initializeAmbientAudio(buildResult.map);
 
     this.setupCamera(buildResult.map);
 
@@ -150,7 +167,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
     this.playerController.update(this.direction);
 
-    this.ambientAudioManager.update(delta);
+    this.ambientAudioManager?.update(delta);
 
     const interactionAvailable = this.interactionManager.update(
       interactRequested,
@@ -180,6 +197,18 @@ export abstract class BaseWorldScene extends Phaser.Scene {
    */
   protected onSceneShutdown(): void {}
 
+  /** Moves within the current map while keeping input locked through the retro transition. */
+  protected teleportPlayer(position: TiledPoint): void {
+    if (!this.sceneCreated || this.sceneTransition.isPlaying() || !Number.isFinite(position.x + position.y)) return;
+    this.lockPlayer();
+    this.sceneTransition.playOut(() => {
+      const body = this.playerController.sprite.body as Phaser.Physics.Arcade.Body;
+      body.reset(position.x, position.y);
+      this.cameras.main.centerOn(position.x, position.y);
+      this.sceneTransition.playIn(this.unlockPlayer);
+    });
+  }
+
   getSessionSnapshot(): WorldSessionSnapshot | null {
     if (!this.sceneCreated || !isWorldSceneKey(this.scene.key) || !this.playerController?.sprite) {
       return null;
@@ -206,7 +235,7 @@ export abstract class BaseWorldScene extends Phaser.Scene {
     this.playerController = new PlayerController(this, {
       x: spawn.x,
       y: spawn.y,
-      texture: 'player',
+      texture: PLAYER_AVATAR.texture,
       speed: 250,
       depth: 12,
     });
@@ -250,7 +279,18 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   };
 
   private readonly unlockPlayer = (): void => {
-    this.playerController?.unlock();
+    if (!this.interactionLocked) this.playerController?.unlock();
+  };
+
+  private readonly lockForInteraction = (): void => {
+    this.interactionLocked = true;
+    this.lockPlayer();
+  };
+
+  private readonly unlockFromInteraction = (): void => {
+    this.interactionLocked = false;
+    // Closing a modal must not end a scene transition early.
+    if (!this.sceneTransition?.isPlaying()) this.unlockPlayer();
   };
 
   private reportLoading(phase: SceneLoadingSnapshot['phase'], progress: number): void {
@@ -259,24 +299,70 @@ export abstract class BaseWorldScene extends Phaser.Scene {
   }
 
   private readonly handleLoadProgress = (progress: number): void => {
-    if (!this.loadingFailed) this.reportLoading('loading', progress);
+    if (!this.loadingFailed && !this.sceneCreated) this.reportLoading('loading', progress);
   };
 
   private readonly handleLoadComplete = (): void => {
-    if (!this.loadingFailed) this.reportLoading('preparing', 1);
+    if (!this.loadingFailed && !this.sceneCreated) this.reportLoading('preparing', 1);
   };
 
-  private readonly handleLoadError = (): void => {
+  private readonly handleLoadError = (file?: { type: string; key: string }): void => {
+    if (file?.type === 'audio' && this.mapConfig.ambientSounds?.some(sound => sound.id === file.key)) {
+      console.warn('Optional ambient audio could not be loaded. The map remains playable.');
+      return;
+    }
     this.loadingFailed = true;
     this.reportLoading('error', this.load.progress);
   };
 
   private readonly handleSceneRendered = (): void => {
-    if (this.sceneCreated && !this.loadingFailed) this.reportLoading('ready', 1);
+    if (!this.sceneCreated || this.loadingFailed) return;
+    this.reportLoading('ready', 1);
+    const metric = `exploralab:scene-load:${this.scene.key}`;
+    performance.clearMeasures(metric);
+    performance.measure(metric, { start: this.loadStarted, end: performance.now() });
+    if (this.mapConfig.ambientSounds?.some(sound => !this.cache.audio.exists(sound.id))) {
+      this.load.once(Phaser.Loader.Events.COMPLETE, this.handleAmbientLoaded);
+      preloadAmbientSounds(this, this.mapConfig.ambientSounds);
+      this.load.start();
+    }
   };
+
+  private cachedAmbientSounds() {
+    return this.mapConfig.ambientSounds?.filter(sound => this.cache.audio.exists(sound.id)) ?? [];
+  }
+
+  private readonly handleAmbientLoaded = (): void => {
+    if (!this.sceneCreated || this.loadingFailed || !this.loadedMap) return;
+    this.initializeAmbientAudio(this.loadedMap);
+  };
+
+  private initializeAmbientAudio(map: Phaser.Tilemaps.Tilemap): void {
+    const previousManager = this.ambientAudioManager;
+    this.ambientAudioManager = null;
+    try {
+      previousManager?.destroy();
+      this.ambientAudioManager = new AmbientAudioManager(
+        this, map, this.playerController.sprite, this.cachedAmbientSounds(),
+      );
+    } catch (error) {
+      // Optional ambience must not prevent movement or map interactions.
+      console.warn(`Optional ambient audio initialization failed in "${this.scene.key}". The map remains playable.`, error);
+    }
+  }
 
   private readonly startSceneTransition = (targetScene: string, targetSpawn?: string): void => {
     if (this.sceneTransition.isPlaying()) {
+      return;
+    }
+
+    // ScenePlugin.start queues the current scene's stop before starting its target.
+    if (!isWorldSceneKey(targetScene) || !this.scene.get(targetScene)) {
+      console.warn(`Scene transition from "${this.scene.key}" rejected: destination "${targetScene}" is not a registered world scene.`);
+      return;
+    }
+
+    if (isWorldSceneInPreparation(targetScene)) {
       return;
     }
 
@@ -291,25 +377,32 @@ export abstract class BaseWorldScene extends Phaser.Scene {
 
   private handleShutdown(): void {
     this.sceneCreated = false;
+    this.loadedMap = null;
     this.load.off(Phaser.Loader.Events.PROGRESS, this.handleLoadProgress);
     this.load.off(Phaser.Loader.Events.COMPLETE, this.handleLoadComplete);
+    this.load.off(Phaser.Loader.Events.COMPLETE, this.handleAmbientLoaded);
     this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, this.handleLoadError);
     this.game.events.off(Phaser.Core.Events.POST_RENDER, this.handleSceneRendered);
     this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
     this.events.off(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
 
-    gameEvents.off(GameEvents.LOCK_PLAYER, this.lockPlayer);
+    gameEvents.off(GameEvents.LOCK_PLAYER, this.lockForInteraction);
 
-    gameEvents.off(GameEvents.UNLOCK_PLAYER, this.unlockPlayer);
+    gameEvents.off(GameEvents.UNLOCK_PLAYER, this.unlockFromInteraction);
 
-    this.onSceneShutdown();
+    this.runShutdownCleanup('scene hook', () => this.onSceneShutdown());
+    this.runShutdownCleanup('input controls', () => this.inputController?.destroy());
+    this.runShutdownCleanup('interactions', () => this.interactionManager?.destroy());
+    this.runShutdownCleanup('ambient audio', () => this.ambientAudioManager?.destroy());
+    this.runShutdownCleanup('scene transition', () => this.sceneTransition?.destroy());
+  }
 
-    this.inputController?.destroy();
-
-    this.interactionManager?.destroy();
-
-    this.ambientAudioManager?.destroy();
-
-    this.sceneTransition?.destroy();
+  private runShutdownCleanup(resource: string, cleanup: () => void): void {
+    try {
+      cleanup();
+    } catch (error) {
+      // Attempt the remaining teardown steps even if one resource fails.
+      console.warn(`Failed to clean up ${resource} in "${this.scene.key}".`, error);
+    }
   }
 }

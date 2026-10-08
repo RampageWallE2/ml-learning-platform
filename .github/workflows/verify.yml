@@ -1,0 +1,58 @@
+name: Verify release (no deployment)
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test:ci
+      - run: npm run build -- --configuration production
+      - run: npm audit --audit-level=high
+  postgresql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f compose.verify.yml up -d --wait database
+      - run: docker compose -f compose.verify.yml run --build --rm tests
+      - if: always()
+        run: docker compose -f compose.verify.yml down
+  https-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r backend/requirements-production.lock
+      - run: pip install pip-audit
+      - run: pip-audit --no-deps --disable-pip -r backend/requirements-production.lock
+      - run: python infra/release.py prepare
+      - run: python infra/release.py up
+      - run: python infra/checks/http_smoke.py --exercise-account
+      - run: python infra/checks/resilience_smoke.py
+      - run: python infra/release.py backup
+      - name: Restore the test backup in a new database
+        run: python infra/release.py restore-test --archive "$(find infra/.local/backups -name '*.dump' -type f | head -n 1)"
+      - if: always()
+        run: python infra/release.py down

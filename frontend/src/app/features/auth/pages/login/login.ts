@@ -3,6 +3,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   NgZone,
   OnDestroy,
@@ -11,6 +12,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, AbstractControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -37,6 +39,8 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
 
   private readonly auth = inject(AuthService);
   private readonly config = inject(AUTH_CONFIG);
+  private readonly googleClientId = this.config.googleClientId.trim();
+  private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -44,6 +48,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
 
   private googleScript?: HTMLScriptElement;
 
+  readonly googleEnabled = this.googleClientId.length > 0;
   readonly checkingSession = signal(true);
   readonly signingIn = signal(false);
   readonly submittingCredentials = signal(false);
@@ -85,6 +90,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   };
 
   private readonly handleGoogleScriptError = (): void => {
+    if (!this.googleEnabled || this.destroyRef.destroyed) return;
     this.googleError.set('Google no está disponible en este momento. Puedes continuar con correo.');
   };
 
@@ -92,7 +98,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     this.mode.set(this.route.snapshot.data?.['mode'] === 'register' ? 'register' : 'login');
     this.setNavigationNotice();
 
-    this.auth.restoreSession().subscribe({
+    this.auth.restoreSession().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (isAuthenticated) => {
         this.checkingSession.set(false);
 
@@ -115,6 +121,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    if (!this.googleEnabled || this.destroyRef.destroyed) return;
     if (window.google) {
       this.renderGoogleButton();
       return;
@@ -146,7 +153,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loginWithEmail(): void {
-    if (this.busy()) return;
+    if (this.destroyRef.destroyed || this.busy()) return;
     this.loginForm.controls.email.setValue(this.loginForm.controls.email.value.trim());
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -158,7 +165,10 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
 
     this.auth
       .loginWithEmail(this.loginForm.getRawValue())
-      .pipe(finalize(() => this.submittingCredentials.set(false)))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.submittingCredentials.set(false)),
+      )
       .subscribe({
         next: () => void this.navigateAfterLogin(),
         error: (error: unknown) => {
@@ -168,7 +178,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   }
 
   registerWithEmail(): void {
-    if (this.busy()) return;
+    if (this.destroyRef.destroyed || this.busy()) return;
     this.registrationForm.controls.email.setValue(
       this.registrationForm.controls.email.value.trim(),
     );
@@ -180,14 +190,17 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const { confirmPassword, ...credentials } = this.registrationForm.getRawValue();
+    const { confirmPassword: _confirmPassword, ...credentials } = this.registrationForm.getRawValue();
 
     this.submittingCredentials.set(true);
     this.errorMessage.set(null);
 
     this.auth
       .register(credentials)
-      .pipe(finalize(() => this.submittingCredentials.set(false)))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.submittingCredentials.set(false)),
+      )
       .subscribe({
         next: () => void this.navigateAfterLogin(),
         error: (error: unknown) => {
@@ -197,6 +210,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderGoogleButton(): void {
+    if (!this.googleEnabled || this.destroyRef.destroyed) return;
     const button = this.googleButton?.nativeElement;
     const googleIdentity = window.google?.accounts.id;
 
@@ -208,7 +222,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     button.replaceChildren();
 
     googleIdentity.initialize({
-      client_id: this.config.googleClientId,
+      client_id: this.googleClientId,
       callback: (response) => {
         this.zone.run(() => this.handleGoogleCredential(response));
       },
@@ -227,7 +241,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleGoogleCredential(response: GoogleCredentialResponse): void {
-    if (this.busy()) return;
+    if (!this.googleEnabled || this.destroyRef.destroyed || this.busy()) return;
     if (!response.credential) {
       this.errorMessage.set('Google no entregó una credencial válida. Inténtalo nuevamente.');
       return;
@@ -238,7 +252,10 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
 
     this.auth
       .loginWithGoogle(response.credential)
-      .pipe(finalize(() => this.signingIn.set(false)))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.signingIn.set(false)),
+      )
       .subscribe({
         next: () => {
           void this.navigateAfterLogin();
@@ -311,7 +328,9 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
       case 'invalid_credentials':
         return 'El correo o la contraseña son incorrectos.';
       case 'email_registered_with_google':
-        return 'Este correo ya está registrado con Google. Usa el botón de Google para ingresar.';
+        return this.googleEnabled
+          ? 'Este correo ya está registrado con Google. Usa el botón de Google para ingresar.'
+          : 'Este correo está registrado con Google. Ese acceso no está disponible en este momento.';
       case 'email_already_registered':
         return 'Ya existe una cuenta con este correo. Inicia sesión en lugar de registrarte.';
       case 'invalid_registration_data':

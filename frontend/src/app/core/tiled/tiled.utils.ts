@@ -58,13 +58,10 @@ export function getObjectLayerOrThrow(
  * dialogueId
  * targetScene
  */
-export function getTiledProperty<
-  T extends TiledPropertyValue =
-    TiledPropertyValue
->(
+export function getTiledProperty(
   object: TiledObjectLike,
   propertyName: string
-): T | undefined {
+): TiledPropertyValue | undefined {
 
   const property =
     object.properties?.find(
@@ -74,8 +71,22 @@ export function getTiledProperty<
     );
 
 
-  return property?.value as
-    T | undefined;
+  return property?.value;
+}
+
+/** Optional text stays optional; a present value of another type is a map error. */
+export function getTiledStringProperty(object: TiledObjectLike, propertyName: string): string | undefined {
+  const value = getTiledProperty(object, propertyName);
+  if (value === undefined || typeof value === 'string') return value;
+  throw new Error(`La propiedad "${propertyName}" del objeto "${object.name ?? '(sin nombre)'}" debe ser texto`);
+}
+
+/** Do not coerce numeric strings or replace malformed values with defaults. */
+export function getTiledNumberProperty(object: TiledObjectLike, propertyName: string): number | undefined {
+  const value = getTiledProperty(object, propertyName);
+  if (value === undefined) return undefined;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  throw new Error(`La propiedad "${propertyName}" del objeto "${object.name ?? '(sin nombre)'}" debe ser un número finito`);
 }
 
 

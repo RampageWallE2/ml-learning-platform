@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Lesson09Thickeners } from './lesson-09-thickeners';
+import { C9_THICKENERS_RECORDS } from '../data/open-pit-original-records';
 
 function create() {
   const fixture = TestBed.createComponent(Lesson09Thickeners);
@@ -25,6 +26,8 @@ describe('Lesson09Thickeners', () => {
     const fixture = create(); const root: HTMLElement = fixture.nativeElement;
     const game = fixture.componentInstance;
     expect(game.stage()).toBe('spread'); expect(game.records().goal).toBe(100);
+    expect(game.records()).toBe(C9_THICKENERS_RECORDS);
+    expect(game.periods().map(period => [period.mean, period.variance, period.standardDeviation])).toEqual([[80, 0, 0], [100, 4, 2]]);
     expect(root.querySelectorAll('.data-point')).toHaveLength(12);
     expect(root.textContent).toContain('No significa que cada registro deba ser 100');
     expect(root.textContent).toContain('condiciones parecidas');
@@ -38,18 +41,18 @@ describe('Lesson09Thickeners', () => {
     expect(root.querySelectorAll('.choices .btn--answer')).toHaveLength(3);
     expect(root.querySelector('.btn--hint')?.classList.contains('btn--secondary')).toBe(true);
     expect(root.querySelectorAll('.steps [aria-current="step"]')).toHaveLength(1);
-    expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain('Variación');
+    expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain('Cambios');
     fixture.componentInstance.choosePeriod('A'); fixture.componentInstance.continue(); fixture.detectChanges();
     expect(root.querySelector('.steps [aria-current="step"]')?.textContent).toContain('Meta');
     expect(root.querySelectorAll('.steps .step--done')).toHaveLength(1);
   });
 
-  it('prioritizes mean and standard deviation while retaining range, variance and graph context in a disclosure', () => {
+  it('shows only the measure needed by the current question and retains the rest in a disclosure', () => {
     const fixture = create(); const root: HTMLElement = fixture.nativeElement;
     expect([...root.querySelectorAll('.measures dt')].map(label => label.textContent))
-      .toEqual(['Promedio', 'Desv. estándar', 'Promedio', 'Desv. estándar']);
+      .toEqual(['Desviación estándar', 'Desviación estándar']);
     expect([...root.querySelectorAll('.measures dd')].map(value => value.textContent?.trim()))
-      .toEqual(['80 t/h', '0 t/h', '100 t/h', '2 t/h']);
+      .toEqual(['0 t/h', '2 t/h']);
     const detail = root.querySelector<HTMLDetailsElement>('.additional-measures')!;
     expect(detail.open).toBe(false);
     expect(detail.textContent).toContain('Período A: rango 0 t/h · varianza 0 (t/h)²');
@@ -58,6 +61,13 @@ describe('Lesson09Thickeners', () => {
     expect(detail.textContent).toContain('el promedio cumple la meta');
     expect(detail.parentElement).toBe(root.querySelector('.workbench'));
     expect(root.querySelector('.task-card')?.nextElementSibling).toBe(detail);
+    expect(root.querySelector('.goal-banner, .goal-line')).toBeNull();
+    fixture.componentInstance.choosePeriod('A'); fixture.componentInstance.continue(); fixture.detectChanges();
+    expect([...root.querySelectorAll('.measures dt')].map(label => label.textContent))
+      .toEqual(['Promedio', 'Promedio']);
+    expect([...root.querySelectorAll('.measures dd')].map(value => value.textContent?.trim()))
+      .toEqual(['80 t/h', '100 t/h']);
+    expect(root.querySelectorAll('.goal-line')).toHaveLength(2);
   });
 
   it('retains the same comparison hierarchy in transfer without marking either period as automatically better', () => {
@@ -70,6 +80,10 @@ describe('Lesson09Thickeners', () => {
     expect([...root.querySelectorAll('.measures dd')].map(value => value.textContent?.trim()))
       .toEqual(['100 t/h', '1 t/h', '100 t/h', '2 t/h']);
     expect(root.querySelectorAll('.choices .btn--answer')).toHaveLength(3);
+    expect(root.querySelector('#thickeners-task-title')?.textContent?.trim()).toBe('¿Qué período usarías como ejemplo?');
+    expect(game.choices().map(choice => choice.text)).toEqual([
+      'Usar A como ejemplo', 'Usar B como ejemplo', 'Da igual: el mismo promedio basta',
+    ]);
     expect(root.querySelector('.additional-measures')?.textContent).toContain('Período A: rango 2 t/h · varianza 1 (t/h)²');
     expect(root.querySelector('.additional-measures')?.textContent).toContain('Período B: rango 4 t/h · varianza 4 (t/h)²');
   });
@@ -85,6 +99,7 @@ describe('Lesson09Thickeners', () => {
 
   it('uses a common linear scale, separate goal and mean lines, and stacks all six identical records', () => {
     const fixture = create(); const game = fixture.componentInstance; const root: HTMLElement = fixture.nativeElement;
+    game.choosePeriod('A'); game.continue(); fixture.detectChanges();
     const [a, b] = game.plots();
     expect(a.points.map(point => point.bottom)).toEqual([28, 48, 68, 88, 108, 128]);
     expect(b.points.map(point => point.bottom)).toEqual([28, 48, 68, 28, 48, 68]);
@@ -102,6 +117,7 @@ describe('Lesson09Thickeners', () => {
 
   it('labels the goal next to its line pattern and gives both plots the same simple marks', () => {
     const fixture = create(); const game = fixture.componentInstance;
+    game.choosePeriod('A'); game.continue(); fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
     expect(game.ticks()).toEqual([80, 90, 100, 110]);
     expect(root.querySelector('.legend')?.textContent).toContain('Meta: 100 t/h');
@@ -120,7 +136,11 @@ describe('Lesson09Thickeners', () => {
       fixture.detectChanges();
       expect(game.records().goal).toBe(goal);
       expect(game.ticks()).toEqual(ticks);
-      expect(root.querySelector('.legend')?.textContent).toContain('Meta: ' + goal + ' t/h');
+      if (game.stage() === 'spread') {
+        expect(root.querySelector('.legend-goal')).toBeNull();
+      } else {
+        expect(root.querySelector('.legend')?.textContent).toContain('Meta: ' + goal + ' t/h');
+      }
       const positions = [...game.records().A, ...game.records().B, goal, ...ticks]
         .map(value => game.position(value));
       expect(positions.every(position => position > 0 && position < 100)).toBe(true);
@@ -128,7 +148,8 @@ describe('Lesson09Thickeners', () => {
       expect(new Set(steps).size).toBe(1);
       expect(root.querySelectorAll('.data-point')).toHaveLength(12);
       const goals = [...root.querySelectorAll<HTMLElement>('.goal-line')];
-      expect(goals[0].style.left).toBe(goals[1].style.left);
+      if (game.stage() === 'spread') expect(goals).toHaveLength(0);
+      else expect(goals[0].style.left).toBe(goals[1].style.left);
     };
     assertScale(100, [80, 90, 100, 110]);
     game.requestHint(); main(game);
@@ -137,7 +158,11 @@ describe('Lesson09Thickeners', () => {
     assertScale(120, [100, 110, 120, 130]);
     game.requestHint(); main(game);
     assertScale(104, [102, 104, 106]);
-    transfer(game); game.continueAfterHelp();
+    transfer(game);
+    expect(game.stage()).toBe('success');
+    fixture.componentRef.setInput('initialState', { stage: 'spread', round: 2,
+      helped: false, answered: false, feedbackKind: 'none' });
+    fixture.detectChanges();
     assertScale(90, [70, 80, 90, 100]);
     main(game);
     assertScale(120, [115, 120, 125, 130]);
@@ -187,6 +212,7 @@ describe('Lesson09Thickeners', () => {
     if (answer === 'adjust') expect(game.feedback()).toContain('La meta es para el promedio, no para cada registro');
     game.chooseRecommendation('reference');
     expect(game.feedback()).toContain('conocer las causas y los límites permitidos');
+    expect(game.feedback()).toContain('Usaremos B como ejemplo para comparar el siguiente turno');
     expect(game.feedback()).toContain('El próximo turno puede ser distinto');
   });
 
@@ -207,6 +233,43 @@ describe('Lesson09Thickeners', () => {
     game.continue(); expect(game.stage()).toBe('success'); expect(game.helped()).toBe(false);
   });
 
+  it('explains the final decision before answering and keeps the example correct when resuming another round', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    game.choosePeriod('A'); game.continue(); game.choosePeriod('B'); game.continue();
+    fixture.detectChanges();
+    const task = root.querySelector('.task-card')!;
+    expect(task.textContent).toContain('mira el promedio y la desviación estándar junto con la meta');
+    expect(task.textContent).toContain('ejemplo para comparar el siguiente turno, no para copiar ajustes');
+    expect(game.recommendations().find(choice => choice.id === 'reference')?.text)
+      .toBe('Usar B como ejemplo y revisar por qué A quedó bajo la meta.');
+    expect(root.querySelectorAll('.choices .btn--answer')).toHaveLength(3);
+    expect(root.querySelector('.feedback')).toBeNull();
+    expect(game.answered()).toBe(false);
+    expect(game.helped()).toBe(false);
+
+    fixture.componentRef.setInput('initialState', {
+      stage: 'recommend', round: 1, helped: true, answered: false, feedbackKind: 'none',
+    });
+    fixture.detectChanges();
+    expect(game.stage()).toBe('recommend');
+    expect(game.records().goal).toBe(120);
+    expect(game.periods().map(period => period.mean)).toEqual([120, 100]);
+    expect(game.recommendations().find(choice => choice.id === 'reference')?.text)
+      .toBe('Usar A como ejemplo y revisar por qué B quedó bajo la meta.');
+    expect(game.answered()).toBe(false);
+    expect(game.helped()).toBe(true);
+    game.chooseRecommendation('reference');
+    expect(game.feedback()).toContain('Usaremos A como ejemplo para comparar el siguiente turno');
+    expect(game.helped()).toBe(true);
+    game.continue(); game.startTransfer(); fixture.detectChanges();
+    expect(game.stage()).toBe('transfer');
+    expect(game.periods().map(period => period.mean)).toEqual([104, 104]);
+    expect(game.lessSpread()).toBe('B');
+    expect(root.querySelector('#thickeners-task-title')?.textContent?.trim()).toBe('¿Qué período usarías como ejemplo?');
+    expect(game.answered()).toBe(false);
+  });
+
   it('states the transfer criterion explicitly and keeps equal-goal data separate from original evidence', () => {
     const fixture = create(); const game = fixture.componentInstance; main(game); fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
@@ -223,10 +286,10 @@ describe('Lesson09Thickeners', () => {
     { round: 1, goal: 104, spread: [2, 1], expected: 'B' },
     { round: 2, goal: 120, spread: [1, 3], expected: 'A' },
   ] as const)('compares two changing periods without relying on a zero spread at transfer round $round', ({ round, goal, spread, expected }) => {
-    const game = create().componentInstance;
-    for (let index = 0; index < round; index++) {
-      game.requestHint(); main(game); transfer(game); game.continueAfterHelp();
-    }
+    const fixture = create(); const game = fixture.componentInstance;
+    fixture.componentRef.setInput('initialState', { stage: 'spread', round,
+      helped: false, answered: false, feedbackKind: 'none' });
+    fixture.detectChanges();
     main(game); game.startTransfer();
     expect(game.periods().map(period => period.mean)).toEqual([goal, goal]);
     expect(game.periods().map(period => period.standardDeviation)).toEqual(spread);
@@ -240,7 +303,7 @@ describe('Lesson09Thickeners', () => {
     expect(game.answered()).toBe(true);
     expect(game.feedback()).toContain('su desviación estándar es menor (1 t/h)');
     expect(game.feedback()).toContain('no garantiza el siguiente turno');
-    game.continue(); expect(game.stage()).toBe('review');
+    game.continue(); expect(game.stage()).toBe(round === 0 ? 'review' : 'success');
   });
 
   it.each(['B', 'same'] as const)('corrects transfer choice %s without implying equal means suffice or more variation is better', answer => {
@@ -253,7 +316,7 @@ describe('Lesson09Thickeners', () => {
     game.finish(); expect(game.stage()).toBe('review');
   });
 
-  it('requires a whole fresh unassisted example after requesting a hint', () => {
+  it('requires one full additional case and allows a correct assisted mandatory transfer', () => {
     const game = create().componentInstance; game.requestHint(); const original = game.records();
     game.continueAfterHelp(); expect(game.records()).toBe(original);
     main(game); transfer(game); expect(game.stage()).toBe('review');
@@ -262,18 +325,30 @@ describe('Lesson09Thickeners', () => {
     expect(game.records().goal).toBe(120); expect(game.lessSpread()).toBe('B'); expect(game.closerToGoal()).toBe('A');
     expect(game.helped()).toBe(false); expect(game.feedback()).toBe(''); expect(game.answered()).toBe(false);
     main(game); expect(game.records().goal).toBe(104);
-    expect(game.lessSpread()).toBe('B'); transfer(game); expect(game.stage()).toBe('success');
+    expect(game.lessSpread()).toBe('B');
+    game.startTransfer(); game.requestHint(); game.continue(); game.finish();
+    expect(game.stage()).toBe('transfer'); expect(game.answered()).toBe(false);
+    game.choosePeriod('B'); game.continue(); expect(game.stage()).toBe('success');
+    expect(game.helped()).toBe(true); expect(game.guidedCompletion()).toBe(true);
+    game.continueAfterHelp(); expect(game.round()).toBe(1);
   });
 
-  it('keeps measures, comparable intervals, bounds and reversed choices accurate over repeated practice', () => {
-    const game = create().componentInstance;
+  it('keeps measures and reversed choices accurate in current and older practice drafts', () => {
+    const fixture = create(); const game = fixture.componentInstance;
     for (let round = 0; round < 8; round++) {
+      fixture.componentRef.setInput('initialState', { stage: 'spread', round,
+        helped: false, answered: false, feedbackKind: 'none' });
+      fixture.detectChanges();
       expect(game.round()).toBe(round); const periods = game.periods();
       expect(periods.map(period => period.values.length)).toEqual([6, 6]);
       expect(periods.find(period => period.id === game.lessSpread())!.variance).toBe(0);
       expect(periods.find(period => period.id === game.closerToGoal())!.goalDistance).toBe(0);
       expect(game.lessSpread()).not.toBe(game.closerToGoal());
       expect(game.recommendations().findIndex(choice => choice.id === 'reference')).toBe((4 - round % 3) % 3);
+      const example = game.closerToGoal();
+      const other = example === 'A' ? 'B' : 'A';
+      expect(game.recommendations().find(choice => choice.id === 'reference')?.text)
+        .toBe('Usar ' + example + ' como ejemplo y revisar por qué ' + other + ' quedó bajo la meta.');
       for (const period of periods) {
         expect(period.standardDeviation ** 2).toBe(period.variance);
         expect(period.values.every(value => game.position(value) > 0 && game.position(value) < 100)).toBe(true);
@@ -284,7 +359,8 @@ describe('Lesson09Thickeners', () => {
       expect(game.periods().find(period => period.id === game.lessSpread())!.standardDeviation).toBe(1);
       expect(game.periods().find(period => period.id !== game.lessSpread())!.standardDeviation)
         .toBeGreaterThan(1);
-      transfer(game); game.continueAfterHelp();
+      transfer(game); expect(game.stage()).toBe(round === 0 ? 'review' : 'success');
+      game.continueAfterHelp();
     }
     expect(game.originalPeriods.map(period => period.mean)).toEqual([80, 100]);
   });
@@ -323,7 +399,7 @@ describe('Lesson09Thickeners', () => {
     const done = vi.fn(); game.completed.subscribe(done);
     for (const label of ['Período A', 'Continuar →', 'Período B', 'Continuar →',
       game.recommendations().find(choice => choice.id === 'reference')!.text, 'Continuar →',
-      'Comparar este caso →', 'Usar A como referencia', 'Ver el informe →', 'Entregar el informe →']) {
+      'Comparar este caso →', 'Usar A como ejemplo', 'Ver el informe →', 'Entregar el informe →']) {
       click(root, label); fixture.detectChanges();
     }
     expect(done).toHaveBeenCalledTimes(1); expect(root.querySelector('input, textarea, form, select')).toBeNull();

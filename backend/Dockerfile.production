@@ -1,0 +1,20 @@
+FROM python:3.12-slim AS production
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY requirements-production.lock ./
+RUN pip install --no-cache-dir -r requirements-production.lock && pip check \
+    && useradd --system --uid 10001 --create-home appuser
+COPY app/ ./app/
+COPY migrations/ ./migrations/
+COPY gunicorn.conf.py ./
+USER appuser
+EXPOSE 5000
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "app:create_app()"]
+
+FROM production AS testing
+USER root
+RUN pip install --no-cache-dir pytest==9.1.1
+COPY tests/ ./tests/
+USER appuser
+CMD ["python", "-B", "-m", "pytest", "-p", "no:cacheprovider", "-q"]

@@ -24,19 +24,19 @@
         </div>
         <h1>{{ sceneLoading().phase === 'error' ? 'No se pudo cargar el mapa' : sceneLoading().phase === 'preparing' ? 'Preparando escenario…' : 'Cargando ' + loadingSceneName() + '…' }}</h1>
         <p [attr.role]="sceneLoading().phase === 'error' ? 'alert' : 'status'" aria-live="polite">
-          {{ sceneLoading().phase === 'error' ? 'Falló la carga de un recurso. Comprueba tu conexión y vuelve a intentarlo.' : sceneLoading().phase === 'preparing' ? 'Los recursos están cargados. Estamos preparando el mapa y sus interacciones.' : 'Cargando mapa, imágenes y sonidos.' }}
+          {{ sceneLoading().phase === 'error' ? 'No pudimos preparar el mapa. Comprueba tu conexión y vuelve a intentarlo.' : sceneLoading().phase === 'preparing' ? 'Los recursos están cargados. Estamos preparando el mapa y sus interacciones.' : 'Cargando mapa e imágenes. El sonido se prepara después.' }}
         </p>
         @if (sceneLoading().phase === 'error') {
           <button type="button" class="btn btn--primary" (click)="reloadWorld()">Recargar</button>
         }
-        <div class="world-loading__footer" aria-hidden="true">MAPA · IMÁGENES · SONIDOS</div>
+        <div class="world-loading__footer" aria-hidden="true">MAPA · IMÁGENES</div>
       </div>
     </section>
   }
 
   <div class="world-hud"
-       [attr.inert]="loadingScene() || lessonActive() || activeDialogue() ? '' : null"
-       [attr.aria-hidden]="loadingScene() || lessonActive() || activeDialogue() ? 'true' : null"
+       [attr.inert]="loadingScene() || lessonActive() || activeDialogue() || helpOpen() || reportOpen() ? '' : null"
+       [attr.aria-hidden]="loadingScene() || lessonActive() || activeDialogue() || helpOpen() || reportOpen() ? 'true' : null"
        (keydown)="$event.key !== 'Escape' && $event.stopPropagation()"
        (keyup)="$event.key === ' ' && $event.stopPropagation()">
 
@@ -57,6 +57,9 @@
           [topic]="panel.topic"
           [objective]="panel.objective"
           [zone]="panel.zone"
+          [finalTaskPending]="panel.zone?.id === 'zone-01' && returnToSupervisor()"
+          [reportAvailable]="reportAvailable()"
+          (reportRequested)="openReport()"
         />
 
       </div>
@@ -64,8 +67,14 @@
     }
 
     <div class="world-hud__account">
-      <app-account-menu />
+      <app-account-menu placement="bottom-left" [helpAvailable]="true" (helpRequested)="openWorldHelp()" />
     </div>
+    @if (minimapAvailable() && minimap(); as map) {
+      <div class="world-hud__minimap">
+        <app-world-minimap [map]="map" [player]="minimapPlayer()" [zone]="progressPanel().zone"
+          [loadingProgress]="loadingProgress()" [returnToSupervisor]="returnToSupervisor()" [returnFocusTarget]="gameViewport" />
+      </div>
+    }
 
   </div>
 
@@ -80,8 +89,8 @@
     tabindex="-1"
     role="group"
     aria-label="Mapa del juego"
-    [attr.inert]="loadingScene() || lessonActive() || activeDialogue() ? '' : null"
-    [attr.aria-hidden]="loadingScene() || lessonActive() || activeDialogue() ? 'true' : null"
+    [attr.inert]="loadingScene() || lessonActive() || activeDialogue() || helpOpen() || reportOpen() ? '' : null"
+    [attr.aria-hidden]="loadingScene() || lessonActive() || activeDialogue() || helpOpen() || reportOpen() ? 'true' : null"
   ></div>
 
 
@@ -94,7 +103,7 @@
        (keyup)="$event.key === ' ' && $event.stopPropagation()">
 
   @if (
-    blockedLessonMessage();
+    !helpOpen() && !reportOpen() && blockedLessonMessage();
     as message
   ) {
 
@@ -130,7 +139,7 @@
        SINCRONIZACIÓN
        ========================= -->
 
-  @if (!lessonActive() && !activeDialogue()) {
+  @if (!lessonActive() && !activeDialogue() && !helpOpen() && !reportOpen()) {
     <ng-container [ngTemplateOutlet]="progressNotice" [ngTemplateOutletContext]="{ inline: false }" />
   }
 
@@ -184,6 +193,40 @@
 
   </ng-template>
 
+  @if (helpOpen() && !loadingScene()) {
+    <app-interaction-panel
+      mode="help"
+      [returnFocusTarget]="helpReturnFocus() ?? gameViewport"
+      [statusTemplate]="hasProgressNotice() ? progressNotice : null"
+      [statusBusy]="progressSyncBusy()"
+      (closed)="closeWorldHelp()"
+    >
+      <app-world-help
+        [firstVisit]="firstWelcome()"
+        [touchControls]="helpTouchControls()"
+        [nextStep]="helpNextStep()"
+        (closed)="closeWorldHelp()"
+      />
+    </app-interaction-panel>
+  }
+
+  @if (reportOpen() && !loadingScene()) {
+    <app-interaction-panel
+      mode="report"
+      [returnFocusTarget]="gameViewport"
+      [statusTemplate]="hasProgressNotice() ? progressNotice : null"
+      [statusBusy]="progressSyncBusy()"
+      (closed)="closeReport()"
+    >
+      <app-open-pit-report
+        [confirmedLessonIds]="reportConfirmedLessonIds()"
+        [pendingLessonIds]="reportPendingLessonIds()"
+        [loadingProgress]="loadingProgress()"
+        (closed)="closeReport()"
+      />
+    </app-interaction-panel>
+  }
+
   <!-- =========================
        LECCIONES
        ========================= -->
@@ -224,7 +267,7 @@
 
       <app-dialogue
         [dialogue]="dialogue"
-        (completed)="closeDialogue()"
+        (completed)="completeDialogue()"
       />
 
     </app-interaction-panel>

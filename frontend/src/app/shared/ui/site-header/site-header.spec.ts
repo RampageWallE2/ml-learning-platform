@@ -33,7 +33,7 @@ describe('SiteHeader', () => {
 
     expect(element.querySelector<HTMLImageElement>('.brand-logo')?.src)
       .toContain('assets/branding/exploralab-logo.png');
-    expect(element.textContent).toContain('La experiencia');
+    expect(element.textContent).toContain('Minería e IA');
     expect(element.textContent).toContain('Cómo aprendemos');
     expect(element.querySelector('a[href^="/login"]')).not.toBeNull();
     const registration = element.querySelector('a[href^="/register"]')!;

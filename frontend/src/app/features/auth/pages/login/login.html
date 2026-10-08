@@ -52,13 +52,15 @@
         @if (noticeMessage(); as notice) {
           <p class="notice" role="status">{{ notice }}</p>
         }
-        <div class="google-wrap" [attr.inert]="busy() ? '' : null">
-          <div #googleButton class="google-button"></div>
-        </div>
-        @if (googleError(); as googleMessage) {
-          <p class="hint" role="status">{{ googleMessage }}</p>
+        @if (googleEnabled) {
+          <div class="google-wrap" [attr.inert]="busy() ? '' : null">
+            <div #googleButton class="google-button"></div>
+          </div>
+          @if (googleError(); as googleMessage) {
+            <p class="hint" role="status">{{ googleMessage }}</p>
+          }
+          <div class="divider"><span>o con tu correo</span></div>
         }
-        <div class="divider"><span>o con tu correo</span></div>
         @if (mode() === 'login') {
           <form [formGroup]="loginForm" (ngSubmit)="loginWithEmail()" novalidate>
             <fieldset [disabled]="busy()">

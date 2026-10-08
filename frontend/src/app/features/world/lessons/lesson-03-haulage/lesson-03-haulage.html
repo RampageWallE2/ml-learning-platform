@@ -24,7 +24,7 @@
 
   @if (stage() !== 'success') {
     <div class="workbench">
-      <div class="time-board" role="region" aria-labelledby="haulage-evidence-title">
+      <div id="haulage-evidence" class="time-board" role="region" aria-labelledby="haulage-evidence-title">
         <div class="board-heading">
           <strong id="haulage-evidence-title">{{
             practicing() ? 'Ensayo: otras cinco descargas' : 'Cinco descargas de desmonte'
@@ -156,6 +156,16 @@
             </p>
           }
         }
+        @if (extremesFound() && !selecting()) {
+          <p class="range-calculation">
+            <span>Más larga − más corta</span>
+            <strong>
+              <span class="range-calculation__long">{{ maximum() }}</span> −
+              <span class="range-calculation__short">{{ minimum() }}</span> =
+              {{ stage() === 'measure' || stage() === 'practice-range' ? '?' : separation() }} min
+            </strong>
+          </p>
+        }
       </div>
 
       <aside class="task-card" aria-labelledby="haulage-task-title">
@@ -165,7 +175,7 @@
               ? 'Prepara el aviso'
               : round() === 0
                 ? 'Ahora tú, con otros registros'
-                : 'Otro ensayo, sin la pista'
+                : 'Una última práctica'
           }}</span>
           <h3 id="haulage-task-title" #taskHeading tabindex="-1">{{ selectionTask() }}</h3>
           @if (!selectedMinId()) {
@@ -223,10 +233,12 @@
             ><span>entre la más corta y la más larga</span>
           </div>
           <p>
-            El <strong>rango</strong> es la diferencia entre el tiempo menor y el mayor. Estos se llaman extremos.
+            El <strong>rango</strong> es la separación entre el tiempo más corto y el más largo.
+            Estos tiempos se llaman extremos.
           </p>
           <p>
-            En este registro: {{ maximum() }} menos {{ minimum() }} da {{ separation() }} minutos.
+            La más larga duró {{ maximum() }} minutos. Los {{ separation() }} minutos del rango
+            son cuánto la separa de la más corta, no su duración.
           </p>
           <button type="button" class="btn btn--primary" (click)="startPractice()">
             Probar con otro registro →
@@ -251,12 +263,25 @@
           <span class="task-kicker">Ahora se entiende</span>
           <h3 id="haulage-task-title" #taskHeading tabindex="-1">El rango mide la separación</h3>
           <p>
-            Entre {{ minimum() }} y {{ maximum() }} hay <strong>{{ separation() }} minutos</strong>.
-            Ese resultado no es lo que duró cada descarga.
+            La más larga duró {{ maximum() }} minutos. El rango es de
+            <strong>{{ separation() }} minutos</strong>: cuánto la separa de la más corta.
           </p>
-          <p>Ensaya con otro registro para reconocerlo sin la pista.</p>
+          <p>{{ needsPractice()
+            ? 'Harás una sola práctica adicional. Puedes usar las pistas; no habrá otra ronda obligatoria.'
+            : 'Ya resolviste la práctica con apoyo. Puedes continuar sin otra ronda.' }}</p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
-            Probar otro registro →
+            {{ needsPractice() ? 'Probar otro registro →' : 'Ver el informe →' }}
+          </button>
+        }
+        @if (stage() === 'practice-range' || stage() === 'practice-meaning') {
+          <button
+            type="button"
+            class="btn measure-support"
+            [attr.aria-expanded]="practiceMeasureVisible()"
+            aria-controls="haulage-evidence"
+            (click)="toggleMeasureSupport()"
+          >
+            {{ practiceMeasureVisible() ? 'Ocultar línea de minutos' : 'Ver línea de minutos (ayuda)' }}
           </button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
@@ -272,8 +297,11 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu aviso está listo</span>
-      <h3 #taskHeading tabindex="-1">Ya sabes comparar el tiempo más corto y el más largo</h3>
-      <p>El rango es la separación entre el tiempo más corto y el más largo.</p>
+      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'Comprobaste el rango' }}</h3>
+      @if (guidedCompletion()) {
+        <p>Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.</p>
+      }
+      <p>El rango es la separación entre el tiempo más corto y el más largo, no la duración de una descarga.</p>
     </div>
     <div class="report-card">
       <span class="task-kicker">Para organizar las llegadas del siguiente turno</span>

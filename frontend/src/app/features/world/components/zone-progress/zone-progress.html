@@ -8,7 +8,9 @@
 
       <div class="current-objective" [class.current-objective--completed]="completed()">
         <span class="objective-label">
-          @if (completed()) {
+          @if (finalTaskPending()) {
+            Entrega del informe
+          } @else if (completed()) {
             Recorrido completado
           } @else {
             @if (nextLessonNumber(); as number) { C{{ number }} · }
@@ -52,6 +54,11 @@
     @if (zone(); as zone) {
       <div class="progress-content" [id]="lessonsId" [hidden]="!expanded()"
            role="region" aria-label="Clases del recorrido" tabindex="0">
+        @if (reportAvailable()) {
+          <button type="button" class="btn btn--secondary progress-report" (click)="reportRequested.emit()">
+            Informe del turno <span aria-hidden="true">→</span>
+          </button>
+        }
         <ol class="progress-lessons">
           @for (lesson of zone.lessons; track lesson.lessonId; let index = $index) {
             <li class="progress-item"

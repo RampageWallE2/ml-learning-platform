@@ -1,3 +1,5 @@
+@use '../../../../../styles/lesson-focus' as lesson-focus;
+
 :host {
   display: block;
   min-width: 0;
@@ -544,5 +546,15 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .feedback {
     animation: none;
+  }
+}
+
+@include lesson-focus.focused-workbench;
+
+.choices--period {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  .choice {
+    justify-content: center;
+    text-align: center;
   }
 }

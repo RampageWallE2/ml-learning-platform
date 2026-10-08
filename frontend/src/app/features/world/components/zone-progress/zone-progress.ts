@@ -3,6 +3,7 @@ import {
   computed,
   effect,
   input,
+  output,
   signal
 } from '@angular/core';
 
@@ -22,6 +23,9 @@ export class ZoneProgress {
   private static nextPanelId = 0;
 
   readonly lessonsId = `zone-progress-lessons-${++ZoneProgress.nextPanelId}`;
+  readonly reportAvailable = input(false);
+  readonly finalTaskPending = input(false);
+  readonly reportRequested = output<void>();
 
   zone =
     input<ZoneProgressData | null>(
@@ -54,8 +58,7 @@ export class ZoneProgress {
 
 
   completed = computed(() =>
-    this.zone()?.completed ??
-    false
+    !!this.zone()?.completed && !this.finalTaskPending()
   );
 
 

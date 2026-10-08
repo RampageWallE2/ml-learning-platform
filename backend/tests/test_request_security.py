@@ -203,10 +203,10 @@ def test_invalid_origins_are_rejected(value):
     assert _origin(value) is None
 
 
-def make_config(**overrides):
+def make_config(uri, **overrides):
     return {
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+        "TESTING": True, "APP_ENV": "development", "SESSION_COOKIE_SECURE": False,
+        "SQLALCHEMY_DATABASE_URI": uri,
         "SQLALCHEMY_ENGINE_OPTIONS": {},
         "CORS_ORIGINS": [ORIGIN], "CSRF_TRUSTED_ORIGINS": [ORIGIN],
         **overrides,
@@ -216,26 +216,26 @@ def make_config(**overrides):
 @pytest.mark.parametrize("setting", ["CORS_ORIGINS", "CSRF_TRUSTED_ORIGINS"])
 @pytest.mark.parametrize("value", [[], "*", ["*"], ["https://*.example.com"], ["null"],
                                    ["https://game.example/path"], ["https://user:pass@game.example"], [42], [""]])
-def test_invalid_configuration_fails_closed(setting, value):
+def test_invalid_configuration_fails_closed(test_database_url, setting, value):
     with pytest.raises(ValueError, match=setting):
-        create_app(make_config(**{setting: value}))
+        create_app(make_config(test_database_url, **{setting: value}))
 
 
-def test_cors_cannot_authorize_an_origin_missing_from_csrf_configuration():
+def test_cors_cannot_authorize_an_origin_missing_from_csrf_configuration(test_database_url):
     with pytest.raises(ValueError, match="Every CORS_ORIGINS"):
-        create_app(make_config(CORS_ORIGINS=[ORIGIN, "https://other.example"]))
+        create_app(make_config(test_database_url, CORS_ORIGINS=[ORIGIN, "https://other.example"]))
 
 
-def test_unspecified_csrf_origins_use_final_cors_configuration():
-    configured = create_app(make_config(CSRF_TRUSTED_ORIGINS=None, CORS_ORIGINS=["https://game.example"]))
+def test_unspecified_csrf_origins_use_final_cors_configuration(test_database_url):
+    configured = create_app(make_config(test_database_url, CSRF_TRUSTED_ORIGINS=None, CORS_ORIGINS=["https://game.example"]))
     assert configured.config["CSRF_TRUSTED_ORIGINS"] == ["https://game.example"]
     assert configured.test_client().post("/api/v1/auth/logout", headers={
         "Origin": "https://game.example", "X-ExploraLab-Request": "1",
     }).status_code == 200
 
 
-def test_explicit_mobile_origin_is_allowed_without_trusting_all_lan_hosts():
-    configured = create_app(make_config(CSRF_TRUSTED_ORIGINS=[ORIGIN, "http://192.168.1.36:4200"]))
+def test_explicit_mobile_origin_is_allowed_without_trusting_all_lan_hosts(test_database_url):
+    configured = create_app(make_config(test_database_url, CSRF_TRUSTED_ORIGINS=[ORIGIN, "http://192.168.1.36:4200"]))
     raw = configured.test_client()
     # Anonymous logout does not touch a DB and exercises the real guard/route.
     assert raw.post("/api/v1/auth/logout", headers={

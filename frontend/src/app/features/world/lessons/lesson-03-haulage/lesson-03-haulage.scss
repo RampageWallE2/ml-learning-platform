@@ -207,6 +207,30 @@
 .source-records {
   color: var(--color-text-muted);
 }
+.range-calculation {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 0;
+  > span {
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+  strong {
+    font-size: clamp(18px, 3vw, 24px);
+    font-variant-numeric: tabular-nums;
+  }
+}
+.range-calculation__short {
+  color: var(--short-color);
+}
+.range-calculation__long {
+  color: var(--long-color);
+}
+.measure-support {
+  width: 100%;
+  margin-top: 12px;
+  white-space: normal;
+}
 .extreme-summary {
   display: grid;
   grid-template-columns: 1fr 1fr;

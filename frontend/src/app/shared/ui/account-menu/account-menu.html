@@ -2,6 +2,7 @@
   <div
     class="account-menu"
     [class.account-menu--landing]="appearance() === 'landing'"
+    [class.account-menu--bottom-left]="placement() === 'bottom-left'"
   >
     <button
       class="account-menu__trigger"
@@ -33,7 +34,7 @@
       }
 
       <span class="account-menu__arrow" aria-hidden="true">
-        {{ menuOpen() ? '▲' : '▼' }}
+        {{ placement() === 'bottom-left' ? (menuOpen() ? '▼' : '▲') : (menuOpen() ? '▲' : '▼') }}
       </span>
     </button>
 
@@ -48,6 +49,9 @@
           <a class="account-menu__progress" routerLink="/progress" (click)="closeMenu()">
             Mi progreso <span aria-hidden="true">→</span>
           </a>
+          @if (helpAvailable()) {
+            <button class="account-menu__help" type="button" (click)="openHelp()">Cómo jugar</button>
+          }
         }
 
         <button

@@ -1,4 +1,5 @@
 import { LessonProgressSnapshot } from '../../features/world/game/events/game-events';
+import { LESSON_NAMES } from '../../features/world/lessons/lesson-catalog';
 
 export type LessonIndicatorStatus = 'completed' | 'current' | 'pending';
 
@@ -43,19 +44,25 @@ export function getLessonIndicatorCopy(
   }
 }
 
+export function getLessonPromptContent(
+  lessonId: string,
+  status: LessonIndicatorStatus,
+  touch = false,
+) {
+  return {
+    label: getLessonLabel(lessonId),
+    status: status === 'current' ? 'Siguiente' : status === 'completed' ? 'Completada' : '',
+    topic: LESSON_NAMES[lessonId] ?? 'Actividad',
+    action: `${touch ? 'Toca E' : '[E]'} · ${status === 'completed' ? 'Repetir' : 'Iniciar'}`,
+  } as const;
+}
+
 export function getLessonInteractionCopy(
   lessonId: string,
   status: LessonIndicatorStatus,
 ): string {
-  const label = getLessonLabel(lessonId);
-
-  if (status === 'current') {
-    return `${label} · Siguiente\nPulsa E para iniciar`;
-  }
-
-  if (status === 'completed') {
-    return `${label} · Completada\nPulsa E para repetir`;
-  }
-
-  return `${label}\nPulsa E para iniciar`;
+  const content = getLessonPromptContent(lessonId, status);
+  const state = content.status ? ` · ${content.status}` : '';
+  const topic = LESSON_NAMES[lessonId] ? `\n${content.topic}` : '';
+  return `${content.label}${state}${topic}\nPulsa E para ${status === 'completed' ? 'repetir' : 'iniciar'}`;
 }

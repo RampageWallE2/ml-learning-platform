@@ -23,9 +23,9 @@ Se validan enteros positivos: intentos entre 1 y 10000; segundos entre 1 y 86400
 
 La tabla `password_login_limits` contiene un SHA-256 del correo normalizado con prefijo propio, un contador y la expiración Unix. No guarda el correo en claro, IP, contraseña ni token. **El digest no garantiza anonimato**: un correo conocido puede comprobarse contra él. No hay relación con la tabla de cuentas; la tabla funciona también para correos desconocidos.
 
-Un `INSERT … ON CONFLICT … DO UPDATE … RETURNING` consume el intento en una transacción corta independiente, antes de comprobar la contraseña. No hay contador en memoria ni dependencia nueva. Se implementan únicamente PostgreSQL y SQLite; no se confirma compatibilidad con MySQL/cPanel. El contador se satura en límite + 1. Si el almacenamiento falla, el acceso con contraseña devuelve 503 `login_protection_unavailable`, sin conceder acceso ni volcar SQL, correo o contraseña al registro. Angular muestra un mensaje de reintento; las sesiones existentes no se eliminan.
+Un `INSERT … ON CONFLICT … DO UPDATE … RETURNING` consume el intento en una transacción corta independiente, antes de comprobar la contraseña. No hay contador en memoria ni dependencia nueva. Se utiliza únicamente PostgreSQL; no se confirma compatibilidad con MySQL/cPanel. El contador se satura en límite + 1. Si el almacenamiento falla, el acceso con contraseña devuelve 503 `login_protection_unavailable`, sin conceder acceso ni volcar SQL, correo o contraseña al registro. Angular muestra un mensaje de reintento; las sesiones existentes no se eliminan.
 
-La actualización utiliza la operación atómica de [PostgreSQL](https://www.postgresql.org/docs/current/sql-insert.html), mediante los dialectos de [SQLAlchemy para PostgreSQL](https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#insert-on-conflict-upsert) y [SQLite](https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#insert-on-conflict-upsert). La asociación al correo y el riesgo de bloqueo dirigido se consideran siguiendo [OWASP sobre limitación del acceso](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#login-throttling); 8/300 es nuestra política, no un valor impuesto por OWASP.
+La actualización utiliza la operación atómica de [PostgreSQL](https://www.postgresql.org/docs/current/sql-insert.html), mediante el dialecto de [SQLAlchemy para PostgreSQL](https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#insert-on-conflict-upsert). La asociación al correo y el riesgo de bloqueo dirigido se consideran siguiendo [OWASP sobre limitación del acceso](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#login-throttling); 8/300 es nuestra política, no un valor impuesto por OWASP.
 
 Límites explícitos:
 
@@ -55,7 +55,9 @@ flask --app app cleanup-login-limits
 
 El primer comando solo cuenta; el segundo elimina exclusivamente ventanas vencidas. No se ejecutaron contra datos reales. Acordar frecuencia y responsable antes de publicar.
 
-## Comprobaciones y evidencia
+## Comprobaciones originales (históricas)
+
+Los resultados de esta sección corresponden al incremento original. Desde 2026-10-07, SQLite ya no se utiliza: las pruebas de rutas, almacenamiento compartido, concurrencia y migraciones usan PostgreSQL desechable. Instrucciones actuales en [preparación de producción](preparacion-produccion.md).
 
 - **Backend:** 167 pruebas aprobadas. Nuevas pruebas de umbral, normalización, expiración, respuestas, configuración, fallo de almacenamiento, CSRF y conservación de sesiones/progreso. Dos aplicaciones y una recreación comparten una base SQLite temporal; 32 solicitudes concurrentes obtienen exactamente 8 permisos y 24 rechazos.
 - **Migración:** subida, bajada y nueva subida sobre SQLite en memoria preparado como la versión anterior; cuentas y sesión se conservan. No es una prueba de toda la cadena desde una base vacía ni una prueba sobre PostgreSQL.
@@ -63,10 +65,12 @@ El primer comando solo cuenta; el segundo elimina exclusivamente ventanas vencid
 - **Build de producción:** aprobado; permanece la advertencia SCSS anterior de C6 (11,64 kB frente al aviso de 10 kB). Backend presenta 12 avisos de configuración/API obsoleta de Alembic/Flask-Migrate existentes; no se cambiaron para ocultarlos.
 - **Navegador:** Login/AuthService y Flask reales, cuenta ficticia y SQLite en memoria. Ocho POST devuelven 401 y el noveno 429; aviso visible, campos conservados. Sin Google real, Phaser ni base del usuario. Servidor temporal detenido y pestaña cerrada. Evidencia ignorada por Git: `frontend/tmp/login-limit-qa/rate-limit-message.jpg`.
 
-Comandos de comprobación desde sus respectivos directorios:
+Comandos actuales: backend desde la raíz del proyecto; frontend desde su directorio.
 
-```powershell
-& './.venv/Scripts/python.exe' -B -m pytest -p no:cacheprovider -q
+```text
+docker compose -f compose.verify.yml up -d --wait database
+docker compose -f compose.verify.yml run --build --rm tests
+docker compose -f compose.verify.yml down
 ```
 
 ```text
@@ -74,4 +78,4 @@ ng test --watch=false
 ng build --configuration production
 ```
 
-**Pendiente:** prueba real aislada de concurrencia/migración en PostgreSQL, aplicación aprobada de la migración y validación con Compose/teléfono. La sentencia PostgreSQL compila; eso no sustituye su ejecución. Docker estaba instalado, pero su motor no respondía; no se inició ni se conectó a la base real. I04 permanece aplazado e I05 sin marcar. La siguiente subtarea debe delimitarse y aprobarse por separado.
+**Pendientes en el incremento original:** prueba real aislada de concurrencia/migración en PostgreSQL, aplicación aprobada de la migración y validación con Compose/teléfono. En ese momento, la sentencia PostgreSQL compilaba, pero eso no sustituía su ejecución; Docker estaba instalado y su motor no respondía. El ensayo PostgreSQL posterior y los pendientes actuales se documentan en [la lista de entrega](pendientes-entrega-oficial.md). La aplicación de migraciones al entorno habitual y la validación con dispositivos reales siguen requiriendo aprobación y comprobación específicas.

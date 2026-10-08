@@ -114,6 +114,12 @@ The project is currently under active development.
 
 The initial version focuses on validating the core learning experience, interactive world, progression system, and technical architecture before expanding the platform.
 
+## Preparación local de producción
+
+La guía reproducible de pruebas, ensayo HTTPS con Docker, copias y restauración está en [docs/preparacion-produccion.md](docs/preparacion-produccion.md). El ensayo usa un proyecto y base de datos separados; no publica nada en AWS ni sustituye la validación en dispositivos reales. Revisar también [distribución, datos y soporte](docs/distribucion-soporte.md) antes de una entrega pública.
+
+El backend utiliza únicamente PostgreSQL, también en las pruebas con base de datos. Ejecutarlas mediante `compose.verify.yml` mantiene sus datos desechables separados del entorno habitual. No hay alternativa SQLite ni uso automático de `DATABASE_URL` cuando falta `TEST_DATABASE_URL`.
+
 ## Vision
 
 The long-term vision is to create a scalable learning environment where mathematics, Machine Learning, data, and artificial intelligence can be explored through an experience that feels less like studying isolated theory and more like progressing through a world of increasingly challenging problems.

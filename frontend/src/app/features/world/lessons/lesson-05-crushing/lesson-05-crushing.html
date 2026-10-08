@@ -161,7 +161,8 @@
             </div>
           </div>
           <p class="plain-rule">
-            Desviación = dato − promedio. La separación no lleva signo negativo.
+            Desviación = dato − promedio. El signo indica el lado: − por debajo y + por encima.
+            La separación no lleva signo negativo: solo dice cuánto los separa.
           </p>
           <button type="button" class="btn btn--primary" (click)="startPractice()">
             Probar con otros datos →
@@ -171,25 +172,21 @@
             >Práctica {{ solvedCount() + 1 }} de 3{{ round() > 0 ? ' · otros números' : '' }}</span
           >
           <h3 id="crushing-task-title" #taskHeading tabindex="-1">
-            ¿Cómo describirías {{ current() }} t/h?
+            {{ current() }} t/h: ¿por debajo, por encima o igual?
           </h3>
           <p>
-            Compáralo con el promedio de <strong>{{ mean() }} t/h</strong>. ¿Está por debajo o por encima?
-            ¿Cuánto los separa? Si son iguales, la diferencia es 0.
+            Compáralo con el promedio de <strong>{{ mean() }} t/h</strong>.
+            Elige cuánto los separa y de qué lado está. Si son iguales, elige «En el promedio».
           </p>
-          <div class="choices" role="group" aria-label="Desviación y separación del dato">
+          <div class="choices" role="group" aria-label="Cuánto se separa el dato y de qué lado está">
             @for (choice of readingChoices(); track choice.id) {
               <button
                 type="button"
                 class="btn btn--answer answer-choice reading-choice"
                 (click)="chooseReading(choice.id)"
               >
-                <span
-                  >Desviación: <strong>{{ signed(choice.deviation) }} t/h</strong></span
-                >
-                <span
-                  >Separación: <strong>{{ choice.distance }} t/h</strong></span
-                >
+                <strong>{{ describeDeviation(choice.deviation) }}</strong>
+                <span>Desviación: {{ signed(choice.deviation) }} t/h</span>
               </button>
             }
           </div>
@@ -200,9 +197,11 @@
             Por debajo usamos −; por encima, +. Si el dato está justo en el promedio, la desviación
             y la separación son 0.
           </p>
-          <p>Compruébalo con otros números, sin la pista.</p>
+          <p>{{ needsPractice()
+            ? 'Harás una sola práctica adicional. Puedes usar las pistas; no habrá otra ronda obligatoria.'
+            : 'Ya resolviste las tres lecturas con apoyo. Ahora prepara el aviso; no habrá otra ronda.' }}</p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
-            Probar otros datos →
+            {{ needsPractice() ? 'Probar otros datos →' : 'Preparar el aviso →' }}
           </button>
         } @else if (stage() === 'report') {
           <span class="task-kicker">Volvemos a las cuatro horas originales</span>
@@ -223,6 +222,12 @@
           </div>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
+          @if (previousReading(); as reading) {
+            <p class="chart-key">
+              Respuesta anterior correcta: <strong>{{ reading.value }} t/h</strong>,
+              {{ describeDeviation(reading.deviation).toLowerCase() }}.
+            </p>
+          }
           @if (feedback()) {
             <div class="feedback feedback--hint">
               <strong>Una pista</strong>
@@ -262,7 +267,10 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Aviso listo para el siguiente turno</span>
-      <h3 #taskHeading tabindex="-1">El promedio no cuenta lo que pasó en cada hora</h3>
+      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'El promedio no cuenta lo que pasó en cada hora' }}</h3>
+      @if (guidedCompletion()) {
+        <p>Resolviste la práctica con apoyo y preparaste el aviso. Puedes volver a practicar más adelante.</p>
+      }
       <p>Ahora puedes decir cuánto está cada dato por debajo o por encima del promedio.</p>
     </div>
     <div class="report-card">

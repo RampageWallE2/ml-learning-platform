@@ -1,5 +1,6 @@
 export type C5Stage = 'explore' | 'compare' | 'notation' | 'practice' | 'review' | 'report' | 'success';
 export type C5State = Readonly<{ stage: C5Stage; selected: number; round: number; solvedCount: number; practiceHelped: boolean }>;
+export const C5_MAX_PRACTICE_ROUNDS = 1;
 
 export function isC5State(value: unknown): value is C5State {
   if (!value || typeof value !== 'object') return false;
@@ -12,7 +13,8 @@ export function isC5State(value: unknown): value is C5State {
   if (['explore', 'compare', 'notation'].includes(state.stage!)) return state.round === 0 && state.solvedCount === 0 && !state.practiceHelped;
   if (state.stage === 'practice') return state.solvedCount! < 3;
   if (state.solvedCount !== 3) return false;
-  return state.stage === 'review' ? state.practiceHelped : !state.practiceHelped;
+  return state.stage === 'review' ? state.practiceHelped
+    : !state.practiceHelped || state.round! >= C5_MAX_PRACTICE_ROUNDS;
 }
 export function copyC5State(state: C5State): C5State {
   return { stage: state.stage, selected: state.selected, round: state.round,

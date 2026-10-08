@@ -77,6 +77,7 @@ describe('Lesson08Flotation', () => {
 
     expect(root.querySelector('h2')?.textContent).toBe(LESSON_NAMES['lesson-08']);
     expect(root.querySelector('.lesson-header p')?.textContent).toContain('toneladas por hora');
+    expect(root.querySelector('.lesson-header p')?.textContent).toContain('aviso del siguiente turno');
     expect(root.querySelector('.task-card')?.textContent).toContain('el siguiente turno pueda leer');
     expect(root.querySelector('.task-card .btn--primary')?.textContent).toContain('Volver a t/h');
     expect(root.querySelectorAll('.plot .data-point')).toHaveLength(6);
@@ -87,7 +88,9 @@ describe('Lesson08Flotation', () => {
     );
     expect(notes.open).toBe(false);
     expect(notes.parentElement?.classList.contains('workbench')).toBe(true);
-    expect(notes.previousElementSibling?.classList.contains('task-card')).toBe(true);
+    expect(root.querySelector<HTMLDetailsElement>('.records-review')?.open).toBe(false);
+    expect(root.querySelector('.workbench > .data-board')).toBeNull();
+    expect(root.querySelector('.records-review .data-board')).not.toBeNull();
     expect(notes.querySelector('summary')?.textContent).toBe('Cómo leer los datos y la varianza');
     expect(notes.textContent).toContain('No son los datos del molino');
     expect(notes.textContent).toContain('24 ÷ 6 =');
@@ -246,6 +249,7 @@ describe('Lesson08Flotation', () => {
     fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
     expect(root.querySelectorAll('.square-cell')).toHaveLength(4);
+    expect(root.querySelector('.task-card figcaption')?.textContent).toContain('Varianza del grupo: 4 casillas');
     expect(root.querySelector('.task-card .square-grid')).toBe(root.querySelector('.square-grid'));
     expect((root.querySelector('.square-grid') as HTMLElement).style.gridTemplateColumns).toBe(
       'repeat(2, 34px)',
@@ -332,6 +336,7 @@ describe('Lesson08Flotation', () => {
     expect(root.querySelector('.root-proof')?.textContent).toContain('√4 = 2');
     expect(root.querySelector('.side-label')?.textContent).toContain('2 t/h');
     expect(root.textContent).toContain('sacar la raíz cuadrada');
+    expect(root.textContent).toContain('Resume al grupo, no la separación de cada registro');
     expect(root.textContent).toContain('No se calcula sumando las separaciones y dividiendo entre los registros');
     expect(root.querySelector('.spread-band')).toBeNull();
     game.requestHint();
@@ -374,6 +379,8 @@ describe('Lesson08Flotation', () => {
     expect(band.style.width).toBe('50%');
     const plot = root.querySelector('.plot')!;
     const taskCard = root.querySelector('.task-card')!;
+    expect(taskCard.textContent).toContain('Desde el promedio de 100 t/h');
+    expect(taskCard.textContent).toContain('2 t/h a cada lado');
     expect(taskCard.querySelector('.plot')).toBe(plot);
     expect(taskCard.querySelector('.record-choices')).not.toBeNull();
     expect(taskCard.querySelectorAll('.record-choice')).toHaveLength(6);
@@ -502,6 +509,11 @@ describe('Lesson08Flotation', () => {
     const game = fixture.componentInstance;
     const source = game.records();
     const sourceStats = game.stats();
+    const sourceBounds = game.bounds();
+    const sourceTicks = game.ticks();
+    const meanPosition = game.position(sourceStats.mean);
+    const bandLeft = game.position(sourceStats.lower);
+    const bandWidth = game.position(sourceStats.upper) - bandLeft;
     reachComparison(game);
     fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
@@ -514,6 +526,16 @@ describe('Lesson08Flotation', () => {
     expect(game.stats().variance).toBe(sourceStats.variance);
     expect(game.stats().standardDeviation).toBe(sourceStats.standardDeviation);
     expect(game.stats().squareSum).toBe(sourceStats.squareSum);
+    expect(game.bounds()).toEqual(sourceBounds);
+    expect(game.ticks()).toEqual(sourceTicks);
+    expect(game.position(sourceStats.mean)).toBe(meanPosition);
+    expect(game.points().map(point => point.x)).toEqual([37.5, 37.5, 37.5, 87.5, 87.5, 87.5]);
+    const band = root.querySelector<HTMLElement>('.spread-band')!;
+    expect(parseFloat(band.style.left)).toBe(bandLeft);
+    expect(parseFloat(band.style.width)).toBe(bandWidth);
+    expect(parseFloat(root.querySelector<HTMLElement>('.mean-line')!.style.left)).toBe(meanPosition);
+    expect(root.querySelector('.plot')?.getAttribute('aria-label')).toContain('Escala de 95 a 103 t/h, igual en ambos ejemplos');
+    expect(root.querySelector('.task-card')?.textContent).toContain('La escala también es la misma');
     expect(game.stats().outside).toEqual([]);
     expect(game.points().map((point) => point.bottom)).toEqual([28, 50, 72, 28, 50, 72]);
     expect(game.points().every((point) => !point.outside)).toBe(true);
@@ -552,6 +574,8 @@ describe('Lesson08Flotation', () => {
     expect(game.stage()).toBe('report');
     expect(game.comparing()).toBe(false);
     expect(game.records()).toBe(source);
+    expect(game.bounds()).toEqual(sourceBounds);
+    expect(game.ticks()).toEqual(sourceTicks);
     expect(game.selectedRecord()).toBe(0);
     expect(game.stats().outside).toEqual([96]);
     expect(root.querySelectorAll('.point--outside')).toHaveLength(1);
@@ -646,6 +670,9 @@ describe('Lesson08Flotation', () => {
       const index = round === 0 ? 0 : 1 + ((round - 1) % 3);
       const source = game.records();
       const sourceStats = game.stats();
+      const bounds = game.bounds();
+      const ticks = game.ticks();
+      const bandPositions = [game.position(sourceStats.lower), game.position(sourceStats.upper)];
       reachComparison(game);
       const comparison = game.stats();
       expect([comparison.lower, comparison.upper]).toEqual(expected[index]);
@@ -661,6 +688,10 @@ describe('Lesson08Flotation', () => {
       expect(comparison.variance).toBe(sourceStats.variance);
       expect(comparison.standardDeviation).toBe(sourceStats.standardDeviation);
       expect(comparison.outside).toHaveLength(0);
+      expect(game.bounds()).toEqual(bounds);
+      expect(game.ticks()).toEqual(ticks);
+      expect([game.position(comparison.lower), game.position(comparison.upper)]).toEqual(bandPositions);
+      expect([...source, ...game.records()].every(value => game.position(value) > 0 && game.position(value) < 100)).toBe(true);
       expect(game.sourceRecords()).toBe(source);
       const selected = game.selectedRecord();
       game.selectRecord(0);
@@ -670,11 +701,42 @@ describe('Lesson08Flotation', () => {
       game.answerComparison('inside');
       game.continueToReport();
       expect(game.records()).toBe(source);
+      expect(game.bounds()).toEqual(bounds);
       expect(game.stats().outside).toHaveLength(1);
       expect(game.selectedRecord()).toBe(selected);
       expect(game.comparing()).toBe(false);
       fixture.destroy();
     }
+  });
+
+  it('restores a comparison using its source scale without losing the selected record or saved help', () => {
+    const fixture = create({ stage: 'locate', round: 2, helped: true,
+      selectedRecord: 5, comparing: true, choiceOffset: 1 });
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    expect(game.stage()).toBe('locate');
+    expect(game.bounds()).toEqual({ min: 101, max: 115 });
+    expect(game.ticks()).toEqual([102, 106, 114]);
+    expect(game.records()).toEqual([102, 102, 102, 110, 110, 110]);
+    expect(game.stats().mean).toBe(106);
+    expect(game.stats().standardDeviation).toBe(4);
+    expect(game.selectedRecord()).toBe(5);
+    expect(game.helped()).toBe(true);
+    expect(game.bandExplained()).toBe(false);
+    expect(root.querySelectorAll('.point--outside')).toHaveLength(0);
+    expect(root.querySelectorAll('.comparison-choice')).toHaveLength(2);
+    expect(root.querySelector('.plot')?.getAttribute('aria-label')).toContain('Escala de 101 a 115 t/h');
+    const band = root.querySelector<HTMLElement>('.spread-band')!;
+    expect(parseFloat(band.style.left)).toBeCloseTo(100 / 14);
+    expect(parseFloat(band.style.width)).toBeCloseTo(800 / 14);
+    game.answerComparison('inside');
+    game.continueToReport();
+    expect(game.stage()).toBe('report');
+    expect(game.bounds()).toEqual({ min: 101, max: 115 });
+    expect(game.ticks()).toEqual([102, 106, 114]);
+    expect(game.records()).toEqual([102, 102, 106, 106, 106, 114]);
+    expect(game.selectedRecord()).toBe(5);
+    expect(game.helped()).toBe(true);
   });
 
   it('ignores invalid record indices and out-of-order or repeated actions without adding help', () => {
@@ -1213,7 +1275,7 @@ describe('Lesson08Flotation', () => {
     fixture.detectChanges();
     click(root, 'Probar otros registros →');
     fixture.detectChanges();
-    expect(root.textContent).toContain('Ensayo: otros registros');
+    expect(root.textContent).toContain('Práctica con otros datos');
     expect(root.querySelectorAll('.square-cell')).toHaveLength(9);
     expect(root.querySelector('.root-proof')).toBeNull();
     expect(root.querySelector('.spread-band')).toBeNull();

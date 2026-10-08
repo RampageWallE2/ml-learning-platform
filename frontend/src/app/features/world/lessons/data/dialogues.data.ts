@@ -1,6 +1,11 @@
 import { DialogueData } from "../../components/dialogue/dialogue.types"
+import { OPEN_PIT_INTRO } from './open-pit-intro.data';
+import { OPEN_PIT_CLOSING } from './open-pit-closing.data';
 
 export const DIALOGUES: Record<string, DialogueData> = {
+
+  [OPEN_PIT_INTRO.id]: OPEN_PIT_INTRO,
+  [OPEN_PIT_CLOSING.id]: OPEN_PIT_CLOSING,
 
   'intro-01': {
     id: 'intro-01',

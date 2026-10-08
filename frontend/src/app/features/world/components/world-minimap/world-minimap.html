@@ -1,0 +1,59 @@
+<section class="minimap" [class.minimap--expanded]="expanded()" aria-label="Minimapa de Open Pit" (keydown)="onKeydown($event)">
+  <button #toggleButton type="button" class="minimap-toggle" [attr.aria-expanded]="expanded()"
+          [attr.aria-controls]="panelId" [attr.aria-label]="expanded() ? 'Ocultar minimapa' : 'Mostrar minimapa'"
+          (pointerdown)="$event.preventDefault()" (click)="toggle()">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2V5zm6-2v16m6-14v16" /></svg>
+    <span>Mapa</span><span class="minimap-toggle__state" aria-hidden="true">{{ expanded() ? '−' : '+' }}</span>
+  </button>
+  @if (expanded()) {
+    <div class="minimap-content" [id]="panelId">
+      <svg class="minimap-chart" [attr.viewBox]="'0 0 ' + map().width + ' ' + map().height"
+           role="img" aria-label="Ubicación del jugador y de las clases en Open Pit">
+        <rect class="minimap-ground" width="100%" height="100%" />
+        @for (land of map().terrain; track $index) {
+          <path [attr.class]="'minimap-terrain minimap-terrain--' + land.kind" [attr.d]="land.path" />
+        }
+        <text class="minimap-north" [attr.x]="map().width - 40" y="65">N ↑</text>
+        @for (marker of markers(); track marker.lessonId) {
+          <g class="minimap-marker" [class.minimap-marker--completed]="marker.completed"
+             [class.minimap-marker--current]="marker.current" [attr.data-lesson-id]="marker.lessonId"
+             [attr.transform]="'translate(' + marker.x + ' ' + marker.y + ')'">
+            <title>C{{ marker.number }}: {{ marker.name }} · {{ marker.completed ? 'Completada' : marker.current ? 'Siguiente' : 'Pendiente' }}</title>
+            @if (marker.current) { <circle class="minimap-marker__ring" r="55" /> }
+            <circle class="minimap-marker__dot" r="42" />
+            <text text-anchor="middle" dominant-baseline="central">{{ marker.number }}</text>
+            @if (marker.completed) {
+              <circle class="minimap-marker__check-bg" cx="34" cy="-35" r="24" />
+              <path class="minimap-marker__check" d="M22 -35l8 8 17-19" />
+            }
+          </g>
+        }
+        @if (supervisorPoint(); as supervisor) {
+          <g class="minimap-marker minimap-marker--current minimap-supervisor"
+             [attr.transform]="'translate(' + supervisor.x + ' ' + supervisor.y + ')'">
+            <title>Centro de control: entrega el informe al supervisor</title>
+            <circle class="minimap-marker__ring" r="55" />
+            <circle class="minimap-marker__dot" r="42" />
+            <text text-anchor="middle" dominant-baseline="central">S</text>
+          </g>
+        }
+        @if (playerPoint(); as point) {
+          <g class="minimap-player" [attr.transform]="'translate(' + point.x + ' ' + point.y + ') rotate(' + point.heading + ')'">
+            <title>Tu posición</title><path d="M0 -38L29 29 0 16 -29 29Z" />
+          </g>
+        }
+      </svg>
+      <div class="minimap-legend" aria-hidden="true"><span>▲ Tú</span><span>◉ Siguiente</span><span>✓ Hecha</span></div>
+      <p class="minimap-next">
+        @if (loadingProgress()) { <span>Consultando progreso…</span> }
+        @else if (supervisorPoint()) {
+          <span class="minimap-next__label">Siguiente paso</span>
+          <strong>Centro de control · Supervisor</strong>
+        } @else if (nextLesson(); as next) {
+          <span class="minimap-next__label">Siguiente clase</span>
+          <strong>C{{ nextLessonNumber() }} · {{ next.name }}</strong>
+        } @else { <span>{{ zone()?.completed ? 'Recorrido completado' : 'Clases numeradas en el mapa' }}</span> }
+      </p>
+    </div>
+  }
+</section>

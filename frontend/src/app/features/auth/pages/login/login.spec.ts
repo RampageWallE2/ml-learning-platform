@@ -1,11 +1,14 @@
 import { signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../../../core/auth/auth.config';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { API_REQUEST_TIMEOUT_MS } from '../../../../core/http/request-timeout';
+import { GoogleCredentialResponse } from '../../../../core/auth/auth.types';
 import { Login } from './login';
 
 describe('Login', () => {
@@ -31,6 +34,7 @@ describe('Login', () => {
   const router = {
     navigateByUrl: vi.fn(() => Promise.resolve(true)),
   };
+  const config = { apiBaseUrl: 'http://api.test/api/v1', googleClientId: 'test-client-id' };
   let queryParams: Record<string, string>;
 
   beforeEach(async () => {
@@ -51,6 +55,7 @@ describe('Login', () => {
     auth.register.mockClear();
     auth.logout.mockClear();
     router.navigateByUrl.mockClear();
+    config.googleClientId = 'test-client-id';
     queryParams = {};
 
     await TestBed.configureTestingModule({
@@ -73,10 +78,7 @@ describe('Login', () => {
         },
         {
           provide: AUTH_CONFIG,
-          useValue: {
-            apiBaseUrl: 'http://api.test/api/v1',
-            googleClientId: 'test-client-id',
-          },
+          useValue: config,
         },
       ],
     }).compileComponents();
@@ -360,6 +362,175 @@ describe('Login', () => {
     expect(script?.async).toBe(true);
   });
 
+  it.each([
+    { clientId: '', sdkLoaded: false },
+    { clientId: '', sdkLoaded: true },
+    { clientId: ' \t\n ', sdkLoaded: false },
+    { clientId: ' \t\n ', sdkLoaded: true },
+  ])('does not load or initialize the SDK without Google configuration: %j', ({ clientId, sdkLoaded }) => {
+    config.googleClientId = clientId;
+    if (!sdkLoaded) delete window.google;
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(document.querySelector('#google-identity-service')).toBeNull();
+    expect(initialize).not.toHaveBeenCalled();
+    expect(renderButton).not.toHaveBeenCalled();
+    expect(root.querySelector('.google-wrap')).toBeNull();
+    expect(root.querySelector('.divider')).toBeNull();
+    expect(root.querySelector('form')).not.toBeNull();
+    expect(root.querySelector<HTMLFieldSetElement>('fieldset')?.disabled).toBe(false);
+    expect(page.googleError()).toBeNull();
+    expect(page.busy()).toBe(false);
+    expect(auth.loginWithGoogle).not.toHaveBeenCalled();
+  });
+
+  it.each(['login', 'register'] as const)(
+    'keeps the %s form working without Google configuration', mode => {
+      config.googleClientId = '';
+      TestBed.inject(ActivatedRoute).snapshot.data = { mode };
+      const fixture = TestBed.createComponent(Login);
+      fixture.detectChanges();
+      const page = fixture.componentInstance;
+
+      if (mode === 'login') {
+        page.loginForm.setValue({ email: user.email, password: 'test-only-password' });
+        page.loginWithEmail();
+        expect(auth.loginWithEmail).toHaveBeenCalledOnce();
+      } else {
+        page.registrationForm.setValue({ displayName: user.displayName, email: user.email,
+          password: 'test-only-password', confirmPassword: 'test-only-password' });
+        page.registerWithEmail();
+        expect(auth.register).toHaveBeenCalledOnce();
+      }
+
+      expect((fixture.nativeElement as HTMLElement).querySelector('.google-wrap')).toBeNull();
+      expect(page.busy()).toBe(false);
+      expect(router.navigateByUrl).toHaveBeenCalledExactlyOnceWith('/world');
+      expect(auth.loginWithGoogle).not.toHaveBeenCalled();
+    },
+  );
+
+  it('passes a normalized Google client ID to the configured SDK', () => {
+    config.googleClientId = '  test-client-id \n';
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+
+    expect(initialize).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ client_id: 'test-client-id' }),
+    );
+    expect(renderButton).toHaveBeenCalledOnce();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.google-wrap')).not.toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.divider')).not.toBeNull();
+  });
+
+  it('keeps email available after a configured SDK load failure', () => {
+    delete window.google;
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    document.querySelector('#google-identity-service')!.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Google no está disponible en este momento. Puedes continuar con correo.',
+    );
+    expect(fixture.componentInstance.busy()).toBe(false);
+    fixture.componentInstance.loginForm.setValue({ email: user.email, password: 'test-only-password' });
+    fixture.componentInstance.loginWithEmail();
+    expect(auth.loginWithEmail).toHaveBeenCalledOnce();
+    expect(router.navigateByUrl).toHaveBeenCalledExactlyOnceWith('/world');
+  });
+
+  it.each([
+    { clientId: '', message: 'Este correo está registrado con Google. Ese acceso no está disponible en este momento.' },
+    { clientId: 'test-client-id', message: 'Este correo ya está registrado con Google. Usa el botón de Google para ingresar.' },
+  ])('gives usable advice for a Google-only account: %j', ({ clientId, message }) => {
+    config.googleClientId = clientId;
+    auth.loginWithEmail.mockReturnValue(throwError(() => new HttpErrorResponse({
+      status: 401, error: { code: 'email_registered_with_google' },
+    })));
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    fixture.componentInstance.loginForm.setValue({ email: user.email, password: 'test-only-password' });
+    fixture.componentInstance.loginWithEmail();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.errorMessage()).toBe(message);
+    expect(fixture.nativeElement.textContent).toContain(message);
+    expect(fixture.componentInstance.busy()).toBe(false);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it.each<GoogleCredentialResponse>([
+    { credential: 'late-test-only-credential' },
+    {},
+  ])('ignores a Google callback after the login is destroyed: %s', response => {
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const callback = initialize.mock.calls[0][0].callback;
+    const page = fixture.componentInstance;
+
+    fixture.destroy();
+    callback(response);
+
+    expect(auth.loginWithGoogle).not.toHaveBeenCalled();
+    expect(page.errorMessage()).toBeNull();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('accepts the new Google callback without reactivating the previous login', () => {
+    const previous = TestBed.createComponent(Login);
+    previous.detectChanges();
+    const previousCallback = initialize.mock.calls[0][0].callback;
+    previous.destroy();
+
+    const current = TestBed.createComponent(Login);
+    current.detectChanges();
+    const currentCallback = initialize.mock.calls[1][0].callback;
+    previousCallback({ credential: 'old-test-only-credential' });
+    expect(auth.loginWithGoogle).not.toHaveBeenCalled();
+
+    currentCallback({ credential: 'current-test-only-credential' });
+    expect(auth.loginWithGoogle).toHaveBeenCalledExactlyOnceWith('current-test-only-credential');
+    expect(router.navigateByUrl).toHaveBeenCalledExactlyOnceWith('/world');
+  });
+
+  it('reuses the Google script for a new login without rendering the destroyed view', () => {
+    delete window.google;
+    const previous = TestBed.createComponent(Login);
+    previous.detectChanges();
+    const script = document.querySelector<HTMLScriptElement>('#google-identity-service')!;
+    previous.destroy();
+
+    const current = TestBed.createComponent(Login);
+    current.detectChanges();
+    expect(document.querySelectorAll('#google-identity-service')).toHaveLength(1);
+    expect(document.querySelector('#google-identity-service')).toBe(script);
+    window.google = { accounts: { id: { initialize, renderButton } } };
+    script.dispatchEvent(new Event('load'));
+
+    expect(initialize).toHaveBeenCalledOnce();
+    expect(renderButton).toHaveBeenCalledExactlyOnceWith(
+      (current.nativeElement as HTMLElement).querySelector('.google-button'),
+      expect.any(Object),
+    );
+  });
+
+  it('removes Google error listeners when leaving the login', () => {
+    delete window.google;
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const script = document.querySelector<HTMLScriptElement>('#google-identity-service')!;
+    const page = fixture.componentInstance;
+    fixture.destroy();
+    script.dispatchEvent(new Event('error'));
+
+    expect(page.googleError()).toBeNull();
+    expect(auth.loginWithGoogle).not.toHaveBeenCalled();
+  });
+
   it('shows confirmation after a successful logout', () => {
     queryParams = { loggedOut: 'true' };
     const fixture = TestBed.createComponent(Login);
@@ -510,5 +681,206 @@ describe('Login', () => {
     fixture.componentInstance.loginWithEmail();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/world');
+  });
+});
+
+describe('Login lifecycle with the real authentication service', () => {
+  const root = 'http://api.test/api/v1';
+  const account = {
+    id: 'lifecycle-user', email: 'student@example.test',
+    displayName: 'Test Student', avatarUrl: null,
+  };
+  const initialize = vi.fn();
+  let auth: AuthService;
+  let http: HttpTestingController;
+  const navigate = vi.fn<Router['navigateByUrl']>(() => Promise.resolve(true));
+
+  beforeEach(async () => {
+    initialize.mockClear();
+    navigate.mockClear();
+    window.google = { accounts: { id: { initialize, renderButton: vi.fn() } } };
+    await TestBed.configureTestingModule({
+      imports: [Login],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: {
+          snapshot: { data: {}, queryParamMap: { get: () => null } },
+        } },
+        { provide: AUTH_CONFIG, useValue: { apiBaseUrl: root, googleClientId: 'test-client-id' } },
+      ],
+    }).compileComponents();
+    auth = TestBed.inject(AuthService);
+    http = TestBed.inject(HttpTestingController);
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockImplementation(navigate);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    http.verify();
+    delete window.google;
+    document.querySelector('#google-identity-service')?.remove();
+  });
+
+  function createAnonymousLogin() {
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    http.expectOne(`${root}/me`).flush({}, { status: 401, statusText: 'Unauthorized' });
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  function startSignIn(page: Login, method: 'login' | 'register' | 'google'): void {
+    switch (method) {
+      case 'login':
+        page.loginForm.setValue({ email: account.email, password: 'test-only-password' });
+        page.loginWithEmail();
+        break;
+      case 'register':
+        page.registrationForm.setValue({ displayName: account.displayName, email: account.email,
+          password: 'test-only-password', confirmPassword: 'test-only-password' });
+        page.registerWithEmail();
+        break;
+      case 'google':
+        initialize.mock.calls.at(-1)![0].callback({ credential: 'test-only-credential' });
+        break;
+    }
+  }
+
+  it.each(['login', 'register', 'google'] as const)(
+    'releases the busy state after a real %s timeout and permits an explicit retry', method => {
+      const fixture = createAnonymousLogin();
+      vi.useFakeTimers();
+      const page = fixture.componentInstance;
+      startSignIn(page, method);
+      const request = http.expectOne(`${root}/auth/${method}`);
+      vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS - 1);
+      expect(page.busy()).toBe(true);
+      expect(request.cancelled).toBe(false);
+      vi.advanceTimersByTime(1);
+      expect(request.cancelled).toBe(true);
+      expect(page.busy()).toBe(false);
+      expect(page.errorMessage()).toContain('Inténtalo nuevamente.');
+      expect(auth.status()).toBe('anonymous');
+      expect(navigate).not.toHaveBeenCalled();
+      http.expectNone(`${root}/auth/${method}`);
+
+      startSignIn(page, method);
+      expect(page.busy()).toBe(true);
+      http.expectOne(`${root}/auth/${method}`).flush({ user: account });
+      expect(page.busy()).toBe(false);
+      expect(auth.isAuthenticated()).toBe(true);
+      expect(navigate).toHaveBeenCalledExactlyOnceWith('/world');
+    },
+  );
+
+  it('releases the session-checking state after a real restoration timeout', () => {
+    vi.useFakeTimers();
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const request = http.expectOne(`${root}/me`);
+    expect(page.checkingSession()).toBe(true);
+    vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS);
+    expect(request.cancelled).toBe(true);
+    expect(page.checkingSession()).toBe(false);
+    expect(page.busy()).toBe(false);
+    expect(auth.status()).toBe('unavailable');
+    expect(navigate).not.toHaveBeenCalled();
+    http.expectNone(`${root}/me`);
+  });
+
+  it.each(['login', 'register', 'google'] as const)(
+    'cancels a pending %s HTTP request when the login is destroyed', method => {
+      const fixture = createAnonymousLogin();
+      const page = fixture.componentInstance;
+      startSignIn(page, method);
+      const request = http.expectOne(`${root}/auth/${method}`);
+      expect(request.request.withCredentials).toBe(true);
+      expect(page.busy()).toBe(true);
+
+      fixture.destroy();
+
+      expect(request.cancelled).toBe(true);
+      expect(page.busy()).toBe(false);
+      expect(page.errorMessage()).toBeNull();
+      expect(auth.user()).toBeNull();
+      expect(auth.status()).toBe('anonymous');
+      expect(navigate).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['login', 'register', 'google'] as const)(
+    'still establishes the session and redirects after a normal %s response', method => {
+      const fixture = createAnonymousLogin();
+      startSignIn(fixture.componentInstance, method);
+      http.expectOne(`${root}/auth/${method}`).flush({ user: account });
+
+      expect(auth.user()).toEqual(account);
+      expect(auth.isAuthenticated()).toBe(true);
+      expect(fixture.componentInstance.busy()).toBe(false);
+      expect(navigate).toHaveBeenCalledExactlyOnceWith('/world');
+    },
+  );
+
+  it.each(['login', 'register'] as const)(
+    'does not start %s from a handler retained after destruction', method => {
+      const fixture = createAnonymousLogin();
+      const page = fixture.componentInstance;
+      fixture.destroy();
+      startSignIn(page, method);
+
+      http.expectNone(`${root}/auth/${method}`);
+      expect(navigate).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps a shared session request active for another consumer after the login closes', () => {
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const received = vi.fn();
+    auth.restoreSession().subscribe(received);
+    const request = http.expectOne(`${root}/me`);
+    const page = fixture.componentInstance;
+    fixture.destroy();
+
+    expect(request.cancelled).toBe(false);
+    request.flush({ user: account });
+
+    expect(received).toHaveBeenCalledExactlyOnceWith(true);
+    expect(auth.user()).toEqual(account);
+    expect(page.checkingSession()).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('reuses the pending session request when a new login replaces the previous one', () => {
+    const previous = TestBed.createComponent(Login);
+    previous.detectChanges();
+    const request = http.expectOne(`${root}/me`);
+    previous.destroy();
+
+    const current = TestBed.createComponent(Login);
+    current.detectChanges();
+    http.expectNone(`${root}/me`);
+    expect(request.cancelled).toBe(false);
+    request.flush({ user: account });
+
+    expect(previous.componentInstance.checkingSession()).toBe(true);
+    expect(current.componentInstance.checkingSession()).toBe(false);
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(navigate).toHaveBeenCalledExactlyOnceWith('/world');
+  });
+
+  it('does not redirect the destroyed login when a late session response arrives alone', () => {
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const request = http.expectOne(`${root}/me`);
+    fixture.destroy();
+    request.flush({ user: account });
+
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(fixture.componentInstance.checkingSession()).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

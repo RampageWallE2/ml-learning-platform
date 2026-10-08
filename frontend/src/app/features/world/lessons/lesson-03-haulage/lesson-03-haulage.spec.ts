@@ -174,8 +174,11 @@ describe('Lesson03Haulage', () => {
     game.startPractice();
     game.explainRange('separation');
     game.continueAfterHelp();
+    game.toggleMeasureSupport();
     game.finish();
     expect(game.stage()).toBe('extremes');
+    expect(game.practiceMeasureVisible()).toBe(false);
+    expect(game.practiceHelped()).toBe(false);
     expect(game.selectedMinId()).toBeNull();
     game.selectTrip('trip-1');
     game.showSeparation();
@@ -249,7 +252,10 @@ describe('Lesson03Haulage', () => {
     fixture.detectChanges();
     expect(game.stage()).toBe('discovery');
     expect(fixture.nativeElement.textContent).toContain('Esta separación se llama rango');
-    expect(fixture.nativeElement.textContent).toContain('18 menos 11 da 7');
+    expect(fixture.nativeElement.querySelector('.range-calculation strong').textContent.replace(/\s+/g, ' ').trim())
+      .toBe('18 − 11 = 7 min');
+    expect(fixture.nativeElement.textContent).toContain('La más larga duró 18 minutos');
+    expect(fixture.nativeElement.textContent).toContain('no su duración');
     expect(game.feedback()).toBe('');
   });
 
@@ -290,7 +296,7 @@ describe('Lesson03Haulage', () => {
     expect(game.practiceHelped()).toBe(false);
   });
 
-  it('keeps the counting diagram hidden during the independent calculation', () => {
+  it('offers the counting diagram without requiring it or revealing the calculation result', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     practice(game);
@@ -298,6 +304,12 @@ describe('Lesson03Haulage', () => {
     fixture.detectChanges();
     expect(game.rangeOptions()).toEqual([4, 5, 6, 15]);
     expect(fixture.nativeElement.querySelector('.time-bridge')).toBeNull();
+    const button = fixture.nativeElement.querySelector('.measure-support') as HTMLButtonElement;
+    expect(button.textContent?.trim()).toBe('Ver línea de minutos (ayuda)');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(fixture.nativeElement.querySelector('.range-calculation strong').textContent.replace(/\s+/g, ' ').trim())
+      .toBe('15 − 10 = ? min');
+    expect(game.practiceHelped()).toBe(false);
     expect(
       fixture.nativeElement.querySelectorAll('.trip-card--short, .trip-card--long'),
     ).toHaveLength(2);
@@ -306,11 +318,65 @@ describe('Lesson03Haulage', () => {
     expect(game.stage()).toBe('practice-meaning');
     expect(fixture.nativeElement.textContent).toContain('¿Qué significa un rango de 5 minutos?');
     expect(fixture.nativeElement.querySelector('.time-bridge')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.range-calculation strong').textContent.replace(/\s+/g, ' ').trim())
+      .toBe('15 − 10 = 5 min');
     game.explainRange('invalid' as 'separation');
     expect(game.stage()).toBe('practice-meaning');
   });
 
-  it('marks a wrong practice extreme as supported and requires a fresh unassisted example', () => {
+  it('toggles visual support without losing progress or bypassing the calculation and interpretation', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement; const done = vi.fn(); game.completed.subscribe(done);
+    practice(game); findPracticeExtremes(game); fixture.detectChanges();
+    const min = game.selectedMinId(); const max = game.selectedMaxId(); const records = game.records();
+    const choices = game.rangeOptions();
+    const button = root.querySelector<HTMLButtonElement>('.measure-support')!;
+    button.focus(); button.click(); fixture.detectChanges();
+    expect(document.activeElement).toBe(button);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(root.querySelector('#' + button.getAttribute('aria-controls'))).toBe(root.querySelector('.time-board'));
+    expect(root.querySelectorAll('.time-bridge')).toHaveLength(1);
+    expect(root.querySelectorAll('.minute-step')).toHaveLength(5);
+    expect(root.querySelectorAll('.minute-mark')).toHaveLength(6);
+    expect(root.querySelector('.minute-label--short')!.textContent?.trim()).toBe('10');
+    expect(root.querySelector('.minute-label--long')!.textContent?.trim()).toBe('15');
+    expect(root.querySelector('.range-calculation strong')!.textContent).toContain('?');
+    expect(game.practiceHelped()).toBe(true); expect(game.stage()).toBe('practice-range');
+    expect(game.records()).toBe(records); expect(game.rangeOptions()).toBe(choices);
+    expect(game.selectedMinId()).toBe(min); expect(game.selectedMaxId()).toBe(max);
+    game.finish(); expect(done).not.toHaveBeenCalled();
+    game.answerRange(15); expect(game.stage()).toBe('practice-range');
+    expect(game.practiceMeasureVisible()).toBe(true);
+    game.answerRange(5); fixture.detectChanges();
+    expect(game.stage()).toBe('practice-meaning'); expect(root.querySelectorAll('.minute-step')).toHaveLength(5);
+    game.finish(); expect(done).not.toHaveBeenCalled();
+    button.click(); fixture.detectChanges();
+    expect(button.getAttribute('aria-expanded')).toBe('false'); expect(root.querySelector('.time-bridge')).toBeNull();
+    expect(root.querySelectorAll('.trip-card--short, .trip-card--long')).toHaveLength(2);
+    expect(game.practiceHelped()).toBe(true);
+    game.explainRange('separation'); fixture.detectChanges();
+    expect(game.stage()).toBe('review'); expect(root.querySelector('.task-card')!.textContent).toContain('La más larga duró 15 minutos');
+    game.finish(); expect(done).not.toHaveBeenCalled();
+    game.continueAfterHelp(); fixture.detectChanges();
+    expect(game.round()).toBe(1); expect(game.practiceMeasureVisible()).toBe(false);
+    expect(game.practiceHelped()).toBe(false); expect(root.querySelector('.time-bridge')).toBeNull();
+    findPracticeExtremes(game); game.answerRange(6); game.explainRange('separation'); game.finish();
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows consulting the diagram for interpretation even after calculating without help', () => {
+    const fixture = create(); const game = fixture.componentInstance;
+    practice(game); findPracticeExtremes(game); game.answerRange(5); fixture.detectChanges();
+    expect(game.practiceHelped()).toBe(false); expect(game.practiceMeasureVisible()).toBe(false);
+    fixture.nativeElement.querySelector('.measure-support').click(); fixture.detectChanges();
+    expect(game.stage()).toBe('practice-meaning'); expect(game.practiceHelped()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.minute-step')).toHaveLength(5);
+    game.explainRange('maximum'); expect(game.stage()).toBe('practice-meaning');
+    expect(game.feedback()).toContain('La más larga duró 15 minutos');
+    game.explainRange('separation'); expect(game.stage()).toBe('review');
+  });
+
+  it('requires one additional practice and allows consulted visual support without another round', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     const done = vi.fn();
@@ -336,9 +402,16 @@ describe('Lesson03Haulage', () => {
     expect(game.selectedMinId()).toBeNull();
     expect(game.selectedMaxId()).toBeNull();
     findPracticeExtremes(game);
+    game.toggleMeasureSupport();
+    expect(game.practiceHelped()).toBe(true);
+    game.explainRange('separation'); game.finish(); expect(done).not.toHaveBeenCalled();
+    expect(game.stage()).toBe('practice-range');
     game.answerRange(6);
     game.explainRange('separation');
     expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(true);
+    game.continueAfterHelp(); expect(game.round()).toBe(1);
+    fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('Completaste con ayuda');
   });
 
   it('keeps the same independent records while correcting an incorrect separation', () => {
@@ -383,11 +456,14 @@ describe('Lesson03Haulage', () => {
     expect(game.stage()).toBe('success');
   });
 
-  it('keeps repeated support examples bounded, coherent and distinct from the original evidence', () => {
+  it('keeps current and older support drafts coherent and distinct from the original evidence', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     practice(game);
     for (let round = 0; round < 10; round += 1) {
+      fixture.componentRef.setInput('initialState', { stage: 'practice-extremes',
+        selectedMinId: null, selectedMaxId: null, round, practiceHelped: false });
+      fixture.detectChanges();
       expect(game.round()).toBe(round);
       expect(game.records()).toHaveLength(5);
       expect(
@@ -396,9 +472,9 @@ describe('Lesson03Haulage', () => {
       game.selectTrip(game.records().find((record) => record.time !== game.minimum())!.id);
       findPracticeExtremes(game);
       game.answerRange(game.separation());
-      game.explainRange('separation');
-      expect(game.stage()).toBe('review');
       expect(game.intervals().length).toBe(game.separation());
+      game.explainRange('separation');
+      expect(game.stage()).toBe(round === 0 ? 'review' : 'success');
       game.continueAfterHelp();
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('.time-bridge')).toBeNull();
@@ -408,6 +484,8 @@ describe('Lesson03Haulage', () => {
     game.explainRange('separation');
     fixture.detectChanges();
     expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(true);
+    expect(game.round()).toBe(9);
     expect(fixture.nativeElement.querySelector('.report-card').textContent).toContain(
       'de 11 a 18 minutos',
     );

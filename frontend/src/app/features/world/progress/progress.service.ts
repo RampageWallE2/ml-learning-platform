@@ -26,7 +26,8 @@ import {
   shareReplay,
   switchMap,
   tap,
-  throwError
+  throwError,
+  timeout
 } from 'rxjs';
 
 import {
@@ -34,6 +35,7 @@ import {
 } from '../../../core/auth/auth.config';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { API_REQUEST_TIMEOUT_MS } from '../../../core/http/request-timeout';
 import { AuthenticatedUser } from '../../../core/auth/auth.types';
 import { loadPendingProgress, savePendingProgress } from './pending-progress.storage';
 
@@ -118,8 +120,10 @@ export class ProgressService {
 
   private readonly pendingState = signal<string[]>([]);
   readonly pendingLessonIds = this.pendingState.asReadonly();
-  readonly pendingStorageAvailable = signal(true);
-  readonly syncingPending = signal(false);
+  private readonly pendingStorageAvailableState = signal(true);
+  readonly pendingStorageAvailable = this.pendingStorageAvailableState.asReadonly();
+  private readonly syncingPendingState = signal(false);
+  readonly syncingPending = this.syncingPendingState.asReadonly();
 
   private readonly saveRequests = new Map<string, {
     user: AuthenticatedUser;
@@ -146,17 +150,19 @@ export class ProgressService {
       this.activateUser(user);
       if (!user) return throwError(() => new Error('Se requiere una sesión para cargar el progreso.'));
 
-      this.reset();
+      // Keep this session's confirmed progress visible if the refresh fails.
+      const completedBeforeLoad = new Set(this.completedLessonIds());
       this.restorePending(user.id);
       return this.http.get<ProgressApiResponse>(
         `${this.authConfig.apiBaseUrl}/me/progress`,
         { withCredentials: true },
       ).pipe(
+        timeout({ first: API_REQUEST_TIMEOUT_MS }),
         filter(() => this.auth.user() === user),
         tap(response => {
           // Keep confirmations received while this GET was in flight.
           const confirmed = new Set([
-            ...this.completedLessonIds(),
+            ...this.completedLessonIds().filter(id => !completedBeforeLoad.has(id)),
             ...response.lessons.filter(item => item.status === 'completed').map(item => item.lessonId),
           ]);
           this.completedLessonIds.set(
@@ -321,27 +327,27 @@ export class ProgressService {
     this.activeUser = user;
     this.reset();
     this.pendingState.set([]);
-    this.syncingPending.set(false);
-    this.pendingStorageAvailable.set(true);
+    this.syncingPendingState.set(false);
+    this.pendingStorageAvailableState.set(true);
     if (user) this.restorePending(user.id);
   }
 
   private restorePending(userId: string): void {
     const stored = loadPendingProgress(userId, this.orderedLessons.map(item => item.lessonId));
     this.pendingState.update(ids => [...new Set([...ids, ...stored.lessonIds])]);
-    this.pendingStorageAvailable.set(stored.available);
+    this.pendingStorageAvailableState.set(stored.available);
     if (this.pendingState().length) this.persistPending(userId);
   }
 
   private persistPending(userId: string): void {
-    this.pendingStorageAvailable.set(savePendingProgress(userId, this.pendingState()));
+    this.pendingStorageAvailableState.set(savePendingProgress(userId, this.pendingState()));
   }
 
   private syncPending(user: AuthenticatedUser): Observable<void> {
     const pending = this.orderedLessons
       .filter(item => this.pendingState().includes(item.lessonId)).map(item => item.lessonId);
     if (!pending.length) return of(undefined);
-    this.syncingPending.set(true);
+    this.syncingPendingState.set(true);
     return from(pending).pipe(
       concatMap(id => {
         if (this.auth.user() !== user) return of(undefined);
@@ -354,7 +360,7 @@ export class ProgressService {
       reduce(() => undefined, undefined as void),
       filter(() => this.auth.user() === user),
       finalize(() => {
-        if (this.auth.user() === user) this.syncingPending.set(false);
+        if (this.auth.user() === user) this.syncingPendingState.set(false);
       }),
     );
   }
@@ -369,6 +375,7 @@ export class ProgressService {
       { status: 'completed', currentStep: 0 },
       { withCredentials: true },
     ).pipe(
+      timeout({ first: API_REQUEST_TIMEOUT_MS }),
       filter(() => this.auth.user() === user),
       map(response => {
         if (response.progress.lessonId !== lessonId || response.progress.status !== 'completed') {
@@ -382,8 +389,8 @@ export class ProgressService {
       finalize(() => {
         if (this.saveRequests.get(key)?.request === request) this.saveRequests.delete(key);
       }),
-      // Finish an already-started save even if the page is closed. The durable
-      // pending record still protects against reload, which cancels browser HTTP.
+      // Keep a started save alive after the page closes, up to its deadline.
+      // The durable pending record still protects against reload or timeout.
       shareReplay({ bufferSize: 1, refCount: false }),
     );
     this.saveRequests.set(key, { user, request });

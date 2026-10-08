@@ -33,9 +33,20 @@ describe('Lesson04Workshop', () => {
     expect(root.querySelectorAll('.time-row')).toHaveLength(2);
     expect(root.querySelectorAll('.time-point')).toHaveLength(10);
     expect(root.querySelectorAll('.range-pill')).toHaveLength(2);
+    expect(root.querySelector('.task-card h3')!.textContent?.trim())
+      .toBe('¿Qué diferencia ves al mirar todos los tiempos?');
+    expect(fixture.componentInstance.compareChoices.map(choice => choice.text)).toEqual([
+      'Cada tiempo aparece la misma cantidad de veces en A y B.',
+      'En A hay más revisiones de 10 minutos que en B.',
+      'En B hay más revisiones de 10 minutos que en A.',
+    ]);
+    expect([...root.querySelectorAll('.choices .answer-choice')].map(button => button.textContent?.trim()))
+      .toEqual(fixture.componentInstance.compareChoices.map(choice => choice.text));
+    expect(root.querySelector('.task-card')!.textContent).toContain('Cuenta cuántos puntos hay sobre cada número');
     expect(root.querySelector('.report-claim')!.textContent).toContain(
       'ambos equipos tienen el mismo rango',
     );
+    expect(root.querySelector('.report-claim')!.textContent).toContain('Cada tiempo se repite igual');
     expect(root.querySelectorAll('input, textarea, form')).toHaveLength(0);
     expect(root.textContent).not.toMatch(/distribución interior|simétricamente/);
   });
@@ -158,6 +169,7 @@ describe('Lesson04Workshop', () => {
     expect(repeated.map((point) => point.bottom)).toEqual([14, 34, 54]);
     expect(new Set(repeated.map((point) => point.x)).size).toBe(1);
     expect(new Set(repeated.map((point) => point.id)).size).toBe(3);
+    expect(game.plots().every(plot => plot.description.includes('los puntos uno sobre otro tienen el mismo tiempo'))).toBe(true);
     expect(
       fixture.nativeElement.querySelectorAll('.time-row')[0].querySelectorAll('.time-point'),
     ).toHaveLength(5);
@@ -364,7 +376,7 @@ describe('Lesson04Workshop', () => {
     expect(document.activeElement).toBe(
       fixture.nativeElement.querySelector('#workshop-task-title'),
     );
-    expect(document.activeElement?.textContent).toContain('¿Por qué sigue siendo 4?');
+    expect(document.activeElement?.textContent).toContain('¿Por qué el rango sigue siendo 4 minutos?');
   });
 
   it('centers the experiment controls so the nearby copied graph remains in view after predicting', async () => {
@@ -570,6 +582,8 @@ describe('Lesson04Workshop', () => {
     expect(fixture.nativeElement.querySelector('.task-card').textContent).toContain(
       'C tiene más revisiones',
     );
+    expect(fixture.nativeElement.querySelector('.task-card').textContent.replace(/\s+/g, ' '))
+      .toContain('3 en C y 1 en D');
     game.finish();
     expect(done).not.toHaveBeenCalled();
     game.continueAfterHelp();
@@ -583,21 +597,31 @@ describe('Lesson04Workshop', () => {
     expect(game.centerCounts()).toEqual([1, 3]);
     expect(game.concentratedSide()).toBe('b');
     game.chooseClaim('different');
+    game.chooseEvidence('a'); game.finish(); expect(done).not.toHaveBeenCalled();
+    expect(game.stage()).toBe('evidence');
     game.chooseEvidence('b');
     expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(true); expect(game.practiceHelped()).toBe(true);
+    game.continueAfterHelp(); expect(game.round()).toBe(1);
     game.finish();
     expect(done).toHaveBeenCalledTimes(1);
   });
 
   it('updates point counts, positions and evidence wording for each support example', () => {
-    const game = create().componentInstance;
+    const fixture = create();
+    const game = fixture.componentInstance;
     practice(game);
     for (let round = 0; round < 3; round += 1) {
+      fixture.componentRef.setInput('initialState', { stage: 'practice', experimentMode: 'apart',
+        rangePrediction: 'same', separatedViewed: true, round, practiceHelped: false });
+      fixture.detectChanges();
       expect(game.round()).toBe(round);
       expect(game.plots()[0].range).toBe(game.plots()[1].range);
       const expectedRange = [4, 6, 2][round];
       expect(game.plots()[0].range).toBe(expectedRange);
       expect(game.evidenceChoices()[0].text).toContain(game.center() + ' minutos');
+      expect(game.evidenceChoices()[0].text).toContain('que en ' + game.practiceRecords()[1].id + '.');
+      expect(game.evidenceChoices()[1].text).toContain('que en ' + game.practiceRecords()[0].id + '.');
       for (const plot of game.plots()) {
         expect(plot.points).toHaveLength(5);
         const uniquePositions = new Set(plot.points.map((point) => point.x + ':' + point.bottom));
@@ -611,26 +635,38 @@ describe('Lesson04Workshop', () => {
       game.chooseClaim('same');
       game.chooseClaim('different');
       game.chooseEvidence(game.concentratedSide());
+      expect(game.stage()).toBe(round === 0 ? 'review' : 'success');
+      // Older reviews still explain their own data and offer an explicit finish.
+      fixture.componentRef.setInput('initialState', { stage: 'review', experimentMode: 'apart',
+        rangePrediction: 'same', separatedViewed: true, round, practiceHelped: true });
+      fixture.detectChanges();
+      const [first, second] = game.practiceRecords();
+      expect(fixture.nativeElement.querySelector('.task-card').textContent.replace(/\s+/g, ' '))
+        .toContain(game.centerCounts()[0] + ' en ' + first.id + ' y ' + game.centerCounts()[1] + ' en ' + second.id);
       game.continueAfterHelp();
     }
   });
 
-  it('keeps repeated support bounded and preserves the original mission evidence', () => {
+  it('limits supported practice to one additional round and preserves the original mission evidence', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     practice(game);
-    for (let round = 0; round < 10; round += 1) {
+    for (let round = 0; round < 2; round += 1) {
       expect(game.round()).toBe(round);
       game.chooseClaim('same');
       game.chooseClaim('different');
       game.chooseEvidence(game.concentratedSide());
-      expect(game.stage()).toBe('review');
+      expect(game.stage()).toBe(round === 0 ? 'review' : 'success');
       game.continueAfterHelp();
     }
     game.chooseClaim('different');
     game.chooseEvidence(game.concentratedSide());
     fixture.detectChanges();
     expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(true);
+    expect(game.practiceHelped()).toBe(true);
+    expect(game.round()).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Completaste con ayuda');
     const report = fixture.nativeElement.querySelector('.report-card').textContent;
     expect(report).toContain('A y B tienen rango de 4 minutos');
     expect(report).toContain('En A hubo tres revisiones de 10 minutos');
@@ -670,7 +706,7 @@ describe('Lesson04Workshop', () => {
     );
     const report = root.querySelector('.report-card')!.textContent;
     expect(report).toContain('organizar las revisiones del siguiente turno');
-    expect(report).toContain('no considerar iguales los tiempos solo porque sus rangos coinciden');
+    expect(report).toContain('no considerar iguales los tiempos solo porque sus rangos son iguales');
     expect(report).toContain('no dice qué equipo trabaja mejor');
     expect(report).toContain('ni explica la causa');
     expect(root.querySelector('.btn--primary')!.textContent).toContain('Entregar la corrección');

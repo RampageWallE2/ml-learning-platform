@@ -7,7 +7,9 @@
         <p class="eyebrow">UN JUEGO PARA APRENDER CON DATOS</p>
         <p class="hero-brand" aria-label="ExploraLab">Explora<span>Lab</span></p>
         <h1 id="hero-title">Entiende los datos.<br />Descubre lo que cuentan.</h1>
-        <p class="lead">Explora escenarios y aprende con desafíos visuales, paso a paso.</p>
+        <p class="lead">
+          Aprende a leer datos de la minería, con un juego y explicaciones sencillas.
+        </p>
         <div class="hero-actions">
           @if (auth.user()) {
             <a class="btn btn--brand button" routerLink="/progress">
@@ -25,134 +27,57 @@
             <span class="quiet" role="status">Comprobando sesión…</span>
           }
           <a class="text-link" href="#experiencia">
-            Ver la experiencia <span aria-hidden="true">↓</span>
+            Minería e IA <span aria-hidden="true">↓</span>
           </a>
         </div>
       </div>
-      <figure class="hero-visual">
-        <picture>
-          <source
-            type="image/webp"
-            srcset="
-              assets/branding/exploralab-open-pit-map-640.webp   640w,
-              assets/branding/exploralab-open-pit-map-960.webp   960w,
-              assets/branding/exploralab-open-pit-map-1536.webp 1536w
-            "
-            sizes="100vw"
-          />
-          <img
-            src="assets/branding/exploralab-open-pit-map.png"
-            alt="Vista real de Open Pit: el personaje recorre caminos entre camiones, maquinaria y personajes de la mina"
-            width="1536"
-            height="768"
-            loading="eager"
-            decoding="async"
-            fetchpriority="high"
-          />
-        </picture>
-        <figcaption class="page-inner">
-          <strong>Open Pit</strong>
-          <span>Experiencia disponible · captura del juego</span>
-        </figcaption>
-      </figure>
     </section>
 
     <section id="experiencia" class="experience" aria-labelledby="experience-title">
       <div class="page-inner">
         <div class="section-heading" appRevealOnScroll>
           <div>
-            <p class="eyebrow">APRENDER DENTRO DE UNA HISTORIA</p>
-            <h2 id="experience-title">Los datos tienen algo que decir.</h2>
+            <p class="eyebrow">MINERÍA E INTELIGENCIA ARTIFICIAL</p>
+            <h2 id="experience-title">¿Cómo ayuda la IA en minería?</h2>
           </div>
-          <p class="availability">Open Pit disponible</p>
         </div>
         <div class="experience-body">
           <div class="experience-copy" appRevealOnScroll>
-            <h3>¿Por qué dos turnos no trabajan igual?</h3>
             <p>
-              El equipo necesita preparar el siguiente turno. Revisa sus registros y compara lo que
-              muestran los gráficos antes de dar una recomendación.
+              La inteligencia artificial (IA) busca patrones en los datos para apoyar decisiones en
+              la mina.
             </p>
             <p class="experience-note">
-              <strong>Tu primera experiencia: dispersión de datos.</strong>
-              Una investigación guiada por las distintas zonas de Open Pit.
+              <strong>Entender los datos es el primer paso.</strong>
+              En ExploraLab practicas cómo leerlos y compararlos, con explicaciones sencillas.
             </p>
+            <a
+              class="text-link industry-source"
+              href="https://www.bhp.com/news/bhp-insights/2024/08/artificial-intelligence-is-unearthing-a-smarter-future"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Ejemplos de la industria · BHP (en inglés, abre una nueva pestaña)"
+            >
+              Ejemplos de la industria · BHP <span aria-hidden="true">↗</span>
+            </a>
           </div>
-          <div class="game-preview" appRevealOnScroll [revealDelay]="100">
-            <div class="preview-controls" role="group" aria-label="Vistas reales de Open Pit">
-              <button
-                type="button"
-                [attr.aria-pressed]="previewMode() === 'map'"
-                aria-controls="game-preview"
-                (click)="previewMode.set('map')"
-              >
-                El escenario
-              </button>
-              <button
-                type="button"
-                [attr.aria-pressed]="previewMode() === 'lesson'"
-                aria-controls="game-preview"
-                (click)="previewMode.set('lesson')"
-              >
-                Una actividad
-              </button>
-            </div>
-            <figure id="game-preview">
-              <div class="preview-stage">
-                @if (previewMode() === 'lesson') {
-                  <picture>
-                    <source
-                      type="image/webp"
-                      srcset="
-                        assets/branding/exploralab-open-pit-lesson-480.webp 480w,
-                        assets/branding/exploralab-open-pit-lesson-960.webp 960w
-                      "
-                      sizes="(max-width: 760px) calc(100vw - 36px), (max-width: 1240px) 47vw, 560px"
-                    />
-                    <img
-                      src="assets/branding/exploralab-open-pit-lesson.png"
-                      alt="Actividad real de la clase 7: compara dos gráficos con el mismo promedio y elige dónde hay más registros alejados"
-                      width="962"
-                      height="691"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </picture>
-                } @else {
-                  <picture>
-                    <source
-                      type="image/webp"
-                      srcset="
-                        assets/branding/exploralab-open-pit-map-640.webp   640w,
-                        assets/branding/exploralab-open-pit-map-960.webp   960w,
-                        assets/branding/exploralab-open-pit-map-1536.webp 1536w
-                      "
-                      sizes="(max-width: 760px) calc(100vw - 36px), (max-width: 1240px) 47vw, 560px"
-                    />
-                    <img
-                      src="assets/branding/exploralab-open-pit-map.png"
-                      alt="Mapa real de Open Pit: explora los caminos y encuentra a los personajes que guían la investigación"
-                      width="1536"
-                      height="768"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </picture>
-                }
-              </div>
-              <figcaption aria-live="polite" aria-atomic="true">
-                @if (previewMode() === 'lesson') {
-                  Actividad real de la clase 7: mira los puntos, elige una idea y compruébala.
-                } @else {
-                  Vista real del juego: explora el mapa y sigue una investigación.
-                }
-                <span>Las actividades se realizan dentro del juego.</span>
-              </figcaption>
-            </figure>
+          <div class="mining-applications">
+            <article appRevealOnScroll [revealDelay]="60">
+              <h3>Anticipar fallas</h3>
+              <p>Revisa datos de las máquinas para detectar señales de posibles fallas.</p>
+            </article>
+            <article appRevealOnScroll [revealDelay]="120">
+              <h3>Mejorar el proceso</h3>
+              <p>Ayuda a los operadores a ajustar el tratamiento del mineral.</p>
+            </article>
+            <article appRevealOnScroll [revealDelay]="180">
+              <h3>Usar mejor los recursos</h3>
+              <p>Analiza el uso de agua y energía para encontrar oportunidades de ahorro.</p>
+            </article>
           </div>
         </div>
         <p class="future-note">
-          <strong>Más historias, más formas de aprender.</strong>
+          <strong>Open Pit es nuestro primer escenario.</strong>
           <span>Nuevos escenarios en planificación.</span>
         </p>
       </div>
@@ -183,7 +108,7 @@
             <span aria-hidden="true">03</span>
             <div>
               <h3>Una explicación clara</h3>
-              <p>Comprende qué pasó y continúa con una nueva herramienta para investigar.</p>
+              <p>Entiende cada idea paso a paso, aunque lleves tiempo sin usar matemáticas.</p>
             </div>
           </article>
         </div>

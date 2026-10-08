@@ -141,6 +141,9 @@ describe('Dialogue', () => {
 
     expect(npcFrame?.dataset['characterId']).toBe('npc-default');
     expect(playerFrame?.dataset['characterId']).toBe('player');
+    const playerPortrait = playerFrame?.querySelector<HTMLElement>('.character-portrait--desktop');
+    expect(playerPortrait?.style.backgroundImage).toContain('character_postman_3.png');
+    expect(playerPortrait?.style.backgroundPosition).toBe('-488px -145px');
   });
 
   it('gives an explicit portrait priority over the registered character', () => {

@@ -3,6 +3,7 @@ import {
   inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { calculateMean, calculatePopulationStatistics } from '../lesson-statistics';
 import { NgTemplateOutlet } from '@angular/common';
 import { C8_ORIGINAL as ORIGINAL, C8_PRACTICE as PRACTICE, C8_MAX_PRACTICE_ROUNDS,
   C8Stage as Stage, C8State, isC8State } from './lesson-08-flotation.state';
@@ -10,11 +11,7 @@ import { C8_ORIGINAL as ORIGINAL, C8_PRACTICE as PRACTICE, C8_MAX_PRACTICE_ROUND
 type ReportChoice = 'units' | 'inside' | 'observed';
 
 function describe(values: readonly number[]) {
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-  const squares = values.map(value => (value - mean) ** 2);
-  const squareSum = squares.reduce((sum, value) => sum + value, 0);
-  const variance = squareSum / values.length;
-  const standardDeviation = Math.sqrt(variance);
+  const { mean, squares, squareSum, variance, standardDeviation } = calculatePopulationStatistics(values);
   return {
     values, mean, squares, squareSum, variance, standardDeviation,
     lower: mean - standardDeviation, upper: mean + standardDeviation,
@@ -58,11 +55,27 @@ export class Lesson08Flotation implements OnChanges {
   readonly step = computed(() => this.stage() === 'observe' ? 1
     : ['root', 'checked'].includes(this.stage()) ? 2
       : ['locate', 'located'].includes(this.stage()) ? 3 : 4);
-  readonly bounds = computed(() => ({
-    min: Math.min(...this.records(), this.stats().lower) - 1,
-    max: Math.max(...this.records(), this.stats().upper) + 1,
-  }));
-  readonly ticks = computed(() => [Math.min(...this.records()), this.stats().mean, Math.max(...this.records())]);
+  readonly question = computed(() => ({
+    observe: 'Queremos un resultado en toneladas por hora',
+    root: '¿Cuánto mide el lado?',
+    checked: `${this.stats().standardDeviation} × ${this.stats().standardDeviation} = ${this.stats().variance}`,
+    locate: this.comparing() ? '¿Aquí también hay alguno fuera?' : '¿Qué registro queda fuera?',
+    located: this.comparing() ? 'Aquí sí están todos dentro'
+      : `El registro ${(this.selectedRecord() ?? 0) + 1} queda fuera`,
+    report: '¿Qué aviso enviarías al siguiente turno?',
+    review: this.needsPractice() ? 'Una práctica más' : 'Cerramos el ejemplo con ayuda',
+    success: 'Ya podemos explicar los cambios en t/h',
+  })[this.stage()]);
+  // Both examples share one scale: switching records must not resize the same band.
+  readonly bounds = computed(() => {
+    const values = [...this.sourceRecords(), ...this.comparisonRecords()];
+    return { min: Math.min(...values) - 1, max: Math.max(...values) + 1 };
+  });
+  readonly ticks = computed(() => {
+    const values = this.sourceRecords();
+    const mean = calculateMean(values);
+    return [Math.min(...values), mean, Math.max(...values)];
+  });
   readonly cells = computed(() => Array.from({ length: this.stats().variance }, (_, index) => index));
   // Keep the order stable during an attempt; change it on replay and new practice.
   private readonly choiceOffset = signal(Math.floor(Math.random() * 3));
@@ -123,6 +136,7 @@ export class Lesson08Flotation implements OnChanges {
     return (this.comparing() ? 'Ejemplo de comparación. ' : 'Alimentación de flotación: ')
       + this.records().join(', ') + ' toneladas por hora. Promedio '
       + stats.mean + '. Cada punto es un registro; los puntos uno sobre otro tienen el mismo valor.'
+      + ' Escala de ' + this.bounds().min + ' a ' + this.bounds().max + ' t/h, igual en ambos ejemplos.'
       + (this.bandVisible() ? ' Franja de ' + stats.lower + ' a ' + stats.upper
         + ' toneladas por hora, incluidos sus bordes. No indica si el trabajo está bien o mal.' : '')
       + (this.bandExplained() ? ' Registros fuera: ' + (stats.outside.join(', ') || 'ninguno') + '.' : '');

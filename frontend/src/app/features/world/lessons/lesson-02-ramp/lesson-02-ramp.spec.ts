@@ -141,19 +141,23 @@ describe('Lesson02Ramp', () => {
     );
     report(game);
     fixture.detectChanges();
-    expect(root.querySelector('.task-card h3')!.textContent).toBe('¿Qué podemos saber con estos promedios?');
+    expect(root.querySelector('.task-card h3')!.textContent).toBe('¿Estos promedios bastan para saber qué turno tuvo las cargas más cercanas a 100 toneladas?');
     expect(root.querySelector('.task-card')!.textContent).toContain('Quienes reciben el material piden cargas cercanas a');
     expect(root.querySelector('.task-card')!.textContent).toContain('100 toneladas');
     expect(root.querySelector('.task-card')!.textContent).toContain('antes de preparar el siguiente turno');
     expect(game.reportChoices().map((choice) => choice.text)).toEqual([
-      'Las cargas se parecen igual en los dos turnos.',
-      'En B, las cargas son más diferentes.',
-      'Falta ver la carga de cada camión.',
+      'Sí, ambos turnos tuvieron un promedio de 100 toneladas.',
+      'Sí, todos los camiones llevaron 100 toneladas.',
+      'No, necesitamos ver cuánto llevó cada camión.',
     ]);
+    expect(Array.from(root.querySelectorAll('.answer-choice'), button => button.textContent!.trim()))
+      .toEqual(game.reportChoices().map(choice => choice.text));
     game.assess('same');
+    expect(game.stage()).toBe('report');
     game.assess('b');
     expect(game.stage()).toBe('report');
-    expect(game.feedback()).toContain('qué información falta antes de decidir');
+    expect(game.feedback()).toContain('Un promedio de 100 toneladas no significa que cada camión llevó esa cantidad.');
+    expect(game.feedback()).toContain('necesitamos ver cuánto llevó cada camión');
     game.assess('unknown');
     fixture.detectChanges();
     expect(game.stage()).toBe('request');
@@ -389,7 +393,9 @@ describe('Lesson02Ramp', () => {
     expect(game.feedback()).not.toContain('turno E');
     game.answerPractice('a');
     game.explain('summary');
-    expect(game.stage()).toBe('review');
+    expect(game.stage()).toBe('success');
+    expect(game.practiceHelped()).toBe(true);
+    expect(game.guidedCompletion()).toBe(true);
   });
 
   it('ignores invalid values and out-of-order calls without counting them as learning mistakes', () => {
@@ -519,7 +525,7 @@ describe('Lesson02Ramp', () => {
     expect(text).not.toContain('dispersión');
   });
 
-  it('understands a supported example before requiring a fresh independent check', () => {
+  it('requires just one additional practice and allows its correct assisted explanation', () => {
     const game = create().componentInstance;
     const done = vi.fn();
     game.completed.subscribe(done);
@@ -541,8 +547,12 @@ describe('Lesson02Ramp', () => {
     expect(game.practiceHelped()).toBe(false);
     expect(game.feedback()).toBe('');
     solveReports(game);
+    game.explain('always-same');
+    expect(game.stage()).toBe('reason'); game.finish(); expect(done).not.toHaveBeenCalled();
     game.explain('summary');
     expect(game.stage()).toBe('success');
+    expect(game.practiceHelped()).toBe(true); expect(game.guidedCompletion()).toBe(true);
+    game.continueAfterHelp(); expect(game.round()).toBe(1);
   });
 
   it('keeps the same reports while correcting a wrong explanation', () => {
@@ -564,11 +574,14 @@ describe('Lesson02Ramp', () => {
     expect(game.stage()).toBe('success');
   });
 
-  it('keeps support rounds bounded and requires both report formats with new valid data', () => {
+  it('keeps current and older practice drafts coherent without forcing more supported rounds', () => {
     const fixture = create();
     const game = fixture.componentInstance;
     practice(game);
     for (let round = 0; round < 10; round += 1) {
+      fixture.componentRef.setInput('initialState', { stage: 'practice', redistributed: true,
+        round, practiceCase: 0, practiceHelped: false, selectedLoad: null });
+      fixture.detectChanges();
       expect(game.round()).toBe(round);
       expect(game.reports()[0].mean).toBe(game.reports()[1].mean);
       expect(game.reports().every((report) => report.mean >= 80 && report.mean <= 120)).toBe(true);
@@ -586,11 +599,14 @@ describe('Lesson02Ramp', () => {
         game.reports().map((report) => report.mean),
       );
       game.explain('summary');
+      expect(game.stage()).toBe(round === 0 ? 'review' : 'success');
       game.continueAfterHelp();
     }
     solveReports(game);
     game.explain('summary');
     expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(true);
+    expect(game.round()).toBe(9);
   });
 
   it('emits once only after both independent report decisions and the explanation', () => {

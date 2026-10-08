@@ -2,8 +2,10 @@ import {
   getLessonIndicatorCopy,
   getLessonInteractionCopy,
   getLessonLabel,
+  getLessonPromptContent,
   getLessonStatus,
 } from './lesson-indicator';
+import { LESSON_NAMES } from '../../features/world/lessons/lesson-catalog';
 
 describe('lesson indicators', () => {
   const progress = {
@@ -28,5 +30,31 @@ describe('lesson indicators', () => {
       .toBe('SIGUIENTE\nCLASE 2\n▼');
     expect(getLessonInteractionCopy('lesson-01', 'completed'))
       .toContain('Pulsa E para repetir');
+  });
+
+  it('adds the shared mathematical topic to proximity messages for every available lesson', () => {
+    for (const [lessonId, name] of Object.entries(LESSON_NAMES)) {
+      expect(getLessonInteractionCopy(lessonId, 'pending'))
+        .toBe(`${getLessonLabel(lessonId)}\n${name}\nPulsa E para iniciar`);
+      expect(getLessonInteractionCopy(lessonId, 'current'))
+        .toBe(`${getLessonLabel(lessonId)} · Siguiente\n${name}\nPulsa E para iniciar`);
+      expect(getLessonInteractionCopy(lessonId, 'completed'))
+        .toBe(`${getLessonLabel(lessonId)} · Completada\n${name}\nPulsa E para repetir`);
+      expect(getLessonIndicatorCopy(lessonId, 'pending')).toBe(getLessonLabel(lessonId));
+    }
+  });
+
+  it('keeps the existing proximity message for lessons without a registered topic', () => {
+    expect(getLessonInteractionCopy('custom', 'pending')).toBe('CLASE\nPulsa E para iniciar');
+    expect(getLessonInteractionCopy('lesson-99', 'completed'))
+      .toBe('CLASE 99 · Completada\nPulsa E para repetir');
+  });
+
+  it('separates the topic, status and action and names the existing touch control', () => {
+    expect(getLessonPromptContent('lesson-03', 'current')).toEqual({
+      label: 'CLASE 3', status: 'Siguiente', topic: 'Cálculo del rango', action: '[E] · Iniciar',
+    });
+    expect(getLessonPromptContent('lesson-03', 'completed', true).action).toBe('Toca E · Repetir');
+    expect(getLessonPromptContent('custom', 'pending').topic).toBe('Actividad');
   });
 });

@@ -1,0 +1,109 @@
+:host { display: flex; flex-direction: column; min-height: 0; max-height: 100%; }
+.minimap {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-height: 100%;
+  min-height: 0;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 2px solid var(--color-earth);
+  border-radius: var(--radius-frame);
+  box-shadow: var(--shadow-frame);
+  font-family: var(--font-body);
+  --minimap-size: 204px;
+}
+.minimap--expanded { width: var(--minimap-size); }
+.minimap-toggle {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; min-height: 44px; padding: 6px 10px;
+  border: 0; background: transparent; color: var(--color-primary);
+  font: 700 12px/1.2 var(--font-body); cursor: pointer;
+  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+  &:hover { background: var(--color-surface-alt); }
+  &:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+}
+.minimap-toggle__state { margin-left: auto; font-size: 18px; }
+.minimap-content { min-height: 0; padding: 0 8px 8px; overflow-y: auto; }
+.minimap-chart { display: block; box-sizing: border-box; width: 100%; height: auto; border: 1px solid var(--color-earth); }
+.minimap-ground { fill: var(--color-surface-alt); }
+.minimap-terrain { stroke: none; }
+.minimap-terrain--pit-floor { fill: #dcc59b; }
+.minimap-terrain--pit-bench { fill: #c9ac7e; }
+.minimap-terrain--pit-edge { fill: var(--color-earth); }
+.minimap-terrain--water { fill: #afc3bb; }
+.minimap-terrain--area { fill: #c3cfc1; }
+.minimap-terrain--road { fill: #a88b55; }
+.minimap-north { fill: var(--color-text-muted); text-anchor: end; font: 700 52px var(--font-body); }
+.minimap-marker {
+  text { fill: var(--color-text); font: 700 64px var(--font-body); }
+  &--completed .minimap-marker__dot { fill: var(--color-primary-tint); stroke: var(--color-primary); }
+  &--current .minimap-marker__dot { fill: var(--color-accent); stroke: var(--color-forest); }
+}
+.minimap-marker__dot { fill: var(--color-surface-raised); stroke: var(--color-earth); stroke-width: 8; }
+.minimap-marker__ring { fill: none; stroke: var(--color-forest); stroke-width: 6; }
+.minimap-marker__check-bg { fill: var(--color-primary); stroke: var(--color-surface); stroke-width: 4; }
+.minimap-marker__check { fill: none; stroke: var(--color-surface-raised); stroke-width: 10; }
+.minimap-player path { fill: var(--color-forest); stroke: var(--color-surface-raised); stroke-width: 10; stroke-linejoin: round; }
+.minimap-legend {
+  display: flex; justify-content: space-between; gap: 4px;
+  margin-top: 6px; color: var(--color-text-muted); font-size: 10px; line-height: 1.4;
+}
+.minimap-next {
+  margin: 6px 0 0; padding-top: 6px; border-top: 1px solid var(--color-surface-alt);
+  font-size: 11px; line-height: 1.35;
+  strong { display: block; font-weight: 600; overflow-wrap: anywhere; }
+}
+.minimap-next__label { display: block; color: var(--color-primary); font: 700 9px/1.5 var(--font-body); text-transform: uppercase; }
+@media (max-width: 750px) { .minimap { --minimap-size: 184px; } }
+@media (max-height: 480px) {
+  .minimap { --minimap-size: clamp(140px, calc(100dvh - 200px), 184px); }
+  .minimap-content { max-height: calc(100dvh - 118px); overflow-y: auto; }
+  .minimap-legend { font-size: 9px; }
+  .minimap-next { font-size: 10px; }
+}
+
+@media (max-width: 600px), (max-width: 1024px) and (max-height: 480px) {
+  // The toggle anchors to the HUD's top-right corner. Its chart remains in the
+  // second grid row, below the full objective even when that text wraps.
+  .minimap {
+    --minimap-size: 168px;
+    width: var(--minimap-size);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .minimap-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 88px;
+    min-height: var(--control-min-height);
+    padding: 6px;
+    gap: 6px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-earth);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-frame);
+    font-size: 11px;
+    svg { width: 16px; height: 16px; }
+  }
+  .minimap-toggle__state { font-size: 14px; }
+  .minimap-content {
+    padding: 6px;
+    border: 1px solid var(--color-earth);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-frame);
+    max-height: 100%;
+    box-sizing: border-box;
+    overscroll-behavior: contain;
+  }
+  .minimap-legend { font-size: 9px; }
+  .minimap-next { margin-top: 4px; padding-top: 4px; font-size: 10px; }
+  .minimap-next__label { display: none; }
+}
+
+@media (max-width: 1024px) and (max-height: 480px) {
+  .minimap { --minimap-size: clamp(140px, calc(100dvh - 180px), 168px); }
+}

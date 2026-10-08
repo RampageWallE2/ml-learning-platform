@@ -3,14 +3,15 @@ import {
   inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
-import { C9Stage as Stage, C9FeedbackKind, C9State, isC9State } from './lesson-09-thickeners.state';
+import { calculatePopulationStatistics, calculateRange } from '../lesson-statistics';
+import { C9_THICKENERS_RECORDS as ORIGINAL } from '../data/open-pit-original-records';
+import { C9Stage as Stage, C9FeedbackKind, C9State, C9_MAX_PRACTICE_ROUNDS, isC9State } from './lesson-09-thickeners.state';
 
 type PeriodId = 'A' | 'B';
 type PeriodChoice = PeriodId | 'same';
 type Recommendation = 'reference' | 'stable' | 'adjust';
 type Records = Readonly<{ goal: number; A: readonly number[]; B: readonly number[] }>;
 
-const ORIGINAL: Records = { goal: 100, A: [80, 80, 80, 80, 80, 80], B: [98, 98, 98, 102, 102, 102] };
 const PRACTICE: readonly Records[] = [
   { goal: 120, A: [117, 117, 120, 120, 120, 126], B: [100, 100, 100, 100, 100, 100] },
   { goal: 90, A: [70, 70, 70, 70, 70, 70], B: [88, 88, 88, 92, 92, 92] },
@@ -22,10 +23,9 @@ const TRANSFER: readonly Records[] = [
 ];
 
 function describe(id: PeriodId, values: readonly number[], goal: number) {
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
-  return { id, values, mean, variance, range: Math.max(...values) - Math.min(...values),
-    standardDeviation: Math.sqrt(variance), goalDistance: Math.abs(mean - goal) };
+  const { mean, variance, standardDeviation } = calculatePopulationStatistics(values);
+  return { id, values, mean, variance, range: calculateRange(values),
+    standardDeviation, goalDistance: Math.abs(mean - goal) };
 }
 
 function summarize(records: Records) {
@@ -46,6 +46,8 @@ export class Lesson09Thickeners implements OnChanges {
   readonly stage = signal<Stage>('spread');
   readonly round = signal(0);
   readonly helped = signal(false);
+  readonly needsPractice = computed(() => this.helped() && this.round() < C9_MAX_PRACTICE_ROUNDS);
+  readonly guidedCompletion = computed(() => this.stage() === 'success' && this.helped());
   readonly answered = signal(false);
   readonly feedback = signal('');
   private readonly feedbackKind = signal<C9FeedbackKind>('none');
@@ -84,18 +86,21 @@ export class Lesson09Thickeners implements OnChanges {
   })));
   readonly question = computed(() => ({
     spread: '¿Cuál varió menos?', goal: '¿Cuál se acercó a la meta?', recommend: '¿Qué dirías al siguiente turno?',
-    'transfer-intro': '¿Y si ambos cumplen?', transfer: 'Elige una referencia',
-    review: 'Prueba con otros registros', success: 'Informe listo para el siguiente turno',
+    'transfer-intro': '¿Y si ambos cumplen?', transfer: '¿Qué período usarías como ejemplo?',
+    review: this.needsPractice() ? 'Una última práctica' : 'Cerramos el caso con ayuda',
+    success: 'Informe listo para el siguiente turno',
   })[this.stage()]);
   readonly choices = computed<readonly { id: PeriodChoice; text: string }[]>(() => [
-    { id: 'A', text: this.stage() === 'transfer' ? 'Usar A como referencia' : 'Período A' },
-    { id: 'B', text: this.stage() === 'transfer' ? 'Usar B como referencia' : 'Período B' },
+    { id: 'A', text: this.stage() === 'transfer' ? 'Usar A como ejemplo' : 'Período A' },
+    { id: 'B', text: this.stage() === 'transfer' ? 'Usar B como ejemplo' : 'Período B' },
     { id: 'same', text: this.stage() === 'transfer' ? 'Da igual: el mismo promedio basta' : 'Los dos por igual' },
   ]);
   readonly recommendations = computed<readonly { id: Recommendation; text: string }[]>(() => {
+    const example = this.closerToGoal();
+    const other = example === 'A' ? 'B' : 'A';
     const choices: { id: Recommendation; text: string }[] = [
-      { id: 'stable', text: 'Elegir ' + (this.closerToGoal() === 'A' ? 'B' : 'A') + ': no cambió, así que es mejor.' },
-      { id: 'reference', text: 'Usar ' + this.closerToGoal() + ' como referencia y buscar por qué el otro quedó bajo la meta.' },
+      { id: 'stable', text: 'Elegir ' + other + ': no cambió, así que es mejor.' },
+      { id: 'reference', text: 'Usar ' + example + ' como ejemplo y revisar por qué ' + other + ' quedó bajo la meta.' },
       { id: 'adjust', text: 'Cambiar los ajustes ya: todos los registros deben ser ' + this.mainRecords().goal + ' t/h.' },
     ];
     return choices.map((_, index) => choices[(index + this.round()) % choices.length]);
@@ -168,8 +173,8 @@ export class Lesson09Thickeners implements OnChanges {
   }
 
   private answerFeedback(): string {
-    if (this.stage() === 'recommend') return 'La referencia es ' + this.closerToGoal()
-      + ': lo usamos como ejemplo para comparar el siguiente turno. Antes de cambiar ajustes, necesitamos conocer las causas y los límites permitidos. El próximo turno puede ser distinto.';
+    if (this.stage() === 'recommend') return 'Usaremos ' + this.closerToGoal()
+      + ' como ejemplo para comparar el siguiente turno. Antes de cambiar ajustes, necesitamos conocer las causas y los límites permitidos. El próximo turno puede ser distinto.';
     const expected = this.stage() === 'goal' ? this.closerToGoal() : this.lessSpread();
     const period = this.periods().find(period => period.id === expected)!;
     return this.stage() === 'spread'
@@ -195,7 +200,7 @@ export class Lesson09Thickeners implements OnChanges {
     if (this.stage() === 'spread') this.moveTo('goal');
     else if (this.stage() === 'goal') this.moveTo('recommend');
     else if (this.stage() === 'recommend') this.moveTo('transfer-intro');
-    else if (this.stage() === 'transfer') this.moveTo(this.helped() ? 'review' : 'success');
+    else if (this.stage() === 'transfer') this.moveTo(this.needsPractice() ? 'review' : 'success');
   }
 
   startTransfer(): void {
@@ -204,6 +209,11 @@ export class Lesson09Thickeners implements OnChanges {
 
   continueAfterHelp(): void {
     if (this.stage() !== 'review') return;
+    // Recovered later reviews have already answered the mandatory transfer.
+    if (!this.needsPractice()) {
+      this.moveTo('success');
+      return;
+    }
     this.round.update(round => round + 1);
     this.helped.set(false);
     this.moveTo('spread');

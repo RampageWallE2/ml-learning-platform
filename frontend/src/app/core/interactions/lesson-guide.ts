@@ -3,7 +3,7 @@ import { getLessonLabel } from './lesson-indicator';
 
 type Point = Readonly<{ x: number; y: number }>;
 type View = Readonly<{ left: number; right: number; top: number; bottom: number }>;
-export type LessonGuideTarget = Point & Readonly<{ lessonId: string }>;
+export type LessonGuideTarget = Point & Readonly<{ lessonId: string } | { label: string }>;
 
 /**
  * A bearing to the lesson, not a walkable route. World coordinates are used so
@@ -14,6 +14,7 @@ export function calculateLessonGuide(
   target: Point,
   view: View,
   zoom: number,
+  showOnScreen = false,
 ): Readonly<{ x: number; y: number; angle: number; scale: number }> | null {
   if (
     ![
@@ -31,6 +32,7 @@ export function calculateLessonGuide(
   )
     return null;
   if (
+    !showOnScreen &&
     target.x >= view.left &&
     target.x <= view.right &&
     target.y >= view.top &&
@@ -55,7 +57,7 @@ export function calculateLessonGuide(
   };
 }
 
-/** One non-interactive marker, only when the next NPC is outside the camera. */
+/** Lesson bearings stay offscreen-only; the intro guides first-time orientation. */
 export class LessonGuide {
   private readonly arrow: Phaser.GameObjects.Graphics;
   private readonly label: Phaser.GameObjects.Text;
@@ -92,14 +94,16 @@ export class LessonGuide {
 
   setTarget(target: LessonGuideTarget | null): void {
     this.target = target;
-    this.label.setText(target ? getLessonLabel(target.lessonId).replace('CLASE ', 'C') : '');
+    this.label.setText(target
+      ? 'label' in target ? target.label : getLessonLabel(target.lessonId).replace('CLASE ', 'C')
+      : '');
     this.hide(); // Never show the previous lesson while progress is changing.
   }
 
   update(player: Point, camera: Phaser.Cameras.Scene2D.Camera, suppressed = false): void {
     const position =
       !suppressed && this.target
-        ? calculateLessonGuide(player, this.target, camera.worldView, camera.zoom)
+        ? calculateLessonGuide(player, this.target, camera.worldView, camera.zoom, 'label' in this.target)
         : null;
     if (!position) {
       this.hide();

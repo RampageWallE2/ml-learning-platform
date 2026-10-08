@@ -41,7 +41,9 @@ Angular reconoce 413 por estado, incluso si un proxy entrega HTML en lugar de JS
 
 No se cambiaron HTML, SCSS, gráficos, matemáticas, mapas ni reglas de progreso. El manejo de errores de WorldPage es el único cambio de ejecución fuera de autenticación/configuración.
 
-## Comprobaciones
+## Comprobaciones originales (históricas)
+
+Los resultados siguientes conservan la evidencia del incremento original. Desde 2026-10-07, estas pruebas usan PostgreSQL desechable; SQLite ya no es un motor admitido. Consultar [las instrucciones actuales](preparacion-produccion.md).
 
 - **Resultado final:** 216 pruebas del backend aprobadas (49 nuevas de tamaño) y 917 del frontend en 57 archivos (17 nuevas). `git diff --check` sin errores de espacios.
 - Pruebas de backend con SQLite desechable: tamaño normal, límite exacto y exceso; JSON conservado para registro/acceso/progreso; salida con cuerpo; UTF-8; rutas actuales y futuras; respuestas grandes y rutas ajenas sin límite nuevo; CSRF/preflight/CORS; configuración inválida y personalizada.
@@ -50,10 +52,12 @@ No se cambiaron HTML, SCSS, gráficos, matemáticas, mapas ni reglas de progreso
 - Pruebas de frontend con componentes/proveedores reales y controlador HTTP de pruebas: mensajes 413 de acceso/registro/Google, campos intactos, sesión conservada también ante salida rechazada, finalización pendiente preservada y reintento confirmado. Se prueba prioridad visible del aviso de tamaño y de almacenamiento fallido. No se realizó una nueva comprobación visual en navegador en esta subtarea; esto no sustituye una prueba en el teléfono o con Google real.
 - Build de producción aprobado. Persiste el aviso SCSS anterior de C6 (11,64 kB frente a 10 kB), sin cambios en estilos. Los 12 avisos anteriores de Alembic/Flask-Migrate tampoco se ocultaron.
 
-Comandos desde `backend` y `frontend`, respectivamente:
+Comandos actuales: backend desde la raíz del proyecto; frontend desde su directorio.
 
-```powershell
-& './.venv/Scripts/python.exe' -B -m pytest -p no:cacheprovider -q
+```text
+docker compose -f compose.verify.yml up -d --wait database
+docker compose -f compose.verify.yml run --build --rm tests
+docker compose -f compose.verify.yml down
 ```
 
 ```text
@@ -69,4 +73,4 @@ Validar Compose habitual, teléfono, Google real y el proxy/servidor del entorno
 
 Este control no limita cantidad/frecuencia de solicitudes, longitud de URL/cabeceras, duración de conexiones, complejidad de JSON ni el rango de cada campo. No es una defensa completa contra denegación de servicio. Las validaciones existentes de campos se conservan; reglas numéricas/de progreso adicionales se revisarán en su tarea, no aquí.
 
-**I05 continúa abierto.** Sigue pendiente la prueba aislada sobre PostgreSQL y la aplicación aprobada de la migración de [I05.2](limites-acceso.md). No arrancar Compose para activar esto sin revisar ese pendiente: su comando actual aplica migraciones al iniciar el backend.
+**I05 continúa abierto.** Las pruebas se ejecutan ahora sobre PostgreSQL aislado; la aplicación al entorno habitual de la migración de [I05.2](limites-acceso.md) sigue requiriendo aprobación. No arrancar Compose habitual para activarla sin revisar ese pendiente: su comando actual aplica migraciones al iniciar el backend. `compose.verify.yml` es un proyecto separado y desechable.

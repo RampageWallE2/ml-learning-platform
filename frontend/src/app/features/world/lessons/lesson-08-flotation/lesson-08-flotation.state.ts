@@ -1,3 +1,5 @@
+import { calculatePopulationStatistics } from '../lesson-statistics';
+
 export type C8Stage = 'observe' | 'root' | 'checked' | 'locate' | 'located' | 'report' | 'review' | 'success';
 
 export const C8_MAX_PRACTICE_ROUNDS = 1;
@@ -44,9 +46,8 @@ export function isC8State(value: unknown): value is C8State {
   const records = state.round === 0 ? C8_ORIGINAL : C8_PRACTICE[(state.round! - 1) % C8_PRACTICE.length];
   const index = state.selectedRecord;
   if (index === null || index === undefined || index < 0 || index >= records.length) return false;
-  const mean = records.reduce((sum, record) => sum + record, 0) / records.length;
-  const variance = records.reduce((sum, record) => sum + (record - mean) ** 2, 0) / records.length;
-  if (Math.abs(records[index] - mean) <= Math.sqrt(variance)) return false;
+  const { mean, standardDeviation } = calculatePopulationStatistics(records);
+  if (Math.abs(records[index] - mean) <= standardDeviation) return false;
   if (state.stage === 'review' && !state.helped) return false;
   // A guided finish is valid only after the additional practice. Keep older
   // later-round drafts compatible without asking for another attempt.

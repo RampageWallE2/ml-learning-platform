@@ -38,11 +38,19 @@ const POSTMAN_PORTRAIT: Omit<DialoguePortraitAsset, 'src'> = {
 };
 
 export const DIALOGUE_CHARACTERS: Record<DialogueCharacterId, DialogueCharacter> = {
+  'open-pit-guide': {
+    portraits: {
+      neutral: {
+        src: '/assets/game/characters/character_postman_1.png',
+        ...POSTMAN_PORTRAIT
+      }
+    }
+  },
   player: {
     portraits: {
       neutral: {
-        src: '/assets/game/characters/character2.png',
-        ...SMALL_CHARACTER_PORTRAIT
+        src: '/assets/game/characters/character_postman_3.png',
+        ...POSTMAN_PORTRAIT
       }
     }
   },

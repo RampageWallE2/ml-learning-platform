@@ -5,6 +5,7 @@ export type DialogueCharacterId =
   | 'loading-supervisor'
   | 'ramp-controller'
   | 'haulage-controller'
+  | 'open-pit-guide'
   | 'npc-default';
 
 export type DialogueExpression =
@@ -27,6 +28,6 @@ export type DialogueData = {
 };
 
 export type DialogueRequest = {
-  npcId: string;
+  npcId?: string;
   dialogueId: string;
 };

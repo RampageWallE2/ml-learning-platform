@@ -1,0 +1,111 @@
+log_format safe 'method=$request_method status=$status duration=$request_time bytes=$body_bytes_sent';
+access_log /dev/stdout safe;
+server_tokens off;
+error_log /dev/stderr crit;
+map $uri $auth_key {
+    default "";
+    ~^/api/v1/auth/(login|register|google)$ $binary_remote_addr;
+}
+# Transient in-memory IP keys; no IP access logging or persistent IP table.
+limit_req_zone $auth_key zone=auth_limit:1m rate=30r/m;
+
+server {
+    listen 80;
+    server_name _;
+    return 308 ${PUBLIC_ORIGIN}$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name _;
+    ssl_certificate /etc/nginx/tls/fullchain.pem;
+    ssl_certificate_key /etc/nginx/tls/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Strict-Transport-Security "max-age=86400" always;
+    client_header_timeout 15s;
+    client_body_timeout 15s;
+    send_timeout 30s;
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types application/javascript text/css application/json image/svg+xml;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+    location /api/ {
+        limit_req zone=auth_limit burst=20 nodelay;
+        limit_req_status 429;
+        error_page 429 = @auth_limit;
+        # Let Flask return its JSON 413/CSRF errors. This is an outer 1-MiB cap,
+        # not the API's 64-KiB application bound.
+        client_max_body_size 1m;
+        proxy_pass http://backend:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto "";
+        proxy_set_header X-Forwarded-Host "";
+        proxy_set_header Forwarded "";
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 35s;
+        proxy_cache off;
+    }
+    location ~* "/[^/]+-[a-z0-9_-]{8,}\.(js|css)$" {
+        try_files $uri =404;
+        expires 1y;
+        # Repeat security headers: nginx does not inherit add_header here.
+        add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header Strict-Transport-Security "max-age=86400" always;
+    }
+    location ^~ /assets/game/maps/ {
+        default_type application/json;
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=0, must-revalidate";
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header Strict-Transport-Security "max-age=86400" always;
+    }
+    location ^~ /assets/ {
+        # Maps/images retain their names across releases. Never cache them as immutable.
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=0, must-revalidate";
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header Strict-Transport-Security "max-age=86400" always;
+    }
+    location ~* \.(js|css|png|jpg|jpeg|webp|svg|ogg|mp3|wav|woff2?|json|tmj)$ {
+        try_files $uri =404;
+    }
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header Strict-Transport-Security "max-age=86400" always;
+    }
+    location @auth_limit {
+        default_type application/json;
+        add_header Retry-After 60 always;
+        add_header Cache-Control no-store always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header Strict-Transport-Security "max-age=86400" always;
+        return 429 '{"error":"Too many authentication requests. Please retry.","code":"too_many_login_attempts","retryAfterSeconds":60}';
+    }
+}

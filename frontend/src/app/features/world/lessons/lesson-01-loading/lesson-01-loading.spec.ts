@@ -133,10 +133,12 @@ describe('Lesson01Loading', () => {
     game.chooseGroup('D');
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.task-card h3')?.textContent).toContain('¿Qué viste al comparar las cargas?');
-    expect(game.reasons().find(reason => reason.id === 'spread')?.text).toBe(
-      'D: 90, 100, 110 t; C: 110, 111, 112 t. Se parecen menos en D.',
-    );
+    expect(root.querySelector('.task-card h3')?.textContent).toBe('¿Por qué las cargas de D son más diferentes que las de C?');
+    expect(game.reasons()).toEqual([
+      { id: 'maximum', text: 'Porque D tiene el camión con más carga.' },
+      { id: 'spread', text: 'Porque los puntos de D están más separados entre sí.' },
+      { id: 'count', text: 'Porque D tiene más camiones.' },
+    ]);
     expect([...root.querySelectorAll('.reason-choice')].map(button => button.textContent?.trim()))
       .toEqual(game.reasons().map(reason => reason.text));
     game.finish();
@@ -209,12 +211,10 @@ describe('Lesson01Loading', () => {
     game.chooseReason('maximum');
     expect(game.stage()).toBe('practice-reason');
     expect(game.groups()).toBe(before);
-    expect(game.feedback()).toContain('Un solo camión');
-    expect(game.feedback()).toContain('D: 90, 100, 110 t; C: 110, 111, 112 t');
+    expect(game.feedback()).toBe('La carga más grande no basta para comparar. Mira todos los puntos: en D están más separados que en C.');
     expect(game.reasons()).toBe(choices);
     game.chooseReason('count');
-    expect(game.feedback()).toContain('tres camiones');
-    expect(game.feedback()).toContain('D: 90, 100, 110 t; C: 110, 111, 112 t');
+    expect(game.feedback()).toBe('Ambos grupos tienen tres camiones. Lo que cambia es cuánto llevó cada uno: en D los puntos están más separados que en C.');
     expect(game.reasons()).toBe(choices);
     game.chooseReason('spread');
     expect(game.stage()).toBe('practice-review');
@@ -234,17 +234,21 @@ describe('Lesson01Loading', () => {
       const wrong = game.groups().find(group => group.name !== game.correctGroup())!;
       const correct = game.groups().find(group => group.name === game.correctGroup())!;
       const choices = game.reasons();
-      const evidence = choices.find(reason => reason.id === 'spread')!.text;
-      expect(evidence).toContain(correct.name + ': ' + correct.loads.join(', ') + ' t');
-      expect(evidence).toContain(wrong.name + ': ' + wrong.loads.join(', ') + ' t');
+      expect(game.reasonQuestion()).toBe('¿Por qué las cargas de ' + correct.name + ' son más diferentes que las de ' + wrong.name + '?');
+      expect(choices.find(reason => reason.id === 'spread')!.text).toBe('Porque los puntos de ' + correct.name + ' están más separados entre sí.');
+      expect(game.evidenceReading()).toContain(correct.name + ': ' + correct.loads.join(', ') + ' t');
+      expect(game.evidenceReading()).toContain(wrong.name + ': ' + wrong.loads.join(', ') + ' t');
       expect(choices.findIndex(reason => reason.id === 'spread')).toBe((1 - round % 3 + 3) % 3);
       expect(new Set(choices.map(reason => reason.id)).size).toBe(3);
-      expect(choices.find(reason => reason.id === 'maximum')!.text).toContain(
-        correct.name + ' llega a ' + Math.max(...correct.loads) + ' t',
-      );
+      expect(choices.find(reason => reason.id === 'maximum')!.text).toBe('Porque ' + correct.name + ' tiene el camión con más carga.');
+      expect(choices.find(reason => reason.id === 'count')!.text).toBe('Porque ' + correct.name + ' tiene más camiones.');
       expect(Math.max(...correct.loads) - Math.min(...correct.loads)).toBeGreaterThan(Math.max(...wrong.loads) - Math.min(...wrong.loads));
       game.chooseGroup(wrong.name);
       game.chooseGroup(correct.name);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.task-card h3').textContent).toBe(game.reasonQuestion());
+      expect([...fixture.nativeElement.querySelectorAll('.reason-choice')].map(button => (button as HTMLElement).textContent?.trim()))
+        .toEqual(choices.map(choice => choice.text));
       game.chooseReason('spread');
       expect(game.stage()).toBe(round === 0 ? 'practice-review' : 'success');
       if (round === 0) {
@@ -336,12 +340,14 @@ describe('Lesson01Loading', () => {
     const fixture = create(state); const game = fixture.componentInstance;
     const done = vi.fn(); game.completed.subscribe(done);
     const choices = game.reasons();
+    expect(game.reasonQuestion()).toBe('¿Por qué las cargas de G son más diferentes que las de H?');
     expect(game.evidenceReading()).toBe('G: 82, 96, 110 t; H: 111, 112, 113 t');
     expect(game.practiceHelped()).toBe(true); game.finish(); expect(done).not.toHaveBeenCalled();
     fixture.destroy();
     const restored = create(state); const copy = restored.componentInstance;
     copy.completed.subscribe(done);
     expect(copy.reasons()).toEqual(choices); expect(copy.selectedLoad()).toBe('G1');
+    expect(restored.nativeElement.querySelector('.task-card h3').textContent).toBe(game.reasonQuestion());
     expect(copy.practiceHelped()).toBe(true); expect(done).not.toHaveBeenCalled();
     copy.chooseReason('spread'); restored.detectChanges();
     expect(copy.stage()).toBe('success'); expect(done).not.toHaveBeenCalled();

@@ -5,21 +5,27 @@ import {
   GameEvents,
   LessonProgressSnapshot,
   OpenLessonRequest,
+  type DialogueCompletedRequest,
 } from '../../features/world/game/events/game-events';
+import { OPEN_PIT_INTRO } from '../../features/world/lessons/data/open-pit-intro.data';
+import { OPEN_PIT_CLOSING } from '../../features/world/lessons/data/open-pit-closing.data';
+import { hasAllOpenPitLessons } from '../../features/world/progress/open-pit-closure.storage';
 
 import {
   getObjectLayerOrThrow,
-  getTiledProperty,
+  getTiledStringProperty,
   getTiledRectangle
 } from '../tiled/tiled.utils';
 
 import {
   getLessonIndicatorCopy,
-  getLessonInteractionCopy,
   getLessonStatus,
 } from './lesson-indicator';
 
 import { LessonGuide } from './lesson-guide';
+import { LessonProximityPrompt } from './lesson-proximity-prompt';
+import { usesTouchControls } from '../input/touch-controls';
+import { isWorldSceneInPreparation } from '../world-session/world-scene-availability';
 
 
 type InteractionType =
@@ -75,6 +81,15 @@ export class InteractionManager {
     Phaser.GameObjects.Text;
 
   private readonly lessonGuide: LessonGuide | null;
+  private readonly lessonPrompt: LessonProximityPrompt;
+  private readonly touch: boolean;
+  private introZone: Phaser.GameObjects.Zone | null = null;
+  private introPrompt: LessonProximityPrompt | null = null;
+  private introPending = false;
+
+  private get closingReady(): boolean {
+    return hasAllOpenPitLessons(this.lessonProgress.completedLessonIds);
+  }
 
 
   constructor(
@@ -88,11 +103,19 @@ export class InteractionManager {
     this.interactionText =
       this.createInteractionText();
 
+    this.lessonPrompt = new LessonProximityPrompt(this.scene);
+    this.touch = usesTouchControls(this.scene);
+
 
     this.createInteractions();
 
     this.lessonGuide = this.scene.scene.key === 'OpenPitScene'
       ? new LessonGuide(this.scene) : null;
+
+    // The HUD can immediately dismiss guidance already completed by this account.
+    gameEvents.on(GameEvents.INTRO_GUIDANCE_DISMISSED, this.handleIntroGuidanceDismissed);
+    this.initializeIntroGuidance();
+    gameEvents.on(GameEvents.DIALOGUE_COMPLETED, this.handleDialogueCompleted);
 
 
     gameEvents.on(
@@ -124,6 +147,7 @@ export class InteractionManager {
     if (playerLocked) {
 
       this.lessonGuide?.hide();
+      this.introPrompt?.hide();
 
       this.clearCurrentInteraction();
 
@@ -137,12 +161,14 @@ export class InteractionManager {
 
     this.findCurrentInteraction();
 
+    this.updateIntroIndicator();
 
-    const available =
-      this.currentInteraction !== null;
+
+    const nearby = this.currentInteraction !== null;
+    const available = nearby && !this.isTransitionInPreparation(this.currentInteraction);
 
     // Do not compete with a nearby interaction prompt or an open activity.
-    this.lessonGuide?.update(this.player, this.scene.cameras.main, available);
+    this.lessonGuide?.update(this.player, this.scene.cameras.main, nearby);
 
 
     /* =========================
@@ -164,12 +190,18 @@ export class InteractionManager {
 
   destroy(): void {
 
+    gameEvents.off(GameEvents.DIALOGUE_COMPLETED, this.handleDialogueCompleted);
+    gameEvents.off(GameEvents.INTRO_GUIDANCE_DISMISSED, this.handleIntroGuidanceDismissed);
+    this.introPrompt?.destroy();
+    if (this.introZone) this.publishIntroGuidance(false);
+
     gameEvents.off(
       GameEvents.LESSON_PROGRESS_CHANGED,
       this.handleLessonProgressChanged
     );
 
     this.interactionText.destroy();
+    this.lessonPrompt.destroy();
 
     this.lessonGuide?.destroy();
 
@@ -231,6 +263,11 @@ export class InteractionManager {
         continue;
       }
 
+      const interactionType = getTiledStringProperty(object, 'interactionType');
+      // Tiled can contain draft objects; do not offer an action we cannot execute.
+      if (interactionType !== 'lesson' && interactionType !== 'dialogue' && interactionType !== 'transition') {
+        continue;
+      }
 
       const zone =
         this.scene.add.zone(
@@ -244,12 +281,6 @@ export class InteractionManager {
       /* =========================
          DATOS GENERALES
          ========================= */
-
-      const interactionType =
-        getTiledProperty<InteractionType>(
-          object,
-          'interactionType'
-        );
 
       zone.setData(
         'interactionName',
@@ -268,7 +299,7 @@ export class InteractionManager {
          ========================= */
 
       const lessonId =
-        getTiledProperty<string>(
+        getTiledStringProperty(
           object,
           'lessonId'
         );
@@ -286,7 +317,7 @@ export class InteractionManager {
 
       zone.setData(
         'npcId',
-        getTiledProperty<string>(
+        getTiledStringProperty(
           object,
           'npcId'
         )
@@ -295,7 +326,7 @@ export class InteractionManager {
 
       zone.setData(
         'dialogueId',
-        getTiledProperty<string>(
+        getTiledStringProperty(
           object,
           'dialogueId'
         )
@@ -308,7 +339,7 @@ export class InteractionManager {
 
       zone.setData(
         'targetScene',
-        getTiledProperty<string>(
+        getTiledStringProperty(
           object,
           'targetScene'
         )
@@ -317,7 +348,7 @@ export class InteractionManager {
 
       zone.setData(
         'targetSpawn',
-        getTiledProperty<string>(
+        getTiledStringProperty(
           object,
           'targetSpawn'
         )
@@ -417,12 +448,66 @@ export class InteractionManager {
     this.interactionText.setVisible(
       false
     );
+    this.lessonPrompt.hide();
+    this.introPrompt?.hide();
   }
 
 
   /* =========================
      UI
      ========================= */
+
+  private initializeIntroGuidance(): void {
+    if (this.scene.scene.key !== 'OpenPitScene') return;
+    this.introZone = this.interactionZones.find(zone => zone.getData('dialogueId') === OPEN_PIT_INTRO.id) ?? null;
+    if (!this.introZone) return;
+
+    // Normal entries start at these authored points. A recovered game inside the
+    // pit must keep its lesson objective, not send the student back to the entrance.
+    const entries = this.map.getObjectLayer('SpawnPoints')?.objects ?? [];
+    this.introPending = entries.some(point =>
+      (point.name === 'player-start' || point.name === 'from-surface-selection')
+      && point.x !== undefined && point.y !== undefined
+      && Math.hypot(this.player.x - point.x, this.player.y - point.y) < 1
+    ) || this.scene.physics.overlap(this.player, this.introZone);
+
+    this.introPrompt = new LessonProximityPrompt(this.scene);
+    this.publishIntroGuidance(this.introPending);
+    this.updateGuideTarget();
+  }
+
+  private updateIntroIndicator(): void {
+    if (!this.introZone || !this.introPrompt || this.currentInteraction === this.introZone) return;
+    const camera = this.scene.cameras.main;
+    const view = camera.worldView;
+    const zone = this.introZone;
+    const onScreen = zone.x >= view.left && zone.x <= view.right && zone.y >= view.top && zone.y <= view.bottom;
+    if (this.closingReady && !this.lessonProgress.openPitReportDelivered && onScreen && !this.currentInteraction) {
+      this.introPrompt.showClosing(zone, camera, this.touch, false);
+    } else if (this.introPending && onScreen && !this.currentInteraction) {
+      this.introPrompt.showIntro(zone, camera, this.touch, false);
+    } else this.introPrompt.hide();
+  }
+
+  private publishIntroGuidance(active: boolean): void {
+    gameEvents.emit(GameEvents.INTRO_GUIDANCE_CHANGED, { sceneKey: this.scene.scene.key, active });
+  }
+
+  private readonly handleDialogueCompleted = (request: DialogueCompletedRequest): void => {
+    if (request.sceneKey !== this.scene.scene.key || request.dialogueId !== OPEN_PIT_INTRO.id || !this.introPending) return;
+    this.dismissIntroGuidance();
+  };
+
+  private readonly handleIntroGuidanceDismissed = (sceneKey: string): void => {
+    if (sceneKey === this.scene.scene.key && this.introPending) this.dismissIntroGuidance();
+  };
+
+  private dismissIntroGuidance(): void {
+    this.introPending = false;
+    this.introPrompt?.hide();
+    this.publishIntroGuidance(false);
+    this.updateGuideTarget();
+  }
 
   private createLessonIndicator(
     zone: Phaser.GameObjects.Zone,
@@ -619,13 +704,29 @@ export class InteractionManager {
     const lessonStatus = lessonId
       ? getLessonStatus(lessonId, this.lessonProgress)
       : undefined;
-    const prompt = isTransition && destination
-      ? `Ir a ${destination}\nPulsa E para entrar`
-      : interactionType === 'lesson' && lessonId && lessonStatus
-        ? getLessonInteractionCopy(lessonId, lessonStatus)
-        : 'Presiona E';
-
-    this.interactionText.setText(prompt);
+    if (interactionType === 'lesson' && lessonId && lessonStatus) {
+      this.interactionText.setVisible(false);
+      this.lessonPrompt.show(lessonId, lessonStatus, this.player, this.scene.cameras.main, this.touch);
+      return;
+    }
+    if (zone === this.introZone) {
+      this.interactionText.setVisible(false);
+      if (this.closingReady) {
+        this.introPrompt?.showClosing(this.player, this.scene.cameras.main, this.touch, true, !!this.lessonProgress.openPitReportDelivered);
+      } else this.introPrompt?.showIntro(this.player, this.scene.cameras.main, this.touch, true);
+      return;
+    }
+    if (isTransition && destination) {
+      this.interactionText.setVisible(false);
+      if (this.isTransitionInPreparation(zone)) {
+        this.lessonPrompt.showBlockedZone(destination, this.player, this.scene.cameras.main);
+      } else {
+        this.lessonPrompt.showZone(destination, this.player, this.scene.cameras.main, this.touch);
+      }
+      return;
+    }
+    this.lessonPrompt.hide();
+    this.interactionText.setText('Presiona E');
 
     // Keep the sector label visible when a wide zone exceeds a mobile viewport.
     const x = isTransition ? zone.x : this.player.x;
@@ -648,6 +749,7 @@ export class InteractionManager {
   ): void => {
 
     this.lessonProgress = {
+      openPitReportDelivered: progress.openPitReportDelivered,
       currentLessonId:
         progress.currentLessonId,
       completedLessonIds: [
@@ -655,16 +757,8 @@ export class InteractionManager {
       ],
     };
 
-    const target = this.interactionZones.find(zone =>
-      zone.getData('interactionType') === 'lesson'
-      && zone.getData('lessonId') === this.lessonProgress.currentLessonId
-      && getLessonStatus(zone.getData('lessonId'), this.lessonProgress) === 'current'
-    );
-    this.lessonGuide?.setTarget(target ? {
-      lessonId: target.getData('lessonId'),
-      x: target.x,
-      y: target.y,
-    } : null);
+    if (this.closingReady && this.introPending) this.dismissIntroGuidance();
+    else this.updateGuideTarget();
 
 
     for (
@@ -682,6 +776,25 @@ export class InteractionManager {
       this.showInteractionText();
     }
   };
+
+  private updateGuideTarget(): void {
+    if (this.closingReady && !this.lessonProgress.openPitReportDelivered && this.introZone) {
+      this.lessonGuide?.setTarget({ label: 'Centro de control', x: this.introZone.x, y: this.introZone.y });
+      return;
+    }
+    if (this.introPending && this.introZone) {
+      this.lessonGuide?.setTarget({ label: 'Supervisor', x: this.introZone.x, y: this.introZone.y });
+      return;
+    }
+    const target = this.interactionZones.find(zone =>
+      zone.getData('interactionType') === 'lesson'
+      && zone.getData('lessonId') === this.lessonProgress.currentLessonId
+      && getLessonStatus(zone.getData('lessonId'), this.lessonProgress) === 'current'
+    );
+    this.lessonGuide?.setTarget(target ? {
+      lessonId: target.getData('lessonId'), x: target.x, y: target.y,
+    } : null);
+  }
 
 
   /* =========================
@@ -794,8 +907,9 @@ export class InteractionManager {
         );
 
 
-    const dialogueId =
-      this.currentInteraction
+    const dialogueId = this.currentInteraction === this.introZone && this.closingReady
+      ? OPEN_PIT_CLOSING.id
+      : this.currentInteraction
         .getData(
           'dialogueId'
         );
@@ -824,6 +938,11 @@ export class InteractionManager {
   /* =========================
      TRANSICIÓN
      ========================= */
+
+  private isTransitionInPreparation(zone: Phaser.GameObjects.Zone | null): boolean {
+    return zone?.getData('interactionType') === 'transition'
+      && isWorldSceneInPreparation(zone.getData('targetScene'));
+  }
 
   private triggerTransition(): void {
 

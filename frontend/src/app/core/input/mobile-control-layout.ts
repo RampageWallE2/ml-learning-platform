@@ -1,10 +1,10 @@
-const SIDE_INSET_MIN = 80;
-const SIDE_INSET_MAX = 110;
-const LANDSCAPE_BOTTOM_MIN = 120;
-const LANDSCAPE_BOTTOM_MAX = 150;
-const PORTRAIT_BOTTOM_MIN = 100;
-const PORTRAIT_BOTTOM_MAX = 140;
+export const MOBILE_JOYSTICK_HIT_SIZE = 128;
+const SIDE_INSET_MIN = 70;
+const SIDE_INSET_MAX = 100;
 const CONTROL_MIN_Y = 80;
+// Keep a generous touch zone above Cuenta, including the desktop/tablet inset.
+const BOTTOM_INSET_MIN = 20 + 44 + 12 + MOBILE_JOYSTICK_HIT_SIZE / 2;
+const BOTTOM_INSET_MAX = 180;
 
 export type MobileControlLayout = Readonly<{
   joystickX: number;
@@ -41,9 +41,7 @@ export function calculateMobileControlLayout(
     clamp(visibleWidth * 0.09, SIDE_INSET_MIN, SIDE_INSET_MAX),
     visibleWidth / 2,
   );
-  const bottomInset = isLandscape
-    ? clamp(visibleHeight * 0.28, LANDSCAPE_BOTTOM_MIN, LANDSCAPE_BOTTOM_MAX)
-    : clamp(visibleHeight * 0.16, PORTRAIT_BOTTOM_MIN, PORTRAIT_BOTTOM_MAX);
+  const bottomInset = clamp(visibleHeight * (isLandscape ? 0.28 : 0.16), BOTTOM_INSET_MIN, BOTTOM_INSET_MAX);
 
   return {
     joystickX: offsetLeft + sideInset,

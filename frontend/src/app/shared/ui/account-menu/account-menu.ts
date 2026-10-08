@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   input,
+  output,
   signal
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -26,6 +27,10 @@ export class AccountMenu {
 
   readonly appearance =
     input<'game' | 'landing'>('game');
+  readonly placement = input<'top-right' | 'bottom-left'>('top-right');
+
+  readonly helpAvailable = input(false);
+  readonly helpRequested = output<void>();
 
   private readonly router = inject(Router);
   private readonly element: ElementRef<HTMLElement> = inject(ElementRef);
@@ -60,6 +65,14 @@ export class AccountMenu {
 
   closeMenu(): void {
     this.menuOpen.set(false);
+  }
+
+  openHelp(): void {
+    if (!this.helpAvailable() || this.appearance() !== 'game') return;
+    this.closeMenu();
+    // The disclosure disappears while the modal opens. Keep a stable return target.
+    this.element.nativeElement.querySelector<HTMLButtonElement>('.account-menu__trigger')?.focus();
+    this.helpRequested.emit();
   }
 
   markAvatarAsFailed(): void {

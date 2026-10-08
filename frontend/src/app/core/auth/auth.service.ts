@@ -2,16 +2,21 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   Observable,
+  EMPTY,
   catchError,
   defer,
+  filter,
   finalize,
   map,
   of,
   shareReplay,
-  tap
+  tap,
+  throwError,
+  timeout
 } from 'rxjs';
 
 import { AUTH_CONFIG } from './auth.config';
+import { API_REQUEST_TIMEOUT_MS } from '../http/request-timeout';
 import {
   AuthenticatedUser,
   AuthResponse,
@@ -30,15 +35,22 @@ export class AuthService {
 
   private readonly userState = signal<AuthenticatedUser | null>(null);
   private readonly statusState = signal<AuthSessionStatus>('unknown');
+  private readonly sessionVersionState = signal(0);
   private restoreRequest?: Observable<boolean>;
 
   readonly user = this.userState.asReadonly();
   readonly status = this.statusState.asReadonly();
+  readonly sessionVersion = this.sessionVersionState.asReadonly();
   readonly isAuthenticated = computed(
     () => this.statusState() === 'authenticated'
   );
 
   restoreSession(): Observable<boolean> {
+    // Check at subscription time, including when a caller reuses this observable.
+    return defer(() => this.restoreCurrentSession());
+  }
+
+  private restoreCurrentSession(): Observable<boolean> {
     if (this.statusState() === 'authenticated') {
       return of(true);
     }
@@ -53,7 +65,7 @@ export class AuthService {
 
     this.statusState.set('checking');
 
-    const request = defer(() =>
+    const request = this.forCurrentSession(
       this.http.get<AuthResponse>(
         `${this.config.apiBaseUrl}/me`,
         { withCredentials: true }
@@ -79,7 +91,9 @@ export class AuthService {
         return of(false);
       }),
       finalize(() => {
-        this.restoreRequest = undefined;
+        if (this.restoreRequest === request) {
+          this.restoreRequest = undefined;
+        }
       }),
       shareReplay({
         bufferSize: 1,
@@ -92,11 +106,11 @@ export class AuthService {
   }
 
   loginWithGoogle(credential: string): Observable<AuthenticatedUser> {
-    return this.http.post<AuthResponse>(
+    return this.forCurrentSession(this.http.post<AuthResponse>(
       `${this.config.apiBaseUrl}/auth/google`,
       { credential },
       { withCredentials: true }
-    ).pipe(
+    )).pipe(
       tap({
         next: ({ user }) => this.setAuthenticated(user),
         error: (error: unknown) => {
@@ -115,11 +129,11 @@ export class AuthService {
   loginWithEmail(
     credentials: EmailLoginCredentials
   ): Observable<AuthenticatedUser> {
-    return this.http.post<AuthResponse>(
+    return this.forCurrentSession(this.http.post<AuthResponse>(
       `${this.config.apiBaseUrl}/auth/login`,
       credentials,
       { withCredentials: true }
-    ).pipe(
+    )).pipe(
       tap(({ user }) => this.setAuthenticated(user)),
       map(({ user }) => user)
     );
@@ -128,22 +142,22 @@ export class AuthService {
   register(
     credentials: RegistrationCredentials
   ): Observable<AuthenticatedUser> {
-    return this.http.post<AuthResponse>(
+    return this.forCurrentSession(this.http.post<AuthResponse>(
       `${this.config.apiBaseUrl}/auth/register`,
       credentials,
       { withCredentials: true }
-    ).pipe(
+    )).pipe(
       tap(({ user }) => this.setAuthenticated(user)),
       map(({ user }) => user)
     );
   }
 
   logout(): Observable<void> {
-    return this.http.post<unknown>(
+    return this.forCurrentSession(this.http.post<unknown>(
       `${this.config.apiBaseUrl}/auth/logout`,
       {},
       { withCredentials: true }
-    ).pipe(
+    )).pipe(
       map(() => undefined),
       tap(() => this.setAnonymous())
     );
@@ -153,12 +167,34 @@ export class AuthService {
     this.setAnonymous();
   }
 
+  private forCurrentSession<T>(request: Observable<T>): Observable<T> {
+    return defer(() => {
+      // Capture when HTTP starts, not when its observable is created. Stale
+      // authentication replies complete silently instead of triggering UI callbacks.
+      const version = this.sessionVersion();
+      return request.pipe(
+        timeout({ first: API_REQUEST_TIMEOUT_MS }),
+        filter(() => this.sessionVersion() === version),
+        catchError((error: unknown) => this.sessionVersion() === version
+          ? throwError(() => error)
+          : EMPTY),
+      );
+    });
+  }
+
+  private advanceSessionVersion(): void {
+    this.sessionVersionState.update(version => version + 1);
+    this.restoreRequest = undefined;
+  }
+
   private setAuthenticated(user: AuthenticatedUser): void {
+    this.advanceSessionVersion();
     this.userState.set(user);
     this.statusState.set('authenticated');
   }
 
   private setAnonymous(): void {
+    this.advanceSessionVersion();
     clearWorldSession();
     this.userState.set(null);
     this.statusState.set('anonymous');

@@ -1,3 +1,5 @@
+@use '../../../../../styles/lesson-focus' as lesson-focus;
+
 :host {
   display: block;
   min-width: 0;
@@ -555,4 +557,10 @@ h3 {
   .spread-band {
     animation: none;
   }
+}
+
+@include lesson-focus.focused-workbench;
+
+.final-measures {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }

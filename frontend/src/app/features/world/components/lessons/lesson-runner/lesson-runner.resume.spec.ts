@@ -158,7 +158,7 @@ describe('LessonRunner — C6 draft recovery', () => {
     expect(fixture.nativeElement.textContent).toContain('La sesión cambió');
     expect(fixture.debugElement.query(By.directive(Lesson06Sag))).toBeNull();
     expect(fixture.nativeElement.querySelector('[role="dialog"]').contains(document.activeElement)).toBe(true);
-    fixture.componentInstance.saveC6State(practice); fixture.componentInstance.nextStep();
+    fixture.componentInstance.saveExerciseState('lesson-06', practice); fixture.componentInstance.nextStep();
     fixture.componentInstance.restartDraft();
     expect(write).not.toHaveBeenCalled(); expect(loadC6Draft(b.id).draft).toBeNull();
     fixture.destroy(); const other = create();
@@ -169,7 +169,7 @@ describe('LessonRunner — C6 draft recovery', () => {
   it('rejects writes from a replaced session even with the same account id', () => {
     const fixture = create(); fixture.componentInstance.nextStep(); fixture.detectChanges();
     user.set({ ...a }); write.mockClear();
-    fixture.componentInstance.saveC6State(practice); fixture.componentInstance.nextStep();
+    fixture.componentInstance.saveExerciseState('lesson-06', practice); fixture.componentInstance.nextStep();
     expect(write).not.toHaveBeenCalled(); expect(fixture.componentInstance.sessionChanged()).toBe(true);
   });
 

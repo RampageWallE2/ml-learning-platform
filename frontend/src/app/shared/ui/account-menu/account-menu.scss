@@ -26,6 +26,7 @@
 
 .account-menu__trigger:focus-visible,
 .account-menu__progress:focus-visible,
+.account-menu__help:focus-visible,
 .account-menu__logout:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
@@ -136,6 +137,7 @@
   }
 }
 
+.account-menu__help,
 .account-menu__logout {
   width: 100%;
   min-height: var(--control-min-height);
@@ -169,14 +171,18 @@
 @media (max-width: 600px), (max-width: 1024px) and (max-height: 480px) {
   .account-menu:not(.account-menu--landing) {
     .account-menu__trigger {
-      gap: 6px;
-      padding: 4px 7px;
+      width: 88px;
+      box-sizing: border-box;
+      justify-content: center;
+      gap: 5px;
+      padding: 4px 6px;
+      border-width: 1px;
     }
     .account-menu__avatar,
     .account-menu__initials {
-      width: 24px;
-      height: 24px;
-      flex-basis: 24px;
+      width: 20px;
+      height: 20px;
+      flex-basis: 20px;
     }
     .account-menu__label {
       font-size: 11px;
@@ -186,12 +192,14 @@
       width: min(250px, calc(100vw - 20px));
       padding: 10px;
       max-height: calc(100dvh - 68px);
+      border-width: 1px;
     }
     .account-menu__identity {
       gap: 3px;
       padding-bottom: 8px;
     }
     .account-menu__progress,
+    .account-menu__help,
     .account-menu__logout {
       margin-top: 8px;
       padding: 6px 8px;
@@ -263,4 +271,13 @@
       margin-top: 8px;
     }
   }
+}
+
+// Opt-in game placement; the landing keeps its existing downward disclosure.
+.account-menu.account-menu--bottom-left .account-menu__panel {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + 8px);
+  left: 0;
+  max-height: calc(100dvh - var(--control-min-height) - 2 * var(--hud-inset, 20px) - 12px - env(safe-area-inset-bottom, 0px));
 }

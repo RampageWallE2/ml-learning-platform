@@ -26,7 +26,8 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "public",
+                "ignore": ["**/*.xcf", "**/*.psd", "**/*.aseprite", "**/*.ase", "**/*.tmx", "**/*.tsx"]
               }
             ],
             "styles": [
@@ -79,7 +80,10 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "isolate": true
+          }
         }
       }
     }

@@ -1,0 +1,106 @@
+# Standalone: never merge this with the development compose.yml.
+name: exploralab-production
+x-api-environment: &api-environment
+  APP_ENV: production
+  APP_VERSION: ${APP_VERSION:?Set an identified release}
+  FLASK_DEBUG: "0"
+  DATABASE_HOST: database
+  DATABASE_NAME: ${POSTGRES_DB:-exploralab}
+  DATABASE_USER: ${POSTGRES_USER:-exploralab}
+  DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong database password}
+  CORS_ORIGINS: ${PUBLIC_ORIGIN:?Set the exact HTTPS origin}
+  CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:?Set the exact HTTPS origin}
+  SESSION_COOKIE_SECURE: "true"
+  SESSION_COOKIE_SAMESITE: Lax
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+  DB_POOL_SIZE: "2"
+  DB_MAX_OVERFLOW: "1"
+  PASSWORD_LOGIN_MAX_ATTEMPTS: "8"
+  PASSWORD_LOGIN_WINDOW_SECONDS: "300"
+  API_MAX_REQUEST_BYTES: "65536"
+x-api-build: &api-build
+  context: ./backend
+  dockerfile: Dockerfile.production
+  target: production
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-exploralab}
+      POSTGRES_USER: ${POSTGRES_USER:-exploralab}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong database password}
+    volumes:
+      - production_database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    logging: *logging
+  migrate:
+    profiles: [tools]
+    build: *api-build
+    image: exploralab-api:${APP_VERSION:?Set an identified release}
+    environment: *api-environment
+    command: [flask, --app, app, db, upgrade]
+    depends_on:
+      database:
+        condition: service_healthy
+    logging: *logging
+  backend:
+    build: *api-build
+    image: exploralab-api:${APP_VERSION:?Set an identified release}
+    environment: *api-environment
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:5000/api/v1/ready", timeout=3)']
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logging
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+      args:
+        APP_VERSION: ${APP_VERSION:?Set an identified release}
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    image: exploralab-web:${APP_VERSION:?Set an identified release}
+    environment:
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?Set the exact HTTPS origin}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+      - "${BIND_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-8443}:443"
+    volumes:
+      - type: bind
+        source: ${TLS_DIR:?Set the directory with fullchain.pem and privkey.pem}
+        target: /etc/nginx/tls
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, --no-check-certificate, -q, -O, /dev/null, https://127.0.0.1/healthz]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    logging: *logging
+volumes:
+  production_database:

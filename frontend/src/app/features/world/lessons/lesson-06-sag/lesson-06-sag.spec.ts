@@ -174,7 +174,7 @@ describe('Lesson06Sag', () => {
     const notes = root.querySelector<HTMLDetailsElement>('.workbench > .reading-notes')!;
     expect(notes.open).toBe(false);
     expect(notes.querySelector('summary')?.textContent).toBe('Cómo leer los registros');
-    expect(notes.textContent).toContain('Los puntos apilados tienen el mismo valor');
+    expect(notes.textContent).toContain('Los puntos uno sobre otro tienen el mismo valor');
     expect(root.querySelectorAll('.primary-evidence')).toHaveLength(0);
     const steps = [
       () => game.sumChanges(),
@@ -193,9 +193,15 @@ describe('Lesson06Sag', () => {
     for (const next of steps) {
       next();
       fixture.detectChanges();
-      expect(root.querySelectorAll('.workbench > .primary-evidence')).toHaveLength(1);
+      expect(root.querySelectorAll('.workbench > .primary-evidence')).toHaveLength(
+        game.stage() === 'discovery' ? 0 : 1,
+      );
       expect(root.querySelector('.task-card .primary-evidence')).toBeNull();
-      expect(root.querySelector('.workbench--focused > .data-board')).not.toBeNull();
+      expect(root.querySelector('.workbench > .data-board') !== null).toBe(game.showMainRecords());
+      if (!game.showMainRecords()) {
+        expect(root.querySelector<HTMLDetailsElement>('.records-review')?.open).toBe(false);
+        expect(root.querySelector('.records-review .data-board')).not.toBeNull();
+      }
       expect(notes.open).toBe(false);
     }
   });
@@ -535,7 +541,17 @@ describe('Lesson06Sag', () => {
     reachDiscovery(game);
     fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
-    expect(root.textContent).toContain('Ese promedio se llama varianza');
+    expect(root.textContent).toContain('La varianza es un promedio de cuadrados');
+    const recipe = root.querySelector('[aria-label="Cálculo de la varianza, paso a paso"]')!;
+    expect(recipe.querySelectorAll(':scope > .calculation-card, :scope > p')).toHaveLength(3);
+    expect(Array.from(recipe.querySelectorAll('span'), item =>
+      item.textContent?.replace(/\s+/g, ' ').trim(),
+    )).toEqual([
+      '1. Resta el promedio: −2, 0, 0 y +2.',
+      '2. Multiplica cada diferencia por sí misma: 4, 0, 0 y 4.',
+      '3. Suma los cuadrados: 4 + 0 + 0 + 4 = 8.',
+      '4. Divide entre los 4 registros: 8 ÷ 4 = 2.',
+    ]);
     expect(root.textContent).toContain('8 ÷ 4 = 2');
     expect(root.textContent).toContain('16 ÷ 8 = 2');
     expect(root.textContent).toContain('también los que están justo en el promedio');
@@ -565,7 +581,8 @@ describe('Lesson06Sag', () => {
     game.chooseSummary('per-record');
     fixture.detectChanges();
     expect(game.comparisonSolved()).toBe(true);
-    expect(Array.from(comparison.querySelectorAll('b'), (result) => result.textContent)).toEqual([
+    expect(root.querySelector<HTMLDetailsElement>('.copy-review')?.open).toBe(false);
+    expect(Array.from(root.querySelectorAll('.copy-review .comparison-box b'), (result) => result.textContent)).toEqual([
       '8 ÷ 4 = 2',
       '16 ÷ 8 = 2',
     ]);
@@ -656,11 +673,15 @@ describe('Lesson06Sag', () => {
     expect(game.round()).toBe(0);
     expect(game.practiceVarianceAnswered()).toBe(false);
     expect(root.querySelector('#sag-task-title')?.textContent?.trim()).toBe(
-      '¿Cuál es el promedio de las casillas?',
+      '¿Cuántas casillas hay por registro, en promedio?',
     );
     expect(root.querySelector('.task-card')?.textContent).toContain('operador');
     expect(root.querySelector('.task-card')?.textContent).toContain('suman 4');
     expect(root.querySelector('.task-card')?.textContent).toContain('4 registros');
+    expect(root.querySelector('.task-card')?.textContent).toContain('Divide la suma entre todos los registros');
+    expect(root.querySelector('.variance-choices')?.getAttribute('aria-label')).toBe(
+      'Elige la cantidad promedio de casillas por registro',
+    );
     expect(
       game
         .practiceVarianceOptions()
@@ -730,7 +751,7 @@ describe('Lesson06Sag', () => {
     expect(root.contains(answer)).toBe(false);
     expect(document.activeElement).toBe(root.querySelector('#sag-task-title'));
     expect(document.activeElement?.textContent?.trim()).toBe(
-      '¿Cuál es el promedio de las casillas?',
+      '¿Cuántas casillas hay por registro, en promedio?',
     );
     expect(game.stage()).toBe('practice-checked');
     const numericAnswer = Array.from(
@@ -985,6 +1006,8 @@ describe('Lesson06Sag', () => {
     expect(done).not.toHaveBeenCalled();
     click(root, 'Probar otros registros →');
     fixture.detectChanges();
+    expect(root.textContent).toContain('Una última práctica');
+    expect(root.textContent).not.toContain('sin la pista');
     expect(game.stage()).toBe('practice-square');
     expect(game.round()).toBe(1);
     expect(game.values()).toEqual([98, 98, 102, 102]);

@@ -3,6 +3,7 @@ export type C4ExperimentMode = 'together' | 'apart';
 export type C4RangePrediction = 'increase' | 'same' | 'decrease';
 export type C4State = Readonly<{ stage: C4Stage; experimentMode: C4ExperimentMode;
   rangePrediction: C4RangePrediction | null; separatedViewed: boolean; round: number; practiceHelped: boolean }>;
+export const C4_MAX_PRACTICE_ROUNDS = 1;
 
 export function isC4State(value: unknown): value is C4State {
   if (!value || typeof value !== 'object') return false;
@@ -21,7 +22,7 @@ export function isC4State(value: unknown): value is C4State {
   if (state.stage === 'experiment') return true;
   if (!state.separatedViewed || state.experimentMode !== 'apart') return false;
   if (state.stage === 'review') return state.practiceHelped;
-  if (state.stage === 'success') return !state.practiceHelped;
+  if (state.stage === 'success') return !state.practiceHelped || state.round! >= C4_MAX_PRACTICE_ROUNDS;
   return true;
 }
 export function copyC4State(state: C4State): C4State {

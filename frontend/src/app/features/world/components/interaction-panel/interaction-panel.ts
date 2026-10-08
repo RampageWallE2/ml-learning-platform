@@ -5,6 +5,7 @@ import {
   ElementRef,
   TemplateRef,
   afterRenderEffect,
+  computed,
   inject,
   input,
   output,
@@ -15,7 +16,14 @@ import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 const TAB_STOPS =
   'button, a[href], input, select, textarea, summary, [tabindex], [contenteditable="true"]';
 
-export type InteractionPanelMode = 'dialogue' | 'activity';
+export type InteractionPanelMode = 'dialogue' | 'activity' | 'help' | 'report';
+
+const PANEL_LABELS = {
+  dialogue: { label: 'Conversación', close: 'Cerrar diálogo' },
+  activity: { label: 'Actividad', close: 'Cerrar actividad' },
+  help: { label: 'Cómo jugar', close: 'Cerrar ayuda' },
+  report: { label: 'Informe del turno', close: 'Cerrar informe' },
+} satisfies Record<InteractionPanelMode, { label: string; close: string }>;
 
 @Component({
   selector: 'app-interaction-panel',
@@ -26,6 +34,7 @@ export type InteractionPanelMode = 'dialogue' | 'activity';
 })
 export class InteractionPanel {
   readonly mode = input<InteractionPanelMode>('activity');
+  readonly labels = computed(() => PANEL_LABELS[this.mode()]);
   readonly returnFocusTarget = input<HTMLElement | null>(null);
   readonly statusTemplate = input<TemplateRef<{ inline: boolean }> | null>(null);
   readonly statusBusy = input(false);

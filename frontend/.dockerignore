@@ -5,3 +5,8 @@ dist
 .gitignore
 Dockerfile
 README.md
+tmp
+tiled
+.codex-remote-attachments
+.env
+.env.*

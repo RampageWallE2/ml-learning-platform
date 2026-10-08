@@ -52,14 +52,16 @@ export class Lesson01Loading implements OnChanges {
     return different.name + ': ' + different.loads.join(', ') + ' t; '
       + similar.name + ': ' + similar.loads.join(', ') + ' t';
   });
-  readonly reasons = computed<readonly { id: Reason; text: string }[]>(() => {
+  readonly reasonQuestion = computed(() => {
     const { different, similar } = this.practiceEvidence();
+    return '¿Por qué las cargas de ' + different.name + ' son más diferentes que las de ' + similar.name + '?';
+  });
+  readonly reasons = computed<readonly { id: Reason; text: string }[]>(() => {
+    const { different } = this.practiceEvidence();
     const choices: { id: Reason; text: string }[] = [
-      { id: 'maximum', text: different.name + ' llega a ' + Math.max(...different.loads) + ' t y '
-        + similar.name + ' a ' + Math.max(...similar.loads) + ' t. Basta mirar esas dos cargas.' },
-      { id: 'spread', text: this.evidenceReading() + '. Se parecen menos en ' + different.name + '.' },
-      { id: 'count', text: different.name + ': ' + different.loads.length + ' camiones; '
-        + similar.name + ': ' + similar.loads.length + ' camiones. La cantidad de camiones explica la diferencia.' },
+      { id: 'maximum', text: 'Porque ' + different.name + ' tiene el camión con más carga.' },
+      { id: 'spread', text: 'Porque los puntos de ' + different.name + ' están más separados entre sí.' },
+      { id: 'count', text: 'Porque ' + different.name + ' tiene más camiones.' },
     ];
     // The round determines the order, so hints and reopening keep it stable.
     const offset = this.practiceRound() % choices.length;
@@ -130,11 +132,12 @@ export class Lesson01Loading implements OnChanges {
       return;
     }
     this.practiceHelped.set(true);
+    const { different, similar } = this.practiceEvidence();
     this.feedback.set(reason === 'maximum'
-      ? 'Un solo camión no cuenta toda la historia. Compara todas las cargas: ' + this.evidenceReading()
-        + '. Mira cuánto se parecen dentro de cada grupo.'
-      : 'Los dos grupos tienen tres camiones. Lo que cambia es cuánto llevó cada uno: '
-        + this.evidenceReading() + '.');
+      ? 'La carga más grande no basta para comparar. Mira todos los puntos: en ' + different.name
+        + ' están más separados que en ' + similar.name + '.'
+      : 'Ambos grupos tienen tres camiones. Lo que cambia es cuánto llevó cada uno: en ' + different.name
+        + ' los puntos están más separados que en ' + similar.name + '.');
     this.publishState();
   }
 

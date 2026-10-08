@@ -55,6 +55,7 @@ describe('AccountMenu', () => {
 
   it('supports the expanded landing appearance', () => {
     fixture.componentRef.setInput('appearance', 'landing');
+    fixture.componentRef.setInput('helpAvailable', true);
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
@@ -67,7 +68,37 @@ describe('AccountMenu', () => {
     element.querySelector<HTMLButtonElement>('.account-menu__trigger')!.click();
     fixture.detectChanges();
     expect(element.querySelector('.account-menu__progress')).toBeNull();
+    expect(element.querySelector('.account-menu__help')).toBeNull();
     expect(element.querySelector('.account-menu__logout')).not.toBeNull();
+  });
+
+  it('opts into bottom-left placement for the game without changing the default landing placement', () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('.account-menu--bottom-left')).toBeNull();
+    fixture.componentRef.setInput('placement', 'bottom-left'); fixture.detectChanges();
+    expect(element.querySelector('.account-menu--bottom-left')).not.toBeNull();
+    expect(element.querySelector('.account-menu__arrow')?.textContent?.trim()).toBe('▲');
+    element.querySelector<HTMLButtonElement>('.account-menu__trigger')!.click(); fixture.detectChanges();
+    expect(element.querySelector('.account-menu__arrow')?.textContent?.trim()).toBe('▼');
+    expect(element.querySelector('.account-menu__progress')).not.toBeNull();
+  });
+
+  it('offers help only when connected by the world and returns a stable focus target', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const trigger = element.querySelector<HTMLButtonElement>('.account-menu__trigger')!;
+    trigger.click(); fixture.detectChanges();
+    expect(element.querySelector('.account-menu__help')).toBeNull();
+    fixture.componentRef.setInput('helpAvailable', true); fixture.detectChanges();
+    const requested = vi.fn(); fixture.componentInstance.helpRequested.subscribe(requested);
+    const button = element.querySelector<HTMLButtonElement>('.account-menu__help')!;
+    expect(button.type).toBe('button');
+    expect(button.textContent).toBe('Cómo jugar');
+    button.focus(); button.click(); fixture.detectChanges();
+    expect(requested).toHaveBeenCalledOnce();
+    expect(fixture.componentInstance.menuOpen()).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(auth.logout).not.toHaveBeenCalled();
   });
 
   it('opens a disclosure with identity and a working progress link, closing it on navigation', () => {

@@ -1,6 +1,7 @@
 export type C9Stage = 'spread' | 'goal' | 'recommend' | 'transfer-intro' | 'transfer' | 'review' | 'success';
 export type C9FeedbackKind = 'none' | 'hint' | 'adjust' | 'answer';
 export type C9State = Readonly<{ stage: C9Stage; round: number; helped: boolean; answered: boolean; feedbackKind: C9FeedbackKind }>;
+export const C9_MAX_PRACTICE_ROUNDS = 1;
 
 export function isC9State(value: unknown): value is C9State {
   if (!value || typeof value !== 'object') return false;
@@ -15,7 +16,7 @@ export function isC9State(value: unknown): value is C9State {
   if ((state.feedbackKind === 'hint' || state.feedbackKind === 'adjust') && !state.helped) return false;
   if (state.feedbackKind === 'adjust' && state.stage !== 'recommend') return false;
   if (state.stage === 'review') return state.helped;
-  if (state.stage === 'success') return !state.helped;
+  if (state.stage === 'success') return !state.helped || state.round! >= C9_MAX_PRACTICE_ROUNDS;
   return true;
 }
 export function copyC9State(state: C9State): C9State {

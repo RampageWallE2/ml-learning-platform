@@ -144,13 +144,13 @@
         @if (stage() === 'compare') {
           <span class="task-kicker">Antes de organizar las revisiones</span>
           <h3 id="workshop-task-title" #taskHeading tabindex="-1">
-            ¿Los tiempos se reparten igual?
+            ¿Qué diferencia ves al mirar todos los tiempos?
           </h3>
           <div class="report-claim">
             <strong>El informe dice:</strong>
-            <p>«Los tiempos fueron parecidos porque ambos equipos tienen el mismo rango».</p>
+            <p>«Cada tiempo se repite igual porque ambos equipos tienen el mismo rango».</p>
           </div>
-          <p>Mira todos los puntos, no solo el tiempo menor y el mayor.</p>
+          <p>Cuenta cuántos puntos hay sobre cada número, no solo el tiempo menor y el mayor.</p>
           <div class="choices">
             @for (choice of compareChoices; track choice.id) {
               <button
@@ -165,7 +165,7 @@
         } @else if (stage() === 'predict') {
           <span class="task-kicker">Antes de probar</span>
           <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Cambiará el rango?</h3>
-          <p>En una copia de A, dos revisiones de 10 minutos pasarán a 8 y a 12.</p>
+          <p>En una copia de A, cambiaremos dos tiempos de 10 minutos: uno a 8 y otro a 12.</p>
           <p>El rango actual es 4 minutos. ¿Qué crees que ocurrirá al separar esos dos puntos?</p>
           <div class="choices choices--prediction" role="group" aria-label="Tu idea sobre el rango">
             @for (prediction of predictions; track prediction.id) {
@@ -196,7 +196,7 @@
           </button>
         } @else if (stage() === 'explain') {
           <span class="task-kicker">Los puntos cambiaron, el rango no</span>
-          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Por qué sigue siendo 4?</h3>
+          <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Por qué el rango sigue siendo 4 minutos?</h3>
           <div class="choices">
             @for (explanation of explanations; track explanation.id) {
               <button
@@ -217,19 +217,19 @@
           </p>
           <div class="range-reading">
             <strong>Mismo rango, tiempos distintos</strong
-            ><span>También necesitamos mirar cómo se reparten los demás registros.</span>
+            ><span>También necesitamos mirar los otros tiempos y cuántas veces se repiten.</span>
           </div>
           <button type="button" class="btn btn--primary" (click)="startPractice()">
             Probar con otros equipos →
           </button>
         } @else if (stage() === 'practice') {
           <span class="task-kicker">{{
-            round() === 0 ? 'Ensaya antes de corregir' : 'Otro ensayo, sin la pista'
+            round() === 0 ? 'Ensaya antes de corregir' : 'Una última práctica'
           }}</span>
           <h3 id="workshop-task-title" #taskHeading tabindex="-1">¿Cómo corregirías el informe?</h3>
           <p>
-            El informe considera iguales los tiempos de {{ practiceRecords()[0].id }} y
-            {{ practiceRecords()[1].id }} porque tienen el mismo rango.
+            El informe dice que cada tiempo se repite igual en {{ practiceRecords()[0].id }} y
+            {{ practiceRecords()[1].id }} porque ambos tienen el mismo rango.
           </p>
           <div class="choices">
             @for (claim of claims; track claim.id) {
@@ -264,12 +264,16 @@
             Mira también los demás tiempos
           </h3>
           <p>
-            Los rangos coinciden, pero {{ concentratedGroup().id }} tiene más revisiones de
-            <strong>{{ center() }} minutos</strong>. Los tiempos no se reparten igual.
+            Los rangos son iguales, pero {{ concentratedGroup().id }} tiene más revisiones de
+            <strong>{{ center() }} minutos</strong>: {{ centerCounts()[0] }} en
+            {{ practiceRecords()[0].id }} y {{ centerCounts()[1] }} en
+            {{ practiceRecords()[1].id }}. Los tiempos no se repiten igual.
           </p>
-          <p>Prueba otro registro para reconocerlo sin la pista.</p>
+          <p>{{ needsPractice()
+            ? 'Harás una sola práctica adicional. Puedes usar las pistas; no habrá otra ronda obligatoria.'
+            : 'Ya resolviste la práctica con apoyo. Puedes continuar sin otra ronda.' }}</p>
           <button type="button" class="btn btn--primary" (click)="continueAfterHelp()">
-            Probar otro registro →
+            {{ needsPractice() ? 'Probar otro registro →' : 'Ver el informe →' }}
           </button>
         }
         <div class="feedback-region" aria-live="polite" aria-atomic="true">
@@ -285,7 +289,10 @@
   } @else {
     <div class="completion-card">
       <span class="task-kicker">Tu corrección está lista</span>
-      <h3 #taskHeading tabindex="-1">El mismo rango puede esconder diferencias</h3>
+      <h3 #taskHeading tabindex="-1">{{ guidedCompletion() ? 'Completaste con ayuda' : 'El mismo rango puede esconder diferencias' }}</h3>
+      @if (guidedCompletion()) {
+        <p>Resolviste la práctica con apoyo. Puedes continuar y volver a practicar más adelante.</p>
+      }
       <p>
         El rango mide la diferencia entre el tiempo menor y el mayor. Para comparar, mira también los
         demás registros.
@@ -293,11 +300,11 @@
     </div>
     <div class="report-card">
       <span class="task-kicker">Para organizar las revisiones del siguiente turno</span>
-      <h3>A y B tienen rango de 4 minutos, pero sus tiempos no se reparten igual</h3>
+      <h3>A y B tienen rango de 4 minutos, pero sus tiempos no se repiten igual</h3>
       <p>En A hubo tres revisiones de 10 minutos; en B, solo una.</p>
       <p>
         <strong>Corrección:</strong> no considerar iguales los tiempos solo porque sus rangos
-        coinciden.
+        son iguales.
       </p>
       <p>Esto no dice qué equipo trabaja mejor ni explica la causa de las diferencias.</p>
     </div>

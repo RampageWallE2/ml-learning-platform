@@ -1,4 +1,4 @@
-"""Real routes and disposable SQLite storage; never a user's database."""
+"""Real routes and disposable PostgreSQL storage; never a user's database."""
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -164,7 +164,7 @@ def test_google_and_registration_are_not_subject_to_password_limit(app, client, 
 def test_missing_table_fails_closed_without_leaking_details(app, client, monkeypatch, caplog):
     register(client)
     with app.app_context():
-        PasswordLoginLimit.__table__.drop(db.engine)  # Fixture's memory table only.
+        PasswordLoginLimit.__table__.drop(db.engine)  # Dedicated fixture database only.
     monkeypatch.setattr("app.routes.auth.password_matches", lambda *args: pytest.fail("Storage failure must refuse login."))
     response = login(client)
     assert response.status_code == 503
@@ -177,9 +177,10 @@ def test_missing_table_fails_closed_without_leaking_details(app, client, monkeyp
     assert client.get("/api/v1/me").status_code == 200
 
 
-def config(uri="sqlite+pysqlite:///:memory:", **overrides):
+def config(uri, **overrides):
     return {
-        "TESTING": True, "SQLALCHEMY_DATABASE_URI": uri, "SQLALCHEMY_ENGINE_OPTIONS": {},
+        "TESTING": True, "APP_ENV": "development", "SESSION_COOKIE_SECURE": False,
+        "SQLALCHEMY_DATABASE_URI": uri, "SQLALCHEMY_ENGINE_OPTIONS": {},
         "CORS_ORIGINS": [HEADERS["Origin"]], "CSRF_TRUSTED_ORIGINS": [HEADERS["Origin"]],
         "PASSWORD_LOGIN_MAX_ATTEMPTS": 8, "PASSWORD_LOGIN_WINDOW_SECONDS": 300,
         **overrides,
@@ -188,79 +189,88 @@ def config(uri="sqlite+pysqlite:///:memory:", **overrides):
 
 @pytest.mark.parametrize("setting", ["PASSWORD_LOGIN_MAX_ATTEMPTS", "PASSWORD_LOGIN_WINDOW_SECONDS"])
 @pytest.mark.parametrize("value", [0, -1, True, False, "8", 1.5, None, 999999])
-def test_invalid_policy_configuration_fails_closed(setting, value):
+def test_invalid_policy_configuration_fails_closed(test_database_url, setting, value):
     with pytest.raises(ValueError, match=setting):
-        create_app(config(**{setting: value}))
+        create_app(config(test_database_url, **{setting: value}))
 
 
-def test_custom_policy_works_without_disabling_csrf(clock):
-    configured = create_app(config(PASSWORD_LOGIN_MAX_ATTEMPTS=2, PASSWORD_LOGIN_WINDOW_SECONDS=10))
-    with configured.app_context():
-        db.create_all()
-    raw = configured.test_client()
-    assert login(raw).status_code == 403
-    assert login(raw, headers=HEADERS).status_code == 401
-    assert login(raw, headers=HEADERS).status_code == 401
-    assert_limited(login(raw, headers=HEADERS), seconds=10)
-
-
-def test_storage_shared_across_instances_and_survives_recreation(tmp_path, clock):
-    uri = "sqlite+pysqlite:///" + (tmp_path / "isolated-login-limit.db").as_posix()
-    first, second = create_app(config(uri)), create_app(config(uri))
-    with first.app_context():
-        PasswordLoginLimit.__table__.create(db.engine)
-    for index in range(8):
-        with (first if index % 2 else second).app_context():
-            assert consume_password_login_attempt(EMAIL) is None
-    for app in [first, second]:
-        with app.app_context():
-            assert consume_password_login_attempt(EMAIL) == 300
+def test_custom_policy_works_without_disabling_csrf(app, clock):
+    configured = create_app(config(
+        app.config["SQLALCHEMY_DATABASE_URI"],
+        PASSWORD_LOGIN_MAX_ATTEMPTS=2, PASSWORD_LOGIN_WINDOW_SECONDS=10,
+    ))
+    try:
+        raw = configured.test_client()
+        assert login(raw).status_code == 403
+        assert login(raw, headers=HEADERS).status_code == 401
+        assert login(raw, headers=HEADERS).status_code == 401
+        assert_limited(login(raw, headers=HEADERS), seconds=10)
+    finally:
+        with configured.app_context():
+            db.session.remove()
             db.engine.dispose()
+
+
+def test_storage_shared_across_instances_and_survives_recreation(app, clock):
+    uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    first, second = create_app(config(uri)), create_app(config(uri))
+    try:
+        for index in range(8):
+            with (first if index % 2 else second).app_context():
+                assert consume_password_login_attempt(EMAIL) is None
+        for configured in (first, second):
+            with configured.app_context():
+                assert consume_password_login_attempt(EMAIL) == 300
+    finally:
+        for configured in (first, second):
+            with configured.app_context():
+                db.session.remove()
+                db.engine.dispose()
     recreated = create_app(config(uri))
-    with recreated.app_context():
-        assert consume_password_login_attempt(EMAIL) == 300
-        db.engine.dispose()
+    try:
+        with recreated.app_context():
+            assert consume_password_login_attempt(EMAIL) == 300
+    finally:
+        with recreated.app_context():
+            db.session.remove()
+            db.engine.dispose()
 
 
-def test_concurrent_workers_share_eight_slots_without_lost_updates(tmp_path, clock):
-    uri = "sqlite+pysqlite:///" + (tmp_path / "isolated-concurrent-limit.db").as_posix()
+def test_concurrent_workers_share_eight_slots_without_lost_updates(app, clock):
+    uri = app.config["SQLALCHEMY_DATABASE_URI"]
     apps = [create_app(config(uri)), create_app(config(uri))]
-    with apps[0].app_context():
-        PasswordLoginLimit.__table__.create(db.engine)
     def consume(index):
         with apps[index % 2].app_context():
             return consume_password_login_attempt(EMAIL)
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(consume, range(32)))
-    assert results.count(None) == 8
-    assert results.count(300) == 24
-    with apps[0].app_context():
-        counter = db.session.execute(db.select(PasswordLoginLimit)).scalar_one()
-        assert counter.attempts == 9
-        assert counter.expires_at == BASE_TIME + 300
-    for app in apps:
-        with app.app_context():
-            db.engine.dispose()
+    try:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results = list(pool.map(consume, range(32)))
+        assert results.count(None) == 8
+        assert results.count(300) == 24
+        with apps[0].app_context():
+            counter = db.session.execute(db.select(PasswordLoginLimit)).scalar_one()
+            assert counter.attempts == 9
+            assert counter.expires_at == BASE_TIME + 300
+    finally:
+        for configured in apps:
+            with configured.app_context():
+                db.session.remove()
+                db.engine.dispose()
 
 
 def test_postgres_statement_compiles_native_atomic_upsert():
-    statement = _consume_statement("postgresql", "f" * 64, BASE_TIME, 8, 300)
+    statement = _consume_statement("f" * 64, BASE_TIME, 8, 300)
     sql = str(statement.compile(dialect=postgresql.dialect()))
     assert "ON CONFLICT (email_digest) DO UPDATE" in sql
     assert "CASE WHEN" in sql
     assert "RETURNING password_login_limits.attempts, password_login_limits.expires_at" in sql
 
 
-def test_unknown_storage_dialect_is_not_silently_downgraded():
-    with pytest.raises(ValueError, match="PostgreSQL or SQLite"):
-        _consume_statement("mysql", "f" * 64, BASE_TIME, 8, 300)
-
-
 def test_new_migration_upgrade_downgrade_preserve_existing_accounts(app, client, clock):
     register(client)
     directory = str(Path(__file__).resolve().parents[1] / "migrations")
     with app.app_context():
-        # Only the new migration, on this fixture's in-memory database.
+        # Only the new migration, on the dedicated PostgreSQL fixture database.
         PasswordLoginLimit.__table__.drop(db.engine)
         stamp(directory=directory, revision="20260920_0003")
         upgrade(directory=directory)

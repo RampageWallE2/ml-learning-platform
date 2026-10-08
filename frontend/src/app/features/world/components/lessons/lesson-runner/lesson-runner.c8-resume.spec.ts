@@ -157,7 +157,7 @@ describe('LessonRunner — C8 recovery', () => {
     expect(fixture.nativeElement.textContent).toContain('La sesión cambió');
     expect(fixture.debugElement.query(By.directive(Lesson08Flotation))).toBeNull();
     expect(fixture.nativeElement.querySelector('[role="dialog"]').contains(document.activeElement)).toBe(true);
-    fixture.componentInstance.saveC8State(comparison); fixture.componentInstance.nextStep(); fixture.componentInstance.restartDraft();
+    fixture.componentInstance.saveExerciseState('lesson-08', comparison); fixture.componentInstance.nextStep(); fixture.componentInstance.restartDraft();
     expect(write).not.toHaveBeenCalled(); expect(loadLessonDraft(b.id, 'lesson-08').draft).toBeNull();
     fixture.destroy(); const other = create(); expect(other.componentInstance.resumeOffer()).toBeNull();
     expect(loadLessonDraft(a.id, 'lesson-08').draft?.exercise).toEqual(comparison);
@@ -165,10 +165,10 @@ describe('LessonRunner — C8 recovery', () => {
 
   it('rejects writes from a replaced same-account session and does not interpret C6 emissions as C8', () => {
     const fixture = create(); fixture.componentInstance.nextStep(); fixture.detectChanges(); write.mockClear();
-    fixture.componentInstance.saveC6State({ stage: 'observe', round: 0, squaresFormed: false, duplicated: false,
+    fixture.componentInstance.saveExerciseState('lesson-06', { stage: 'observe', round: 0, squaresFormed: false, duplicated: false,
       duplicateViewed: false, practiceHelped: false, practiceVarianceAnswered: false, choiceOffset: 0 });
     expect(write).not.toHaveBeenCalled(); user.set({ ...a });
-    fixture.componentInstance.saveC8State(comparison); expect(write).not.toHaveBeenCalled();
+    fixture.componentInstance.saveExerciseState('lesson-08', comparison); expect(write).not.toHaveBeenCalled();
   });
 
   it('warns about storage failure without breaking the exercise or creating another overlay', () => {

@@ -93,6 +93,28 @@ describe('ZoneProgress — mission first', () => {
     expect(root.querySelector('h2')?.textContent).toBe('Elige un ámbito para comenzar tu recorrido.');
   });
 
+  it('offers the report only inside the expanded route when enabled, without changing progress', () => {
+    expect(root.querySelector('.progress-report')).toBeNull();
+    fixture.componentRef.setInput('reportAvailable', true); fixture.detectChanges();
+    const panel = root.querySelector<HTMLElement>('.progress-content')!;
+    expect(panel.hidden).toBe(true);
+    root.querySelector<HTMLButtonElement>('.progress-toggle')!.click(); fixture.detectChanges();
+    const button = panel.querySelector<HTMLButtonElement>('.progress-report')!;
+    const requested = vi.fn(); fixture.componentInstance.reportRequested.subscribe(requested);
+    const before = JSON.stringify(zone);
+    expect(button.type).toBe('button'); expect(panel.hidden).toBe(false);
+    button.click(); expect(requested).toHaveBeenCalledOnce();
+    expect(JSON.stringify(zone)).toBe(before);
+  });
+
+  it('does not expose a report in the HUB or an empty route even if enabled', () => {
+    fixture.componentRef.setInput('reportAvailable', true);
+    fixture.componentRef.setInput('zone', null); fixture.detectChanges();
+    expect(root.querySelector('.progress-report')).toBeNull();
+    fixture.componentRef.setInput('zone', { ...zone, lessons: [], totalLessons: 0 }); fixture.detectChanges();
+    expect(root.querySelector('.progress-report')).toBeNull();
+  });
+
   it('omits the route controls for an empty zone', () => {
     fixture.componentRef.setInput('zone', { ...zone, lessons: [], totalLessons: 0, completedLessons: 0, percentage: 0 });
     fixture.detectChanges();

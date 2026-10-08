@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PLAYER_AVATAR, type PlayerDirection } from './player-avatar';
 
 
 type PlayerControllerConfig = {
@@ -13,9 +14,6 @@ type PlayerControllerConfig = {
 };
 
 
-type PlayerDirection = | 'down' | 'up' | 'left' | 'right';
-
-
 export class PlayerController {
 
   readonly sprite:
@@ -24,6 +22,8 @@ export class PlayerController {
 
   private readonly speed:
     number;
+
+  private readonly texture: string;
 
 
   private readonly velocity =
@@ -50,13 +50,15 @@ export class PlayerController {
     this.speed =
       config.speed ?? 250;
 
+    this.texture = config.texture ?? PLAYER_AVATAR.texture;
+
 
     this.sprite =
       this.scene.physics.add.sprite(
         config.x,
         config.y,
-        config.texture ?? 'player',
-        config.frame ?? 0
+        this.texture,
+        config.frame ?? PLAYER_AVATAR.directions.down.idleStart
       );
 
 
@@ -94,8 +96,6 @@ export class PlayerController {
     ) {
 
       this.stop();
-
-      this.playIdleAnimation();
 
       return;
     }
@@ -170,6 +170,7 @@ export class PlayerController {
       0,
       0
     );
+    this.playIdleAnimation();
   }
 
 
@@ -180,6 +181,10 @@ export class PlayerController {
   private configureBody(
     depth: number
   ): void {
+
+    // Keep the feet and the collision body at the previous world position.
+    // The new 64 px frame is taller; its origin stays 16 px above the bottom.
+    this.sprite.setOrigin(0.5, 0.75);
 
     this.sprite
       .setCollideWorldBounds(
@@ -195,7 +200,7 @@ export class PlayerController {
 
     this.sprite.setOffset(
       8,
-      20
+      52
     );
 
 
@@ -212,163 +217,27 @@ export class PlayerController {
   private createAnimations():
     void {
 
-    /*
-     * Las animaciones pertenecen
-     * al AnimationManager global.
-     *
-     * Cuando tengamos varias Scenes,
-     * no queremos volver a registrarlas
-     * cada vez que cambiamos de mapa.
-     */
-
-    if (
-      !this.scene.anims.exists(
-        'still'
-      )
-    ) {
-
-      this.scene.anims.create({
-        key: 'still',
-
-        frames:
-          this.scene.anims
-            .generateFrameNumbers(
-              'player',
-              {
-                start: 0,
-                end: 1
-              }
-            ),
-
-        frameRate: 5,
-        repeat: -1
-      });
+    // Global animation keys are scoped to the texture and reused across scenes.
+    for (const direction of Object.keys(PLAYER_AVATAR.directions) as PlayerDirection[]) {
+      const frames = PLAYER_AVATAR.directions[direction];
+      for (const state of ['idle', 'walk'] as const) {
+        const key = this.animationKey(state, direction);
+        if (this.scene.anims.exists(key)) continue;
+        this.scene.anims.create({
+          key,
+          frames: this.scene.anims.generateFrameNumbers(this.texture, {
+            start: state === 'idle' ? frames.idleStart : frames.walkStart,
+            end: state === 'idle' ? frames.idleEnd : frames.walkEnd,
+          }),
+          frameRate: 8,
+          repeat: -1,
+        });
+      }
     }
+  }
 
-
-    if (
-      !this.scene.anims.exists(
-        'still-up'
-      )
-    ) {
-
-      this.scene.anims.create({
-        key: 'still-up',
-
-        frames:
-          this.scene.anims
-            .generateFrameNumbers(
-              'player',
-              {
-                start: 24,
-                end: 25
-              }
-            ),
-
-        frameRate: 5,
-        repeat: -1
-      });
-    }
-
-
-    if (
-      !this.scene.anims.exists(
-        'still-side'
-      )
-    ) {
-
-      this.scene.anims.create({
-        key: 'still-side',
-
-        frames:
-          this.scene.anims
-            .generateFrameNumbers(
-              'player',
-              {
-                start: 12,
-                end: 13
-              }
-            ),
-
-        frameRate: 5,
-        repeat: -1
-      });
-    }
-
-
-    if (
-      !this.scene.anims.exists(
-        'walk-down'
-      )
-    ) {
-
-      this.scene.anims.create({
-        key: 'walk-down',
-
-        frames:
-          this.scene.anims
-            .generateFrameNumbers(
-              'player',
-              {
-                start: 6,
-                end: 11
-              }
-            ),
-
-        frameRate: 6,
-        repeat: -1
-      });
-    }
-
-
-    if (
-      !this.scene.anims.exists(
-        'walk-side'
-      )
-    ) {
-
-      this.scene.anims.create({
-        key: 'walk-side',
-
-        frames:
-          this.scene.anims
-            .generateFrameNumbers(
-              'player',
-              {
-                start: 18,
-                end: 23
-              }
-            ),
-
-        frameRate: 6,
-        repeat: -1
-      });
-    }
-
-
-    if (
-      !this.scene.anims.exists(
-        'walk-up'
-      )
-    ) {
-
-      this.scene.anims.create({
-        key: 'walk-up',
-
-        frames:
-          this.scene.anims
-            .generateFrameNumbers(
-              'player',
-              {
-                start: 30,
-                end: 35
-              }
-            ),
-
-        frameRate: 6,
-        repeat: -1
-      });
-    }
+  private animationKey(state: 'idle' | 'walk', direction: PlayerDirection): string {
+    return `${this.texture}-${state}-${direction}`;
   }
 
 
@@ -381,82 +250,12 @@ export class PlayerController {
     y: number
   ): void {
 
-    if (y < 0) {
-
-      this.sprite.setFlipX(
-        false
-      );
-
-
-      this.sprite.anims.play(
-        'walk-up',
-        true
-      );
-
-
-      this.lastDirection =
-        'up';
-
-      return;
-    }
-
-
-    if (y > 0) {
-
-      this.sprite.setFlipX(
-        false
-      );
-
-
-      this.sprite.anims.play(
-        'walk-down',
-        true
-      );
-
-
-      this.lastDirection =
-        'down';
-
-      return;
-    }
-
-
-    if (x < 0) {
-
-      this.sprite.setFlipX(
-        true
-      );
-
-
-      this.sprite.anims.play(
-        'walk-side',
-        true
-      );
-
-
-      this.lastDirection =
-        'left';
-
-      return;
-    }
-
-
-    if (x > 0) {
-
-      this.sprite.setFlipX(
-        false
-      );
-
-
-      this.sprite.anims.play(
-        'walk-side',
-        true
-      );
-
-
-      this.lastDirection =
-        'right';
-    }
+    // The sheet has four views. Use the dominant axis for diagonal/joystick input.
+    this.lastDirection = Math.abs(x) > Math.abs(y)
+      ? x < 0 ? 'left' : 'right'
+      : y < 0 ? 'up' : 'down';
+    this.sprite.setFlipX(false);
+    this.sprite.anims.play(this.animationKey('walk', this.lastDirection), true);
   }
 
 
@@ -467,65 +266,9 @@ export class PlayerController {
   private playIdleAnimation():
     void {
 
-    switch (
-      this.lastDirection
-    ) {
-
-      case 'down':
-
-        this.sprite.setFlipX(
-          false
-        );
-
-        this.sprite.anims.play(
-          'still',
-          true
-        );
-
-        break;
-
-
-      case 'up':
-
-        this.sprite.setFlipX(
-          false
-        );
-
-        this.sprite.anims.play(
-          'still-up',
-          true
-        );
-
-        break;
-
-
-      case 'left':
-
-        this.sprite.setFlipX(
-          true
-        );
-
-        this.sprite.anims.play(
-          'still-side',
-          true
-        );
-
-        break;
-
-
-      case 'right':
-
-        this.sprite.setFlipX(
-          false
-        );
-
-        this.sprite.anims.play(
-          'still-side',
-          true
-        );
-
-        break;
-    }
+    // The second row supplies a six-frame idle loop for each facing direction.
+    this.sprite.setFlipX(false);
+    this.sprite.anims.play(this.animationKey('idle', this.lastDirection), true);
   }
 
 }

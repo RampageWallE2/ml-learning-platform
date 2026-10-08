@@ -5,7 +5,7 @@ export const LESSON_04_WORKSHOP: LessonDefinition = {
   steps: [
     { type: 'dialogue', dialogue: { id: 'lesson-04-workshop-intro', messages: [
       { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Me comentaron que ayudaste a medir el rango en el botadero. Estoy organizando las revisiones del siguiente turno.' },
-      { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Estos dos equipos hicieron la misma tarea. El informe dice que sus tiempos fueron parecidos porque tienen el mismo rango.' },
+      { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Estos dos equipos hicieron la misma tarea. El informe dice que cada tiempo se repite igual porque ambos equipos tienen el mismo rango.' },
       { speaker: 'npc', characterId: 'npc-default', name: 'Encargado del taller', text: 'Antes de usar esa comparación para organizar las revisiones, ayúdame a comprobarla con todos los registros.' },
     ] } },
     { type: 'exercise', exerciseId: 'workshop-range-limits' },

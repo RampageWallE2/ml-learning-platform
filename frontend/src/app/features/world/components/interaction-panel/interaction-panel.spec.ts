@@ -55,6 +55,8 @@ describe('InteractionPanel', () => {
   it.each([
     ['dialogue', 'Conversación', 'Cerrar diálogo'],
     ['activity', 'Actividad', 'Cerrar actividad'],
+    ['help', 'Cómo jugar', 'Cerrar ayuda'],
+    ['report', 'Informe del turno', 'Cerrar informe'],
   ] as const)('names the %s modal and its close control', (mode, label, closeLabel) => {
     const fixture = TestBed.createComponent(InteractionPanel);
     fixture.componentRef.setInput('mode', mode);
@@ -70,7 +72,7 @@ describe('InteractionPanel', () => {
     expect(panel.classList.contains(`interaction-panel--${mode}`)).toBe(true);
   });
 
-  it.each<InteractionPanelMode>(['dialogue', 'activity'])('emits close once in %s mode', (mode) => {
+  it.each<InteractionPanelMode>(['dialogue', 'activity', 'help', 'report'])('emits close once in %s mode', (mode) => {
     const fixture = TestBed.createComponent(InteractionPanel);
     fixture.componentRef.setInput('mode', mode);
     fixture.detectChanges();
@@ -114,6 +116,19 @@ describe('InteractionPanel — keyboard and focus', () => {
     const { root } = await openPanel();
     expect(document.activeElement).toBe(root.querySelector('h2'));
     expect(document.activeElement?.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it.each([['help', 'Cómo jugar'], ['report', 'Informe del turno']] as const)('opens compact %s at its title and keeps native details and close controls in the focus loop', async (mode, label) => {
+    const { fixture, root, opener } = await openPanel(mode);
+    const panel = root.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(panel.getAttribute('aria-label')).toBe(label);
+    expect(document.activeElement).toBe(root.querySelector('h2'));
+    const summary = root.querySelector('summary')!;
+    summary.focus(); key(summary, 'Tab');
+    expect(document.activeElement).toBe(root.querySelector('#last'));
+    key(panel, 'Escape'); fixture.detectChanges(); await fixture.whenStable();
+    expect(root.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(opener);
   });
 
   it('opens a dialogue on its continue button', async () => {

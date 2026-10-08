@@ -1,0 +1,17 @@
+FROM node:24-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+ARG GOOGLE_CLIENT_ID=""
+ARG APP_VERSION=unreleased
+LABEL org.opencontainers.image.version=$APP_VERSION
+RUN npm run build -- --configuration production --define "EXPLORALAB_GOOGLE_CLIENT_ID=\"${GOOGLE_CLIENT_ID}\""
+
+FROM nginx:1.28-alpine AS production
+ARG APP_VERSION=unreleased
+LABEL org.opencontainers.image.version=$APP_VERSION
+COPY --from=build /app/dist/frontend/browser/ /usr/share/nginx/html/
+COPY nginx.production.conf.template /etc/nginx/templates/default.conf.template
+ENV NGINX_ENVSUBST_FILTER=PUBLIC_ORIGIN
+EXPOSE 80 443

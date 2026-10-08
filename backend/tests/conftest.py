@@ -1,16 +1,36 @@
+import os
 import pytest
 
 from app import create_app
 from app.auth.google import GoogleIdentityData
+from app.config import parse_postgresql_url
 from app.extensions import db
 
 
+@pytest.fixture(scope="session")
+def test_database_url():
+    test_database = os.getenv("TEST_DATABASE_URL")
+    if not test_database:
+        raise RuntimeError(
+            "TEST_DATABASE_URL is required; run the backend tests with compose.verify.yml. "
+            "The normal DATABASE_URL is never used as a fallback."
+        )
+    try:
+        parsed = parse_postgresql_url(test_database, "TEST_DATABASE_URL")
+    except ValueError:
+        raise RuntimeError("TEST_DATABASE_URL must target a dedicated PostgreSQL *_test database.") from None
+    if not (parsed.database or "").endswith("_test"):
+        raise RuntimeError("TEST_DATABASE_URL must target a dedicated PostgreSQL *_test database.")
+    return test_database
+
+
 @pytest.fixture()
-def app():
+def app(test_database_url):
     test_app = create_app(
         {
             "TESTING": True,
-            "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+            "APP_ENV": "development",
+            "SQLALCHEMY_DATABASE_URI": test_database_url,
             "SQLALCHEMY_ENGINE_OPTIONS": {},
             "CORS_ORIGINS": ["http://localhost:4200"],
             "CSRF_TRUSTED_ORIGINS": ["http://localhost:4200"],
@@ -28,10 +48,15 @@ def app():
     with test_app.app_context():
         db.create_all()
 
-    yield test_app
-
-    with test_app.app_context():
-        db.drop_all()
+    try:
+        yield test_app
+    finally:
+        with test_app.app_context():
+            db.session.remove()
+            try:
+                db.drop_all()
+            finally:
+                db.engine.dispose()
 
 
 @pytest.fixture()

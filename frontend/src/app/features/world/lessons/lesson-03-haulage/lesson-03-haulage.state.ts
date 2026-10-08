@@ -2,6 +2,7 @@ export type C3Stage = 'extremes' | 'measure' | 'discovery' | 'practice-extremes'
 export type C3TripRecord = Readonly<{ id: string; time: number }>;
 export type C3State = Readonly<{ stage: C3Stage; selectedMinId: string | null; selectedMaxId: string | null;
   round: number; practiceHelped: boolean }>;
+export const C3_MAX_PRACTICE_ROUNDS = 1;
 export const C3_TRIPS: readonly C3TripRecord[] = [
   { id: 'trip-1', time: 11 }, { id: 'trip-2', time: 12 },
   { id: 'trip-3', time: 11 }, { id: 'trip-4', time: 18 }, { id: 'trip-5', time: 12 },
@@ -28,7 +29,7 @@ export function isC3State(value: unknown): value is C3State {
   if (state.stage === 'practice-extremes') return state.selectedMaxId === null;
   if (!min || !max) return false;
   if (state.stage === 'review') return state.practiceHelped;
-  if (state.stage === 'success') return !state.practiceHelped;
+  if (state.stage === 'success') return !state.practiceHelped || state.round! >= C3_MAX_PRACTICE_ROUNDS;
   return true;
 }
 export function copyC3State(state: C3State): C3State {

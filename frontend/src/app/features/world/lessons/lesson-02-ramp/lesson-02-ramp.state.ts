@@ -1,6 +1,7 @@
 export type C2Stage = 'learn' | 'report' | 'request' | 'records' | 'discovery' | 'practice' | 'reason' | 'review' | 'success';
 export type C2State = Readonly<{ stage: C2Stage; redistributed: boolean; round: number; practiceCase: number;
   practiceHelped: boolean; selectedLoad: string | null }>;
+export const C2_MAX_PRACTICE_ROUNDS = 1;
 export const C2_TURNS = [
   { id: 'A', values: [98, 101, 100, 99, 102] }, { id: 'B', values: [80, 120, 90, 110, 100] },
 ] as const;
@@ -29,7 +30,7 @@ export function isC2State(value: unknown): value is C2State {
   }
   if (['reason', 'review', 'success'].includes(state.stage!) && state.practiceCase !== 1) return false;
   if (state.stage === 'review') return state.practiceHelped;
-  if (state.stage === 'success') return !state.practiceHelped;
+  if (state.stage === 'success') return !state.practiceHelped || state.round! >= C2_MAX_PRACTICE_ROUNDS;
   return true;
 }
 export function copyC2State(state: C2State): C2State {

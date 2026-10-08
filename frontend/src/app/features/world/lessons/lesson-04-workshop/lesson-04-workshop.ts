@@ -3,19 +3,15 @@ import {
   inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { calculateRange } from '../lesson-statistics';
+import { C4_WORKSHOP_RECORDS as RECORDS, type OpenPitRecordGroup as RecordGroup } from '../data/open-pit-original-records';
 import { C4Stage as Stage, C4ExperimentMode as ExperimentMode, C4RangePrediction as RangePrediction,
-  C4State, isC4State } from './lesson-04-workshop.state';
+  C4State, C4_MAX_PRACTICE_ROUNDS, isC4State } from './lesson-04-workshop.state';
 
 type Comparison = 'a' | 'b' | 'same';
 type Explanation = 'extremes' | 'unchanged' | 'useless';
 type Claim = 'same' | 'different' | 'unknown';
 type Evidence = 'a' | 'b' | 'range';
-type RecordGroup = Readonly<{ id: string; name: string; values: readonly number[] }>;
-
-const RECORDS: readonly RecordGroup[] = [
-  { id: 'A', name: 'Equipo A', values: [8, 10, 10, 10, 12] },
-  { id: 'B', name: 'Equipo B', values: [8, 8, 10, 12, 12] },
-];
 const PRACTICE_SETS: readonly (readonly RecordGroup[])[] = [
   [
     { id: 'C', name: 'Equipo C', values: [6, 8, 8, 8, 10] },
@@ -49,6 +45,8 @@ export class Lesson04Workshop implements OnChanges {
   readonly separatedViewed = signal(false);
   readonly round = signal(0);
   readonly practiceHelped = signal(false);
+  readonly needsPractice = computed(() => this.practiceHelped() && this.round() < C4_MAX_PRACTICE_ROUNDS);
+  readonly guidedCompletion = computed(() => this.stage() === 'success' && this.practiceHelped());
   readonly records = RECORDS;
   readonly ticks = [6, 7, 8, 9, 10, 11, 12, 13, 14];
   readonly practicing = computed(() => ['practice', 'evidence', 'review'].includes(this.stage()));
@@ -69,7 +67,7 @@ export class Lesson04Workshop implements OnChanges {
       minimum: Math.min(...group.values),
       maximum: Math.max(...group.values),
       range: this.range(group.values),
-      description: group.name + ': ' + group.values.join(', ') + ' minutos. Cada punto es una revisión; los puntos apilados tienen el mismo tiempo. Escala común de 6 a 14 minutos. Rango de ' + this.range(group.values) + ' minutos.',
+      description: group.name + ': ' + group.values.join(', ') + ' minutos. Cada punto es una revisión; los puntos uno sobre otro tienen el mismo tiempo. Escala común de 6 a 14 minutos. Rango de ' + this.range(group.values) + ' minutos.',
       points: group.values.map((value, index) => ({
         id: group.id + '-' + (index + 1), value, x: this.position(value),
         bottom: 14 + stackOrder.slice(0, stackOrder.indexOf(index)).filter(previous => group.values[previous] === value).length * 20,
@@ -86,9 +84,9 @@ export class Lesson04Workshop implements OnChanges {
   readonly concentratedSide = computed<Evidence>(() => this.centerCounts()[0] > this.centerCounts()[1] ? 'a' : 'b');
   readonly concentratedGroup = computed(() => this.practiceRecords()[this.concentratedSide() === 'a' ? 0 : 1]);
   readonly compareChoices: readonly { id: Comparison; text: string }[] = [
-    { id: 'same', text: 'Los tiempos se reparten igual en ambos.' },
-    { id: 'a', text: 'A tiene más revisiones de 10 minutos.' },
-    { id: 'b', text: 'B tiene más revisiones de 10 minutos.' },
+    { id: 'same', text: 'Cada tiempo aparece la misma cantidad de veces en A y B.' },
+    { id: 'a', text: 'En A hay más revisiones de 10 minutos que en B.' },
+    { id: 'b', text: 'En B hay más revisiones de 10 minutos que en A.' },
   ];
   readonly predictions: readonly { id: RangePrediction; text: string }[] = [
     { id: 'increase', text: 'Será mayor' },
@@ -108,13 +106,13 @@ export class Lesson04Workshop implements OnChanges {
     { id: 'useless', text: 'Porque el rango no sirve para nada.' },
   ];
   readonly claims: readonly { id: Claim; text: string }[] = [
-    { id: 'same', text: 'Mantener: el mismo rango significa que los tiempos se reparten igual.' },
-    { id: 'different', text: 'Corregir: mismo rango, pero tiempos repartidos de forma distinta.' },
-    { id: 'unknown', text: 'No se pueden comparar, aunque tenemos todos los registros.' },
+    { id: 'same', text: 'Mantener: con el mismo rango, cada tiempo se repite igual.' },
+    { id: 'different', text: 'Corregir: el rango es igual, pero los tiempos no se repiten igual.' },
+    { id: 'unknown', text: 'No podemos comparar, aunque vemos todos los tiempos.' },
   ];
   readonly evidenceChoices = computed<readonly { id: Evidence; text: string }[]>(() => [
-    { id: 'a', text: 'En ' + this.practiceRecords()[0].id + ' hay más revisiones de ' + this.center() + ' minutos.' },
-    { id: 'b', text: 'En ' + this.practiceRecords()[1].id + ' hay más revisiones de ' + this.center() + ' minutos.' },
+    { id: 'a', text: 'En ' + this.practiceRecords()[0].id + ' hay más revisiones de ' + this.center() + ' minutos que en ' + this.practiceRecords()[1].id + '.' },
+    { id: 'b', text: 'En ' + this.practiceRecords()[1].id + ' hay más revisiones de ' + this.center() + ' minutos que en ' + this.practiceRecords()[0].id + '.' },
     { id: 'range', text: 'Los dos equipos tienen el mismo rango.' },
   ]);
   private readonly injector = inject(Injector);
@@ -139,7 +137,7 @@ export class Lesson04Workshop implements OnChanges {
   }
 
   position(value: number): number { return (value - 6) / 8 * 100; }
-  range(values: readonly number[]): number { return Math.max(...values) - Math.min(...values); }
+  range(values: readonly number[]): number { return calculateRange(values); }
 
   compare(answer: Comparison): void {
     if (this.stage() !== 'compare' || !this.compareChoices.some(choice => choice.id === answer)) return;
@@ -194,7 +192,7 @@ export class Lesson04Workshop implements OnChanges {
 
   chooseEvidence(answer: Evidence): void {
     if (this.stage() !== 'evidence' || !this.evidenceChoices().some(choice => choice.id === answer)) return;
-    if (answer === this.concentratedSide()) this.moveTo(this.practiceHelped() ? 'review' : 'success');
+    if (answer === this.concentratedSide()) this.moveTo(this.needsPractice() ? 'review' : 'success');
     else this.hint(answer === 'range'
       ? 'Eso es cierto, pero no muestra la diferencia entre los demás tiempos. Busca en qué equipo hay más revisiones de ' + this.center() + ' minutos.'
       : 'Cuenta los puntos en ' + this.center() + ' minutos: hay ' + this.centerCounts()[0] + ' en ' + this.practiceRecords()[0].id + ' y ' + this.centerCounts()[1] + ' en ' + this.practiceRecords()[1].id + '.');
@@ -202,6 +200,11 @@ export class Lesson04Workshop implements OnChanges {
 
   continueAfterHelp(): void {
     if (this.stage() !== 'review') return;
+    // Preserve an older resolved review and close only on explicit action.
+    if (!this.needsPractice()) {
+      this.moveTo('success');
+      return;
+    }
     this.round.update(round => round + 1);
     this.practiceHelped.set(false);
     this.moveTo('practice');

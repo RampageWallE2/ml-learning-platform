@@ -1,3 +1,5 @@
+@use '../../../../../styles/lesson-focus' as lesson-focus;
+
 :host {
   display: block;
   min-width: 0;
@@ -720,3 +722,5 @@ h3:focus {
     animation: none;
   }
 }
+
+@include lesson-focus.focused-workbench;

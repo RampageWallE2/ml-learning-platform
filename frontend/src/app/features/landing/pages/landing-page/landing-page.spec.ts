@@ -33,25 +33,20 @@ describe('LandingPage', () => {
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
 
-  it('presents ExploraLab and a real panorama without limiting the platform to Open Pit', () => {
+  it('presents a simple educational landing without limiting the platform to Open Pit', () => {
     const { element } = render();
     expect(element.querySelectorAll('h1')).toHaveLength(1);
     expect(element.querySelector('h1')?.textContent).toContain('Entiende los datos.');
     expect(element.querySelector('.hero-brand')?.textContent).toBe('ExploraLab');
-    expect(element.querySelector('.lead')?.textContent).toContain('Explora escenarios');
+    expect(element.querySelector('.lead')?.textContent).toContain('leer datos de la minería');
     expect(element.querySelector('.hero')?.textContent).not.toMatch(/9\s+(clases|lecciones)/i);
     expect(element.querySelector('app-site-header')).not.toBeNull();
-    expect(element.querySelector('.hero-visual figcaption')?.textContent).toContain(
-      'Experiencia disponible',
-    );
-    expect(element.querySelector<HTMLImageElement>('.hero-visual img')?.getAttribute('src')).toBe(
-      'assets/branding/exploralab-open-pit-map.png',
-    );
+    expect(element.querySelector('.hero img, .hero figure')).toBeNull();
     expect(element.querySelector('app-learning-scene')).toBeNull();
     expect(element.querySelector('canvas')).toBeNull();
   });
 
-  it('preserves navigation anchors and uses a purpose-driven description of Open Pit', () => {
+  it('preserves navigation anchors and explains mining AI in simple language', () => {
     const { element } = render();
     for (const id of ['contenido', 'experiencia', 'metodologia', 'como-funciona']) {
       expect(element.querySelector('#' + id)).not.toBeNull();
@@ -61,9 +56,11 @@ describe('LandingPage', () => {
       '#experiencia',
     );
     expect(element.querySelector('.experience-copy')?.textContent).toContain(
-      'preparar el siguiente turno',
+      'La inteligencia artificial (IA) busca patrones',
     );
-    expect(element.querySelector('.experience-note')?.textContent).toContain('dispersión de datos');
+    expect(element.querySelector('.experience-note')?.textContent).toContain(
+      'Entender los datos es el primer paso.',
+    );
   });
 
   it('marks future scenarios as planned rather than playable or dated', () => {
@@ -131,60 +128,33 @@ describe('LandingPage', () => {
     expect(element.textContent).not.toContain('Comprobando sesión');
   });
 
-  it('starts with a clearly labeled genuine lesson preview rather than an embedded game', () => {
+  it('replaces exercises with three brief, non-interactive mining applications', () => {
     const { element } = render();
-    const buttons = Array.from(
-      element.querySelectorAll<HTMLButtonElement>('.preview-controls button'),
+    const applications = element.querySelectorAll('.mining-applications article');
+    expect(applications).toHaveLength(3);
+    expect(Array.from(applications, (article) => article.querySelector('h3')?.textContent)).toEqual(
+      ['Anticipar fallas', 'Mejorar el proceso', 'Usar mejor los recursos'],
     );
-    expect(buttons.map((button) => button.textContent?.trim())).toEqual([
-      'El escenario',
-      'Una actividad',
-    ]);
-    expect(buttons[0].getAttribute('aria-pressed')).toBe('false');
-    expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
-    for (const button of buttons) {
-      expect(button.type).toBe('button');
-      expect(button.getAttribute('aria-controls')).toBe('game-preview');
+    for (const article of applications) {
+      expect(article.querySelector('p')?.textContent?.trim().length).toBeLessThan(100);
+      expect(article.querySelector('button, input, select, img, canvas')).toBeNull();
     }
-    expect(element.querySelector('#game-preview img')?.getAttribute('src')).toBe(
-      'assets/branding/exploralab-open-pit-lesson.png',
-    );
-    expect(element.querySelector('#game-preview figcaption')?.textContent).toContain('clase 7');
-    expect(element.querySelector('#game-preview figcaption')?.textContent).toContain(
-      'Las actividades se realizan dentro del juego.',
-    );
+    expect(element.querySelector('#game-preview, .preview-controls')).toBeNull();
   });
 
-  it('switches the image, selected control and announced caption together', () => {
-    const { fixture, element } = render();
-    const buttons = element.querySelectorAll<HTMLButtonElement>('.preview-controls button');
-    buttons[0].click();
-    fixture.detectChanges();
-    expect(fixture.componentInstance.previewMode()).toBe('map');
-    expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
-    expect(buttons[1].getAttribute('aria-pressed')).toBe('false');
-    expect(element.querySelector('#game-preview img')?.getAttribute('src')).toBe(
-      'assets/branding/exploralab-open-pit-map.png',
+  it('distinguishes learning to read data from industrial uses of AI and links the source', () => {
+    const { element } = render();
+    expect(element.querySelector('.experience-note')?.textContent).toContain(
+      'En ExploraLab practicas cómo leerlos y compararlos',
     );
-    expect(element.querySelector('#game-preview figcaption')?.textContent).toContain(
-      'explora el mapa',
+    const source = element.querySelector<HTMLAnchorElement>('.industry-source')!;
+    expect(source.href).toBe(
+      'https://www.bhp.com/news/bhp-insights/2024/08/artificial-intelligence-is-unearthing-a-smarter-future',
     );
-
-    buttons[1].click();
-    fixture.detectChanges();
-    expect(fixture.componentInstance.previewMode()).toBe('lesson');
-    expect(buttons[0].getAttribute('aria-pressed')).toBe('false');
-    expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
-    expect(element.querySelectorAll('#game-preview img')).toHaveLength(1);
-    expect(element.querySelector('#game-preview img')?.getAttribute('src')).toBe(
-      'assets/branding/exploralab-open-pit-lesson.png',
-    );
-    expect(element.querySelector('#game-preview figcaption')?.getAttribute('aria-live')).toBe(
-      'polite',
-    );
-    expect(element.querySelector('#game-preview figcaption')?.getAttribute('aria-atomic')).toBe(
-      'true',
-    );
+    expect(source.target).toBe('_blank');
+    expect(source.rel).toContain('noopener');
+    expect(source.getAttribute('aria-label')).toContain('en inglés, abre una nueva pestaña');
+    expect(element.querySelector('.experience')?.textContent).not.toMatch(/asistente|tutor de IA/i);
   });
 
   it('provides complete accessible headings without repeated typewriter effects', () => {
@@ -202,45 +172,20 @@ describe('LandingPage', () => {
     }
   });
 
-  it('uses responsive WebP screenshots with PNG fallbacks, dimensions and descriptions', () => {
+  it('does not include or request Open Pit imagery anywhere on the landing', () => {
     const { element } = render();
-    for (const [selector, name, widths, dimensions] of [
-      ['.hero-visual', 'exploralab-open-pit-map', [640, 960, 1536], [1536, 768]],
-      ['#game-preview', 'exploralab-open-pit-lesson', [480, 960], [962, 691]],
-    ] as const) {
-      const source = element.querySelector(selector + ' source')!;
-      const image = element.querySelector<HTMLImageElement>(selector + ' img')!;
-      expect(source.getAttribute('type')).toBe('image/webp');
-      const candidates = source.getAttribute('srcset')?.replace(/\s+/g, ' ');
-      for (const width of widths) {
-        expect(candidates).toContain(
-          'assets/branding/' + name + '-' + width + '.webp ' + width + 'w',
-        );
-      }
-      expect(source.getAttribute('sizes')).toContain('100vw');
-      expect(image.getAttribute('src')).toBe('assets/branding/' + name + '.png');
-      expect([image.width, image.height]).toEqual(dimensions);
-      expect(image.alt.length).toBeGreaterThan(20);
-      expect(image.getAttribute('decoding')).toBe('async');
-    }
+    expect(element.querySelectorAll('main img, main source')).toHaveLength(0);
+    expect(element.querySelector('[src*="open-pit"], [srcset*="open-pit"]')).toBeNull();
+    expect(element.querySelector('link[rel="preload"]')).toBeNull();
   });
 
-  it('prioritizes the panorama and lazy loads the preview and footer', () => {
-    const { fixture, element } = render();
-    const hero = element.querySelector<HTMLImageElement>('.hero-visual img')!;
-    expect(hero.getAttribute('loading')).toBe('eager');
-    expect(hero.getAttribute('fetchpriority')).toBe('high');
-    expect(element.querySelectorAll('img[fetchpriority="high"]')).toHaveLength(1);
-    for (const selector of ['#game-preview img', 'footer .brand img']) {
-      const image = element.querySelector(selector)!;
-      expect(image.getAttribute('loading')).toBe('lazy');
-      expect(image.getAttribute('decoding')).toBe('async');
-      expect(image.hasAttribute('fetchpriority')).toBe(false);
-    }
-    fixture.componentInstance.previewMode.set('map');
-    fixture.detectChanges();
-    expect(element.querySelector('#game-preview img')?.getAttribute('loading')).toBe('lazy');
-    expect(element.querySelectorAll('img[fetchpriority="high"]')).toHaveLength(1);
+  it('keeps only brand imagery and lazy loads the footer logo', () => {
+    const { element } = render();
+    expect(element.querySelectorAll('img')).toHaveLength(2);
+    const footer = element.querySelector('footer .brand img')!;
+    expect(footer.getAttribute('loading')).toBe('lazy');
+    expect(footer.getAttribute('decoding')).toBe('async');
+    expect(element.querySelector('[fetchpriority="high"]')).toBeNull();
   });
 
   it('reuses the existing lightweight logo and accessible brand name', () => {

@@ -3,7 +3,8 @@ import {
   inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
-import { C2Stage as Stage, C2State, C2_TURNS as TURNS, C2_PRACTICE_REPORTS as PRACTICE_REPORTS, isC2State } from './lesson-02-ramp.state';
+import { calculateMean } from '../lesson-statistics';
+import { C2Stage as Stage, C2State, C2_MAX_PRACTICE_ROUNDS, C2_TURNS as TURNS, C2_PRACTICE_REPORTS as PRACTICE_REPORTS, isC2State } from './lesson-02-ramp.state';
 
 type ReportAnswer = 'same' | 'a' | 'b' | 'unknown';
 type RequestAnswer = 'records' | 'drivers' | 'copy';
@@ -27,6 +28,8 @@ export class Lesson02Ramp implements OnChanges {
   readonly round = signal(0);
   readonly practiceCase = signal(0);
   readonly practiceHelped = signal(false);
+  readonly needsPractice = computed(() => this.practiceHelped() && this.round() < C2_MAX_PRACTICE_ROUNDS);
+  readonly guidedCompletion = computed(() => this.stage() === 'success' && this.practiceHelped());
   readonly selectedLoad = signal<string | null>(null);
   readonly turns = TURNS;
   readonly example = [90, 100, 110] as const;
@@ -46,9 +49,9 @@ export class Lesson02Ramp implements OnChanges {
     return this.practiceTurns().map(turn => ({ id: turn.id, mean: this.average(turn.values) }));
   });
   readonly reportChoices = computed<readonly { id: ReportAnswer; text: string }[]>(() => [
-    { id: 'same', text: 'Las cargas se parecen igual en los dos turnos.' },
-    { id: 'b', text: 'En ' + this.reports()[1].id + ', las cargas son más diferentes.' },
-    { id: 'unknown', text: 'Falta ver la carga de cada camión.' },
+    { id: 'same', text: `Sí, ambos turnos tuvieron un promedio de ${this.reports()[0].mean} toneladas.` },
+    { id: 'b', text: `Sí, todos los camiones llevaron ${this.reports()[0].mean} toneladas.` },
+    { id: 'unknown', text: 'No, necesitamos ver cuánto llevó cada camión.' },
   ]);
   readonly practiceChoices = computed<readonly { id: ReportAnswer; text: string }[]>(() => [
     { id: 'a', text: 'En el turno ' + this.reports()[0].id + '.' },
@@ -94,7 +97,7 @@ export class Lesson02Ramp implements OnChanges {
       practiceCase: this.practiceCase(), practiceHelped: this.practiceHelped(), selectedLoad: this.selectedLoad() });
   }
 
-  average(values: readonly number[]): number { return values.reduce((sum, value) => sum + value, 0) / values.length; }
+  average(values: readonly number[]): number { return calculateMean(values); }
   position(value: number): number { return (value - 80) * 2.5; }
 
   showSharing(): void {
@@ -112,7 +115,7 @@ export class Lesson02Ramp implements OnChanges {
   assess(answer: ReportAnswer): void {
     if (this.stage() !== 'report' || !this.reportChoices().some(choice => choice.id === answer)) return;
     if (answer === 'unknown') this.moveTo('request');
-    else this.feedback.set('Los dos promedios son iguales. ¿Eso nos dice cuánto llevó cada camión? Mira qué información falta antes de decidir.');
+    else this.feedback.set(`Un promedio de ${this.reports()[0].mean} toneladas no significa que cada camión llevó esa cantidad. Para saber si las cargas estuvieron cerca de ese valor, necesitamos ver cuánto llevó cada camión.`);
   }
 
   request(answer: RequestAnswer): void {
@@ -161,7 +164,7 @@ export class Lesson02Ramp implements OnChanges {
 
   explain(answer: Reason): void {
     if (this.stage() !== 'reason' || !this.reasons.some(choice => choice.id === answer)) return;
-    if (answer === 'summary') this.moveTo(this.practiceHelped() ? 'review' : 'success');
+    if (answer === 'summary') this.moveTo(this.needsPractice() ? 'review' : 'success');
     else {
       this.hint(answer === 'largest'
         ? 'Una sola carga no muestra cómo fue todo el turno. Mira todos los camiones.'
@@ -171,6 +174,12 @@ export class Lesson02Ramp implements OnChanges {
 
   continueAfterHelp(): void {
     if (this.stage() !== 'review') return;
+    // Older review drafts already contain a resolved additional practice.
+    // Closing remains explicit and keeps their round and assistance flag.
+    if (!this.needsPractice()) {
+      this.moveTo('success');
+      return;
+    }
     this.round.update(round => round + 1);
     this.clearPractice();
     this.moveTo('practice');

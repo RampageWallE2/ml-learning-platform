@@ -346,6 +346,13 @@ describe('Lesson05Crushing', () => {
     expect(root.textContent).not.toContain('Media');
     expect(root.querySelector('.feedback')).toBeNull();
     expect(root.querySelectorAll('.reading-choice')).toHaveLength(3);
+    expect(root.querySelector('.reading-choice strong')!.textContent).toBe(
+      '20 t/h por debajo del promedio',
+    );
+    expect(root.querySelector('.reading-choice span')!.textContent).toBe('Desviación: −20 t/h');
+    expect(root.querySelector('.choices')!.getAttribute('aria-label')).toBe(
+      'Cuánto se separa el dato y de qué lado está',
+    );
     expect(root.querySelector('input, textarea, form, select')).toBeNull();
     expect(
       game
@@ -414,7 +421,7 @@ describe('Lesson05Crushing', () => {
     expect(game.stage()).toBe('review');
   });
 
-  it('offers fresh practice only after a supported example is understood', () => {
+  it('allows one assisted additional practice while still requiring the final report', () => {
     const game = create().componentInstance;
     reachPractice(game);
     game.chooseReading(
@@ -435,12 +442,18 @@ describe('Lesson05Crushing', () => {
     expect(game.practiceHelped()).toBe(false);
     expect(game.solvedCount()).toBe(0);
     expect(game.feedback()).toBe('');
+    game.chooseReading(game.readingChoices().find(choice => choice.distance !== Math.abs(game.delta()))!.id);
     solvePractice(game);
     expect(game.stage()).toBe('report');
+    expect(game.practiceHelped()).toBe(true); expect(game.guidedCompletion()).toBe(false);
+    game.continueAfterHelp(); expect(game.round()).toBe(1);
+    game.chooseReport('constant'); expect(game.stage()).toBe('report');
+    game.chooseReport('observed'); expect(game.stage()).toBe('success');
+    expect(game.guidedCompletion()).toBe(true);
   });
 
-  it('keeps replacement means and plots accurate over repeated supported rounds', () => {
-    const game = create().componentInstance;
+  it('keeps replacement means accurate in current and older drafts without forcing supported rounds', () => {
+    const fixture = create(); const game = fixture.componentInstance;
     reachPractice(game);
     const expected = [
       [80, 100, 110, 110],
@@ -448,6 +461,9 @@ describe('Lesson05Crushing', () => {
       [90, 100, 120, 90],
     ];
     for (let round = 0; round < 9; round += 1) {
+      fixture.componentRef.setInput('initialState', { stage: 'practice', selected: 0,
+        round, solvedCount: 0, practiceHelped: false });
+      fixture.detectChanges();
       const values = expected[round % 3];
       expect(game.values()).toEqual(values);
       expect(game.mean()).toBe(values.reduce((sum, value) => sum + value, 0) / values.length);
@@ -461,7 +477,7 @@ describe('Lesson05Crushing', () => {
         game.readingChoices().find((choice) => choice.distance !== Math.abs(game.delta()))!.id,
       );
       solvePractice(game);
-      expect(game.stage()).toBe('review');
+      expect(game.stage()).toBe(round === 0 ? 'review' : 'report');
       game.continueAfterHelp();
     }
     expect(game.original).toEqual([80, 80, 120, 120]);
@@ -488,6 +504,62 @@ describe('Lesson05Crushing', () => {
     expect(game.signed(-20)).toBe('−20');
     expect(game.signed(20)).toBe('+20');
     expect(game.signed(0)).toBe('0');
+    expect(game.describeDeviation(-20)).toBe('20 t/h por debajo del promedio');
+    expect(game.describeDeviation(10)).toBe('10 t/h por encima del promedio');
+    expect(game.describeDeviation(0)).toBe('En el promedio');
+  });
+
+  it('confirms the previous solved record without extra clicks, inherited hints or new draft fields', () => {
+    const fixture = create();
+    const game = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    reachPractice(game);
+    fixture.detectChanges();
+    expect(game.previousReading()).toBeNull();
+    expect(root.querySelector('.feedback-region')!.textContent).not.toContain('Respuesta anterior');
+    game.chooseReading(correctReading(game).id);
+    fixture.detectChanges();
+    expect(game.previousReading()).toEqual({ value: 80, deviation: -20 });
+    expect(root.querySelector('.feedback-region')!.textContent).toContain(
+      '20 t/h por debajo del promedio',
+    );
+    expect(game.current()).toBe(110);
+    expect(game.solvedCount()).toBe(1);
+    expect(game.feedback()).toBe('');
+    expect(game.practiceHelped()).toBe(false);
+    game.chooseReading(correctReading(game).id);
+    fixture.detectChanges();
+    expect(game.previousReading()).toEqual({ value: 110, deviation: 10 });
+    expect(root.querySelector('.feedback-region')!.textContent).toContain(
+      '10 t/h por encima del promedio',
+    );
+    expect(root.querySelector('.reading-choice strong')!.textContent).toBe('10 t/h por debajo del promedio');
+    expect(Array.from(root.querySelectorAll('.reading-choice strong'), choice => choice.textContent))
+      .toContain('En el promedio');
+    game.chooseReading(correctReading(game).id);
+    fixture.detectChanges();
+    expect(game.stage()).toBe('report');
+    expect(game.previousReading()).toBeNull();
+    expect(root.querySelector('.feedback-region')!.textContent).not.toContain('Respuesta anterior');
+
+    const restored = create();
+    restored.componentRef.setInput('initialState', {
+      stage: 'practice', selected: 0, round: 1, solvedCount: 1, practiceHelped: true,
+    });
+    restored.detectChanges();
+    const resumed = restored.componentInstance;
+    expect(resumed.mean()).toBe(110);
+    expect(resumed.previousReading()).toEqual({ value: 90, deviation: -20 });
+    expect(restored.nativeElement.querySelector('.feedback-region').textContent).toContain(
+      '20 t/h por debajo del promedio',
+    );
+    expect(resumed.practiceHelped()).toBe(true);
+    solvePractice(resumed);
+    expect(resumed.stage()).toBe('report');
+    resumed.continueAfterHelp();
+    expect(resumed.previousReading()).toBeNull();
+    expect(resumed.practiceHelped()).toBe(true);
+    expect(resumed.round()).toBe(1);
   });
 
   it('keeps plausible choices stable after a hint rather than changing the current task', () => {
@@ -597,11 +669,8 @@ describe('Lesson05Crushing', () => {
       const correct = correctReading(game);
       click(
         root,
-        'Desviación: ' +
-          game.signed(correct.deviation) +
-          ' t/h Separación: ' +
-          correct.distance +
-          ' t/h',
+        game.describeDeviation(correct.deviation) + ' Desviación: '
+          + game.signed(correct.deviation) + ' t/h',
       );
       fixture.detectChanges();
     }
@@ -623,7 +692,7 @@ describe('Lesson05Crushing', () => {
     const root: HTMLElement = fixture.nativeElement;
     reachPractice(game);
     fixture.detectChanges();
-    click(root, 'Desviación: −10 t/h Separación: 10 t/h');
+    click(root, '10 t/h por debajo del promedio Desviación: −10 t/h');
     fixture.detectChanges();
     expect(root.textContent).toContain('Una pista');
     expect(root.textContent).toContain('Entre 80 y el promedio de 100 hay 20 t/h');

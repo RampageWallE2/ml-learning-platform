@@ -1,3 +1,4 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
@@ -31,17 +32,50 @@ describe('request verification — real app providers and services', () => {
     sessionStorage.clear();
   });
 
-  function confirmAuth(path: string) {
+  function confirmAuth(path: string, account = user) {
     const request = http.expectOne(`${root}/auth/${path}`);
     expect(request.request.headers.get('X-ExploraLab-Request')).toBe('1');
     expect(request.request.withCredentials).toBe(true);
-    request.flush({ user });
+    request.flush({ user: account });
   }
 
-  function login() {
-    auth.loginWithEmail({ email: user.email, password: 'test-only-password' }).subscribe();
-    confirmAuth('login');
+  function login(account = user) {
+    auth.loginWithEmail({ email: account.email, password: 'test-only-password' }).subscribe();
+    confirmAuth('login', account);
   }
+
+  it('preserves the real session when an unrelated server returns 401', () => {
+    login();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    let receivedError: HttpErrorResponse | undefined;
+    const url = 'https://other.example/api/v1/me/progress';
+    TestBed.inject(HttpClient).get(url).subscribe({ error: error => receivedError = error });
+    const request = http.expectOne(url);
+    expect(request.request.headers.has('X-ExploraLab-Request')).toBe(false);
+    request.flush({}, { status: 401, statusText: 'Unauthorized' });
+
+    expect(receivedError?.status).toBe(401);
+    expect(auth.user()).toEqual(user);
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('still expires the real session for a protected API request with query parameters', () => {
+    login();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    let receivedError: HttpErrorResponse | undefined;
+    const url = `${root}/me/progress?zone=zone-01`;
+    TestBed.inject(HttpClient).get(url, { withCredentials: true })
+      .subscribe({ error: error => receivedError = error });
+    http.expectOne(url).flush({}, { status: 401, statusText: 'Unauthorized' });
+
+    expect(receivedError?.status).toBe(401);
+    expect(auth.user()).toBeNull();
+    expect(auth.isAuthenticated()).toBe(false);
+    expect(navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { reason: 'session-expired', returnUrl: '/' },
+    });
+  });
 
   it('preserves an existing session when a repeated password login is limited', () => {
     login();
@@ -127,5 +161,74 @@ describe('request verification — real app providers and services', () => {
       { code: 'csrf_validation_failed' }, { status: 403, statusText: 'Forbidden' },
     );
     expect(auth.isAuthenticated()).toBe(true);
+  });
+
+  it.each([
+    user,
+    { id: 'next-test-user', email: 'next@example.test', displayName: 'Next', avatarUrl: null },
+  ])('preserves session $id after an old protected request returns 401', account => {
+    login();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    let receivedError: HttpErrorResponse | undefined;
+    const url = `${root}/me/progress`;
+    TestBed.inject(HttpClient).get(url).subscribe({ error: error => receivedError = error });
+    const previous = http.expectOne(url);
+
+    auth.logout().subscribe();
+    http.expectOne(`${root}/auth/logout`).flush({});
+    login(account);
+    const version = auth.sessionVersion();
+    previous.flush({}, { status: 401, statusText: 'Previous session' });
+
+    expect(receivedError?.status).toBe(401);
+    expect(auth.user()).toEqual(account);
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(auth.sessionVersion()).toBe(version);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('does not expire the new account when saving the previous account returns 401', () => {
+    login();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const progress = TestBed.inject(ProgressService);
+    const received = vi.fn();
+    const failed = vi.fn();
+    progress.completeLesson('lesson-01').subscribe({ next: received, error: failed });
+    const previous = http.expectOne(`${root}/me/progress/lesson-01`);
+
+    auth.logout().subscribe();
+    http.expectOne(`${root}/auth/logout`).flush({});
+    const nextAccount = { id: 'next-test-user', email: 'next@example.test', displayName: 'Next', avatarUrl: null };
+    login(nextAccount);
+    progress.loadProgress().subscribe();
+    http.expectOne(`${root}/me/progress`).flush({ lessons: [] });
+    previous.flush({}, { status: 401, statusText: 'Previous session' });
+
+    expect(received).not.toHaveBeenCalled();
+    expect(failed).not.toHaveBeenCalled();
+    expect(auth.user()).toEqual(nextAccount);
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(progress.isLessonCompleted('lesson-01')).toBe(false);
+    expect(progress.pendingLessonIds()).toEqual([]);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('suppresses the callback and error of a stale logout 401 with both interceptors active', () => {
+    login();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const received = vi.fn();
+    const failed = vi.fn();
+    const completed = vi.fn();
+    auth.logout().subscribe({ next: received, error: failed, complete: completed });
+    const previous = http.expectOne(`${root}/auth/logout`);
+    login();
+    previous.flush({}, { status: 401, statusText: 'Previous session' });
+
+    expect(received).not.toHaveBeenCalled();
+    expect(failed).not.toHaveBeenCalled();
+    expect(completed).toHaveBeenCalledOnce();
+    expect(auth.user()).toEqual(user);
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

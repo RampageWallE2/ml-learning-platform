@@ -5,6 +5,8 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal, WritableSignal } from '@angular/core';
+import { TimeoutError } from 'rxjs';
+import { API_REQUEST_TIMEOUT_MS } from '../../../core/http/request-timeout';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthenticatedUser } from '../../../core/auth/auth.types';
 import { loadPendingProgress, savePendingProgress } from './pending-progress.storage';
@@ -65,6 +67,7 @@ describe('ProgressService — Open Pit MVP', () => {
   }
 
   afterEach(() => {
+    vi.useRealTimers();
     http.verify();
     vi.restoreAllMocks();
     localStorage.clear();
@@ -80,6 +83,141 @@ describe('ProgressService — Open Pit MVP', () => {
   function readStored(id = studentA.id) {
     return loadPendingProgress(id, ['lesson-01', 'lesson-02']).lessonIds;
   }
+
+  it('exposes readable flags without external mutation methods', () => {
+    expect(progress.pendingStorageAvailable()).toBe(true);
+    expect(progress.syncingPending()).toBe(false);
+    for (const flag of [progress.pendingStorageAvailable, progress.syncingPending]) {
+      expect(flag).not.toHaveProperty('set');
+      expect(flag).not.toHaveProperty('update');
+    }
+  });
+
+  it('keeps confirmed and pending progress when the GET exceeds its deadline', () => {
+    vi.useFakeTimers();
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+    });
+    failSave('lesson-02');
+    const failed = vi.fn();
+    progress.loadProgress().subscribe({ error: failed });
+    const request = http.expectOne('http://api.test/api/v1/me/progress');
+    vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS);
+    expect(request.cancelled).toBe(true);
+    expect(failed).toHaveBeenCalledExactlyOnceWith(expect.any(TimeoutError));
+    expect(progress.isLessonCompleted('lesson-01')).toBe(true);
+    expect(progress.pendingLessonIds()).toEqual(['lesson-02']);
+    expect(readStored()).toEqual(['lesson-02']);
+    expect(user()).toBe(studentA);
+    http.expectNone('http://api.test/api/v1/me/progress');
+    http.expectNone('http://api.test/api/v1/me/progress/lesson-02');
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: ['lesson-01', 'lesson-02'].map(id => storedLesson(id, 'completed')),
+    });
+    expect(progress.pendingLessonIds()).toEqual([]);
+    expect(progress.isLessonCompleted('lesson-02')).toBe(true);
+    http.expectNone('http://api.test/api/v1/me/progress/lesson-02');
+  });
+
+  it.each([false, true])('reconciles a timed-out shared save before retrying (already saved: %s)', alreadySaved => {
+    vi.useFakeTimers();
+    const firstError = vi.fn();
+    const secondError = vi.fn();
+    progress.completeLesson('lesson-01').subscribe({ error: firstError });
+    progress.completeLesson('lesson-01').subscribe({ error: secondError });
+    const request = http.expectOne('http://api.test/api/v1/me/progress/lesson-01');
+    vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS - 1);
+    expect(request.cancelled).toBe(false);
+    expect(firstError).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(request.cancelled).toBe(true);
+    expect(firstError).toHaveBeenCalledExactlyOnceWith(expect.any(TimeoutError));
+    expect(secondError).toHaveBeenCalledExactlyOnceWith(expect.any(TimeoutError));
+    expect(progress.pendingLessonIds()).toEqual(['lesson-01']);
+    expect(readStored()).toEqual(['lesson-01']);
+    expect(progress.isLessonCompleted('lesson-01')).toBe(false);
+    expect(progress.isLessonAvailable('lesson-02')).toBe(false);
+    expect(user()).toBe(studentA);
+    http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
+
+    progress.loadProgress().subscribe();
+    http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: alreadySaved ? [storedLesson('lesson-01', 'completed')] : [],
+    });
+    if (alreadySaved) {
+      http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
+    } else {
+      const retry = http.expectOne('http://api.test/api/v1/me/progress/lesson-01');
+      expect(retry.cancelled).toBe(false);
+      retry.flush({ progress: storedLesson('lesson-01', 'completed') });
+    }
+    expect(progress.pendingLessonIds()).toEqual([]);
+    expect(progress.syncingPending()).toBe(false);
+    expect(progress.isLessonAvailable('lesson-02')).toBe(true);
+  });
+
+  it('gives the reconciliation PUT its own deadline and releases the sync flag when it expires', () => {
+    vi.useFakeTimers();
+    failSave();
+    const failed = vi.fn();
+    progress.loadProgress().subscribe({ error: failed });
+    const read = http.expectOne('http://api.test/api/v1/me/progress');
+    vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS - 1);
+    read.flush({ profileId: 'a', lessons: [] });
+    const write = http.expectOne('http://api.test/api/v1/me/progress/lesson-01');
+    expect(progress.syncingPending()).toBe(true);
+    vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS - 1);
+    expect(write.cancelled).toBe(false);
+    expect(progress.syncingPending()).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(write.cancelled).toBe(true);
+    expect(failed).toHaveBeenCalledExactlyOnceWith(expect.any(TimeoutError));
+    expect(progress.syncingPending()).toBe(false);
+    expect(readStored()).toEqual(['lesson-01']);
+    http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
+  });
+
+  it('bounds a save that outlives its page subscription while keeping its durable pending record', () => {
+    vi.useFakeTimers();
+    const subscription = progress.completeLesson('lesson-01').subscribe({ error: () => undefined });
+    const request = http.expectOne('http://api.test/api/v1/me/progress/lesson-01');
+    subscription.unsubscribe();
+    expect(request.cancelled).toBe(false);
+    vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS);
+    expect(request.cancelled).toBe(true);
+    expect(readStored()).toEqual(['lesson-01']);
+    expect(progress.isLessonCompleted('lesson-01')).toBe(false);
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+    });
+    expect(progress.pendingLessonIds()).toEqual([]);
+    http.expectNone('http://api.test/api/v1/me/progress/lesson-01');
+  });
+
+  it('silently discards an old save timeout after switching accounts', () => {
+    vi.useFakeTimers();
+    const received = vi.fn();
+    const failed = vi.fn();
+    const completed = vi.fn();
+    progress.completeLesson('lesson-01').subscribe({ next: received, error: failed, complete: completed });
+    const previous = http.expectOne('http://api.test/api/v1/me/progress/lesson-01');
+    user.set(studentB);
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'b', lessons: [] });
+    vi.advanceTimersByTime(API_REQUEST_TIMEOUT_MS);
+    expect(previous.cancelled).toBe(true);
+    expect(received).not.toHaveBeenCalled();
+    expect(failed).not.toHaveBeenCalled();
+    expect(completed).toHaveBeenCalledOnce();
+    expect(user()).toBe(studentB);
+    expect(progress.pendingLessonIds()).toEqual([]);
+    expect(readStored(studentA.id)).toEqual(['lesson-01']);
+    expect(readStored(studentB.id)).toEqual([]);
+  });
 
   it('persists the completion before HTTP and keeps it after network failure', () => {
     progress.completeLesson('lesson-01').subscribe({ error: () => undefined });
@@ -186,12 +324,17 @@ describe('ProgressService — Open Pit MVP', () => {
 
   it('preserves a confirmation received while an older GET is in flight', () => {
     progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+    });
+    progress.loadProgress().subscribe();
     const read = http.expectOne('http://api.test/api/v1/me/progress');
-    progress.completeLesson('lesson-01').subscribe();
-    http.expectOne('http://api.test/api/v1/me/progress/lesson-01').flush({ progress: storedLesson('lesson-01', 'completed') });
-    read.flush({ profileId: 'a', lessons: [] });
+    progress.completeLesson('lesson-02').subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress/lesson-02').flush({ progress: storedLesson('lesson-02', 'completed') });
+    read.flush({ profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')] });
     expect(progress.isLessonCompleted('lesson-01')).toBe(true);
-    expect(progress.isLessonAvailable('lesson-02')).toBe(true);
+    expect(progress.isLessonCompleted('lesson-02')).toBe(true);
+    expect(progress.isLessonAvailable('lesson-03')).toBe(true);
   });
 
   it('discloses failed browser persistence but can retry from memory', () => {
@@ -434,25 +577,97 @@ describe('ProgressService — Open Pit MVP', () => {
     expect(progress.currentObjective()).toContain('encargado del control');
   });
 
-  it('clears stale progress before requesting the current user progress', () => {
+  it.each(['server', 'network'] as const)('preserves confirmed progress while refreshing and after a %s failure', failure => {
     progress.loadProgress().subscribe();
     http.expectOne('http://api.test/api/v1/me/progress').flush({
       profileId: 'profile-id',
-      lessons: [storedLesson('lesson-01', 'completed')]
+      lessons: [storedLesson('lesson-01', 'completed'), storedLesson('lesson-02', 'completed')]
     });
 
+    const confirmedZone = progress.zoneProgress()[0];
+    const currentLesson = progress.currentLesson();
+
+    let failed = false;
+    progress.loadProgress().subscribe({ error: () => { failed = true; } });
+
+    expect(progress.zoneProgress()[0]).toEqual(confirmedZone);
+    expect(progress.currentLesson()).toEqual(currentLesson);
+
+    const refresh = http.expectOne('http://api.test/api/v1/me/progress');
+    if (failure === 'server') {
+      refresh.flush({ error: 'Database unavailable' }, { status: 503, statusText: 'Service Unavailable' });
+    } else {
+      refresh.error(new ProgressEvent('error'));
+    }
+
+    expect(failed).toBe(true);
+    expect(progress.zoneProgress()[0]).toEqual(confirmedZone);
+    expect(progress.currentLesson()).toEqual(currentLesson);
     expect(progress.isLessonCompleted('lesson-01')).toBe(true);
+    expect(progress.isLessonCompleted('lesson-02')).toBe(true);
+    expect(progress.isLessonAvailable('lesson-03')).toBe(true);
+    expect(progress.isLessonAvailable('lesson-04')).toBe(false);
+
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'profile-id',
+      lessons: [storedLesson('lesson-01', 'completed'), storedLesson('lesson-02', 'completed'),
+        storedLesson('lesson-03', 'completed')],
+    });
+    expect(progress.zoneProgress()[0].completedLessons).toBe(3);
+    expect(progress.isLessonAvailable('lesson-04')).toBe(true);
+  });
+
+  it('keeps confirmed and pending results separate when a sync retry fails', () => {
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+    });
+    failSave('lesson-02');
 
     progress.loadProgress().subscribe({ error: () => undefined });
+    http.expectOne('http://api.test/api/v1/me/progress').error(new ProgressEvent('error'));
 
+    expect(progress.isLessonCompleted('lesson-01')).toBe(true);
+    expect(progress.isLessonCompleted('lesson-02')).toBe(false);
+    expect(progress.pendingLessonIds()).toEqual(['lesson-02']);
+    expect(readStored()).toEqual(['lesson-02']);
+    expect(progress.isLessonAvailable('lesson-02')).toBe(true);
+    expect(progress.isLessonAvailable('lesson-03')).toBe(false);
+    http.expectNone(request => request.method === 'PUT');
+  });
+
+  it('replaces the previous snapshot only after a successful progress read', () => {
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+    });
+
+    progress.loadProgress().subscribe();
+    expect(progress.isLessonCompleted('lesson-01')).toBe(true);
+    http.expectOne('http://api.test/api/v1/me/progress').flush({ profileId: 'a', lessons: [] });
     expect(progress.isLessonCompleted('lesson-01')).toBe(false);
+    expect(progress.isLessonAvailable('lesson-02')).toBe(false);
+  });
 
-    http.expectOne('http://api.test/api/v1/me/progress').flush(
-      { error: 'Database unavailable' },
-      { status: 503, statusText: 'Service Unavailable' }
-    );
+  it.each([
+    ['another account', studentB],
+    ['a new session of the same account', { ...studentA }],
+  ] as const)('clears previous confirmations for %s even if its read fails', (_, nextUser) => {
+    progress.loadProgress().subscribe();
+    http.expectOne('http://api.test/api/v1/me/progress').flush({
+      profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')],
+    });
+    progress.loadProgress().subscribe();
+    const oldRead = http.expectOne('http://api.test/api/v1/me/progress');
 
+    user.set(nextUser);
+    progress.loadProgress().subscribe({ error: () => undefined });
     expect(progress.isLessonCompleted('lesson-01')).toBe(false);
+    http.expectOne('http://api.test/api/v1/me/progress').error(new ProgressEvent('error'));
+    oldRead.flush({ profileId: 'a', lessons: [storedLesson('lesson-01', 'completed')] });
+    expect(progress.isLessonCompleted('lesson-01')).toBe(false);
+    expect(progress.isLessonAvailable('lesson-02')).toBe(false);
   });
 
   it('updates local progress only after backend confirmation', () => {
@@ -521,3 +736,16 @@ describe('ProgressService — Open Pit MVP', () => {
     );
   });
 });
+
+// Compile-time API checks only: never call this function at runtime.
+function checkReadonlyProgressFlags(service: ProgressService): void {
+  // @ts-expect-error Only ProgressService can set the storage availability flag.
+  service.pendingStorageAvailable.set(false);
+  // @ts-expect-error Only ProgressService can update the storage availability flag.
+  service.pendingStorageAvailable.update((value: boolean) => !value);
+  // @ts-expect-error Only ProgressService can set the synchronization flag.
+  service.syncingPending.set(true);
+  // @ts-expect-error Only ProgressService can update the synchronization flag.
+  service.syncingPending.update((value: boolean) => !value);
+}
+void checkReadonlyProgressFlags;

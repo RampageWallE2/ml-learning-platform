@@ -3,7 +3,7 @@ import {
   inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
-import { C3Stage as Stage, C3State, C3_TRIPS as TRIPS, C3_PRACTICE_SETS as PRACTICE_SETS, isC3State } from './lesson-03-haulage.state';
+import { C3Stage as Stage, C3State, C3_MAX_PRACTICE_ROUNDS, C3_TRIPS as TRIPS, C3_PRACTICE_SETS as PRACTICE_SETS, isC3State } from './lesson-03-haulage.state';
 
 type Meaning = 'separation' | 'maximum' | 'every';
 
@@ -24,6 +24,9 @@ export class Lesson03Haulage implements OnChanges {
   readonly selectedMaxId = signal<string | null>(null);
   readonly round = signal(0);
   readonly practiceHelped = signal(false);
+  readonly needsPractice = computed(() => this.practiceHelped() && this.round() < C3_MAX_PRACTICE_ROUNDS);
+  readonly guidedCompletion = computed(() => this.stage() === 'success' && this.practiceHelped());
+  readonly practiceMeasureVisible = signal(false);
   readonly trips = TRIPS;
   readonly barMaximum = 20;
   readonly practiceTrips = computed(() => PRACTICE_SETS[this.round() % PRACTICE_SETS.length]);
@@ -34,7 +37,8 @@ export class Lesson03Haulage implements OnChanges {
   readonly separation = computed(() => this.maximum() - this.minimum());
   readonly selecting = computed(() => ['extremes', 'practice-extremes'].includes(this.stage()));
   readonly extremesFound = computed(() => this.selectedMinId() !== null && this.selectedMaxId() !== null);
-  readonly showMeasure = computed(() => ['measure', 'discovery', 'review'].includes(this.stage()));
+  readonly showMeasure = computed(() => ['measure', 'discovery', 'review'].includes(this.stage())
+    || ['practice-range', 'practice-meaning'].includes(this.stage()) && this.practiceMeasureVisible());
   readonly step = computed(() => this.stage() === 'extremes' ? 1 : ['measure', 'discovery'].includes(this.stage()) ? 2 : 3);
   readonly selectionTask = computed(() => this.extremesFound() ? 'Encontraste la más corta y la más larga' : this.selectedMinId() ? 'Selecciona la descarga más larga' : 'Selecciona la descarga más corta');
   readonly axisTicks = computed(() => Array.from({ length: this.separation() + 1 }, (_, index) => this.minimum() + index));
@@ -58,6 +62,7 @@ export class Lesson03Haulage implements OnChanges {
       this.stage.set(state.stage); this.selectedMinId.set(state.selectedMinId); this.selectedMaxId.set(state.selectedMaxId);
       this.round.set(state.round); this.practiceHelped.set(state.practiceHelped);
     }
+    this.practiceMeasureVisible.set(false);
     this.feedback.set(''); this.finished = false; this.publishState();
   }
 
@@ -92,6 +97,15 @@ export class Lesson03Haulage implements OnChanges {
     this.moveTo('measure');
   }
 
+  toggleMeasureSupport(): void {
+    if (!['practice-range', 'practice-meaning'].includes(this.stage())) return;
+    this.practiceMeasureVisible.update(visible => !visible);
+    if (this.practiceMeasureVisible()) {
+      this.practiceHelped.set(true);
+      this.publishState();
+    }
+  }
+
   answerRange(answer: number): void {
     if (!['measure', 'practice-range'].includes(this.stage()) || !this.rangeOptions().includes(answer)) return;
     if (answer === this.separation()) {
@@ -113,7 +127,7 @@ export class Lesson03Haulage implements OnChanges {
 
   explainRange(answer: Meaning): void {
     if (this.stage() !== 'practice-meaning' || !this.meanings().some(meaning => meaning.id === answer)) return;
-    if (answer === 'separation') this.moveTo(this.practiceHelped() ? 'review' : 'success');
+    if (answer === 'separation') this.moveTo(this.needsPractice() ? 'review' : 'success');
     else this.hint(answer === 'maximum'
       ? 'La más larga duró ' + this.maximum() + ' minutos. El rango dice cuánto la separa de la más corta.'
       : 'Los registros tienen tiempos distintos. El rango no dice cuánto duraron todas las descargas.');
@@ -121,6 +135,11 @@ export class Lesson03Haulage implements OnChanges {
 
   continueAfterHelp(): void {
     if (this.stage() !== 'review') return;
+    // A recovered later review must not force another practice or erase help.
+    if (!this.needsPractice()) {
+      this.moveTo('success');
+      return;
+    }
     this.round.update(round => round + 1);
     this.resetSelection();
     this.moveTo('practice-extremes');
@@ -139,6 +158,8 @@ export class Lesson03Haulage implements OnChanges {
   }
 
   private moveTo(stage: Stage): void {
+    // Keep a consulted diagram through the interpretation, not into a new example.
+    if (stage !== 'practice-meaning') this.practiceMeasureVisible.set(false);
     this.feedback.set('');
     this.stage.set(stage);
     this.publishState();

@@ -49,6 +49,12 @@ def _json_payload():
     return payload, None
 
 
+def _registration_conflict(user: User):
+    has_google_identity = any(identity.provider == "google" for identity in user.identities)
+    code = "email_registered_with_google" if has_google_identity else "email_already_registered"
+    return _error("An account already exists with this email.", 409, code)
+
+
 @auth_blueprint.post("/auth/register")
 def register():
     payload, error = _json_payload()
@@ -70,16 +76,7 @@ def register():
         db.select(User).where(User.email == email)
     ).scalar_one_or_none()
     if existing_user is not None:
-        has_google_identity = any(
-            identity.provider == "google"
-            for identity in existing_user.identities
-        )
-        code = (
-            "email_registered_with_google"
-            if has_google_identity
-            else "email_already_registered"
-        )
-        return _error("An account already exists with this email.", 409, code)
+        return _registration_conflict(existing_user)
 
     user = User(
         email=email,
@@ -98,11 +95,14 @@ def register():
         return _session_response(user, 201)
     except IntegrityError:
         db.session.rollback()
-        return _error(
-            "An account already exists with this email.",
-            409,
-            "email_already_registered",
-        )
+        # Another request may have registered this email after the first lookup.
+        # Do not disguise unrelated identity/session failures as duplicate emails.
+        existing_user = db.session.execute(
+            db.select(User).where(User.email == email)
+        ).scalar_one_or_none()
+        if existing_user is None:
+            raise
+        return _registration_conflict(existing_user)
 
 
 @auth_blueprint.post("/auth/login")
@@ -177,7 +177,7 @@ def google_login():
     except GoogleCredentialError:
         return _error("Invalid Google credential.", 401)
 
-    google_email = normalize_email(google_identity.email)
+    google_email = google_identity.email
 
     identity = db.session.execute(
         db.select(UserIdentity).where(

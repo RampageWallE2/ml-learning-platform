@@ -1,3 +1,5 @@
+@use '../../../../../styles/lesson-focus' as lesson-focus;
+
 :host {
   display: block;
   min-width: 0;
@@ -603,5 +605,15 @@ h3:focus {
   }
   .square-cell {
     animation: none;
+  }
+}
+
+@include lesson-focus.focused-workbench;
+
+// Six records fit into two rows on standard phones; narrow phones retain two columns.
+@media (min-width: 380px) and (max-width: 600px) {
+  :host .intuitive-balls .workbench .record-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
 }

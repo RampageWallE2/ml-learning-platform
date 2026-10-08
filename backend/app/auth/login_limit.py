@@ -6,7 +6,6 @@ import time
 from flask import Flask, current_app
 from sqlalchemy import case
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from ..extensions import db
 from ..models import PasswordLoginLimit
@@ -30,17 +29,10 @@ def _email_digest(normalized_email: str) -> str:
     return hashlib.sha256(f"password-login:v1\0{normalized_email}".encode("utf-8")).hexdigest()
 
 
-def _consume_statement(dialect: str, digest: str, now: int, limit: int, window: int):
+def _consume_statement(digest: str, now: int, limit: int, window: int):
     table = PasswordLoginLimit.__table__
-    if dialect == "postgresql":
-        insert = postgres_insert
-    elif dialect == "sqlite":
-        insert = sqlite_insert
-    else:
-        raise ValueError("Password login limiting requires PostgreSQL or SQLite.")
-
     expired = table.c.expires_at <= now
-    statement = insert(table).values(email_digest=digest, attempts=1, expires_at=now + window)
+    statement = postgres_insert(table).values(email_digest=digest, attempts=1, expires_at=now + window)
     return statement.on_conflict_do_update(
         index_elements=[table.c.email_digest],
         set_={
@@ -67,7 +59,7 @@ def consume_password_login_attempt(normalized_email: str) -> int | None:
     window = current_app.config["PASSWORD_LOGIN_WINDOW_SECONDS"]
     with db.engine.begin() as connection:
         statement = _consume_statement(
-            connection.dialect.name, _email_digest(normalized_email), now, limit, window
+            _email_digest(normalized_email), now, limit, window
         )
         attempts, expires_at = connection.execute(statement).one()
 

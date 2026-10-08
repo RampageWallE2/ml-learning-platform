@@ -1,8 +1,11 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef,
   inject, Injector, input, OnChanges, output, signal, SimpleChanges, viewChild,
 } from '@angular/core';
 import { LESSON_NAMES } from '../lesson-catalog';
+import { calculatePopulationStatistics } from '../lesson-statistics';
+import { C6_SAG_RECORDS as ORIGINAL } from '../data/open-pit-original-records';
 
 import { C6Stage as Stage, C6State, C6_MAX_PRACTICE_ROUNDS, isC6State } from './lesson-06-sag.state';
 type Cancellation = 'constant' | 'balanced' | 'missing';
@@ -10,13 +13,13 @@ type Weight = 'twice' | 'four' | 'unchanged';
 type Summary = 'total' | 'per-record' | 'signed';
 type PracticeSummary = 'same' | 'double' | 'zero';
 
-const ORIGINAL = [98, 100, 100, 102] as const;
 const PRACTICE_SETS: readonly (readonly number[])[] = [
   [99, 99, 101, 101], [98, 98, 102, 102], [100, 100, 102, 102],
 ];
 
 @Component({
   selector: 'app-lesson-06-sag',
+  imports: [NgTemplateOutlet],
   templateUrl: './lesson-06-sag.html',
   styleUrl: './lesson-06-sag.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,14 +48,15 @@ export class Lesson06Sag implements OnChanges {
     ? PRACTICE_SETS[this.round() % PRACTICE_SETS.length] : this.original);
   readonly values = computed<readonly number[]>(() => this.comparingCopy() && this.duplicated()
     ? this.records().flatMap(value => [value, value]) : this.records());
-  readonly mean = computed(() => this.records().reduce((sum, value) => sum + value, 0) / this.records().length);
+  private readonly sourceStatistics = computed(() => calculatePopulationStatistics(this.records()));
+  readonly mean = computed(() => this.sourceStatistics().mean);
   readonly deviations = computed(() => this.values().map(value => value - this.mean()));
   readonly deviationSum = computed(() => this.deviations().reduce((sum, value) => sum + value, 0));
   readonly deviationExpression = computed(() => this.deviations()
     .map(value => value < 0 ? '−' + Math.abs(value) : String(value)).join(' + '));
   readonly squareSum = computed(() => this.deviations().reduce((sum, value) => sum + value * value, 0));
-  readonly sourceSquareSum = computed(() => this.records().reduce((sum, value) => sum + (value - this.mean()) ** 2, 0));
-  readonly variance = computed(() => this.sourceSquareSum() / this.records().length);
+  readonly sourceSquareSum = computed(() => this.sourceStatistics().squareSum);
+  readonly variance = computed(() => this.sourceStatistics().variance);
   readonly squaresVisible = computed(() => this.squaresFormed()
     && !['observe', 'cancel', 'practice-square'].includes(this.stage()));
   readonly comparisonVisible = computed(() => ['average', 'discovery', 'practice-average', 'practice-checked', 'review'].includes(this.stage()));
@@ -60,9 +64,27 @@ export class Lesson06Sag implements OnChanges {
     || this.stage() === 'practice-checked' && this.practiceVarianceAnswered());
   readonly step = computed(() => ['observe', 'cancel'].includes(this.stage()) ? 1
     : ['squares', 'weight'].includes(this.stage()) ? 2 : 3);
+  readonly question = computed(() => ({
+    observe: '¿Qué pasa al sumar las diferencias?',
+    cancel: '¿Todos los datos fueron iguales?',
+    squares: this.squaresFormed() ? '¿Cuántas casillas tiene este cuadrado?' : 'Usemos la separación como lado del cuadrado',
+    weight: 'Si la separación pasa de 1 a 2…',
+    duplicate: '¿Repetir los datos cambia su separación?',
+    average: '¿Qué cálculo usarías para comparar?',
+    discovery: 'La varianza es un promedio de cuadrados',
+    'practice-square': '¿Cuántas casillas tendría el cuadrado?',
+    'practice-average': 'Si repetimos cada registro dos veces…',
+    'practice-checked': this.practiceVarianceAnswered()
+      ? `Exacto: ${this.sourceSquareSum()} ÷ ${this.records().length} = ${this.variance()}`
+      : '¿Cuántas casillas hay por registro, en promedio?',
+    review: 'Los cuadrados también se promedian',
+    success: 'Construiste la varianza',
+  })[this.stage()]);
+  readonly showMainRecords = computed(() => ['observe', 'cancel'].includes(this.stage())
+    || this.stage() === 'squares' && !this.squaresFormed());
   readonly plotDescription = computed(() => (this.comparingCopy() && this.duplicated() ? 'Copia de experimento. ' : '')
     + 'Registros: ' + this.values().join(', ') + ' toneladas por hora. Promedio ' + this.mean()
-    + '. Cada punto representa un registro; los puntos apilados tienen el mismo valor. Escala de 98 a 102.');
+    + '. Cada punto representa un registro; los puntos uno sobre otro tienen el mismo valor. Escala de 98 a 102.');
   readonly points = computed(() => this.values().map((value, index) => ({
     id: (this.comparingCopy() && this.duplicated() ? 'copy-' : 'record-') + index,
     value, deviation: value - this.mean(), square: (value - this.mean()) ** 2,
