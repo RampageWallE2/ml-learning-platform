@@ -1,115 +1,218 @@
 @if (currentStep(); as step) {
-
   <app-interaction-panel
-    [mode]="!resumeOffer() && !sessionChanged() && step.type === 'dialogue' ? 'dialogue' : 'activity'"
+    [mode]="
+      !resumeOffer() && !sessionChanged() && step.type === 'dialogue' ? 'dialogue' : 'activity'
+    "
     [returnFocusTarget]="returnFocusTarget()"
     [statusTemplate]="statusTemplate() || draftNotice() ? runnerStatus : null"
     [statusBusy]="statusBusy()"
     (closed)="closed.emit()"
   >
-
-  @if (sessionChanged()) {
-    <section class="draft-prompt">
-      <h2>La sesión cambió</h2>
-      <p>Cierra esta clase y vuelve a abrirla con tu cuenta.</p>
-    </section>
-  } @else if (resumeOffer()) {
-    <section class="draft-prompt" aria-labelledby="resume-title">
-      <p class="draft-label">{{ resumeTitle() }}</p>
-      <h2 id="resume-title">¿Continuamos la clase?</h2>
-      <p>{{ resumeLocation() }}</p>
-      <p class="draft-scope">Guardado en este navegador. No cuenta como clase completada.</p>
-      <div class="draft-actions">
-        <button type="button" class="btn btn--primary" (click)="resumeDraft()">Continuar</button>
-        <button type="button" class="btn btn--secondary" (click)="restartDraft()">Volver a empezar</button>
-      </div>
-    </section>
-  } @else {
-  @switch (step.type) {
-
-    @case ('dialogue') {
-
-      <app-dialogue
-        [dialogue]="step.dialogue"
-        (completed)="nextStep()"
-      />
-
-    }
-
-    @case ('exercise') {
-
-      @switch (step.exerciseId) {
-
-        @case ('loading-spread') {
-          <app-lesson-01-loading [initialState]="initialC1State()"
-            (stateChanged)="saveExerciseState('lesson-01', $event)" (completed)="nextStep()" />
+    @if (sessionChanged()) {
+      <section class="draft-prompt">
+        <h2>La sesión cambió</h2>
+        <p>Cierra esta clase y vuelve a abrirla con tu cuenta.</p>
+      </section>
+    } @else if (resumeOffer()) {
+      <section class="draft-prompt" aria-labelledby="resume-title">
+        <p class="draft-label">{{ resumeTitle() }}</p>
+        <h2 id="resume-title">¿Continuamos la clase?</h2>
+        <p>{{ resumeLocation() }}</p>
+        <p class="draft-scope">Guardado en este navegador. No cuenta como clase completada.</p>
+        <div class="draft-actions">
+          <button type="button" class="btn btn--primary" (click)="resumeDraft()">Continuar</button>
+          <button type="button" class="btn btn--secondary" (click)="restartDraft()">
+            Volver a empezar
+          </button>
+        </div>
+      </section>
+    } @else {
+      @switch (step.type) {
+        @case ('dialogue') {
+          <app-dialogue [dialogue]="step.dialogue" (completed)="nextStep()" />
         }
 
-        @case ('ramp-shift-regularity') {
-          <app-lesson-02-ramp [initialState]="initialC2State()"
-            (stateChanged)="saveExerciseState('lesson-02', $event)" (completed)="nextStep()" />
+        @case ('exercise') {
+          @switch (step.exerciseId) {
+            @case ('loading-spread') {
+              @defer (on immediate) {
+                <app-lesson-01-loading
+                  #exerciseContent
+                  [initialState]="initialC1State()"
+                  (stateChanged)="saveExerciseState('lesson-01', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+
+            @case ('ramp-shift-regularity') {
+              @defer (on immediate) {
+                <app-lesson-02-ramp
+                  #exerciseContent
+                  [initialState]="initialC2State()"
+                  (stateChanged)="saveExerciseState('lesson-02', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+
+            @case ('haulage-range') {
+              @defer (on immediate) {
+                <app-lesson-03-haulage
+                  #exerciseContent
+                  [initialState]="initialC3State()"
+                  (stateChanged)="saveExerciseState('lesson-03', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+
+            @case ('workshop-range-limits') {
+              @defer (on immediate) {
+                <app-lesson-04-workshop
+                  #exerciseContent
+                  [initialState]="initialC4State()"
+                  (stateChanged)="saveExerciseState('lesson-04', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+
+            @case ('crushing-deviations') {
+              @defer (on immediate) {
+                <app-lesson-05-crushing
+                  #exerciseContent
+                  [initialState]="initialC5State()"
+                  (stateChanged)="saveExerciseState('lesson-05', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+
+            @case ('sag-build-variance') {
+              @defer (on immediate) {
+                <app-lesson-06-sag
+                  #exerciseContent
+                  [initialState]="initialExerciseState()"
+                  (stateChanged)="saveExerciseState('lesson-06', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+
+            @case ('balls-apply-variance') {
+              @defer (on immediate) {
+                <app-lesson-07-balls
+                  #exerciseContent
+                  [initialState]="initialC7State()"
+                  (stateChanged)="saveExerciseState('lesson-07', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+
+            @case ('flotation-standard-deviation') {
+              @defer (on immediate) {
+                <app-lesson-08-flotation
+                  #exerciseContent
+                  [initialState]="initialC8State()"
+                  (stateChanged)="saveExerciseState('lesson-08', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+
+            @case ('thickeners-final-report') {
+              @defer (on immediate) {
+                <app-lesson-09-thickeners
+                  #exerciseContent
+                  [initialState]="initialC9State()"
+                  (stateChanged)="saveExerciseState('lesson-09', $event)"
+                  (completed)="nextStep()"
+                />
+              } @placeholder {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @loading {
+                <ng-container [ngTemplateOutlet]="exerciseLoading" />
+              } @error {
+                <ng-container [ngTemplateOutlet]="exerciseError" />
+              }
+            }
+          }
         }
-
-        @case ('haulage-range') {
-          <app-lesson-03-haulage
-            [initialState]="initialC3State()"
-            (stateChanged)="saveExerciseState('lesson-03', $event)"
-            (completed)="nextStep()"
-          />
-        }
-
-        @case ('workshop-range-limits') {
-          <app-lesson-04-workshop [initialState]="initialC4State()"
-            (stateChanged)="saveExerciseState('lesson-04', $event)" (completed)="nextStep()" />
-        }
-
-        @case ('crushing-deviations') {
-          <app-lesson-05-crushing [initialState]="initialC5State()"
-            (stateChanged)="saveExerciseState('lesson-05', $event)" (completed)="nextStep()" />
-        }
-
-        @case ('sag-build-variance') {
-          <app-lesson-06-sag
-            [initialState]="initialExerciseState()"
-            (stateChanged)="saveExerciseState('lesson-06', $event)"
-            (completed)="nextStep()" />
-        }
-
-        @case ('balls-apply-variance') {
-          <app-lesson-07-balls
-            [initialState]="initialC7State()"
-            (stateChanged)="saveExerciseState('lesson-07', $event)"
-            (completed)="nextStep()" />
-        }
-
-        @case ('flotation-standard-deviation') {
-          <app-lesson-08-flotation
-            [initialState]="initialC8State()"
-            (stateChanged)="saveExerciseState('lesson-08', $event)"
-            (completed)="nextStep()" />
-        }
-
-        @case ('thickeners-final-report') {
-          <app-lesson-09-thickeners [initialState]="initialC9State()"
-            (stateChanged)="saveExerciseState('lesson-09', $event)" (completed)="nextStep()" />
-        }
-
-
       }
-
     }
-
-
-
-
-    
-
-  }
-  }
-
   </app-interaction-panel>
-
 }
+
+<ng-template #exerciseLoading>
+  <section #exerciseNotice class="draft-prompt" role="status" aria-busy="true">
+    <p class="draft-label">{{ resumeTitle() }}</p>
+    <h2 tabindex="-1">Cargando actividad…</h2>
+  </section>
+</ng-template>
+
+<ng-template #exerciseError>
+  <section #exerciseNotice class="draft-prompt" role="alert">
+    <p class="draft-label">{{ resumeTitle() }}</p>
+    <h2 tabindex="-1">No se pudo cargar la actividad</h2>
+    <p>
+      Revisa tu conexión y recarga la página para volver a intentarlo. Tu progreso confirmado no
+      cambia.
+    </p>
+    <div class="draft-actions">
+      <button type="button" class="btn btn--secondary" (click)="closed.emit()">Cerrar clase</button>
+    </div>
+  </section>
+</ng-template>
 
 <ng-template #runnerStatus let-inline="inline">
   @if (statusTemplate(); as status) {

@@ -82,13 +82,14 @@ describe('Remaining Open Pit draft recovery', () => {
   );
 
   for (const item of cases) {
-    it(item.id + ' restores its exact exercise, without emitting completion or resetting its seed', () => {
+    it(item.id + ' restores its exact exercise, without emitting completion or resetting its seed', async () => {
       expect(saveLessonDraft(account.id, item.id, { step: 1, exercise: item.state })).toBe(true);
       write.mockClear();
       const fixture = create(item.id); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
       expect(write).not.toHaveBeenCalled(); expect(fixture.componentInstance.resumeOffer()?.exercise).toEqual(item.state);
       fixture.componentInstance.nextStep(); expect(fixture.componentInstance.currentStepIndex()).toBe(0);
       fixture.componentInstance.resumeDraft(); fixture.detectChanges();
+      await fixture.whenStable();
       const child = fixture.debugElement.query(By.directive(item.type)).componentInstance as Recoverable;
       expect(child.stage()).toBe(item.state.stage);
       expect(loadLessonDraft(account.id, item.id).draft?.exercise).toEqual(item.state);
@@ -98,6 +99,7 @@ describe('Remaining Open Pit draft recovery', () => {
       expect(child.stage()).toBe(item.state.stage); // Child outputs never become new initial inputs.
       fixture.destroy();
       const reopened = create(item.id); reopened.componentInstance.resumeDraft(); reopened.detectChanges();
+      await reopened.whenStable();
       const copy = reopened.debugElement.query(By.directive(item.type)).componentInstance as Recoverable;
       expect(copy.stage()).toBe('success');
       expect(copy.guidedCompletion()).toBe(item.id !== 'lesson-01');
@@ -118,10 +120,11 @@ describe('Remaining Open Pit draft recovery', () => {
       expect(items.get('exploralab.pending-progress.v1.' + account.id)).toBe(JSON.stringify([item.id]));
     });
 
-    it(item.id + ' records success before the closing conversation and waits for confirmed cleanup', () => {
+    it(item.id + ' records success before the closing conversation and waits for confirmed cleanup', async () => {
       saveLessonDraft(account.id, item.id, { step: 1, exercise: item.success });
       const fixture = create(item.id); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
       fixture.componentInstance.resumeDraft(); fixture.detectChanges();
+      await fixture.whenStable();
       const child = fixture.debugElement.query(By.directive(item.type)).componentInstance as Recoverable;
       expect(done).not.toHaveBeenCalled(); child.finish(); fixture.detectChanges();
       expect(fixture.componentInstance.currentStepIndex()).toBe(2);
@@ -134,7 +137,7 @@ describe('Remaining Open Pit draft recovery', () => {
       expect(loadLessonDraft(account.id, item.id).draft).toBeNull();
     });
 
-    it(item.id + ' refuses stale callbacks after replacing the session and reports storage failure', () => {
+    it(item.id + ' refuses stale callbacks after replacing the session and reports storage failure', async () => {
       const fixture = create(item.id); fixture.componentInstance.nextStep(); fixture.detectChanges();
       user.set({ ...account }); write.mockClear();
       fixture.componentInstance.saveExerciseState(item.id, item.state);
@@ -146,6 +149,7 @@ describe('Remaining Open Pit draft recovery', () => {
       const unavailable = create(item.id);
       expect(unavailable.nativeElement.textContent).toContain('no pudo guardar dónde vas');
       unavailable.componentInstance.nextStep(); unavailable.detectChanges();
+      await unavailable.whenStable();
       expect(unavailable.debugElement.query(By.directive(item.type))).not.toBeNull();
     });
 
@@ -165,10 +169,11 @@ describe('Remaining Open Pit draft recovery', () => {
     });
   }
   for (const item of cases.filter(item => item.id !== 'lesson-01')) {
-    it(item.id + ' keeps a recovered guided finish assisted and requires the entire closing conversation', () => {
+    it(item.id + ' keeps a recovered guided finish assisted and requires the entire closing conversation', async () => {
       expect(saveLessonDraft(account.id, item.id, { step: 1, exercise: item.success })).toBe(true);
       const fixture = create(item.id); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
       fixture.componentInstance.resumeDraft(); fixture.detectChanges();
+      await fixture.whenStable();
       const child = fixture.debugElement.query(By.directive(item.type)).componentInstance as Recoverable;
       expect(child.guidedCompletion()).toBe(true);
       expect(fixture.nativeElement.textContent).toContain('Completaste con ayuda');
@@ -190,11 +195,12 @@ describe('Remaining Open Pit draft recovery', () => {
     });
 
     for (const round of [1, 4]) {
-      it(item.id + ' closes a recovered resolved review explicitly without adding round ' + (round + 1), () => {
+      it(item.id + ' closes a recovered resolved review explicitly without adding round ' + (round + 1), async () => {
         const review = { ...item.success, stage: 'review', round } as LessonExerciseState;
         expect(saveLessonDraft(account.id, item.id, { step: 1, exercise: review })).toBe(true);
         const fixture = create(item.id); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
         fixture.componentInstance.resumeDraft(); fixture.detectChanges();
+        await fixture.whenStable();
         const child = fixture.debugElement.query(By.directive(item.type)).componentInstance as Recoverable;
         expect(child.stage()).toBe('review'); expect(child.guidedCompletion()).toBe(false);
         child.finish(); expect(done).not.toHaveBeenCalled(); expect(child.stage()).toBe('review');
@@ -214,12 +220,13 @@ describe('Remaining Open Pit draft recovery', () => {
       });
     }
   }
-  it('C1 preserves a guided finish after reopening and still requires the closing conversation', () => {
+  it('C1 preserves a guided finish after reopening and still requires the closing conversation', async () => {
     const practice: C1State = { stage: 'practice', practiceRound: 1, practiceHelped: false,
       selectedLoad: null, selectedGroup: null };
     expect(saveLessonDraft(account.id, 'lesson-01', { step: 1, exercise: practice })).toBe(true);
     const fixture = create('lesson-01'); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
     fixture.componentInstance.resumeDraft(); fixture.detectChanges();
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson01Loading)).componentInstance as Lesson01Loading;
     game.chooseGroup('F'); game.chooseGroup('E'); game.finish();
     expect(done).not.toHaveBeenCalled();
@@ -231,6 +238,7 @@ describe('Remaining Open Pit draft recovery', () => {
 
     const reopened = create('lesson-01'); reopened.componentInstance.completed.subscribe(done);
     reopened.componentInstance.resumeDraft(); reopened.detectChanges();
+    await reopened.whenStable();
     const copy = reopened.debugElement.query(By.directive(Lesson01Loading)).componentInstance as Lesson01Loading;
     expect(copy.guidedCompletion()).toBe(true); expect(copy.practiceHelped()).toBe(true);
     expect(copy.practiceRound()).toBe(1); expect(reopened.nativeElement.textContent).toContain('Completaste con ayuda');

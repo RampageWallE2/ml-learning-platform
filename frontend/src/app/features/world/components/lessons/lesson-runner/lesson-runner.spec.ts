@@ -60,7 +60,7 @@ describe('LessonRunner — shared modal focus', () => {
 });
 
 describe('LessonRunner — thickeners lesson', () => {
-  it('requires C9 decisions, transfer, original report and closing dialogue before completion', () => {
+  it('requires C9 decisions, transfer, original report and closing dialogue before completion', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-09'); fixture.detectChanges();
     const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
@@ -73,6 +73,7 @@ describe('LessonRunner — thickeners lesson', () => {
     expect(introText).toContain('En este ejemplo, la meta');
     expect(introText).toContain('No exige que cada registro sea 100');
     completeDialogue(intro); fixture.detectChanges();
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson09Thickeners)).componentInstance as Lesson09Thickeners;
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('activity');
     game.choosePeriod('A'); game.continue(); game.choosePeriod('B'); game.continue();
@@ -93,7 +94,7 @@ describe('LessonRunner — thickeners lesson', () => {
 });
 
 describe('LessonRunner — flotation lesson', () => {
-  it('runs C8 and its original-data closing before completing the lesson', () => {
+  it('runs C8 and its original-data closing before completing the lesson', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-08'); fixture.detectChanges();
     const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
@@ -104,6 +105,7 @@ describe('LessonRunner — flotation lesson', () => {
     expect(introText).toContain('mismo lugar y dejando el mismo tiempo entre mediciones');
     expect(introText).toContain('No son los datos del molino');
     completeDialogue(intro); fixture.detectChanges();
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson08Flotation)).componentInstance as Lesson08Flotation;
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('activity');
     game.startRoot(); game.answerRoot(2); game.continueToReport(); game.finish();
@@ -138,7 +140,7 @@ describe('LessonRunner — flotation lesson', () => {
 });
 
 describe('LessonRunner — balls and hydrocyclones lesson', () => {
-  it('runs C7 activity and closing dialogue before completing the lesson', () => {
+  it('runs C7 activity and closing dialogue before completing the lesson', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-07'); fixture.detectChanges();
     const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
@@ -151,6 +153,7 @@ describe('LessonRunner — balls and hydrocyclones lesson', () => {
     expect(introText).toContain('seis registros');
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('dialogue');
     completeDialogue(intro); fixture.detectChanges();
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson07Balls)).componentInstance as Lesson07Balls;
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('activity');
     game.startCalculation(); fixture.detectChanges();
@@ -176,7 +179,7 @@ describe('LessonRunner — balls and hydrocyclones lesson', () => {
 });
 
 describe('LessonRunner — SAG lesson', () => {
-  it('runs C6 and its closing dialogue before completing the lesson', () => {
+  it('runs C6 and its closing dialogue before completing the lesson', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-06'); fixture.detectChanges();
     const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
@@ -188,6 +191,7 @@ describe('LessonRunner — SAG lesson', () => {
     expect(introText).toContain('98, 100, 100 y 102');
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('dialogue');
     completeDialogue(intro); fixture.detectChanges();
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson06Sag)).componentInstance as Lesson06Sag;
     expect((fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()).toBe('activity');
     game.sumChanges(); game.chooseCancellation('balanced'); game.formSquares(); game.answerSquare(4);
@@ -218,7 +222,7 @@ describe('LessonRunner — SAG lesson', () => {
 });
 
 describe('LessonRunner — crushing lesson', () => {
-  it('runs C5 and its closing dialogue before completing the lesson', () => {
+  it('runs C5 and its closing dialogue before completing the lesson', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-05'); fixture.detectChanges();
     const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
@@ -229,6 +233,7 @@ describe('LessonRunner — crushing lesson', () => {
     expect(introText).toContain('registros de cuatro horas');
     expect(introText).toContain('por debajo o por encima del promedio');
     completeDialogue(intro); fixture.detectChanges();
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson05Crushing)).componentInstance as Lesson05Crushing;
     game.answerDistance(20); game.compare('same'); game.startPractice();
     for (let index = 0; index < 3; index += 1) {
@@ -254,7 +259,7 @@ describe('LessonRunner — crushing lesson', () => {
 });
 
 describe('LessonRunner — workshop lesson', () => {
-  it('runs C4 activity and closing dialogue before completing the lesson', () => {
+  it('runs C4 activity and closing dialogue before completing the lesson', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-04'); fixture.detectChanges();
     const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
@@ -267,6 +272,7 @@ describe('LessonRunner — workshop lesson', () => {
     expect(introText).toContain('tienen el mismo rango');
     expect(introText).toContain('El informe dice que, por eso, sus tiempos se repiten igual');
     completeDialogue(intro); fixture.detectChanges();
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson04Workshop)).componentInstance as Lesson04Workshop;
     game.compare('a');
     expect(game.stage()).toBe('discovery'); expect(done).not.toHaveBeenCalled();
@@ -285,7 +291,7 @@ describe('LessonRunner — workshop lesson', () => {
 });
 
 describe('LessonRunner — loading lesson', () => {
-  it('plays the planned intro, activity and closing dialogue before completing lesson-01', () => {
+  it('plays the planned intro, activity and closing dialogue before completing lesson-01', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-01');
     fixture.detectChanges();
@@ -301,6 +307,7 @@ describe('LessonRunner — loading lesson', () => {
     completeDialogue(intro);
     fixture.detectChanges();
 
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson01Loading)).componentInstance as Lesson01Loading;
     expect(
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
@@ -328,7 +335,7 @@ describe('LessonRunner — loading lesson', () => {
 });
 
 describe('LessonRunner — ramp lesson', () => {
-  it('plays the planned Class 2 flow before completing lesson-02', () => {
+  it('plays the planned Class 2 flow before completing lesson-02', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-02');
     fixture.detectChanges();
@@ -349,6 +356,7 @@ describe('LessonRunner — ramp lesson', () => {
     completeDialogue(intro);
     fixture.detectChanges();
 
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson02Ramp)).componentInstance as Lesson02Ramp;
     expect(
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
@@ -384,7 +392,7 @@ describe('LessonRunner — ramp lesson', () => {
 });
 
 describe('LessonRunner — haulage lesson', () => {
-  it('plays the planned Class 3 flow before completing lesson-03', () => {
+  it('plays the planned Class 3 flow before completing lesson-03', async () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', 'lesson-03');
     fixture.detectChanges();
@@ -404,6 +412,7 @@ describe('LessonRunner — haulage lesson', () => {
     completeDialogue(intro);
     fixture.detectChanges();
 
+    await fixture.whenStable();
     const game = fixture.debugElement.query(By.directive(Lesson03Haulage)).componentInstance as Lesson03Haulage;
     expect(
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()

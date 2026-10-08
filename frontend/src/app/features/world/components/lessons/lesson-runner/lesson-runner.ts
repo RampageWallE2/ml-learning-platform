@@ -11,7 +11,8 @@ import {
   inject,
   input,
   output,
-  signal
+  signal,
+  viewChild
 } from '@angular/core';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { AuthenticatedUser } from '../../../../../core/auth/auth.types';
@@ -69,6 +70,8 @@ export class LessonRunner implements OnChanges {
   private readonly injector = inject(Injector);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly document = inject(DOCUMENT);
+  private readonly exerciseContent = viewChild<unknown, ElementRef<HTMLElement>>('exerciseContent', { read: ElementRef });
+  private readonly exerciseNotice = viewChild<ElementRef<HTMLElement>>('exerciseNotice');
   private readonly owner = signal<AuthenticatedUser | null>(null);
   private exerciseState: LessonExerciseState | null = null;
   private readonly storageAvailable = signal(true);
@@ -131,7 +134,10 @@ export class LessonRunner implements OnChanges {
 
   constructor() {
     afterRenderEffect(() => {
-      if (this.sessionChanged()) this.focusContent();
+      // A deferred exercise replaces its loading notice without changing the panel mode.
+      const content = this.exerciseContent();
+      const notice = this.exerciseNotice();
+      if (this.sessionChanged() || content || notice) this.focusContent();
     });
   }
 
@@ -215,7 +221,8 @@ export class LessonRunner implements OnChanges {
 
   private focusContent(): void {
     const panel = this.element.nativeElement.querySelector<HTMLElement>('[role="dialog"]');
-    if (!panel || panel.contains(this.document.activeElement)) return;
+    const active = this.document.activeElement;
+    if (!panel || (active !== panel && panel.contains(active))) return;
     const selector = !this.sessionChanged() && this.currentStep()?.type === 'dialogue' ? '[autofocus]' : 'h2';
     const target = panel.querySelector<HTMLElement>(selector) ?? panel;
     if (!target.hasAttribute('tabindex') && !target.matches('button')) target.tabIndex = -1;

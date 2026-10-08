@@ -35,7 +35,9 @@ describe('LessonRunner — C7 recovery', () => {
     const fixture = TestBed.createComponent(LessonRunner);
     fixture.componentRef.setInput('lessonId', id); fixture.detectChanges(); return fixture;
   }
-  function exercise(fixture: ReturnType<typeof create>) {
+  async function exercise(fixture: ReturnType<typeof create>) {
+    await fixture.whenStable();
+    fixture.detectChanges();
     return fixture.debugElement.query(By.directive(Lesson07Balls)).componentInstance as Lesson07Balls;
   }
   function click(fixture: ReturnType<typeof create>, label: string) {
@@ -49,7 +51,7 @@ describe('LessonRunner — C7 recovery', () => {
     const fixture = create(); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
     expect(write).not.toHaveBeenCalled(); expect(fixture.nativeElement.textContent).toContain('C7 · Comparación de varianzas');
     fixture.componentInstance.nextStep(); expect(fixture.componentInstance.currentStepIndex()).toBe(0);
-    click(fixture, 'Continuar'); await fixture.whenStable(); const game = exercise(fixture);
+    click(fixture, 'Continuar'); await fixture.whenStable(); const game = await exercise(fixture);
     expect(game.stage()).toBe('calculate'); expect(game.activeIndex()).toBe(1); expect(game.solved()).toEqual(['a']);
     expect(game.prediction()).toBe('equal'); expect(game.round()).toBe(2); expect(game.hintLevel()).toBe(2);
     expect(game.feedback()).toContain('36 ÷ 6 = 6'); expect(game.helped()).toBe(true);
@@ -57,12 +59,12 @@ describe('LessonRunner — C7 recovery', () => {
     expect(fixture.nativeElement.querySelector('[role="dialog"]').contains(document.activeElement)).toBe(true);
   });
 
-  it('saves actions without feeding the snapshot back into the seed and recovers them after closing', () => {
-    const fixture = create(); fixture.componentInstance.nextStep(); fixture.detectChanges(); const game = exercise(fixture);
+  it('saves actions without feeding the snapshot back into the seed and recovers them after closing', async () => {
+    const fixture = create(); fixture.componentInstance.nextStep(); fixture.detectChanges(); const game = await exercise(fixture);
     game.choosePrediction('b'); game.answerVariance(3); game.continueCalculation(); game.requestHint(); fixture.detectChanges();
     expect(game.hintLevel()).toBe(1); expect(fixture.componentInstance.initialC7State()).toBeNull();
     game.requestHint(); fixture.detectChanges(); expect(game.hintLevel()).toBe(2); const order = game.options(); fixture.destroy();
-    const reopened = create(); click(reopened, 'Continuar'); const copy = exercise(reopened);
+    const reopened = create(); click(reopened, 'Continuar'); const copy = await exercise(reopened);
     expect(copy.solved()).toEqual(['a']); expect(copy.activeIndex()).toBe(1); expect(copy.options()).toEqual(order);
     expect(copy.feedback()).toContain('36 ÷ 6 = 6'); copy.answerVariance(6); copy.continueCalculation(); reopened.detectChanges();
     expect(copy.stage()).toBe('report'); expect(loadLessonDraft(a.id, 'lesson-07').draft?.exercise?.solved).toEqual(['a', 'b']);
@@ -93,9 +95,9 @@ describe('LessonRunner — C7 recovery', () => {
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-07'); expect(loadLessonDraft(a.id, 'lesson-07').draft?.step).toBe(2);
   });
 
-  it('writes the closing draft only after exercise success has been emitted', () => {
+  it('writes the closing draft only after exercise success has been emitted', async () => {
     const fixture = create(); fixture.componentInstance.nextStep(); fixture.detectChanges(); fixture.componentInstance.nextStep();
-    expect(fixture.componentInstance.currentStepIndex()).toBe(1); const game = exercise(fixture);
+    expect(fixture.componentInstance.currentStepIndex()).toBe(1); const game = await exercise(fixture);
     game.choosePrediction('b'); game.answerVariance(3); game.continueCalculation(); game.answerVariance(6);
     game.continueCalculation(); game.chooseReport('spread'); game.finish(); fixture.detectChanges();
     expect(fixture.componentInstance.currentStepIndex()).toBe(2);
@@ -103,9 +105,9 @@ describe('LessonRunner — C7 recovery', () => {
     expect(loadLessonDraft(a.id, 'lesson-07').draft?.step).toBe(2);
   });
 
-  it('recovers a guided finish honestly and still requires the closing dialogue before completion', () => {
+  it('recovers a guided finish honestly and still requires the closing dialogue before completion', async () => {
     const fixture = create(); fixture.componentInstance.nextStep(); fixture.detectChanges();
-    const game = exercise(fixture);
+    const game = await exercise(fixture);
     const solve = () => {
       for (let index = 0; index < 2; index++) {
         game.answerVariance(game.activePeriod().variance); game.continueCalculation();
@@ -121,7 +123,7 @@ describe('LessonRunner — C7 recovery', () => {
     fixture.destroy();
 
     const reopened = create(); const done = vi.fn(); reopened.componentInstance.completed.subscribe(done);
-    click(reopened, 'Continuar'); const resumed = exercise(reopened);
+    click(reopened, 'Continuar'); const resumed = await exercise(reopened);
     expect(resumed.guidedCompletion()).toBe(true);
     expect(reopened.nativeElement.textContent).toContain('Completaste con ayuda');
     expect(done).not.toHaveBeenCalled(); resumed.finish(); reopened.detectChanges();
@@ -143,7 +145,7 @@ describe('LessonRunner — C7 recovery', () => {
 
   it('rejects stale actions after account switching and moves focus into the session notice', async () => {
     saveLessonDraft(a.id, 'lesson-07', { step: 1, exercise: second }); const fixture = create(); click(fixture, 'Continuar');
-    const game = exercise(fixture); user.set(b); write.mockClear(); game.answerVariance(6); fixture.detectChanges(); await fixture.whenStable();
+    const game = await exercise(fixture); user.set(b); write.mockClear(); game.answerVariance(6); fixture.detectChanges(); await fixture.whenStable();
     expect(fixture.nativeElement.textContent).toContain('La sesión cambió');
     expect(fixture.debugElement.query(By.directive(Lesson07Balls))).toBeNull();
     expect(fixture.nativeElement.querySelector('[role="dialog"]').contains(document.activeElement)).toBe(true);
@@ -161,11 +163,11 @@ describe('LessonRunner — C7 recovery', () => {
     user.set({ ...a }); fixture.componentInstance.saveExerciseState('lesson-07', second); expect(write).not.toHaveBeenCalled();
   });
 
-  it('keeps the exercise usable and warns honestly when storage fails', () => {
+  it('keeps the exercise usable and warns honestly when storage fails', async () => {
     write.mockImplementation(() => { throw new Error('Quota'); }); const fixture = create();
     expect(fixture.nativeElement.textContent).toContain('no pudo guardar dónde vas');
-    fixture.componentInstance.nextStep(); fixture.detectChanges(); exercise(fixture).choosePrediction('b'); fixture.detectChanges();
-    expect(exercise(fixture).stage()).toBe('calculate'); expect(fixture.nativeElement.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    fixture.componentInstance.nextStep(); fixture.detectChanges(); (await exercise(fixture)).choosePrediction('b'); fixture.detectChanges();
+    expect((await exercise(fixture)).stage()).toBe('calculate'); expect(fixture.nativeElement.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(fixture.nativeElement.querySelectorAll('.interaction-status')).toHaveLength(1);
   });
 
