@@ -62,4 +62,8 @@ Comprobado el 2026-10-09:
 - **Acceso externo pendiente:** conexión desde la computadora del usuario al puerto 80 agotó el tiempo de espera, también con curl sin proxy. Nginx responde en el host, UFW está inactivo y Docker tiene el binding/NAT de 80. La captura aportada después muestra únicamente una regla entrante TCP 22 con origen `0.0.0.0/0`, no HTTP 80. El titular debe añadir HTTP 80 para las IP de la prueba y restringir SSH a su IP administrativa; no se editaron Security Groups desde herramientas.
 - No se aceptaron condiciones, registraron cuentas ACME/correo ni emitieron certificados. Certbot instalado permanece sin utilizar para emisión/renovación.
 
-Pendiente: regla de red y comprobación desde fuera de EC2, apertura del juego en navegador/dispositivos acordados y medición real de rendimiento. HTTPS de producción sigue aplazado por decisión expresa. I04/I09 continúan abiertos.
+Actualización de conectividad, 2026-10-09: el titular añadió HTTP TCP 80 restringido a su IP pública actual `/32`. Ocho comprobaciones **externas desde su computadora**, sin proxy, devolvieron HTTP 200: landing, login, registro, `/world`, progreso por zona, healthz, readiness con versión esperada y mapa JSON de Open Pit. Fueron solo lecturas: no se crearon más cuentas ni se modificó progreso. El bloqueo del puerto 80 quedó resuelto para esa conexión; no afirmar acceso desde otras redes o la del profesor.
+
+La captura actual mantiene SSH 22 desde `0.0.0.0/0`; restringirlo a la IP administrativa sigue pendiente. No se cambiaron esas reglas desde las herramientas ni se registró la IP personal del titular en el repositorio.
+
+Pendiente: apertura/juego en navegador y dispositivos acordados, permitir la IP del profesor si accede desde otra red, restringir SSH y medir rendimiento real. HTTPS de producción sigue aplazado por decisión expresa. I04/I09 continúan abiertos.
