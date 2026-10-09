@@ -1,0 +1,35 @@
+# Explicit, temporary HTTP-only test; NOT a production configuration.
+# Merge only after compose.production.yml, never with compose.yml.
+# Requires an explicit HTTP_TEST_ORIGIN and Docker Compose >= 2.24.4.
+# APP_ENV=development intentionally permits non-Secure cookies for this test.
+# The servers remain Gunicorn + compiled Angular, with debug disabled.
+x-http-test-environment: &http-test-environment
+  APP_ENV: development
+  FLASK_DEBUG: "0"
+  CORS_ORIGINS: ${HTTP_TEST_ORIGIN:?Set the exact temporary HTTP test origin}
+  CSRF_TRUSTED_ORIGINS: ${HTTP_TEST_ORIGIN:?Set the exact temporary HTTP test origin}
+  SESSION_COOKIE_SECURE: "false"
+  GOOGLE_CLIENT_ID: ""
+
+services:
+  migrate:
+    environment: *http-test-environment
+  backend:
+    environment: *http-test-environment
+  frontend:
+    build:
+      args:
+        GOOGLE_CLIENT_ID: ""
+    environment:
+      PUBLIC_ORIGIN: ${HTTP_TEST_ORIGIN:?Set the exact temporary HTTP test origin}
+    ports: !override
+      - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+    volumes: !override
+      - type: bind
+        source: ./infra/nginx.ec2-http-test.conf.template
+        target: /etc/nginx/templates/default.conf.template
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/healthz]

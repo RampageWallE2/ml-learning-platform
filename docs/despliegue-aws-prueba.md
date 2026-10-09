@@ -1,6 +1,6 @@
 # Prueba de ExploraLab en una EC2
 
-Actualización: 2026-10-09. El usuario creó la EC2 y autorizó subir y preparar el proyecto. La versión `c8d59ee0619f` está instalada y PostgreSQL/API funcionan de forma privada. La web todavía no está publicada: falta la confirmación del titular sobre las condiciones de Let's Encrypt, emitir HTTPS y validar el acceso real. No hay dominio; esta guía corresponde a una demostración con cuentas ficticias, no un lanzamiento público definitivo.
+Actualización: 2026-10-09. El usuario creó la EC2 y autorizó subir y preparar el proyecto. La versión `c8d59ee0619f` está instalada, PostgreSQL/API funcionan de forma privada y se arrancó una [prueba HTTP temporal](prueba-aws-http-temporal.md) por decisión expresa del usuario. El acceso externo sigue pendiente: su captura muestra únicamente el puerto 22 permitido, no HTTP 80. Esta guía conserva la preparación **HTTPS de producción**, aplazada por ahora; no hay dominio ni certificado y no se aceptaron condiciones. No es un lanzamiento público definitivo.
 
 ## Decisión técnica
 
@@ -204,7 +204,7 @@ Preparado en el repositorio: plantilla privada de EC2, validación previa, hook 
 
 Verificado localmente: 19 pruebas nuevas aprobadas tanto en Windows como en un contenedor Linux aislado sin red, sintaxis Bash y esquema Compose. Las imágenes de backend/frontend se construyeron correctamente con el Compose de producción; Angular mantiene las advertencias anteriores de SCSS en C6/C7. No se arrancó la aplicación ni PostgreSQL, ni se ensayó Certbot/HTTPS público. La CI existente incorpora las comprobaciones ligeras nuevas sin publicar en AWS.
 
-Verificado en la EC2 del usuario el 2026-10-09:
+Verificado en la EC2 del usuario el 2026-10-09, antes de activar la prueba HTTP temporal:
 
 - Snapshot `c8d59ee0619fccfe6d0c8083189b6f748a551ecc` transferido por SSH/SCP, hash del archivo verificado antes de extraerlo y manifiesto `RELEASE_COMMIT` comprobado. Código bajo `/opt/exploralab`, propiedad de root y sin escritura de otros usuarios.
 - Docker Engine 29.9.0 y Compose 5.6.0 instalados desde el repositorio oficial de Docker. Certbot 5.8.0 instalado mediante snap; no se registró ninguna cuenta ACME ni se solicitó un certificado.
@@ -213,4 +213,6 @@ Verificado en la EC2 del usuario el 2026-10-09:
 - PostgreSQL nuevo en `exploralab-ec2_production_database`, migraciones desde esquema vacío hasta `20261007_0005 (head)` y API Gunicorn saludables. `/api/v1/health` y `/api/v1/ready` devuelven HTTP 200 dentro del contenedor con la versión esperada. No se copió ni modificó la base local.
 - API/PostgreSQL sin puertos publicados, frontend sin arrancar y sin listeners HTTP/HTTPS en el host. El usuario confirmó las reglas 80/443 del Security Group; aún no se validó esa conectividad externa. La inspección puntual mostró unos 14 GB disponibles en el disco y 3 GB de memoria disponibles; no es una prueba de carga ni capacidad concurrente.
 
-Sigue faltando: confirmación del titular para las condiciones de Let's Encrypt, emisión de HTTPS real, exportación y ensayo de renovación, arranque del frontend, validación externa de certificado/rutas/registro/acceso/progreso y dispositivos reales, además de copia externa/restauración/retención. Región, costes y duración son decisiones del titular de AWS; no se configuraron presupuestos ni alertas en su cuenta. Revisar también [distribución y soporte](distribucion-soporte.md). No declarar I04/I09 cerrados ni una publicación definitiva antes de esa evidencia. La revisión documental posterior no cambia la versión de aplicación instalada.
+Para una publicación **HTTPS** sigue faltando: confirmación del titular para las condiciones de Let's Encrypt, emisión de HTTPS real, exportación y ensayo de renovación, arranque del frontend seguro, validación externa de certificado/rutas/registro/acceso/progreso y dispositivos reales, además de copia externa/restauración/retención. Este camino está aplazado: el usuario autorizó posteriormente [HTTP temporal sin cambiar la configuración segura](prueba-aws-http-temporal.md). Los tres contenedores están saludables y 26 comprobaciones HTTP internas pasaron, pero el acceso externo necesita corregir la regla del puerto 80; no se presentó como producción segura ni prueba de capacidad.
+
+Región, costes y duración son decisiones del titular de AWS; no se configuraron presupuestos ni alertas en su cuenta. Revisar también [distribución y soporte](distribucion-soporte.md). No declarar I04/I09 cerrados ni una publicación definitiva antes de esa evidencia. La revisión documental posterior no cambia la versión de aplicación instalada.
