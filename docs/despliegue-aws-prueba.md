@@ -1,6 +1,6 @@
 # Prueba de ExploraLab en una EC2
 
-Preparación: 2026-10-09. No se han creado recursos ni desplegado en AWS. Actualmente no hay instancia ni dominio. Esta guía prepara una demostración con cuentas ficticias, no un lanzamiento público definitivo.
+Actualización: 2026-10-09. El usuario creó la EC2 y autorizó subir y preparar el proyecto. La versión `c8d59ee0619f` está instalada y PostgreSQL/API funcionan de forma privada. La web todavía no está publicada: falta la confirmación del titular sobre las condiciones de Let's Encrypt, emitir HTTPS y validar el acceso real. No hay dominio; esta guía corresponde a una demostración con cuentas ficticias, no un lanzamiento público definitivo.
 
 ## Decisión técnica
 
@@ -47,7 +47,7 @@ sudo /snap/bin/certbot --version
 
 Certbot debe ser 5.4 o posterior. Si ya hay otra instalación, resolverla con las [instrucciones oficiales de Certbot](https://certbot.eff.org/instructions?os=snap&ws=nginx); no mezclar instalaciones. Aquí no se usa `certbot --nginx`: Nginx está dentro del contenedor.
 
-Colocar un checkout del repositorio en **`/opt/exploralab`** y seleccionar el commit de entrega aprobado. Para un repositorio privado, usar acceso de lectura o transferencia segura; no introducir tokens en comandos, historial ni archivos del juego. No copiar `node_modules`, entornos virtuales, `.env`, certificados ni volúmenes locales.
+Colocar un checkout del repositorio en **`/opt/exploralab`** y seleccionar el commit de entrega aprobado. También se puede transferir un snapshot de archivos versionados mediante `git archive`, añadir un manifiesto `RELEASE_COMMIT` con el hash completo y verificar el SHA-256 del archivo antes de extraerlo. La prueba actual utiliza este segundo método y **no tiene `.git` en la EC2**. Para un repositorio privado, usar acceso de lectura o transferencia segura; no introducir tokens en comandos, historial ni archivos del juego. No copiar `node_modules`, entornos virtuales, `.env`, certificados ni volúmenes locales.
 
 El checkout, sus directorios padres y el entorno de despliegue deben quedar bajo control de root, sin escritura de otros usuarios: Certbot ejecutará el script de esta versión como root. No instalar un hook que importe código modificable por usuarios sin privilegios.
 
@@ -57,7 +57,13 @@ sudo chmod -R go-w /opt/exploralab
 sudo python3 -m venv /opt/exploralab/.venv-deploy
 sudo /opt/exploralab/.venv-deploy/bin/python -m pip install cryptography==50.0.1
 cd /opt/exploralab
-sudo git rev-parse --short=12 HEAD
+if [ -d .git ]; then
+  sudo git rev-parse HEAD
+else
+  test -f RELEASE_COMMIT
+  cat RELEASE_COMMIT
+  printf '\n'
+fi
 ```
 
 La dependencia de este entorno sirve únicamente para revisar certificados; coincide con la versión del lock de producción del backend. Antes de instalar hooks, comprobar que el checkout es la versión aprobada y no contiene cambios inesperados.
@@ -93,6 +99,8 @@ La comprobación no crea contenedores ni modifica datos. Rechaza los valores de 
 
 ## 4. Obtener y preparar HTTPS
 
+Antes de registrar una cuenta o solicitar un certificado, el titular debe revisar y confirmar que acepta las [condiciones vigentes de Let's Encrypt](https://letsencrypt.org/repository/). Instalar Certbot no equivale a aceptar esas condiciones. Mientras la revisión esté pendiente, no registrar el correo, aceptar condiciones automáticamente ni ejecutar la emisión. Se puede construir las imágenes y arrancar únicamente PostgreSQL/API como en el paso siguiente; no publicar la web sin HTTPS real.
+
 El puerto 80 debe estar libre en el host y accesible desde Internet. Sustituir `IP_PUBLICA_REAL` antes de ejecutar; Certbot preguntará por correo y condiciones del servicio.
 
 ```bash
@@ -125,9 +133,17 @@ release_compose=(sudo docker compose --env-file /opt/exploralab/.env.ec2 \
 "${release_compose[@]}" build backend frontend
 "${release_compose[@]}" up -d --wait --wait-timeout 180 database
 "${release_compose[@]}" run --rm migrate
-"${release_compose[@]}" up -d --wait --wait-timeout 180 backend frontend
+"${release_compose[@]}" up -d --wait --wait-timeout 180 backend
 "${release_compose[@]}" ps
 "${release_compose[@]}" exec -T backend flask --app app db current
+```
+
+Estos comandos no publican la API ni PostgreSQL. Solo después de completar el paso 4 y aprobar la comprobación TLS, arrancar la web:
+
+```bash
+sudo .venv-deploy/bin/python -B infra/ec2_preflight.py --compose
+"${release_compose[@]}" up -d --wait --wait-timeout 180 frontend
+"${release_compose[@]}" ps
 ```
 
 La revisión actual de migraciones es `20261007_0005`; incluye la intro de Open Pit por cuenta. No arrancar la API si la migración falla. Para una actualización posterior, hacer y comprobar una copia **antes** de migrar; no ejecutar un downgrade o reemplazar una base con datos a ciegas. Cambiar la contraseña del archivo después de inicializar PostgreSQL no cambia automáticamente la contraseña del usuario de la base.
@@ -188,4 +204,13 @@ Preparado en el repositorio: plantilla privada de EC2, validación previa, hook 
 
 Verificado localmente: 19 pruebas nuevas aprobadas tanto en Windows como en un contenedor Linux aislado sin red, sintaxis Bash y esquema Compose. Las imágenes de backend/frontend se construyeron correctamente con el Compose de producción; Angular mantiene las advertencias anteriores de SCSS en C6/C7. No se arrancó la aplicación ni PostgreSQL, ni se ensayó Certbot/HTTPS público. La CI existente incorpora las comprobaciones ligeras nuevas sin publicar en AWS.
 
-Sigue faltando: elegir región/presupuesto, crear EC2, configurar red/IP/SSH, instalar herramientas, completar `.env.ec2`, emitir HTTPS real, probar renovación, construir/migrar/arrancar, validar acceso del profesor y dispositivos reales, y acordar copia externa/retención. Revisar también [distribución y soporte](distribucion-soporte.md). No declarar I04/I09 cerrados ni una publicación definitiva antes de esa evidencia.
+Verificado en la EC2 del usuario el 2026-10-09:
+
+- Snapshot `c8d59ee0619fccfe6d0c8083189b6f748a551ecc` transferido por SSH/SCP, hash del archivo verificado antes de extraerlo y manifiesto `RELEASE_COMMIT` comprobado. Código bajo `/opt/exploralab`, propiedad de root y sin escritura de otros usuarios.
+- Docker Engine 29.9.0 y Compose 5.6.0 instalados desde el repositorio oficial de Docker. Certbot 5.8.0 instalado mediante snap; no se registró ninguna cuenta ACME ni se solicitó un certificado.
+- Configuración nueva creada exclusivamente en la EC2, con contraseña aleatoria y permisos `root:root`/`600`. Validación de configuración y esquema Compose aprobadas sin imprimir secretos.
+- Imágenes `exploralab-api:ec2-c8d59ee0619f` y `exploralab-web:ec2-c8d59ee0619f` construidas en el servidor. Se mantienen las advertencias previas de presupuesto SCSS de C6/C7; no impiden el build.
+- PostgreSQL nuevo en `exploralab-ec2_production_database`, migraciones desde esquema vacío hasta `20261007_0005 (head)` y API Gunicorn saludables. `/api/v1/health` y `/api/v1/ready` devuelven HTTP 200 dentro del contenedor con la versión esperada. No se copió ni modificó la base local.
+- API/PostgreSQL sin puertos publicados, frontend sin arrancar y sin listeners HTTP/HTTPS en el host. El usuario confirmó las reglas 80/443 del Security Group; aún no se validó esa conectividad externa. La inspección puntual mostró unos 14 GB disponibles en el disco y 3 GB de memoria disponibles; no es una prueba de carga ni capacidad concurrente.
+
+Sigue faltando: confirmación del titular para las condiciones de Let's Encrypt, emisión de HTTPS real, exportación y ensayo de renovación, arranque del frontend, validación externa de certificado/rutas/registro/acceso/progreso y dispositivos reales, además de copia externa/restauración/retención. Región, costes y duración son decisiones del titular de AWS; no se configuraron presupuestos ni alertas en su cuenta. Revisar también [distribución y soporte](distribucion-soporte.md). No declarar I04/I09 cerrados ni una publicación definitiva antes de esa evidencia. La revisión documental posterior no cambia la versión de aplicación instalada.
