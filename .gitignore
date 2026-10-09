@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.production.example
+!.env.ec2.example
 infra/.local/
 infra/backups/
+.venv-deploy/
 .pytest_cache/

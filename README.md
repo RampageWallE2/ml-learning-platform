@@ -120,6 +120,10 @@ La guía reproducible de pruebas, ensayo HTTPS con Docker, copias y restauració
 
 El backend utiliza únicamente PostgreSQL, también en las pruebas con base de datos. Ejecutarlas mediante `compose.verify.yml` mantiene sus datos desechables separados del entorno habitual. No hay alternativa SQLite ni uso automático de `DATABASE_URL` cuando falta `TEST_DATABASE_URL`.
 
+## Prueba en AWS EC2
+
+La preparación para una demostración en una sola EC2 está en [docs/despliegue-aws-prueba.md](docs/despliegue-aws-prueba.md). Reutiliza `compose.production.yml`, separa sus datos del desarrollo y usa `.env.ec2.example` como plantilla sin secretos. Incluye HTTPS para IP pública, validación previa y renovación de certificados. No se han creado recursos ni validado un despliegue en AWS; elegir región/presupuesto y ejecutar la guía sigue pendiente.
+
 ## Vision
 
 The long-term vision is to create a scalable learning environment where mathematics, Machine Learning, data, and artificial intelligence can be explored through an experience that feels less like studying isolated theory and more like progressing through a world of increasingly challenging problems.

@@ -45,6 +45,11 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r backend/requirements-production.lock
+      - name: Check EC2 preparation without deploying
+        run: |
+          python -B -m unittest discover -s infra/tests -v
+          bash -n infra/ec2_certbot_hook.sh
+          docker compose --env-file .env.ec2.example -p exploralab-ec2 -f compose.production.yml config --quiet
       - run: pip install pip-audit
       - run: pip-audit --no-deps --disable-pip -r backend/requirements-production.lock
       - run: python infra/release.py prepare

@@ -8,6 +8,8 @@ Este trabajo prepara y ensaya una versión **local** con Angular compilado, Ngin
 
 No equivale a haber validado todos los teléfonos, el aprendizaje, Google real o los derechos de distribución. Las tareas que exigen decisiones y comprobaciones humanas permanecen abiertas en la lista oficial.
 
+**Actualización 2026-10-09:** la preparación de una prueba futura en EC2 está documentada aparte en [despliegue AWS de prueba](despliegue-aws-prueba.md), con su plantilla y controles. No se han creado recursos ni desplegado en AWS. El ensayo y las herramientas de este documento siguen limitados a localhost; no se retiran sus protecciones ni se utilizan sus datos/certificados en EC2.
+
 ## Evidencia de este ensayo
 
 Comprobado el 2026-10-07, identificador provisional `local-8f554d45e539-20261007143008` (checkout con cambios, no tag de entrega aprobado):
