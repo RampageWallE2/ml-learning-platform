@@ -150,6 +150,7 @@ describe('LessonRunner — deferred exercises', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[role="alert"]')?.textContent).toContain('No se pudo cargar');
     expect(root.textContent).toContain('recarga la página');
+    expect(root.querySelector('.draft-scope')?.textContent).toContain('resuelve cualquier aviso de guardado pendiente');
     expect(document.activeElement).toBe(root.querySelector('.draft-prompt h2'));
     expect(root.querySelectorAll(exerciseSelectors)).toHaveLength(0);
     expect(loadLessonDraft(account.id, 'lesson-01').draft).toEqual(saved);
@@ -171,6 +172,10 @@ describe('LessonRunner — deferred exercises', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.textContent).toContain('La sesión cambió');
+    const closed = vi.fn();
+    fixture.componentInstance.closed.subscribe(closed);
+    root.querySelector<HTMLButtonElement>('.draft-actions button')!.click();
+    expect(closed).toHaveBeenCalledOnce();
     expect(root.textContent).not.toContain('Cargando actividad');
     expect(root.querySelectorAll(exerciseSelectors)).toHaveLength(0);
     expect(await fixture.getDeferBlocks()).toHaveLength(0);

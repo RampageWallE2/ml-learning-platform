@@ -154,14 +154,21 @@
   ) {
 
     <div
-      class="progress-sync-toast progress-sync-toast--error"
+      class="progress-sync-toast"
+      [attr.data-state]="progressNoticeTone()"
       [class.progress-sync-toast--inline]="inline"
       [attr.role]="progressSyncError() || !progress.pendingStorageAvailable() ? 'alert' : 'status'"
     >
 
+      <span class="progress-sync-indicator" aria-hidden="true">{{ progressNoticeTone() === 'saving' ? '…' : progressNoticeTone() === 'pending' ? '!' : '×' }}</span>
       <div>
-        <strong>{{ progressSyncBusy() ? 'Guardando progreso…' : progress.pendingLessonIds().length ? 'Pendiente de guardar' : 'No se pudo sincronizar' }}</strong>
-        <p>{{ message }}</p>
+        <strong>{{ progressNoticeTone() === 'saving' ? 'Guardando progreso…' : progressNoticeTone() === 'pending' ? 'Pendiente de guardar' : 'No se pudo confirmar el progreso' }}</strong>
+        @if (progressSaveAtRisk()) {
+          <p>Este navegador no pudo conservar el resultado pendiente.</p>
+          <strong class="progress-sync-warning">No recargues ni cierres esta página antes de reintentar.</strong>
+        } @else {
+          <p>{{ message }}</p>
+        }
       </div>
 
       <button
@@ -179,15 +186,20 @@
 
     <div
       class="progress-sync-toast"
+      data-state="saving"
       [class.progress-sync-toast--inline]="inline"
       role="status"
       aria-live="polite"
     >
-      Guardando progreso…
+      <span class="progress-sync-indicator" aria-hidden="true">…</span>
+      <div><strong>Guardando progreso…</strong></div>
     </div>
 
   } @else if (lessonSaved()) {
-    <div class="progress-sync-toast" [class.progress-sync-toast--inline]="inline" role="status" aria-live="polite">Progreso guardado en tu cuenta.</div>
+    <div class="progress-sync-toast" data-state="saved" [class.progress-sync-toast--inline]="inline" role="status" aria-live="polite">
+      <span class="progress-sync-indicator" aria-hidden="true">✓</span>
+      <div><strong>Progreso guardado en tu cuenta.</strong></div>
+    </div>
   }
 
 

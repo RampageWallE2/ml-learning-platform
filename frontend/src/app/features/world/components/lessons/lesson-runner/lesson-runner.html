@@ -10,17 +10,34 @@
   >
     @if (sessionChanged()) {
       <section class="draft-prompt">
+        <p class="draft-label">{{ resumeTitle() }}</p>
         <h2>La sesión cambió</h2>
         <p>Cierra esta clase y vuelve a abrirla con tu cuenta.</p>
+        <div class="draft-actions">
+          <button type="button" class="btn btn--primary" (click)="closed.emit()">
+            Cerrar clase
+          </button>
+        </div>
       </section>
     } @else if (resumeOffer()) {
       <section class="draft-prompt" aria-labelledby="resume-title">
         <p class="draft-label">{{ resumeTitle() }}</p>
         <h2 id="resume-title">¿Continuamos la clase?</h2>
+        <dl class="draft-location">
+          <dt>Paso guardado</dt>
+          <dd>{{ resumeStepLabel() }}</dd>
+        </dl>
         <p>{{ resumeLocation() }}</p>
         <p class="draft-scope">Guardado en este navegador. No cuenta como clase completada.</p>
         <div class="draft-actions">
-          <button type="button" class="btn btn--primary" (click)="resumeDraft()">Continuar</button>
+          <button
+            type="button"
+            class="btn btn--primary"
+            aria-label="Continuar desde el paso guardado"
+            (click)="resumeDraft()"
+          >
+            Continuar
+          </button>
           <button type="button" class="btn btn--secondary" (click)="restartDraft()">
             Volver a empezar
           </button>
@@ -197,6 +214,7 @@
   <section #exerciseNotice class="draft-prompt" role="status" aria-busy="true">
     <p class="draft-label">{{ resumeTitle() }}</p>
     <h2 tabindex="-1">Cargando actividad…</h2>
+    <p>Estamos preparando los gráficos y las preguntas.</p>
   </section>
 </ng-template>
 
@@ -204,12 +222,13 @@
   <section #exerciseNotice class="draft-prompt" role="alert">
     <p class="draft-label">{{ resumeTitle() }}</p>
     <h2 tabindex="-1">No se pudo cargar la actividad</h2>
-    <p>
-      Revisa tu conexión y recarga la página para volver a intentarlo. Tu progreso confirmado no
+    <p>Revisa tu conexión y recarga la página para volver a intentarlo.</p>
+    <p class="draft-scope">
+      Antes de recargar, resuelve cualquier aviso de guardado pendiente. Tu progreso confirmado no
       cambia.
     </p>
     <div class="draft-actions">
-      <button type="button" class="btn btn--secondary" (click)="closed.emit()">Cerrar clase</button>
+      <button type="button" class="btn btn--primary" (click)="closed.emit()">Cerrar clase</button>
     </div>
   </section>
 </ng-template>

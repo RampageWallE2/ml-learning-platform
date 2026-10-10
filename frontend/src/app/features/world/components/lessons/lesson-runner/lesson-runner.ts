@@ -96,6 +96,10 @@ export class LessonRunner implements OnChanges {
     const id = this.draftLessonId();
     return id ? 'C' + Number(id.slice(-2)) + ' · ' + LESSON_NAMES[id] : '';
   });
+  readonly resumeStepLabel = computed(() => {
+    const step = this.resumeOffer()?.step ?? this.currentStepIndex();
+    return ['Conversación inicial', 'Ejercicio', 'Conversación final'][step] ?? 'Actividad';
+  });
   readonly sessionChanged = computed(() => !!this.draftLessonId()
     && this.owner() !== this.drafts.currentUser());
   readonly draftNotice = computed(() => {

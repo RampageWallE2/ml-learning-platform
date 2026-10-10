@@ -89,7 +89,7 @@ describe('Lesson conclusions — shared reading hierarchy', () => {
       'shows $name original findings, visible cautions and one delivery action (guided: ' +
         guided +
         ')',
-      ({ component, action, measures }) => {
+      ({ name, component, action, measures }) => {
         const fixture = TestBed.createComponent(component);
         const page = fixture.componentInstance;
         if (guided) {
@@ -109,7 +109,7 @@ describe('Lesson conclusions — shared reading hierarchy', () => {
         expect(title.classList.contains('conclusion-title')).toBe(true);
         expect(title.textContent?.trim().length).toBeGreaterThan(0);
         expect(conclusion.querySelector('.conclusion-learning h4')?.textContent).toBe(
-          'Qué aprendiste',
+          name === 'C9' ? 'Para el siguiente turno' : 'Qué aprendiste',
         );
         const reminder = conclusion.querySelector<HTMLElement>('.conclusion-reminder')!;
         expect(reminder.querySelector('h4')?.textContent).toBe('Recuerda');
@@ -153,5 +153,19 @@ describe('Lesson conclusions — shared reading hierarchy', () => {
     expect(root.querySelectorAll('.conclusion-calculation li')).toHaveLength(4);
     expect(detail.textContent).toContain('4 registros');
     expect(detail.textContent).toContain('8 ÷ 4 = 2 (t/h)²');
+  });
+
+  it('puts the C9 recommendation and delivery before optional details without hiding cautions', () => {
+    const fixture = TestBed.createComponent(Lesson09Thickeners);
+    fixture.componentInstance.stage.set('success');
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const action = root.querySelector('.conclusion-actions')!;
+    const details = root.querySelector('.conclusion-details')!;
+    expect(action.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(root.querySelector('.conclusion-learning')?.textContent).toContain('Usar B como ejemplo');
+    expect(root.querySelector('.conclusion-reminder')?.textContent).toContain('no explican por sí solos las causas');
+    expect(root.querySelector('.conclusion-reminder')?.textContent).toContain('límites permitidos antes de cambiar ajustes');
+    expect(root.querySelector('.conclusion-header')?.textContent).toContain('Variar menos no basta');
   });
 });

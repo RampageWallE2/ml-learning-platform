@@ -52,6 +52,10 @@ describe('LessonRunner — C6 draft recovery', () => {
     const fixture = create(); const done = vi.fn(); fixture.componentInstance.completed.subscribe(done);
     expect(write).not.toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('¿Continuamos la clase?');
+    expect(fixture.nativeElement.querySelector('.draft-label').textContent).toContain('C6');
+    expect(fixture.nativeElement.querySelector('.draft-location dt').textContent).toBe('Paso guardado');
+    expect(fixture.nativeElement.querySelector('.draft-location dd').textContent).toBe('Ejercicio');
+    expect(fixture.nativeElement.querySelector('.draft-scope').textContent).toContain('No cuenta como clase completada');
     fixture.componentInstance.nextStep(); expect(fixture.componentInstance.currentStepIndex()).toBe(0);
     click(fixture, 'Continuar'); await fixture.whenStable();
     const game = await exercise(fixture);

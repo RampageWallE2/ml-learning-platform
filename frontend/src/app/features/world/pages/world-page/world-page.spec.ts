@@ -829,7 +829,9 @@ describe('WorldPage — circular scene loading screen', () => {
     expect(pending()).toEqual(['lesson-01']);
     expect(page.progressSyncError()).not.toBeNull();
     const root: HTMLElement = fixture.nativeElement;
-    expect(root.textContent).toContain('Pendiente de guardar');
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('data-state')).toBe('error');
+    expect(root.textContent).toContain('No se pudo confirmar el progreso');
+    expect(root.textContent).toContain('Falta guardarla en tu cuenta');
     expect(root.textContent).toContain('no necesitas repetirla');
     expect(root.querySelector('.progress-sync-toast button')).not.toBeNull();
   });
@@ -939,6 +941,31 @@ describe('WorldPage — circular scene loading screen', () => {
     expect(root.textContent).toContain('No recargues ni cierres esta página');
     expect(root.textContent).not.toContain('Puedes cerrar la clase');
     expect(root.querySelector('.progress-sync-toast')?.getAttribute('role')).toBe('alert');
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('data-state')).toBe('error');
+    expect(root.querySelector('.progress-sync-warning')?.textContent).toContain('No recargues ni cierres esta página');
+    fixture.componentInstance.savingLesson.set(true); fixture.detectChanges();
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('data-state')).toBe('saving');
+    expect(root.querySelector('.progress-sync-warning')).not.toBeNull();
+    expect(root.querySelector<HTMLButtonElement>('.progress-sync-toast button')?.disabled).toBe(true);
+  });
+
+  it('distinguishes pending, saving, error and saved notices with text and state, not only color', () => {
+    const fixture = create(); const page = fixture.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    pending.set(['lesson-01']); fixture.detectChanges();
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('data-state')).toBe('pending');
+    expect(root.querySelector('.progress-sync-toast strong')?.textContent).toBe('Pendiente de guardar');
+    page.savingLesson.set(true); fixture.detectChanges();
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('data-state')).toBe('saving');
+    expect(root.querySelector('.progress-sync-toast strong')?.textContent).toBe('Guardando progreso…');
+    page.savingLesson.set(false); page.progressSyncError.set('No se pudo guardar.'); fixture.detectChanges();
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('data-state')).toBe('error');
+    expect(root.querySelector('.progress-sync-toast strong')?.textContent).toBe('No se pudo confirmar el progreso');
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('role')).toBe('alert');
+    page.progressSyncError.set(null); pending.set([]); page.lessonSaved.set(true); fixture.detectChanges();
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('data-state')).toBe('saved');
+    expect(root.querySelector('.progress-sync-toast')?.getAttribute('role')).toBe('status');
+    expect(root.querySelector('.progress-sync-indicator')?.getAttribute('aria-hidden')).toBe('true');
   });
 
   it.each(['lesson', 'dialogue'] as const)('moves the single retry notice inside an open %s and back on closing', async kind => {

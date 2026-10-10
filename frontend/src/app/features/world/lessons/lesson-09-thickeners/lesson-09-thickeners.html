@@ -239,6 +239,7 @@
         <h3 id="thickeners-conclusion-title" class="conclusion-title" #taskHeading tabindex="-1">
           B cumplió la meta de promedio.
         </h3>
+        <p>A varió menos. Variar menos no basta: también hay que revisar la meta.</p>
         @if (guidedCompletion()) {
           <p class="conclusion-status">
             Completaste con ayuda. Puedes volver a practicar más adelante.
@@ -274,24 +275,25 @@
       </table>
       <div class="conclusion-body">
         <section class="conclusion-learning" aria-labelledby="thickeners-learning-title">
-          <h4 id="thickeners-learning-title">Qué aprendiste</h4>
-          <p>A varió menos. B cumplió la meta de promedio.</p>
-          <p>Variar menos no basta: también hay que revisar la meta.</p>
-          <h4>Para el siguiente turno</h4>
+          <h4 id="thickeners-learning-title">Para el siguiente turno</h4>
           <ul>
             <li>Usar B como ejemplo para comparar.</li>
             <li>Investigar por qué A quedó bajo la meta.</li>
-            <li>Conocer la causa y los límites permitidos antes de cambiar ajustes.</li>
           </ul>
         </section>
         <aside class="conclusion-reminder" aria-labelledby="thickeners-reminder-title">
           <h4 id="thickeners-reminder-title">Recuerda</h4>
           <ul>
-            <li>Esto muestra lo que pasó, no asegura lo que vendrá.</li>
-            <li>Variar menos o más no significa, por sí solo, trabajar mejor.</li>
+            <li>Los datos no explican por sí solos las causas ni aseguran lo que vendrá.</li>
+            <li>Conocer la causa y los límites permitidos antes de cambiar ajustes.</li>
           </ul>
         </aside>
       </div>
+      <footer class="lesson-actions conclusion-actions">
+        <button type="button" class="btn btn--primary" (click)="finish()">
+          Entregar el informe →
+        </button>
+      </footer>
       <details class="conclusion-details">
         <summary>Ver los datos originales y sus medidas</summary>
         <p>Cada período tiene seis registros tomados en condiciones parecidas.</p>
@@ -354,11 +356,6 @@
           prácticas no se añaden a estos datos.
         </p>
       </details>
-      <footer class="lesson-actions conclusion-actions">
-        <button type="button" class="btn btn--primary" (click)="finish()">
-          Entregar el informe →
-        </button>
-      </footer>
     </section>
   }
 </section>

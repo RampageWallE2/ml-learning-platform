@@ -27,6 +27,28 @@ describe('OpenPitReport — original investigation notes', () => {
     fixture.detectChanges();
   }
 
+  it('orders result, evidence and visible cautions without changing the original notes', () => {
+    const before = JSON.stringify(OPEN_PIT_REPORT_NOTES);
+    confirm(OPEN_PIT_REPORT_NOTES.map(note => note.lessonId));
+    for (let index = 0; index < 9; index++) {
+      select(index);
+      const result = root.querySelector('.report-result')!;
+      const evidence = root.querySelector('.report-evidence')!;
+      const caution = root.querySelector('.report-caution')!;
+      expect(result.querySelector('h3')?.textContent).toBe('Qué encontramos');
+      expect(evidence.querySelector('h3')?.textContent).toBe('Datos que lo muestran');
+      expect(result.compareDocumentPosition(evidence) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(evidence.compareDocumentPosition(caution) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(caution.closest('details')).toBeNull();
+      expect(caution.textContent).toContain(OPEN_PIT_REPORT_NOTES[index].reminder);
+      for (const detail of root.querySelectorAll<HTMLDetailsElement>('details')) {
+        expect(detail.open).toBe(false);
+      }
+    }
+    expect(root.querySelector('.report-footer')?.textContent).toContain('no explican por sí solos las causas');
+    expect(JSON.stringify(OPEN_PIT_REPORT_NOTES)).toBe(before);
+  });
+
   it('shows pending states without revealing findings, records or graphs', () => {
     expect(root.querySelectorAll('.report-select')).toHaveLength(1);
     expect(root.querySelectorAll('.report-select option')).toHaveLength(9);
@@ -40,7 +62,7 @@ describe('OpenPitReport — original investigation notes', () => {
     expect(root.querySelectorAll('.report-note')).toHaveLength(1);
     expect(root.querySelector<HTMLSelectElement>('.report-select')?.value).toBe('lesson-09');
     OPEN_PIT_REPORT_NOTES.forEach((note, index) => {
-      expect(root.querySelectorAll('option')[index].textContent).toBe(`C${note.number} · ${note.title} · Pendiente`);
+      expect(root.querySelectorAll('option')[index].textContent?.trim()).toBe(`C${note.number} · ${note.title} · Pendiente`);
     });
     expect(root.querySelector('label')?.textContent).toContain('Consultar clase');
   });
@@ -82,7 +104,7 @@ describe('OpenPitReport — original investigation notes', () => {
     expect(points[0].y).not.toBe(points[2].y);
     expect(points[1].x).toBe(points[4].x);
     expect(points[1].y).not.toBe(points[4].y);
-    expect(root.querySelector('.report-range-label')?.textContent).toBe('7 min de diferencia');
+    expect(root.querySelector('.report-range-label')?.textContent?.trim()).toBe('7 min de diferencia');
     expect(root.querySelector('.report-reminder')?.textContent).toContain('Las próximas descargas pueden durar distinto');
   });
 
@@ -130,7 +152,7 @@ describe('OpenPitReport — original investigation notes', () => {
     expect(fixture.componentInstance.varianceRecords().map(record => record.cells.length)).toEqual([4, 0, 0, 4]);
     expect(root.querySelectorAll('rect')).toHaveLength(8);
     expect(root.querySelectorAll('.report-zero')).toHaveLength(2);
-    expect(root.querySelector('.report-calculation')?.textContent).toBe('8 ÷ 4 registros = 2 (t/h)²');
+    expect(root.querySelector('.report-calculation')?.textContent?.trim()).toBe('8 ÷ 4 registros = 2 (t/h)²');
     expect(root.querySelector('.report-figure')?.textContent).toContain('4 + 0 + 0 + 4 = 8');
     expect(root.querySelector('.report-reminder')?.textContent).toContain('no significa una separación de 2 t/h');
     expect(root.querySelector('svg')?.getAttribute('aria-label')).toContain('Los dos registros que aportan cero también se cuentan');
@@ -148,7 +170,7 @@ describe('OpenPitReport — original investigation notes', () => {
     expect(a.points.slice(1, 5).map(point => point.x)).toEqual([230, 230, 230, 230]);
     expect(new Set(a.points.slice(1, 5).map(point => point.y)).size).toBe(4);
     expect(a.points[0].x).toBe(b.points[0].x); expect(a.points[5].x).toBe(b.points[5].x);
-    expect(root.querySelector('.report-calculation')?.textContent).toBe('Varianza: A = 3 · B = 6 (t/h)²');
+    expect(root.querySelector('.report-calculation')?.textContent?.trim()).toBe('Varianza: A = 3 · B = 6 (t/h)²');
     expect(root.querySelector('.report-records')?.textContent).toContain('18 ÷ 6 registros = 3 (t/h)²');
     expect(root.querySelector('.report-records')?.textContent).toContain('36 ÷ 6 registros = 6 (t/h)²');
     expect(root.querySelector('.report-reminder')?.textContent).toContain('no demuestra que A trabajó mejor');

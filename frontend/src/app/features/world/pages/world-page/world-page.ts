@@ -409,6 +409,13 @@ export class WorldPage
   });
   readonly progressSyncBusy = computed(() =>
     this.loadingProgress() || this.savingLesson() || this.savingIntro() || this.progress.syncingPending());
+  readonly progressSaveAtRisk = computed(() =>
+    !!this.progress.pendingLessonIds().length && !this.progress.pendingStorageAvailable());
+  readonly progressNoticeTone = computed(() => {
+    if (this.progressSyncBusy()) return 'saving';
+    if (this.progressSyncError() || this.progressSaveAtRisk()) return 'error';
+    return this.progress.pendingLessonIds().length ? 'pending' : 'saved';
+  });
   readonly hasProgressNotice = computed(() =>
     !!this.progressSyncMessage() || this.savingLesson() || this.savingIntro() || this.progress.syncingPending() || this.lessonSaved());
 

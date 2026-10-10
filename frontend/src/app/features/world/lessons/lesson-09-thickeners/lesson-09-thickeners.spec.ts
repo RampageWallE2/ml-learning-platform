@@ -372,8 +372,10 @@ describe('Lesson09Thickeners', () => {
     expect(game.records().goal).toBe(100); expect(game.periods().map(period => period.mean)).toEqual([80, 100]);
     expect(root.querySelector('.lesson-conclusion')?.textContent).toContain('80 · 80 · 80 · 80 · 80 · 80');
     expect(root.textContent).toContain('98 · 98 · 98 · 102 · 102 · 102');
-    expect(root.textContent).toContain('A varió menos. B cumplió la meta de promedio');
-    expect(root.textContent).toContain('Variar menos o más no significa, por sí solo, trabajar mejor');
+    expect(root.querySelector('.conclusion-header h3')?.textContent).toContain('B cumplió la meta de promedio');
+    expect(root.querySelector('.conclusion-header p')?.textContent).toContain('A varió menos');
+    expect(root.querySelector('.conclusion-header')?.textContent).toContain('Variar menos no basta: también hay que revisar la meta');
+    expect(root.querySelector('.conclusion-reminder')?.textContent).toContain('no explican por sí solos las causas');
     expect(root.textContent).not.toContain('117'); expect(root.textContent).not.toContain('104');
     expect(root.querySelector('.route-report')?.textContent).toContain('conclusiones de cada zona');
     expect(root.querySelector('.route-report')?.textContent).toContain('también los que dan cero');
