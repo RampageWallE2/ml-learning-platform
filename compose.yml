@@ -59,7 +59,19 @@ services:
       - "4200:4200"
 
     volumes:
-      - ./frontend:/app
+      # Mount only live sources/configuration, not Windows caches or QA artifacts.
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/angular.json:/app/angular.json
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tsconfig.app.json:/app/tsconfig.app.json
+      - ./frontend/tsconfig.spec.json:/app/tsconfig.spec.json
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/package-lock.json:/app/package-lock.json
+      - ./frontend/proxy.docker.json:/app/proxy.docker.json
+      - ./frontend/proxy.local.json:/app/proxy.local.json
+      - ./frontend/eslint.config.mjs:/app/eslint.config.mjs
+      - ./frontend/.prettierrc:/app/.prettierrc
       - /app/node_modules
 
     command: npm start -- --host 0.0.0.0 --poll 2000 --proxy-config proxy.docker.json
