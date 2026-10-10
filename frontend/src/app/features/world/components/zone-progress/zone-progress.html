@@ -1,11 +1,47 @@
 <aside class="zone-progress" aria-label="Objetivo del recorrido">
-  <div class="progress-summary">
+  <button
+    #toggleButton
+    class="progress-toggle"
+    type="button"
+    (click)="toggle()"
+    [attr.aria-expanded]="expanded()"
+    [attr.aria-controls]="lessonsId"
+  >
+    <span class="progress-toggle-label">
+      @if (nextLessonNumber(); as number) {
+        <span class="progress-step">C{{ number }}</span>
+      }
+      <span class="progress-next-objective">{{ shortObjective() ?? objective() }}</span>
+    </span>
+    @if (hasLessons()) {
+      @if (zone(); as zone) {
+        <span class="progress-counter-compact">
+          <span aria-hidden="true">{{ zone.completedLessons }}/{{ zone.totalLessons }}</span>
+          <span class="sr-only"
+            >{{ zone.completedLessons }} de {{ zone.totalLessons }} clases completadas.</span
+          >
+        </span>
+      }
+    }
+    <span class="progress-toggle-symbol" aria-hidden="true">
+      <svg viewBox="0 0 16 16" focusable="false"><path d="m4 6 4 4 4-4" /></svg>
+    </span>
+    <span class="sr-only">{{ expanded() ? 'Ocultar detalles.' : 'Ver detalles.' }}</span>
+  </button>
+
+  <div
+    class="progress-content"
+    [id]="lessonsId"
+    [hidden]="!expanded()"
+    role="region"
+    aria-label="Objetivo y clases del recorrido"
+    tabindex="0"
+  >
     <div class="progress-overview">
       <div class="progress-context">
         <span class="progress-zone">{{ name() }}</span>
         <span class="progress-topic">{{ topic() }}</span>
       </div>
-
       <div class="current-objective" [class.current-objective--completed]="completed()">
         <span class="objective-label">
           @if (finalTaskPending()) {
@@ -13,28 +49,32 @@
           } @else if (completed()) {
             Recorrido completado
           } @else {
-            @if (nextLessonNumber(); as number) { C{{ number }} · }
+            @if (nextLessonNumber(); as number) {
+              C{{ number }} ·
+            }
             Siguiente paso
           }
         </span>
         <h2>{{ objective() }}</h2>
       </div>
-
       @if (hasLessons()) {
         @if (zone(); as zone) {
           <p class="progress-counter">
-            <span class="progress-counter-full">
-              {{ zone.completedLessons }} de {{ zone.totalLessons }} clases completadas
-            </span>
-            <span class="progress-counter-compact" aria-hidden="true">
-              @if (nextLessonNumber(); as number) { C{{ number }} · }
-              {{ zone.completedLessons }}/{{ zone.totalLessons }} clases
-            </span>
+            <span class="progress-counter-full"
+              >{{ zone.completedLessons }} de {{ zone.totalLessons }} clases completadas</span
+            >
           </p>
-          <div class="progress-bar" role="progressbar" aria-label="Clases completadas"
-               aria-valuemin="0" [attr.aria-valuemax]="zone.totalLessons"
-               [attr.aria-valuenow]="zone.completedLessons"
-               [attr.aria-valuetext]="zone.completedLessons + ' de ' + zone.totalLessons + ' clases completadas'">
+          <div
+            class="progress-bar"
+            role="progressbar"
+            aria-label="Clases completadas"
+            aria-valuemin="0"
+            [attr.aria-valuemax]="zone.totalLessons"
+            [attr.aria-valuenow]="zone.completedLessons"
+            [attr.aria-valuetext]="
+              zone.completedLessons + ' de ' + zone.totalLessons + ' clases completadas'
+            "
+          >
             <div class="progress-bar-value" [style.width.%]="zone.percentage"></div>
           </div>
         }
@@ -42,43 +82,45 @@
     </div>
 
     @if (hasLessons()) {
-      <button class="progress-toggle" type="button" (click)="toggle()"
-              [attr.aria-expanded]="expanded()" [attr.aria-controls]="lessonsId">
-        <span class="progress-toggle-label">{{ expanded() ? 'Ocultar recorrido' : 'Ver recorrido' }}</span>
-        <span class="progress-toggle-symbol" aria-hidden="true">{{ expanded() ? '−' : '+' }}</span>
-      </button>
-    }
-  </div>
-
-  @if (hasLessons()) {
-    @if (zone(); as zone) {
-      <div class="progress-content" [id]="lessonsId" [hidden]="!expanded()"
-           role="region" aria-label="Clases del recorrido" tabindex="0">
+      @if (zone(); as zone) {
         @if (reportAvailable()) {
-          <button type="button" class="btn btn--secondary progress-report" (click)="reportRequested.emit()">
+          <button
+            type="button"
+            class="btn btn--secondary progress-report"
+            (click)="reportRequested.emit()"
+          >
             Informe del turno <span aria-hidden="true">→</span>
           </button>
         }
+        <h3 class="progress-list-title">Clases del recorrido</h3>
         <ol class="progress-lessons">
           @for (lesson of zone.lessons; track lesson.lessonId; let index = $index) {
-            <li class="progress-item"
-                [class.progress-item--completed]="lesson.status === 'completed'"
-                [class.progress-item--current]="lesson.status === 'current'">
+            <li
+              class="progress-item"
+              [class.progress-item--completed]="lesson.status === 'completed'"
+              [class.progress-item--current]="lesson.status === 'current'"
+            >
               <span class="progress-number" aria-hidden="true">{{ index + 1 }}</span>
               <div class="progress-item-info">
                 <span>{{ lesson.name }}</span>
                 <small>
                   @switch (lesson.status) {
-                    @case ('completed') { Completada }
-                    @case ('current') { Siguiente }
-                    @case ('pending') { Pendiente }
+                    @case ('completed') {
+                      Completada
+                    }
+                    @case ('current') {
+                      Siguiente
+                    }
+                    @case ('pending') {
+                      Pendiente
+                    }
                   }
                 </small>
               </div>
             </li>
           }
         </ol>
-      </div>
+      }
     }
-  }
+  </div>
 </aside>

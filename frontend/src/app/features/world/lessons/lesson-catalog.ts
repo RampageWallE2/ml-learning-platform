@@ -13,6 +13,7 @@ export type LessonCatalogEntry = Readonly<{
   lessonId: string;
   name: string;
   objective: string;
+  shortObjective: string;
   definition: LessonDefinition;
 }>;
 
@@ -38,62 +39,71 @@ export const LEARNING_ZONES: readonly ZoneCatalogEntry[] = [
         lessonId: 'lesson-01',
         name: 'Dispersión de los datos',
         objective: 'Ve al fondo del tajo y habla con el encargado del carguío.',
+        shortObjective: 'Ve al fondo del tajo',
         definition: LESSON_01_LOADING,
       },
       {
         lessonId: 'lesson-02',
         name: 'Promedio y dispersión',
         objective: 'Ve a la rampa y habla con el encargado del control.',
+        shortObjective: 'Ve a la rampa',
         definition: LESSON_02_RAMP,
       },
       {
         lessonId: 'lesson-03',
         name: 'Cálculo del rango',
         objective: 'Ve al botadero de desmonte y habla con su encargado.',
+        shortObjective: 'Ve al botadero',
         definition: LESSON_03_HAULAGE,
       },
       {
         lessonId: 'lesson-04',
         name: 'Límites del rango',
         objective: 'Ve al taller de mantenimiento y habla con su encargado.',
+        shortObjective: 'Ve al taller',
         definition: LESSON_04_WORKSHOP,
       },
       {
         lessonId: 'lesson-05',
         name: 'Desviación respecto al promedio',
         objective: 'Ve a ROM / chancado y habla con el operador.',
+        shortObjective: 'Ve a ROM / chancado',
         definition: LESSON_05_CRUSHING,
       },
       {
         lessonId: 'lesson-06',
         name: 'Cálculo de la varianza',
         objective: 'Ve al molino SAG y habla con el operador.',
+        shortObjective: 'Ve al molino SAG',
         definition: LESSON_06_SAG,
       },
       {
         lessonId: 'lesson-07',
         name: 'Comparación de varianzas',
         objective: 'Ve al molino de bolas e hidrociclones y habla con el operador.',
+        shortObjective: 'Ve al molino de bolas',
         definition: LESSON_07_BALLS,
       },
       {
         lessonId: 'lesson-08',
         name: 'Desviación estándar',
         objective: 'Ve a flotación y habla con el operador.',
+        shortObjective: 'Ve a flotación',
         definition: LESSON_08_FLOTATION,
       },
       {
         lessonId: 'lesson-09',
         name: 'Promedio, dispersión y metas',
         objective: 'Ve a los espesadores y habla con el operador.',
+        shortObjective: 'Ve a los espesadores',
         definition: LESSON_09_THICKENERS,
       },
     ],
   },
 ];
 
-const lessonDefinitions = LEARNING_ZONES.flatMap(zone => zone.lessons).map(
-  lesson => [lesson.lessonId, lesson.definition] as const,
+const lessonDefinitions = LEARNING_ZONES.flatMap((zone) => zone.lessons).map(
+  (lesson) => [lesson.lessonId, lesson.definition] as const,
 );
 
 export const LESSON_DEFINITIONS: Readonly<Record<string, LessonDefinition>> =
@@ -101,5 +111,13 @@ export const LESSON_DEFINITIONS: Readonly<Record<string, LessonDefinition>> =
 
 /** Nombres compartidos por las actividades, el HUD y Mi progreso. */
 export const LESSON_NAMES: Readonly<Record<string, string>> = Object.fromEntries(
-  LEARNING_ZONES.flatMap(zone => zone.lessons).map(({ lessonId, name }) => [lessonId, name]),
+  LEARNING_ZONES.flatMap((zone) => zone.lessons).map(({ lessonId, name }) => [lessonId, name]),
+);
+
+/** Brief map directions; full instructions remain in the same lesson catalog. */
+export const LESSON_SHORT_OBJECTIVES: Readonly<Record<string, string>> = Object.fromEntries(
+  LEARNING_ZONES.flatMap((zone) => zone.lessons).map(({ lessonId, shortObjective }) => [
+    lessonId,
+    shortObjective,
+  ]),
 );

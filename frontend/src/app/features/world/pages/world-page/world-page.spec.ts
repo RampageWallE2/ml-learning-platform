@@ -1122,14 +1122,18 @@ describe('WorldPage — circular scene loading screen', () => {
     expect(destroyGame).toHaveBeenCalledWith(true);
   });
 
-  it('places the objective before the account and keeps the HUB instruction static', () => {
+  it('places the compact objective before the account and exposes the full HUB instruction on demand', () => {
     const fixture = create(); const root: HTMLElement = fixture.nativeElement;
     report('HubScene', 'ready', 1); fixture.detectChanges();
     const hud = root.querySelector('.world-hud')!;
     expect(hud.firstElementChild?.classList.contains('world-hud__progress')).toBe(true);
     expect(hud.lastElementChild?.classList.contains('world-hud__account')).toBe(true);
     expect(hud.querySelector('h2')?.textContent).toContain('Elige un ámbito');
-    expect(hud.querySelector('.progress-toggle')).toBeNull();
+    expect(hud.querySelector('.progress-next-objective')?.textContent).toBe('Elige dónde empezar');
+    const details = hud.querySelector<HTMLElement>('.progress-content')!;
+    expect(details.hidden).toBe(true);
+    hud.querySelector<HTMLButtonElement>('.progress-toggle')!.click(); fixture.detectChanges();
+    expect(details.hidden).toBe(false);
     const account = fixture.debugElement.query(By.css('app-account-menu'));
     expect(account.componentInstance.placement()).toBe('bottom-left');
   });
@@ -1139,15 +1143,17 @@ describe('WorldPage — circular scene loading screen', () => {
       id: 'zone-01', name: 'Open Pit', topic: 'Dispersión',
       completedLessons: 2, totalLessons: 3, percentage: 2 / 3 * 100, completed: false,
       lessons: [
-        { lessonId: 'c1', name: 'Carguío', objective: 'Ve al tajo.', status: 'completed' },
-        { lessonId: 'c2', name: 'Turnos', objective: 'Ve a la rampa.', status: 'completed' },
-        { lessonId: 'c3', name: 'Botadero', objective: 'Ve al botadero y habla con su encargado.', status: 'current' },
+        { lessonId: 'lesson-01', name: 'Carguío', objective: 'Ve al tajo.', status: 'completed' },
+        { lessonId: 'lesson-02', name: 'Turnos', objective: 'Ve a la rampa.', status: 'completed' },
+        { lessonId: 'lesson-03', name: 'Botadero', objective: 'Ve al botadero y habla con su encargado.', status: 'current' },
       ],
     }]);
     const fixture = create(); const root: HTMLElement = fixture.nativeElement;
     gameEvents.emit(GameEvents.SCENE_CHANGED, 'OpenPitScene');
     report('OpenPitScene', 'ready', 1); fixture.detectChanges();
     expect(root.querySelector('.objective-label')?.textContent).toContain('C3');
+    expect(root.querySelector('.progress-next-objective')?.textContent).toBe('Ve al botadero');
+    expect(root.querySelector<HTMLElement>('.progress-content')?.hidden).toBe(true);
     expect(root.querySelector('.current-objective h2')?.textContent).toBe('Ve al botadero y habla con su encargado.');
     expect(root.querySelector('.progress-counter')?.textContent).toContain('2 de 3 clases completadas');
     expect(root.querySelector('.world-hud')?.hasAttribute('inert')).toBe(false);

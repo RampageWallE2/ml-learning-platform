@@ -1,4 +1,5 @@
 import type { LessonProgressStatus, ZoneProgress } from '../../progress/progress.types';
+import { LEARNING_ZONES } from '../../lessons/lesson-catalog';
 import { getWorldProgressPanel, type WorldProgressPanelContext } from './world-progress-panel';
 
 function createZone(
@@ -42,27 +43,34 @@ describe('getWorldProgressPanel', () => {
       name: 'HUB',
       topic: 'Selección principal',
       objective: 'Elige un ámbito para comenzar tu recorrido.',
+      shortObjective: 'Elige dónde empezar',
     },
     {
       sceneKey: 'SurfaceSelectionScene',
       name: 'Minería de Superficie',
       topic: 'Selección de modalidad',
       objective: 'Elige Tajo Abierto / Open Pit para entrar al escenario.',
+      shortObjective: 'Entra a Open Pit',
     },
-  ])('keeps the existing instruction for $sceneKey', ({ sceneKey, name, topic, objective }) => {
-    expect(getWorldProgressPanel(context({ sceneKey, zones: [createZone()] }))).toEqual({
-      name,
-      topic,
-      objective,
-      zone: null,
-    });
-  });
+  ])(
+    'keeps the existing instruction for $sceneKey',
+    ({ sceneKey, name, topic, objective, shortObjective }) => {
+      expect(getWorldProgressPanel(context({ sceneKey, zones: [createZone()] }))).toEqual({
+        name,
+        topic,
+        objective,
+        shortObjective,
+        zone: null,
+      });
+    },
+  );
 
   it('uses the exploration fallback for an unregistered scene', () => {
     expect(getWorldProgressPanel(context({ sceneKey: 'UnknownScene', sceneZone: null }))).toEqual({
       name: 'Mundo',
       topic: 'Exploración',
       objective: 'Continúa explorando el escenario.',
+      shortObjective: 'Explora el escenario',
       zone: null,
     });
   });
@@ -74,6 +82,7 @@ describe('getWorldProgressPanel', () => {
         name: 'Open Pit',
         topic: 'Próximamente',
         objective: 'Esta zona todavía no tiene actividades configuradas.',
+        shortObjective: 'Zona próximamente',
         zone: null,
       });
     },
@@ -84,7 +93,13 @@ describe('getWorldProgressPanel', () => {
     (status) => {
       const zone = createZone(['completed', status, 'current']);
       const panel = getWorldProgressPanel(context({ zones: [zone] }));
-      expect(panel).toEqual({ name: zone.name, topic: zone.topic, objective: 'Objetivo 2', zone });
+      expect(panel).toEqual({
+        name: zone.name,
+        topic: zone.topic,
+        objective: 'Objetivo 2',
+        shortObjective: 'Objetivo 2',
+        zone,
+      });
       expect(panel.zone).toBe(zone);
     },
   );
@@ -94,6 +109,7 @@ describe('getWorldProgressPanel', () => {
       name: 'Open Pit',
       topic: 'Introducción',
       objective: 'Habla con el supervisor para empezar.',
+      shortObjective: 'Habla con el supervisor',
       zone: null,
     });
   });
@@ -102,14 +118,16 @@ describe('getWorldProgressPanel', () => {
     {
       returnToSupervisor: true,
       objective: 'Vuelve al centro de control y entrega el informe al supervisor.',
+      shortObjective: 'Entrega el informe',
     },
     {
       returnToSupervisor: false,
       objective: 'Informe entregado. Puedes revisar tus clases y el informe.',
+      shortObjective: 'Informe entregado',
     },
   ])(
     'keeps the closing instruction when returnToSupervisor is $returnToSupervisor',
-    ({ returnToSupervisor, objective }) => {
+    ({ returnToSupervisor, objective, shortObjective }) => {
       const zone = createZone(['completed', 'completed', 'completed']);
       expect(
         getWorldProgressPanel(
@@ -120,7 +138,7 @@ describe('getWorldProgressPanel', () => {
             returnToSupervisor,
           }),
         ),
-      ).toEqual({ name: zone.name, topic: 'Cierre del turno', objective, zone });
+      ).toEqual({ name: zone.name, topic: 'Cierre del turno', objective, shortObjective, zone });
     },
   );
 
@@ -136,7 +154,13 @@ describe('getWorldProgressPanel', () => {
           returnToSupervisor: true,
         }),
       ),
-    ).toEqual({ name: zone.name, topic: zone.topic, objective: 'Objetivo 1', zone });
+    ).toEqual({
+      name: zone.name,
+      topic: zone.topic,
+      objective: 'Objetivo 1',
+      shortObjective: 'Objetivo 1',
+      zone,
+    });
   });
 
   it.each([
@@ -158,9 +182,33 @@ describe('getWorldProgressPanel', () => {
       name: zone.name,
       topic: zone.topic,
       objective: 'Has completado todas las actividades de esta zona.',
+      shortObjective: 'Recorrido completado',
       zone,
     });
   });
+
+  it.each(LEARNING_ZONES[0].lessons.map((lesson, index) => ({ lesson, index })))(
+    'uses the authored short direction for $lesson.lessonId without truncating its full objective',
+    ({ lesson, index }) => {
+      const zone: ZoneProgress = {
+        ...createZone(),
+        completedLessons: index,
+        totalLessons: 9,
+        completed: false,
+        lessons: LEARNING_ZONES[0].lessons.map((entry, position) => ({
+          lessonId: entry.lessonId,
+          name: entry.name,
+          objective: entry.objective,
+          status: position < index ? 'completed' : position === index ? 'current' : 'pending',
+        })),
+      };
+      const panel = getWorldProgressPanel(context({ zones: [zone] }));
+      expect(panel.shortObjective).toBe(lesson.shortObjective);
+      expect(panel.shortObjective.length).toBeLessThanOrEqual(24);
+      expect(panel.objective).toBe(lesson.objective);
+      expect(panel.zone).toBe(zone);
+    },
+  );
 
   it('does not mutate the supplied progress or retain state between calls', () => {
     const zone = createZone();
