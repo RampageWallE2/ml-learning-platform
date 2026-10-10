@@ -2,6 +2,7 @@ import type { DialogueData } from '../../components/dialogue/dialogue.types';
 
 export const OPEN_PIT_CLOSING: DialogueData = {
   id: 'open-pit-closing',
+  completionLabel: 'Volver al mapa',
   messages: [
     {
       speaker: 'npc',

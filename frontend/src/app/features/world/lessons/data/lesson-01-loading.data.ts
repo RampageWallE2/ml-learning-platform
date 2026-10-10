@@ -28,6 +28,8 @@ export const LESSON_01_LOADING: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-01-loading-end',
+        nextDestination: 'Control de acarreo (rampa)',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'npc',
@@ -45,7 +47,7 @@ export const LESSON_01_LOADING: LessonDefinition = {
             speaker: 'npc',
             characterId: 'loading-supervisor',
             name: 'Encargado del carguío',
-            text: 'Ahora pasa por control de acarreo. Necesitan tu ayuda para comparar dos turnos.',
+            text: 'Habla con el encargado para comparar dos turnos.',
           },
         ],
       },

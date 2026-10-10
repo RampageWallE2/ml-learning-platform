@@ -57,6 +57,16 @@ export class Dialogue implements OnChanges, OnDestroy {
 
   isLastMessage = computed(() => this.currentIndex() >= this.dialogue().messages.length - 1);
 
+  nextDestination = computed(() =>
+    this.isLastMessage() ? (this.dialogue().nextDestination ?? null) : null,
+  );
+
+  buttonLabel = computed(() => {
+    if (this.isTyping()) return 'Mostrar texto';
+    if (!this.isLastMessage()) return 'Siguiente';
+    return this.dialogue().completionLabel ?? 'Continuar';
+  });
+
   progressLabel = computed(() => `${this.currentIndex() + 1} / ${this.dialogue().messages.length}`);
 
   ngOnChanges(changes: SimpleChanges): void {

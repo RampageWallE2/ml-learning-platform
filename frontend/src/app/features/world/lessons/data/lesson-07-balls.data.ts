@@ -40,6 +40,8 @@ export const LESSON_07_BALLS: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-07-balls-end',
+        nextDestination: 'Flotación',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'npc',
@@ -81,7 +83,7 @@ export const LESSON_07_BALLS: LessonDefinition = {
             speaker: 'npc',
             characterId: 'npc-default',
             name: 'Operador de bolas e hidrociclones',
-            text: 'En flotación buscarás una medida que se pueda expresar en toneladas por hora.',
+            text: 'Habla con el operador para expresar la medida de los cambios en toneladas por hora.',
           },
         ],
       },

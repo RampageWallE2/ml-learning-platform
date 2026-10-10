@@ -34,6 +34,8 @@ export const LESSON_04_WORKSHOP: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-04-workshop-end',
+        nextDestination: 'ROM / chancado',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'npc',
@@ -69,7 +71,7 @@ export const LESSON_04_WORKSHOP: LessonDefinition = {
             speaker: 'npc',
             characterId: 'npc-default',
             name: 'Encargado del taller',
-            text: 'Ve a ROM / chancado. Allí necesitan comparar todos los registros.',
+            text: 'Habla con el operador para comparar todos los registros.',
           },
         ],
       },

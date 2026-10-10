@@ -2,6 +2,8 @@ import type { DialogueData } from '../../components/dialogue/dialogue.types';
 
 export const OPEN_PIT_INTRO: DialogueData = {
   id: 'open-pit-intro',
+  nextDestination: 'Fondo del tajo',
+  completionLabel: 'Entrar al tajo',
   messages: [
     {
       speaker: 'npc',
@@ -26,7 +28,7 @@ export const OPEN_PIT_INTRO: DialogueData = {
       speaker: 'npc',
       characterId: 'open-pit-guide',
       name: 'Supervisor del turno',
-      text: 'Empezaremos dentro del tajo. Te llevo cerca del encargado del carguío; acércate a él para iniciar la primera clase.',
+      text: 'Te llevo cerca del encargado del carguío. Acércate a él para iniciar la primera clase.',
     },
   ],
 };

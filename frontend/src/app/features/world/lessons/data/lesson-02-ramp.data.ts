@@ -40,6 +40,8 @@ export const LESSON_02_RAMP: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-02-ramp-end',
+        nextDestination: 'Botadero de desmonte',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'npc',
@@ -63,7 +65,7 @@ export const LESSON_02_RAMP: LessonDefinition = {
             speaker: 'npc',
             characterId: 'ramp-controller',
             name: 'Encargado del control de rampa',
-            text: 'También debemos revisar cuánto demora descargar el material de descarte. Habla con el encargado del botadero.',
+            text: 'Habla con el encargado para revisar cuánto demora descargar el material de descarte.',
           },
         ],
       },

@@ -30,10 +30,17 @@
       <div class="dialogue-copy" aria-live="polite" aria-atomic="true">
         <header class="dialogue-heading">
           <strong class="dialogue-name">{{ currentMessage()?.name }}</strong>
-          @if (messageLabel(); as label) {
+          @if (!nextDestination() && messageLabel(); as label) {
             <span class="dialogue-purpose">{{ label }}</span>
           }
         </header>
+
+        @if (nextDestination(); as destination) {
+          <div class="dialogue-destination">
+            <span class="dialogue-destination__label">Siguiente destino</span>
+            <strong class="dialogue-destination__place">{{ destination }}</strong>
+          </div>
+        }
 
         <p class="dialogue-copy__text" [attr.aria-label]="currentMessage()?.text">
           <span class="dialogue-copy__reserve" aria-hidden="true">
@@ -69,7 +76,7 @@
         [disabled]="busy()"
         (click)="next()"
       >
-        {{ isTyping() ? 'Mostrar texto' : isLastMessage() ? 'Continuar' : 'Siguiente' }}
+        {{ buttonLabel() }}
         <span aria-hidden="true">→</span>
       </button>
     </footer>

@@ -46,6 +46,8 @@ export const LESSON_09_THICKENERS: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-09-thickeners-end',
+        nextDestination: 'Centro de control',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'npc',
@@ -93,7 +95,7 @@ export const LESSON_09_THICKENERS: LessonDefinition = {
             speaker: 'npc',
             characterId: 'npc-default',
             name: 'Operador de espesadores',
-            text: 'Ahora vuelve al centro de control y entrega el informe al supervisor con lo que encontraste en cada área.',
+            text: 'Entrega el informe al supervisor con lo que encontraste en cada área.',
           },
         ],
       },

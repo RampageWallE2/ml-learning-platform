@@ -65,6 +65,80 @@ describe('Dialogue', () => {
     expect(completed).toHaveBeenCalledOnce();
   });
 
+  it('shows the destination only at the end and keeps reveal and completion separate', () => {
+    const fixture = create({
+      ...data,
+      nextDestination: 'Taller de mantenimiento',
+      completionLabel: 'Volver al mapa',
+      messages: [data.messages[0], { ...data.messages[1], kind: 'task' }],
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    const button = root.querySelector<HTMLButtonElement>('.continue-button')!;
+    const completed = vi.fn();
+    fixture.componentInstance.completed.subscribe(completed);
+    expect(root.querySelector('.dialogue-destination')).toBeNull();
+    expect(button.textContent).toContain('Siguiente');
+
+    button.click();
+    fixture.detectChanges();
+    expect(root.querySelector('.dialogue-destination__label')?.textContent).toBe(
+      'Siguiente destino',
+    );
+    expect(root.querySelector('.dialogue-destination__place')?.textContent).toBe(
+      'Taller de mantenimiento',
+    );
+    expect(root.querySelector('.dialogue-purpose')).toBeNull();
+    expect(button.textContent).toContain('Mostrar texto');
+    expect(completed).not.toHaveBeenCalled();
+
+    button.click();
+    fixture.detectChanges();
+    expect(button.textContent).toContain('Volver al mapa');
+    expect(completed).not.toHaveBeenCalled();
+
+    fixture.componentRef.setInput('busy', true);
+    fixture.detectChanges();
+    button.click();
+    fixture.componentInstance.next();
+    expect(button.disabled).toBe(true);
+    expect(completed).not.toHaveBeenCalled();
+
+    fixture.componentRef.setInput('busy', false);
+    fixture.detectChanges();
+    button.click();
+    expect(completed).toHaveBeenCalledOnce();
+  });
+
+  it('clears the destination and custom completion label when the dialogue changes', () => {
+    const fixture = create({
+      id: 'intro-destination',
+      nextDestination: 'Fondo del tajo',
+      completionLabel: 'Entrar al tajo',
+      messages: [data.messages[0]],
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.continue-button')?.textContent).toContain('Entrar al tajo');
+
+    fixture.componentRef.setInput('dialogue', { id: 'plain-ending', messages: [data.messages[1]] });
+    fixture.detectChanges();
+    vi.runAllTimers();
+    fixture.detectChanges();
+    expect(root.querySelector('.dialogue-destination')).toBeNull();
+    expect(root.querySelector('.continue-button')?.textContent).toContain('Continuar');
+    expect(root.textContent).not.toContain('Fondo del tajo');
+  });
+
+  it('supports a completion label without inventing a next destination', () => {
+    const fixture = create({
+      id: 'investigation-complete',
+      completionLabel: 'Volver al mapa',
+      messages: [data.messages[0]],
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.dialogue-destination')).toBeNull();
+    expect(root.querySelector('.continue-button')?.textContent).toContain('Volver al mapa');
+  });
+
   it('keeps consecutive fragments with the same speaker separate until the final advance', () => {
     const fixture = create({
       id: 'short-fragments',

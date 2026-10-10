@@ -40,6 +40,8 @@ export const LESSON_06_SAG: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-06-sag-end',
+        nextDestination: 'Molino de bolas e hidrociclones',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'npc',
@@ -81,7 +83,7 @@ export const LESSON_06_SAG: LessonDefinition = {
             speaker: 'npc',
             characterId: 'npc-default',
             name: 'Operador del molino SAG',
-            text: 'En la siguiente tarea compararás otros datos.',
+            text: 'Habla con el operador para comparar cuánto variaron dos grupos de registros.',
           },
         ],
       },

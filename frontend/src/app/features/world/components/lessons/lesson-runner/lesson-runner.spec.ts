@@ -285,7 +285,8 @@ describe('LessonRunner — workshop lesson', () => {
     expect(endText).toContain('no solo el rango');
     expect(endText).toContain('no dice qué equipo trabaja mejor');
     expect(endText).toContain('ni explica la causa');
-    expect(end.dialogue().messages.at(-1)?.text).toContain('ROM / chancado');
+    expect(end.dialogue().nextDestination).toBe('ROM / chancado');
+    expect(end.dialogue().messages.at(-1)?.text).toContain('Habla con el operador');
     completeDialogue(end); expect(done).toHaveBeenCalledExactlyOnceWith('lesson-04');
   });
 });
@@ -328,7 +329,8 @@ describe('LessonRunner — loading lesson', () => {
     ).toBe('dialogue');
     expect(end.currentIndex()).toBe(0);
     expect(end.currentMessage()!.text).toContain('El grupo B');
-    expect(end.dialogue().messages.at(-1)?.text).toContain('control de acarreo');
+    expect(end.dialogue().nextDestination).toBe('Control de acarreo (rampa)');
+    expect(end.dialogue().messages.at(-1)?.text).toContain('comparar dos turnos');
     completeDialogue(end);
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-01');
   });
@@ -385,7 +387,8 @@ describe('LessonRunner — ramp lesson', () => {
     const endText = end.dialogue().messages.map(message => message.text).join(' ');
     expect(endText).toContain('Eso no explica por qué pasó');
     expect(endText).toContain('hablaré con el equipo antes de cambiar el plan');
-    expect(end.dialogue().messages.at(-1)?.text).toContain('encargado del botadero');
+    expect(end.dialogue().nextDestination).toBe('Botadero de desmonte');
+    expect(end.dialogue().messages.at(-1)?.text).toContain('cuánto demora descargar');
     completeDialogue(end);
     expect(done).toHaveBeenCalledExactlyOnceWith('lesson-02');
   });
@@ -434,7 +437,13 @@ describe('LessonRunner — haulage lesson', () => {
     expect(
       (fixture.debugElement.query(By.directive(InteractionPanel)).componentInstance as InteractionPanel).mode()
     ).toBe('dialogue');
-    expect(end.currentMessage()!.text).toContain('diferencia de 7 minutos');
+    expect(end.currentMessage()!.text).toContain('fue de 7 minutos');
+    expect(end.currentMessage()!.facts).toEqual([
+      { label: 'Más corta', value: '11 min' },
+      { label: 'Más larga', value: '18 min' },
+      { label: 'Diferencia', value: '7 min' },
+    ]);
+    expect(end.dialogue().nextDestination).toBe('Taller de mantenimiento');
     const endText = end.dialogue().messages.map(message => message.text).join(' ');
     expect(endText).toContain('Añadiré tu aviso al informe del siguiente turno');
     expect(endText).toContain('las próximas descargas pueden durar distinto');

@@ -44,6 +44,8 @@ export const LESSON_03_HAULAGE: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-03-haulage-end',
+        nextDestination: 'Taller de mantenimiento',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'player',
@@ -81,7 +83,7 @@ export const LESSON_03_HAULAGE: LessonDefinition = {
             speaker: 'npc',
             characterId: 'haulage-controller',
             name: 'Encargado del botadero',
-            text: 'Ahora ve al taller. Su encargado necesita comparar unos registros del taller que tienen el mismo rango.',
+            text: 'Habla con el encargado para comparar registros del taller que tienen el mismo rango.',
             kind: 'task',
           },
         ],

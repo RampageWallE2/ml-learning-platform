@@ -32,6 +32,9 @@ export type DialogueMessage = {
 export type DialogueData = {
   id: string;
   messages: DialogueMessage[];
+  /** Completion copy only; navigation remains owned by the parent. */
+  nextDestination?: string;
+  completionLabel?: string;
 };
 
 export type DialogueRequest = {

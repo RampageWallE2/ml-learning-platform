@@ -46,6 +46,8 @@ export const LESSON_08_FLOTATION: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-08-flotation-end',
+        nextDestination: 'Espesadores',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'npc',
@@ -81,7 +83,7 @@ export const LESSON_08_FLOTATION: LessonDefinition = {
             speaker: 'npc',
             characterId: 'npc-default',
             name: 'Operador de flotación',
-            text: 'En espesadores prepararemos el informe final. También tendremos una meta: menos cambios no significa siempre un mejor resultado.',
+            text: 'Habla con el operador para preparar el informe final. También tendremos una meta: menos cambios no significa siempre un mejor resultado.',
           },
         ],
       },

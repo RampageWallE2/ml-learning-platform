@@ -519,7 +519,11 @@ describe('Lesson02Ramp', () => {
     expect(text).toContain('Eso no explica por qué pasó');
     expect(text).toContain('hablaré con el equipo antes de cambiar el plan');
     expect(text).toContain('material de descarte');
-    expect(text).toContain('encargado del botadero');
+    const closing = LESSON_02_RAMP.steps.at(-1);
+    expect(closing?.type).toBe('dialogue');
+    if (closing?.type !== 'dialogue') throw new Error('C2 must keep its closing dialogue.');
+    expect(closing.dialogue.nextDestination).toBe('Botadero de desmonte');
+    expect(closing.dialogue.messages.at(-1)?.text).toContain('Habla con el encargado');
     expect(text).not.toContain('dispersión');
   });
 

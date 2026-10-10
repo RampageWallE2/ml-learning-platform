@@ -40,6 +40,8 @@ export const LESSON_05_CRUSHING: LessonDefinition = {
       type: 'dialogue',
       dialogue: {
         id: 'lesson-05-crushing-end',
+        nextDestination: 'Molino SAG',
+        completionLabel: 'Volver al mapa',
         messages: [
           {
             speaker: 'npc',
@@ -75,7 +77,7 @@ export const LESSON_05_CRUSHING: LessonDefinition = {
             speaker: 'npc',
             characterId: 'npc-default',
             name: 'Operador de chancado',
-            text: 'Ahora falta una cosa: ¿cómo resumimos todas estas separaciones con un solo número?',
+            text: 'Habla con el operador para resumir todas estas separaciones con un solo número.',
           },
         ],
       },
