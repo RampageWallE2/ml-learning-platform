@@ -32,12 +32,14 @@ describe('Dialogue', () => {
     return fixture;
   }
 
-  it('shows only the active speaker text while keeping both portraits visible', () => {
+  it('shows only the active speaker and portrait without reserving an inactive band', () => {
     const fixture = create();
     const root = fixture.nativeElement as HTMLElement;
     expect(root.textContent).toContain('Primer mensaje.');
     expect(root.textContent).not.toContain('Respuesta.');
-    expect(root.querySelectorAll('.portrait-frame')).toHaveLength(2);
+    expect(root.querySelectorAll('.portrait-frame')).toHaveLength(1);
+    expect(root.querySelectorAll('.dialogue-band')).toHaveLength(1);
+    expect(root.querySelector('.dialogue-band--player')).toBeNull();
 
     root.querySelector<HTMLButtonElement>('.continue-button')!.click();
     fixture.detectChanges();
@@ -48,6 +50,8 @@ describe('Dialogue', () => {
     expect(root.querySelector('.dialogue-band--player')?.classList).toContain(
       'dialogue-band--active',
     );
+    expect(root.querySelectorAll('.portrait-frame')).toHaveLength(1);
+    expect(root.querySelector('.dialogue-band--npc')).toBeNull();
   });
 
   it('completes only after advancing from the last message', () => {
@@ -80,7 +84,7 @@ describe('Dialogue', () => {
       fixture.detectChanges();
       expect(page.currentIndex()).toBe(index);
       expect(page.displayedText()).toBe(currentText);
-      expect(page.npcMessage()?.name).toBe('Operador');
+      expect(page.currentMessage()?.name).toBe('Operador');
       expect(fixture.nativeElement.querySelectorAll('.dialogue-copy')).toHaveLength(1);
       expect(completed).not.toHaveBeenCalled();
       page.next();
@@ -90,14 +94,22 @@ describe('Dialogue', () => {
   });
 
   it('cannot advance or complete while the server confirmation is in flight', () => {
-    const fixture = create(); const page = fixture.componentInstance;
-    const completed = vi.fn(); page.completed.subscribe(completed);
-    fixture.componentRef.setInput('busy', true); fixture.detectChanges();
-    page.next(); expect(page.currentIndex()).toBe(0);
+    const fixture = create();
+    const page = fixture.componentInstance;
+    const completed = vi.fn();
+    page.completed.subscribe(completed);
+    fixture.componentRef.setInput('busy', true);
+    fixture.detectChanges();
+    page.next();
+    expect(page.currentIndex()).toBe(0);
     expect(fixture.nativeElement.querySelector('.continue-button').disabled).toBe(true);
-    page.currentIndex.set(1); page.next(); expect(completed).not.toHaveBeenCalled();
-    fixture.componentRef.setInput('busy', false); fixture.detectChanges();
-    page.next(); expect(completed).toHaveBeenCalledOnce();
+    page.currentIndex.set(1);
+    page.next();
+    expect(completed).not.toHaveBeenCalled();
+    fixture.componentRef.setInput('busy', false);
+    fixture.detectChanges();
+    page.next();
+    expect(completed).toHaveBeenCalledOnce();
   });
 
   it('types each message and uses the first click to reveal it completely', () => {
@@ -176,9 +188,12 @@ describe('Dialogue', () => {
     const fixture = create();
     const root = fixture.nativeElement as HTMLElement;
     const npcFrame = root.querySelector<HTMLElement>('.dialogue-band--npc .portrait-frame');
-    const playerFrame = root.querySelector<HTMLElement>('.dialogue-band--player .portrait-frame');
-
     expect(npcFrame?.dataset['characterId']).toBe('npc-default');
+
+    fixture.componentInstance.next();
+    vi.runAllTimers();
+    fixture.detectChanges();
+    const playerFrame = root.querySelector<HTMLElement>('.dialogue-band--player .portrait-frame');
     expect(playerFrame?.dataset['characterId']).toBe('player');
     const playerPortrait = playerFrame?.querySelector<HTMLElement>('.character-portrait--desktop');
     expect(playerPortrait?.style.backgroundImage).toContain('character_postman_3.png');
@@ -215,7 +230,7 @@ describe('Dialogue', () => {
     expect(button.classList.contains('btn')).toBe(true);
     expect(button.classList.contains('btn--secondary')).toBe(true);
     expect(button.textContent).toContain('Mostrar texto');
-    expect(button.querySelector('small')?.textContent).toContain('Mensaje 1 / 2');
+    expect(root.querySelector('.dialogue-progress')?.textContent).toContain('Mensaje 1 / 2');
     expect(button.textContent).not.toContain('clic');
 
     button.click();
@@ -227,7 +242,7 @@ describe('Dialogue', () => {
     vi.runAllTimers();
     fixture.detectChanges();
     expect(button.textContent).toContain('Continuar');
-    expect(button.querySelector('small')?.textContent).toContain('Mensaje 2 / 2');
+    expect(root.querySelector('.dialogue-progress')?.textContent).toContain('Mensaje 2 / 2');
   });
 
   it('exposes the full message once to assistive technology while it is typing', () => {
@@ -271,5 +286,82 @@ describe('Dialogue', () => {
     vi.advanceTimersByTime(500);
     expect(fixture.componentInstance.displayedText()).toBe(displayedText);
     expect(fixture.componentInstance.isTyping()).toBe(false);
+  });
+
+  it('separates a task from findings and removes metadata when the next message is plain', () => {
+    const fixture = create({
+      id: 'structured-dialogue',
+      messages: [
+        { speaker: 'npc', name: 'Encargado', text: 'Busca los extremos.', kind: 'task' },
+        {
+          speaker: 'player',
+          name: 'Tú',
+          text: 'La diferencia fue de 7 minutos.',
+          kind: 'finding',
+          facts: [
+            { label: 'Más corta', value: '11 min' },
+            { label: 'Más larga', value: '18 min' },
+            { label: 'Diferencia', value: '7 min' },
+          ],
+        },
+        { speaker: 'npc', name: 'Encargado', text: 'Gracias por tu ayuda.' },
+      ],
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.dialogue-purpose')?.textContent).toBe('Qué hacer');
+    expect(root.querySelector('.dialogue-band--task')).not.toBeNull();
+    expect(root.querySelector('.dialogue-facts')).toBeNull();
+
+    fixture.componentInstance.next();
+    vi.runAllTimers();
+    fixture.detectChanges();
+    expect(root.querySelector('.dialogue-purpose')?.textContent).toBe('Lo que encontramos');
+    expect(root.querySelector('.dialogue-band--task')).toBeNull();
+    expect(
+      Array.from(root.querySelectorAll('.dialogue-facts dt'), (item) => item.textContent),
+    ).toEqual(['Más corta', 'Más larga', 'Diferencia']);
+    expect(
+      Array.from(root.querySelectorAll('.dialogue-facts dd'), (item) => item.textContent),
+    ).toEqual(['11 min', '18 min', '7 min']);
+
+    fixture.componentInstance.next();
+    vi.runAllTimers();
+    fixture.detectChanges();
+    expect(root.querySelector('.dialogue-purpose')).toBeNull();
+    expect(root.querySelector('.dialogue-facts')).toBeNull();
+    expect(root.textContent).not.toContain('11 min');
+  });
+
+  it.each([
+    ['context', 'Situación'],
+    ['reminder', 'Recuerda'],
+  ] as const)('labels a %s message without adding data or extra actions', (kind, label) => {
+    const fixture = create({
+      id: 'reading-kind',
+      messages: [{ speaker: 'npc', name: 'Encargado', text: 'Mensaje breve.', kind, facts: [] }],
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.dialogue-purpose')?.textContent).toBe(label);
+    expect(root.querySelector('.dialogue-facts')).toBeNull();
+    expect(root.querySelectorAll('button')).toHaveLength(1);
+  });
+
+  it('renders facts as text, never as supplied HTML', () => {
+    const unsafeText = '<img src=x onerror=alert(1)>';
+    const fixture = create({
+      id: 'safe-facts',
+      messages: [
+        {
+          speaker: 'npc',
+          name: 'Encargado',
+          text: 'Un registro.',
+          facts: [{ label: unsafeText, value: unsafeText }],
+        },
+      ],
+    });
+    const facts = (fixture.nativeElement as HTMLElement).querySelector('.dialogue-facts')!;
+    expect(facts.querySelector('img')).toBeNull();
+    expect(facts.querySelector('dt')?.textContent).toBe(unsafeText);
+    expect(facts.querySelector('dd')?.textContent).toBe(unsafeText);
   });
 });

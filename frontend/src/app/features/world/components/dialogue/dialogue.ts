@@ -6,25 +6,28 @@ import {
   computed,
   input,
   output,
-  signal
+  signal,
 } from '@angular/core';
 
-import {
-  DialogueData,
-  DialogueMessage
-} from './dialogue.types';
+import { DialogueData, DialogueMessage, DialogueMessageKind } from './dialogue.types';
 import { resolveDialoguePortrait } from './dialogue-characters.data';
 
 const TYPEWRITER_INTERVAL_MS = 22;
+
+const MESSAGE_LABELS: Record<DialogueMessageKind, string> = {
+  context: 'Situación',
+  task: 'Qué hacer',
+  finding: 'Lo que encontramos',
+  reminder: 'Recuerda',
+};
 
 @Component({
   selector: 'app-dialogue',
   imports: [],
   templateUrl: './dialogue.html',
-  styleUrl: './dialogue.scss'
+  styleUrl: './dialogue.scss',
 })
 export class Dialogue implements OnChanges, OnDestroy {
-
   dialogue = input.required<DialogueData>();
   busy = input(false);
 
@@ -38,50 +41,23 @@ export class Dialogue implements OnChanges, OnDestroy {
 
   private typingTimer?: ReturnType<typeof setInterval>;
 
-  currentMessage = computed<DialogueMessage | null>(() =>
-    this.dialogue().messages[this.currentIndex()] ?? null
+  currentMessage = computed<DialogueMessage | null>(
+    () => this.dialogue().messages[this.currentIndex()] ?? null,
   );
 
-  npcMessage = computed<DialogueMessage | null>(() => {
-    const messages = this.dialogue().messages.slice(
-      0,
-      this.currentIndex() + 1
-    );
-
-    return [...messages]
-      .reverse()
-      .find(message => message.speaker === 'npc')
-      ?? null;
+  currentPortrait = computed(() => {
+    const message = this.currentMessage();
+    return resolveDialoguePortrait(message, message?.speaker ?? 'npc');
   });
 
-  playerMessage = computed<DialogueMessage | null>(() => {
-    const messages = this.dialogue().messages.slice(
-      0,
-      this.currentIndex() + 1
-    );
-
-    return [...messages]
-      .reverse()
-      .find(message => message.speaker === 'player')
-      ?? null;
+  messageLabel = computed(() => {
+    const kind = this.currentMessage()?.kind;
+    return kind ? MESSAGE_LABELS[kind] : null;
   });
 
-  npcPortrait = computed(() =>
-    resolveDialoguePortrait(this.npcMessage(), 'npc')
-  );
+  isLastMessage = computed(() => this.currentIndex() >= this.dialogue().messages.length - 1);
 
-  playerPortrait = computed(() =>
-    resolveDialoguePortrait(this.playerMessage(), 'player')
-  );
-
-  isLastMessage = computed(() =>
-    this.currentIndex() >=
-    this.dialogue().messages.length - 1
-  );
-
-  progressLabel = computed(() =>
-    `${this.currentIndex() + 1} / ${this.dialogue().messages.length}`
-  );
+  progressLabel = computed(() => `${this.currentIndex() + 1} / ${this.dialogue().messages.length}`);
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['dialogue']) {
@@ -90,9 +66,7 @@ export class Dialogue implements OnChanges, OnDestroy {
 
     this.currentIndex.set(0);
 
-    this.startTypewriter(
-      this.dialogue().messages[0]?.text ?? ''
-    );
+    this.startTypewriter(this.dialogue().messages[0]?.text ?? '');
   }
 
   ngOnDestroy(): void {
@@ -111,26 +85,17 @@ export class Dialogue implements OnChanges, OnDestroy {
       return;
     }
 
-    const nextIndex =
-      this.currentIndex() + 1;
+    const nextIndex = this.currentIndex() + 1;
 
-    this.currentIndex.set(
-      nextIndex
-    );
+    this.currentIndex.set(nextIndex);
 
-    this.startTypewriter(
-      this.dialogue().messages[nextIndex]
-        ?.text ?? ''
-    );
+    this.startTypewriter(this.dialogue().messages[nextIndex]?.text ?? '');
   }
 
   private startTypewriter(text: string): void {
     this.stopTypewriter();
 
-    if (
-      !text ||
-      this.prefersReducedMotion()
-    ) {
+    if (!text || this.prefersReducedMotion()) {
       this.displayedText.set(text);
       return;
     }
@@ -138,23 +103,16 @@ export class Dialogue implements OnChanges, OnDestroy {
     const characters = Array.from(text);
     let visibleCharacters = 1;
 
-    this.displayedText.set(
-      characters.slice(0, visibleCharacters).join('')
-    );
+    this.displayedText.set(characters.slice(0, visibleCharacters).join(''));
 
     this.isTyping.set(true);
 
     this.typingTimer = setInterval(() => {
       visibleCharacters += 1;
 
-      this.displayedText.set(
-        characters.slice(0, visibleCharacters).join('')
-      );
+      this.displayedText.set(characters.slice(0, visibleCharacters).join(''));
 
-      if (
-        visibleCharacters >=
-        characters.length
-      ) {
+      if (visibleCharacters >= characters.length) {
         this.stopTypewriter();
       }
     }, TYPEWRITER_INTERVAL_MS);
@@ -163,30 +121,20 @@ export class Dialogue implements OnChanges, OnDestroy {
   private revealCurrentMessage(): void {
     this.stopTypewriter();
 
-    this.displayedText.set(
-      this.currentMessage()?.text ?? ''
-    );
+    this.displayedText.set(this.currentMessage()?.text ?? '');
   }
 
   private stopTypewriter(): void {
-    if (
-      this.typingTimer !==
-      undefined
-    ) {
-      clearInterval(
-        this.typingTimer
-      );
+    if (this.typingTimer !== undefined) {
+      clearInterval(this.typingTimer);
 
-      this.typingTimer =
-        undefined;
+      this.typingTimer = undefined;
     }
 
     this.isTyping.set(false);
   }
 
   private prefersReducedMotion(): boolean {
-    return window.matchMedia?.(
-      '(prefers-reduced-motion: reduce)'
-    ).matches ?? false;
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   }
 }

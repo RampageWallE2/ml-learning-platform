@@ -8,10 +8,14 @@ export type DialogueCharacterId =
   | 'open-pit-guide'
   | 'npc-default';
 
-export type DialogueExpression =
-  | 'neutral'
-  | 'concerned'
-  | 'happy';
+export type DialogueExpression = 'neutral' | 'concerned' | 'happy';
+
+export type DialogueMessageKind = 'context' | 'task' | 'finding' | 'reminder';
+
+export type DialogueFact = Readonly<{
+  label: string;
+  value: string;
+}>;
 
 export type DialogueMessage = {
   speaker: DialogueSpeaker;
@@ -20,6 +24,9 @@ export type DialogueMessage = {
   name: string;
   text: string;
   portrait?: string;
+  /** Optional reading hierarchy; plain messages remain compatible. */
+  kind?: DialogueMessageKind;
+  facts?: readonly DialogueFact[];
 };
 
 export type DialogueData = {

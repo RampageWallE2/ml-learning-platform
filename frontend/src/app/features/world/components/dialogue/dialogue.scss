@@ -5,64 +5,56 @@
 }
 
 .dialogue {
-  display: grid;
-  grid-template-rows: minmax(145px, max-content) minmax(80px, 1fr) minmax(145px, max-content);
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
-  color: var(--color-surface);
+  box-sizing: border-box;
+  padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  color: var(--color-text);
+  font-family: var(--font-dialogue);
+}
+
+.dialogue-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dialogue-window {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  width: min(1100px, 100%);
+  max-height: calc(100% - 64px);
+  min-height: 0;
+  margin-inline: auto;
+  border: 2px solid var(--color-earth);
+  border-radius: var(--radius-frame);
+  box-shadow: var(--shadow-frame);
+  background: var(--color-surface);
 }
 
 .dialogue-band {
-  position: relative;
-  z-index: 2;
   display: grid;
-  align-items: center;
-  gap: clamp(18px, 3vw, 42px);
-  box-sizing: border-box;
-  min-width: 0;
-  padding: clamp(20px, 3vh, 36px) clamp(28px, 5vw, 88px);
-  background: var(--color-forest);
-  border-block: 1px solid var(--color-forest-border);
-}
-
-.dialogue-band--npc {
-  grid-template-columns: clamp(104px, 11vw, 160px) minmax(0, 1fr);
-  padding-right: max(72px, clamp(28px, 5vw, 88px));
-}
-
-.dialogue-band--player {
-  grid-template-columns: minmax(0, 1fr) clamp(104px, 11vw, 160px);
-}
-
-.dialogue-band--active .portrait-frame {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-forest-soft);
-}
-
-.dialogue-band:not(.dialogue-band--active) .portrait-frame {
-  filter: grayscale(0.7) brightness(0.55);
+  grid-template-columns: 128px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .portrait-frame {
-  display: grid;
-  place-items: center;
-  width: clamp(104px, 11vw, 160px);
-  height: clamp(88px, 9vw, 126px);
+  width: 128px;
+  height: 104px;
   overflow: hidden;
-  border: 3px solid var(--color-forest-border);
   box-sizing: border-box;
+  border: 2px solid var(--color-earth);
   background: var(--color-surface-alt);
   image-rendering: pixelated;
-  transition:
-    border-color var(--motion-fast) ease,
-    filter var(--motion-fast) ease;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    image-rendering: pixelated;
-  }
 }
 
 .character-portrait {
@@ -78,32 +70,47 @@
 
 .dialogue-copy {
   min-width: 0;
-  max-width: 58ch;
+  max-width: 64ch;
+}
 
-  strong {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--color-accent);
-    font-family: var(--font-retro);
-    font-size: clamp(9px, 1vw, 11px);
-    line-height: 1.8;
-    text-transform: uppercase;
-  }
+.dialogue-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  margin-bottom: 10px;
+}
 
-  p {
-    margin: 0;
-    color: var(--color-surface);
-    font-family: var(--font-dialogue);
-    font-size: clamp(24px, 2.1vw, 30px);
-    line-height: 1.25;
-    overflow-wrap: break-word;
-  }
+.dialogue-name {
+  color: var(--color-primary);
+  font: 9px/1.8 var(--font-retro);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.dialogue-purpose {
+  padding-inline-start: 8px;
+  border-inline-start: 3px solid var(--color-accent);
+  color: var(--color-text-muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dialogue-band--task .dialogue-purpose {
+  color: var(--color-primary);
 }
 
 .dialogue-copy__text {
   position: relative;
+  max-width: none;
+  margin: 0;
+  font-family: var(--font-dialogue);
+  font-size: clamp(24px, 2.1vw, 28px);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
+// Reserve the complete message height so typing never moves the controls.
 .dialogue-copy__reserve {
   visibility: hidden;
 }
@@ -116,8 +123,56 @@
 .dialogue-copy__typed--active::after {
   content: '▌';
   margin-inline-start: 0.12em;
-  color: var(--color-accent);
+  color: var(--color-primary);
   animation: dialogue-cursor 650ms steps(1, end) infinite;
+}
+
+.dialogue-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 18px;
+  margin: 14px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+
+  > div {
+    min-width: 0;
+  }
+  dt {
+    color: var(--color-text-muted);
+    font-size: 20px;
+    line-height: 1.2;
+  }
+  dd {
+    margin: 4px 0 0;
+    color: var(--color-primary);
+    font-size: 32px;
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+}
+
+.dialogue-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 24px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+
+.dialogue-progress {
+  color: var(--color-text-muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.continue-button {
+  flex: 0 0 auto;
+  min-width: 168px;
+  font: 22px/1 var(--font-dialogue);
 }
 
 @keyframes dialogue-cursor {
@@ -126,142 +181,77 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .portrait-frame {
-    transition: none;
-  }
-
-  .dialogue-copy__typed--active::after {
-    animation: none;
-  }
-}
-
-.dialogue-band--player .dialogue-copy {
-  justify-self: end;
-  text-align: right;
-}
-
-.dialogue-stage {
-  position: relative;
-  display: grid;
-  place-items: end center;
-  min-height: 0;
-  padding: 18px;
-  box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.08);
-}
-
-.continue-button {
-  display: grid;
-  gap: 4px;
-  min-width: min(260px, calc(100vw - 32px));
-  min-height: var(--control-min-height);
-  padding: 12px 22px;
-  font-family: var(--font-dialogue);
-  text-align: center;
-
-  span {
-    font-size: 20px;
-  }
-
-  small {
-    color: inherit;
-    font-size: 16px;
-    font-weight: 400;
-  }
-}
-
 @media (max-width: 600px), (max-height: 560px) and (orientation: landscape) {
   .dialogue {
-    grid-template-areas:
-      'stage'
-      'speaker';
-    grid-template-rows: minmax(0, 1fr) auto;
+    padding: 6px max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom))
+      max(6px, env(safe-area-inset-left));
   }
 
-  .dialogue-band:not(.dialogue-band--active) {
-    display: none;
+  .dialogue-window {
+    max-height: calc(100% - 56px);
   }
-
   .dialogue-band {
-    grid-area: speaker;
     grid-template-columns: 72px minmax(0, 1fr);
     gap: 12px;
-    max-height: 48dvh;
-    padding: 16px 14px;
-    overflow-y: auto;
+    padding: 12px;
   }
-
-  .dialogue-band--player {
-    grid-template-columns: 72px minmax(0, 1fr);
-  }
-
-  .dialogue-band--player .portrait-frame {
-    order: -1;
-  }
-
-  .dialogue-band--player .dialogue-copy {
-    justify-self: stretch;
-    text-align: left;
-  }
-
   .portrait-frame {
-    align-self: start;
     width: 72px;
     height: 72px;
   }
-
   .character-portrait--desktop {
     display: none;
   }
-
   .character-portrait--mobile {
     display: block;
   }
-
-  .dialogue-copy {
-    strong {
-      margin-bottom: 5px;
-      font-size: 8px;
-    }
-
-    p {
-      font-size: 22px;
-      line-height: 1.25;
-    }
+  .dialogue-heading {
+    gap: 4px 10px;
+    margin-bottom: 8px;
   }
-
-  .dialogue-stage {
-    grid-area: stage;
-    place-items: end center;
-    padding: 10px 10px 14px;
+  .dialogue-name {
+    font-size: 8px;
   }
-
+  .dialogue-copy__text {
+    font-size: 22px;
+  }
+  .dialogue-facts {
+    gap: 6px 10px;
+    margin-top: 10px;
+  }
+  .dialogue-facts dt {
+    font-size: 18px;
+  }
+  .dialogue-facts dd {
+    font-size: 28px;
+  }
+  .dialogue-controls {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  .dialogue-progress {
+    font-size: 18px;
+  }
   .continue-button {
-    width: min(320px, calc(100% - 8px));
-    min-width: 0;
-    padding: 10px 16px;
+    min-width: 144px;
+    padding-inline: 12px;
+    font-size: 20px;
   }
 }
 
 @media (max-height: 560px) and (orientation: landscape) {
   .dialogue-band {
-    max-height: 52dvh;
+    grid-template-columns: 64px minmax(0, 1fr);
     padding-block: 10px;
   }
-
   .portrait-frame {
     width: 64px;
     height: 58px;
   }
+}
 
-  .dialogue-band,
-  .dialogue-band--player {
-    grid-template-columns: 64px minmax(0, 1fr);
-  }
-
-  .dialogue-copy p {
-    font-size: 22px;
-    line-height: 1.25;
+@media (prefers-reduced-motion: reduce) {
+  .dialogue-copy__typed--active::after {
+    animation: none;
   }
 }

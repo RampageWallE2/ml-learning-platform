@@ -1,30 +1,40 @@
 <section class="dialogue" aria-label="Conversación">
-  <div
-    class="dialogue-band dialogue-band--npc"
-    [class.dialogue-band--active]="currentMessage()?.speaker === 'npc'"
-  >
-    <div class="portrait-frame" [attr.data-character-id]="npcPortrait().characterId">
-      <div
-        class="character-portrait character-portrait--desktop"
-        role="img"
-        [attr.aria-label]="'Retrato de ' + (npcMessage()?.name ?? 'personaje')"
-        [style.background-image]="'url(' + npcPortrait().src + ')'"
-        [style.background-position]="npcPortrait().position"
-        [style.background-size]="npcPortrait().size"
-      ></div>
-      <div
-        class="character-portrait character-portrait--mobile"
-        role="img"
-        [attr.aria-label]="'Retrato de ' + (npcMessage()?.name ?? 'personaje')"
-        [style.background-image]="'url(' + npcPortrait().src + ')'"
-        [style.background-position]="npcPortrait().mobilePosition"
-        [style.background-size]="npcPortrait().mobileSize"
-      ></div>
-    </div>
+  <div class="dialogue-stage" aria-hidden="true"></div>
 
-    @if (currentMessage()?.speaker === 'npc') {
+  <div class="dialogue-window">
+    <div
+      class="dialogue-band dialogue-band--active"
+      [class.dialogue-band--npc]="currentMessage()?.speaker === 'npc'"
+      [class.dialogue-band--player]="currentMessage()?.speaker === 'player'"
+      [class.dialogue-band--task]="currentMessage()?.kind === 'task'"
+    >
+      <div class="portrait-frame" [attr.data-character-id]="currentPortrait().characterId">
+        <div
+          class="character-portrait character-portrait--desktop"
+          role="img"
+          [attr.aria-label]="'Retrato de ' + (currentMessage()?.name ?? 'personaje')"
+          [style.background-image]="'url(' + currentPortrait().src + ')'"
+          [style.background-position]="currentPortrait().position"
+          [style.background-size]="currentPortrait().size"
+        ></div>
+        <div
+          class="character-portrait character-portrait--mobile"
+          role="img"
+          [attr.aria-label]="'Retrato de ' + (currentMessage()?.name ?? 'personaje')"
+          [style.background-image]="'url(' + currentPortrait().src + ')'"
+          [style.background-position]="currentPortrait().mobilePosition"
+          [style.background-size]="currentPortrait().mobileSize"
+        ></div>
+      </div>
+
       <div class="dialogue-copy" aria-live="polite" aria-atomic="true">
-        <strong>{{ currentMessage()?.name }}</strong>
+        <header class="dialogue-heading">
+          <strong class="dialogue-name">{{ currentMessage()?.name }}</strong>
+          @if (messageLabel(); as label) {
+            <span class="dialogue-purpose">{{ label }}</span>
+          }
+        </header>
+
         <p class="dialogue-copy__text" [attr.aria-label]="currentMessage()?.text">
           <span class="dialogue-copy__reserve" aria-hidden="true">
             {{ currentMessage()?.text }}
@@ -36,57 +46,32 @@
             >{{ displayedText() }}</span
           >
         </p>
-      </div>
-    }
-  </div>
 
-  <div class="dialogue-stage">
-    <button type="button" class="btn btn--secondary continue-button" autofocus [disabled]="busy()" (click)="next()">
-      <span>
+        @if (currentMessage()?.facts?.length) {
+          <dl class="dialogue-facts" aria-label="Datos del mensaje">
+            @for (fact of currentMessage()?.facts; track $index) {
+              <div>
+                <dt>{{ fact.label }}</dt>
+                <dd>{{ fact.value }}</dd>
+              </div>
+            }
+          </dl>
+        }
+      </div>
+    </div>
+
+    <footer class="dialogue-controls">
+      <small class="dialogue-progress">Mensaje {{ progressLabel() }}</small>
+      <button
+        type="button"
+        class="btn btn--secondary continue-button"
+        autofocus
+        [disabled]="busy()"
+        (click)="next()"
+      >
         {{ isTyping() ? 'Mostrar texto' : isLastMessage() ? 'Continuar' : 'Siguiente' }}
-      </span>
-      <small>Mensaje {{ progressLabel() }}</small>
-    </button>
-  </div>
-
-  <div
-    class="dialogue-band dialogue-band--player"
-    [class.dialogue-band--active]="currentMessage()?.speaker === 'player'"
-  >
-    @if (currentMessage()?.speaker === 'player') {
-      <div class="dialogue-copy" aria-live="polite" aria-atomic="true">
-        <strong>{{ currentMessage()?.name }}</strong>
-        <p class="dialogue-copy__text" [attr.aria-label]="currentMessage()?.text">
-          <span class="dialogue-copy__reserve" aria-hidden="true">
-            {{ currentMessage()?.text }}
-          </span>
-          <span
-            class="dialogue-copy__typed"
-            [class.dialogue-copy__typed--active]="isTyping()"
-            aria-hidden="true"
-            >{{ displayedText() }}</span
-          >
-        </p>
-      </div>
-    }
-
-    <div class="portrait-frame" [attr.data-character-id]="playerPortrait().characterId">
-      <div
-        class="character-portrait character-portrait--desktop"
-        role="img"
-        [attr.aria-label]="'Retrato de ' + (playerMessage()?.name ?? 'Tú')"
-        [style.background-image]="'url(' + playerPortrait().src + ')'"
-        [style.background-position]="playerPortrait().position"
-        [style.background-size]="playerPortrait().size"
-      ></div>
-      <div
-        class="character-portrait character-portrait--mobile"
-        role="img"
-        [attr.aria-label]="'Retrato de ' + (playerMessage()?.name ?? 'Tú')"
-        [style.background-image]="'url(' + playerPortrait().src + ')'"
-        [style.background-position]="playerPortrait().mobilePosition"
-        [style.background-size]="playerPortrait().mobileSize"
-      ></div>
-    </div>
+        <span aria-hidden="true">→</span>
+      </button>
+    </footer>
   </div>
 </section>
