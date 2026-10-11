@@ -309,7 +309,7 @@ export const OPEN_PIT_MAP_CONFIG = {
     },
     {
       name: 'Pit/Details',
-      tilesets: ['beach', 'beach_2', 'beach_3', 'worksite_props'],
+      tilesets: ['beach', 'beach_2', 'beach_3', 'worksite_props', 'city_props'],
       depth: 1.1,
     },
     {
@@ -403,8 +403,13 @@ export const OPEN_PIT_MAP_CONFIG = {
       depth: 1.9,
     },
     {
+      name: 'Repair_Shop/props',
+      tilesets: ['worksite_props'],
+      depth: 1.91,
+    },
+    {
       name: 'Structures/Buildings',
-      tilesets: ['city_props'],
+      tilesets: ['city_props', 'city_terrains_global'],
       depth: 2,
     },
     {
@@ -436,6 +441,11 @@ export const OPEN_PIT_MAP_CONFIG = {
       name: 'Control_Center/Props',
       tilesets: ['city_props'],
       depth: 2.6,
+    },
+    {
+      name: 'Control_Center/Vehicles',
+      tilesets: ['heavy_machinery'],
+      depth: 2.65,
     },
     {
       name: 'Processing_Area/Ground',

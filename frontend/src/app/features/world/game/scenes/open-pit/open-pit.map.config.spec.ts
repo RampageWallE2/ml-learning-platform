@@ -88,4 +88,27 @@ describe('OPEN_PIT_MAP_CONFIG', () => {
       }
     }
   });
+
+  it('renders the new workshop props and control center vehicles in Tiled order', () => {
+    for (const [name, tileset, precedingLayer, followingLayer] of [
+      ['Repair_Shop/props', 'worksite_props', 'Repair_Shop/Character', 'Structures/Buildings'],
+      ['Control_Center/Vehicles', 'heavy_machinery', 'Control_Center/Props', 'Processing_Area/Ground'],
+    ]) {
+      const layer = OPEN_PIT_MAP_CONFIG.layers.find(item => item.name === name)!;
+      expect(layer.tilesets).toEqual([tileset]);
+      expect(layer.depth).toBeGreaterThan(
+        OPEN_PIT_MAP_CONFIG.layers.find(item => item.name === precedingLayer)!.depth,
+      );
+      expect(layer.depth).toBeLessThan(
+        OPEN_PIT_MAP_CONFIG.layers.find(item => item.name === followingLayer)!.depth,
+      );
+    }
+  });
+
+  it('binds the added pit details and structure tiles to their textures', () => {
+    expect(OPEN_PIT_MAP_CONFIG.layers.find(layer => layer.name === 'Pit/Details')?.tilesets)
+      .toContain('city_props');
+    expect(OPEN_PIT_MAP_CONFIG.layers.find(layer => layer.name === 'Structures/Buildings')?.tilesets)
+      .toContain('city_terrains_global');
+  });
 });
