@@ -266,14 +266,16 @@ def test_postgres_statement_compiles_native_atomic_upsert():
     assert "RETURNING password_login_limits.attempts, password_login_limits.expires_at" in sql
 
 
-def test_new_migration_upgrade_downgrade_preserve_existing_accounts(app, client, clock):
+def test_login_limit_migration_upgrade_downgrade_preserve_existing_accounts(app, client, clock):
     register(client)
     directory = str(Path(__file__).resolve().parents[1] / "migrations")
+    revision = "20261006_0004"
     with app.app_context():
-        # Only the new migration, on the dedicated PostgreSQL fixture database.
+        # Only the login-limit migration: the fixture already has later tables.
+        # Full migration-chain coverage uses a separate empty-schema test.
         PasswordLoginLimit.__table__.drop(db.engine)
         stamp(directory=directory, revision="20260920_0003")
-        upgrade(directory=directory)
+        upgrade(directory=directory, revision=revision)
         schema = inspect(db.engine)
         assert "password_login_limits" in schema.get_table_names()
         assert schema.get_pk_constraint("password_login_limits")["constrained_columns"] == ["email_digest"]
@@ -287,6 +289,6 @@ def test_new_migration_upgrade_downgrade_preserve_existing_accounts(app, client,
         assert "password_login_limits" not in inspect(db.engine).get_table_names()
         assert db.session.scalar(db.select(db.func.count(User.id))) == 1
         db.session.remove()
-        upgrade(directory=directory)
+        upgrade(directory=directory, revision=revision)
     assert client.get("/api/v1/me").status_code == 200
     assert login(client).status_code == 200

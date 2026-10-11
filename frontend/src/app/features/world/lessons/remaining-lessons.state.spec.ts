@@ -1,4 +1,5 @@
 import { DraftLessonId, isLessonExerciseState } from '../progress/lesson-draft.storage';
+import type { C4State } from './lesson-04-workshop/lesson-04-workshop.state';
 
 const cases: readonly { id: DraftLessonId; state: Record<string, unknown>; invalid: readonly Record<string, unknown>[] }[] = [
   { id: 'lesson-01', state: { stage: 'practice-reason', selectedLoad: 'D1', selectedGroup: 'D', practiceRound: 0, practiceHelped: true },
@@ -10,8 +11,8 @@ const cases: readonly { id: DraftLessonId; state: Record<string, unknown>; inval
     invalid: [{ redistributed: false }, { practiceCase: 0 }, { selectedLoad: 'C1' }, { stage: 'success', round: 0, selectedLoad: null }, { round: 2 }, { round: 1.5 }] },
   { id: 'lesson-03', state: { stage: 'practice-range', selectedMinId: 'practice-1-2', selectedMaxId: 'practice-1-3', round: 1, practiceHelped: true },
     invalid: [{ selectedMinId: null }, { selectedMaxId: null }, { selectedMinId: 'practice-1-1' }, { selectedMaxId: 'trip-4' }, { stage: 'practice-extremes' }, { round: 2 }] },
-  { id: 'lesson-04', state: { stage: 'evidence', experimentMode: 'apart', rangePrediction: 'same', separatedViewed: true, round: 1, practiceHelped: true },
-    invalid: [{ separatedViewed: false }, { experimentMode: 'together' }, { rangePrediction: null }, { rangePrediction: 'invalid' }, { stage: 'success', round: 0 }, { stage: 'compare' }] },
+  { id: 'lesson-04', state: { stage: 'evidence', round: 1, practiceHelped: true } satisfies C4State,
+    invalid: [{ round: -1 }, { round: 1.5 }, { round: Number.MAX_SAFE_INTEGER }, { practiceHelped: 'true' }, { stage: 'success', round: 0 }, { stage: 'compare' }, { stage: 'discovery' }] },
   { id: 'lesson-05', state: { stage: 'review', selected: 2, round: 1, solvedCount: 3, practiceHelped: true },
     invalid: [{ solvedCount: 2 }, { selected: 4 }, { selected: -1 }, { stage: 'practice' }, { stage: 'success', round: 0 }, { practiceHelped: false }, { round: Number.MAX_SAFE_INTEGER }] },
   { id: 'lesson-09', state: { stage: 'recommend', round: 1, helped: true, answered: false, feedbackKind: 'adjust' },
@@ -23,8 +24,8 @@ describe('Remaining lesson state coherence', () => {
       invalid: [{ round: 0 }, { practiceCase: 0 }, { redistributed: false }] },
     { id: 'lesson-03', state: { stage: 'success', selectedMinId: 'practice-1-2', selectedMaxId: 'practice-1-3', round: 1, practiceHelped: true },
       invalid: [{ round: 0, selectedMinId: 'practice-0-2', selectedMaxId: 'practice-0-4' }, { selectedMaxId: null }, { selectedMinId: null }] },
-    { id: 'lesson-04', state: { stage: 'success', experimentMode: 'apart', rangePrediction: 'same', separatedViewed: true, round: 1, practiceHelped: true },
-      invalid: [{ round: 0 }, { separatedViewed: false }, { rangePrediction: null }] },
+    { id: 'lesson-04', state: { stage: 'success', round: 1, practiceHelped: true } satisfies C4State,
+      invalid: [{ round: 0 }, { round: -1 }, { practiceHelped: 'true' }, { stage: 'review', practiceHelped: false }] },
     { id: 'lesson-05', state: { stage: 'success', selected: 2, round: 1, solvedCount: 3, practiceHelped: true },
       invalid: [{ round: 0 }, { solvedCount: 2 }, { selected: 4 }] },
     { id: 'lesson-09', state: { stage: 'success', round: 1, helped: true, answered: false, feedbackKind: 'none' },

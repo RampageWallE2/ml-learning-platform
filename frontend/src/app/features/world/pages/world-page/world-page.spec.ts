@@ -16,6 +16,7 @@ import { ZoneProgress as ZoneProgressData } from '../../progress/progress.types'
 import { WorldPage } from './world-page';
 import { Dialogue } from '../../components/dialogue/dialogue';
 import { hasDeliveredOpenPitReport } from '../../progress/open-pit-closure.storage';
+import { OPEN_PIT_INTRO } from '../../lessons/data/open-pit-intro.data';
 
 // Phaser's browser feature detection needs canvas; this suite tests the Angular
 // screen and its event bridge, not WebGL. External-module mocks are supported.
@@ -279,7 +280,7 @@ describe('WorldPage — circular scene loading screen', () => {
     try {
       gameEvents.emit(GameEvents.OPEN_DIALOGUE, { npcId: 'open-pit-guide', dialogueId: 'open-pit-intro' });
       fixture.detectChanges();
-      expect(page.activeDialogue()?.messages).toHaveLength(4);
+      expect(page.activeDialogue()).toEqual(OPEN_PIT_INTRO);
       expect(lock).toHaveBeenCalledOnce();
       expect(finished).not.toHaveBeenCalled();
       fixture.debugElement.query(By.directive(Dialogue)).componentInstance.completed.emit();

@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 
 import { appConfig } from '../../app.config';
 import { ProgressService } from '../../features/world/progress/progress.service';
+import type { ProgressApiResponse } from '../../features/world/progress/progress.types';
 import { AUTH_CONFIG } from './auth.config';
 import { AuthService } from './auth.service';
 
@@ -200,8 +201,15 @@ describe('request verification — real app providers and services', () => {
     http.expectOne(`${root}/auth/logout`).flush({});
     const nextAccount = { id: 'next-test-user', email: 'next@example.test', displayName: 'Next', avatarUrl: null };
     login(nextAccount);
-    progress.loadProgress().subscribe();
-    http.expectOne(`${root}/me/progress`).flush({ lessons: [] });
+    const loaded = vi.fn();
+    const loadFailed = vi.fn();
+    progress.loadProgress().subscribe({ next: loaded, error: loadFailed });
+    http.expectOne(`${root}/me/progress`).flush({
+      profileId: 'next-test-profile', lessons: [], scenarios: [],
+    } satisfies ProgressApiResponse);
+    expect(loaded).toHaveBeenCalledOnce();
+    expect(loadFailed).not.toHaveBeenCalled();
+    expect(progress.openPitIntroCompleted()).toBe(false);
     previous.flush({}, { status: 401, statusText: 'Previous session' });
 
     expect(received).not.toHaveBeenCalled();
