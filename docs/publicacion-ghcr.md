@@ -184,6 +184,11 @@ y no se activa automáticamente por usar GHCR. No usar datos personales reales.
 
 ## Lo que falta para desplegar
 
+Ya hay un [instalador para una EC2 Ubuntu nueva](despliegue-ec2-automatico.md):
+`infra/deploy-ec2.ps1` transfiere archivos versionados y `infra/ec2_bootstrap.py`
+instala Docker, genera configuración privada y arranca la demostración HTTP desde GHCR.
+La primera ejecución real con imágenes publicadas sigue siendo necesaria.
+
 La siguiente tarea será un script remoto de actualización que descargue una pareja
 verificada, compruebe una copia de seguridad, aplique las migraciones aprobadas y
 arranque los servicios con comprobaciones de salud. La instalación desde cero de

@@ -1,5 +1,9 @@
 # Prueba de ExploraLab en una EC2
 
+Para una **EC2 nueva y demostración HTTP**, usar la [instalación automatizada](despliegue-ec2-automatico.md).
+Los resultados del 2026-10-09 que siguen son históricos: esa instancia fue terminada.
+No confundirlos con la nueva EC2 ni dar su despliegue por comprobado.
+
 Actualización: 2026-10-09. El usuario creó la EC2 y autorizó subir y preparar el proyecto. La versión `c8d59ee0619f` está instalada, PostgreSQL/API funcionan de forma privada y se arrancó una [prueba HTTP temporal](prueba-aws-http-temporal.md) por decisión expresa del usuario. Tras añadir HTTP 80 para su IP, ocho lecturas externas desde su computadora devolvieron HTTP 200; el juego en navegador/dispositivos y rendimiento real siguen pendientes. Esta guía conserva la preparación **HTTPS de producción**, aplazada por ahora; no hay dominio ni certificado y no se aceptaron condiciones. No es un lanzamiento público definitivo.
 
 ## Decisión técnica

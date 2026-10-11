@@ -122,7 +122,12 @@ El backend utiliza únicamente PostgreSQL, también en las pruebas con base de d
 
 ## Prueba en AWS EC2
 
-La preparación para una demostración en una sola EC2 está en [docs/despliegue-aws-prueba.md](docs/despliegue-aws-prueba.md). Reutiliza `compose.production.yml`, separa sus datos del desarrollo y usa `.env.ec2.example` como plantilla sin secretos. Incluye HTTPS para IP pública, validación previa y renovación de certificados. No se han creado recursos ni validado un despliegue en AWS; elegir región/presupuesto y ejecutar la guía sigue pendiente.
+Para instalar una demostración HTTP en una EC2 Ubuntu nueva desde Windows, consultar
+[despliegue automatizado](docs/despliegue-ec2-automatico.md). Instala Docker y utiliza
+imágenes publicadas manualmente en GHCR, sin compilar en la instancia ni subir datos locales.
+La automatización no crea recursos AWS ni reemplaza bases existentes.
+
+La guía de preparación HTTPS está en [docs/despliegue-aws-prueba.md](docs/despliegue-aws-prueba.md). Reutiliza `compose.production.yml`, separa sus datos del desarrollo y usa `.env.ec2.example` como plantilla sin secretos. Incluye certificados, validación previa y renovación todavía pendientes. Los resultados HTTP de la instancia anterior son históricos; esa EC2 fue terminada y no validan la instalación automatizada en una nueva instancia.
 
 ## Imágenes Docker en GHCR
 
