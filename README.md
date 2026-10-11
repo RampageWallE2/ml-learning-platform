@@ -124,6 +124,10 @@ El backend utiliza únicamente PostgreSQL, también en las pruebas con base de d
 
 La preparación para una demostración en una sola EC2 está en [docs/despliegue-aws-prueba.md](docs/despliegue-aws-prueba.md). Reutiliza `compose.production.yml`, separa sus datos del desarrollo y usa `.env.ec2.example` como plantilla sin secretos. Incluye HTTPS para IP pública, validación previa y renovación de certificados. No se han creado recursos ni validado un despliegue en AWS; elegir región/presupuesto y ejecutar la guía sigue pendiente.
 
+## Imágenes Docker en GHCR
+
+La publicación de imágenes Docker versionadas en GitHub Container Registry, sin desplegar en AWS, está descrita en [docs/publicacion-ghcr.md](docs/publicacion-ghcr.md). Reutiliza las verificaciones existentes y ofrece un complemento de Compose para consumir las imágenes sin recompilarlas en el servidor.
+
 ## Vision
 
 The long-term vision is to create a scalable learning environment where mathematics, Machine Learning, data, and artificial intelligence can be explored through an experience that feels less like studying isolated theory and more like progressing through a world of increasingly challenging problems.

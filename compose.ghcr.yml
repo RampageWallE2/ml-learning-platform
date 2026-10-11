@@ -1,0 +1,14 @@
+# Consume published production images; this file does not deploy anything.
+# Merge LAST, after compose.production.yml and any explicit HTTP-test override.
+# Requires Docker Compose >= 2.24.4. Never merge with development compose.yml.
+# Use the API and web digest references from the SAME successful workflow run.
+services:
+  migrate:
+    build: !reset null
+    image: ${GHCR_API_IMAGE:?Set the exact published GHCR API image reference}
+  backend:
+    build: !reset null
+    image: ${GHCR_API_IMAGE:?Set the exact published GHCR API image reference}
+  frontend:
+    build: !reset null
+    image: ${GHCR_WEB_IMAGE:?Set the exact published GHCR web image reference}
