@@ -114,10 +114,62 @@ fallo de migración, ausencia de compilación y token temporal. No instalan Dock
 La CI existente las descubre automáticamente. Estas pruebas y el parser PowerShell
 no sustituyen una primera instalación real completa, el recorrido del juego o la prueba en móviles.
 
-No declarar la automatización validada en AWS antes de completar esa ejecución con una pareja real de GHCR.
+Las pruebas simuladas por sí solas no validan una instalación en AWS; la primera ejecución real se documenta abajo.
 
 Verificación del 2026-10-11: 16 pruebas nuevas aprobadas en Linux (directorio temporal,
 comandos Docker/AWS simulados), 7 comprobaciones existentes del Compose GHCR y 3 de su
 política de publicación; parser PowerShell y `-WhatIf` aprobados. También se validó un
 bundle real producido por `git archive`. No se instaló Docker ni se desplegó la aplicación
-durante estas pruebas. Falta publicar las imágenes y ejecutar el instalador completo.
+durante estas pruebas.
+
+## Primera ejecución real completada — 2026-10-11
+
+La ejecución manual [38179107346](https://github.com/RampageWallE2/ml-learning-platform/actions/runs/38179107346)
+terminó correctamente y publicó ambas imágenes del commit `a93765b59d1d551f15cc13648f90c18f540a045a`:
+
+```text
+API: ghcr.io/rampagewalle2/ml-learning-platform-api@sha256:16920a85d49392da0a39daaf7bcd8ec44c197d3f3efc0379be3e9ea75e5d0149
+WEB: ghcr.io/rampagewalle2/ml-learning-platform-web@sha256:176ffefe6f234fe52736646f46ffd9a592cdd059374beed30caf25ca73998bc9
+```
+
+Ambas referencias permitieron lectura anónima desde EC2. No se usó un token personal
+ni se cambiaron permisos/visibilidad; comprobar de nuevo si se utilizan otros paquetes.
+
+En la EC2 `54.145.32.66` se instalaron Docker Engine 29.9.0 y Compose 5.6.0 mediante
+la función del instalador, y luego se ejecutó `infra/deploy-ec2.ps1` completo, sin
+`-GhcrUsername`. Terminó con código 0: transferencia verificada, configuración privada
+nueva, descarga por digest, base PostgreSQL nueva, migraciones y servicios saludables.
+El proyecto Docker es `exploralab-ec2`; no se subieron cuentas ni bases de desarrollo.
+
+Comprobaciones acotadas:
+
+- Siete lecturas externas desde la computadora del titular devolvieron HTTP 200:
+  landing, login, registro, world, progreso por zona, mapa JSON de Open Pit y readiness
+  con la versión exacta. Las rutas Angular y el JSON también tenían el contenido esperado.
+- Nueve peticiones de autenticación a través de Nginx en loopback de EC2 comprobaron
+  registro, sesión, lectura de progreso vacío, logout, rechazo sin sesión y nuevo login/logout.
+  Se dejó **una cuenta ficticia** `example.invalid`, con sesiones revocadas y sin completar
+  intro ni lecciones. No se mostraron correo, contraseña ni cookies.
+- Los tres contenedores están saludables. Solo Nginx publica `0.0.0.0:80`; los puertos
+  EXPOSE de API/PostgreSQL/443 no equivalen a bindings públicos.
+- La inspección puntual mostró aproximadamente 394 MiB de RAM disponibles y 15 GiB
+  libres de disco. No es una prueba de carga, concurrencia, FPS o capacidad garantizada.
+
+Hay un atajo **local e ignorado por Git** en `infra/.local/deploy-demo.ps1`, que fija
+esta pareja de imágenes. Desde la raíz:
+
+```powershell
+.\infra\.local\deploy-demo.ps1
+# Para otra EC2 vacía, conservando esta misma versión:
+.\infra\.local\deploy-demo.ps1 -InstanceIp 'IP_DE_LA_NUEVA_EC2'
+```
+
+Sustituir el marcador por una IPv4 real. Este atajo no se distribuye en un clon nuevo;
+el comando completo reproducible sigue siendo el de la sección anterior. Para cambiar
+el juego, publicar una nueva versión y elegir sus digests: el atajo no consume `latest`.
+No usarlo para actualizar otra versión con una base existente.
+
+Pendiente de validación humana: recorrer el juego y probar celulares reales; comprobar
+que el Security Group permita al profesor desde su red. HTTPS, backups externos y
+actualizaciones con datos siguen fuera de esta demostración. HTTP continúa limitado
+a cuentas ficticias y contraseñas no reutilizadas.

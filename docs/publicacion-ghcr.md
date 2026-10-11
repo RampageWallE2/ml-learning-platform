@@ -8,9 +8,10 @@ en una ejecución manual en `master`. **No crea una EC2, no entra a AWS, no desp
 y no modifica usuarios, progreso o bases de datos reales.** La configuración local
 `compose.yml` no cambia; las verificaciones utilizan datos de prueba aislados.
 
-El despliegue remoto y la instalación inicial del servidor son pasos posteriores.
-No se ha comprobado una publicación real hasta que el workflow termine con éxito
-en GitHub. Los commits locales deben subirse primero al repositorio aprobado.
+La publicación manual y la instalación HTTP inicial ya se verificaron el 2026-10-11:
+ver [estado del instalador EC2](despliegue-ec2-automatico.md). El arranque remoto lo
+realizaron los scripts, no este workflow. Para futuras versiones, los commits deben
+subirse primero al repositorio aprobado y la publicación debe terminar correctamente.
 
 ## Cómo funciona
 
@@ -89,12 +90,13 @@ La publicación usa el `GITHUB_TOKEN` temporal de esa ejecución, con
 `contents: read` y `packages: write` únicamente en el trabajo de publicación. No
 hay que crear un token personal ni añadir claves AWS para este paso. Las políticas
 de la cuenta u organización deben permitir Actions y la publicación de paquetes.
-La primera ejecución confirmará esos permisos; un archivo YAML correcto no los
-demuestra.
+La primera ejecución real confirmó esos permisos para este repositorio; un archivo
+YAML correcto por sí solo no los demuestra ni garantiza que futuras políticas no cambien.
 
-GHCR crea inicialmente los paquetes privados por defecto. El workflow no cambia
-la visibilidad de paquetes existentes ni los convierte en públicos. Comprobar su
-visibilidad antes de compartirlos y conservarlos privados para esta prueba.
+GHCR documenta visibilidad privada inicial por defecto. El workflow no cambia la
+visibilidad de paquetes existentes ni los convierte en públicos. Las dos imágenes
+utilizadas el 2026-10-11 permitieron lectura anónima desde EC2, sin cambiar permisos
+desde las herramientas. Revisar la visibilidad en Packages antes de compartir nuevas versiones.
 
 Según la [documentación de facturación de GitHub](https://docs.github.com/en/billing/concepts/product-billing/github-packages),
 el almacenamiento y transferencia de imágenes en Container Registry son
@@ -117,9 +119,11 @@ Requiere Docker Compose 2.24.4 o posterior. **Debe ser el último archivo** desp
 de `compose.production.yml` y de cualquier override de prueba HTTP. Nunca mezclarlo
 con `compose.yml`, el entorno de desarrollo.
 
-Los ejemplos siguientes son para una futura EC2 Ubuntu ya preparada. **No se han
-ejecutado** y no sustituyen la [preparación del servidor](despliegue-aws-prueba.md).
-Usar Bash, no PowerShell; sustituir todos los marcadores antes de ejecutarlos.
+Los ejemplos siguientes explican cómo consumir las imágenes en una EC2 Ubuntu
+preparada; no son un registro de comandos ejecutados. El instalador HTTP verificado
+está documentado por separado y HTTPS sigue pendiente. No sustituyen la
+[preparación del servidor](despliegue-aws-prueba.md). Usar Bash, no PowerShell;
+sustituir todos los marcadores antes de ejecutarlos.
 
 ### Acceso a imágenes privadas
 
@@ -187,7 +191,9 @@ y no se activa automáticamente por usar GHCR. No usar datos personales reales.
 Ya hay un [instalador para una EC2 Ubuntu nueva](despliegue-ec2-automatico.md):
 `infra/deploy-ec2.ps1` transfiere archivos versionados y `infra/ec2_bootstrap.py`
 instala Docker, genera configuración privada y arranca la demostración HTTP desde GHCR.
-La primera ejecución real con imágenes publicadas sigue siendo necesaria.
+La primera publicación manual y el arranque en EC2 se completaron el 2026-10-11;
+las referencias y límites verificados constan en esa guía. Sigue pendiente un
+procedimiento de actualización para bases existentes.
 
 La siguiente tarea será un script remoto de actualización que descargue una pareja
 verificada, compruebe una copia de seguridad, aplique las migraciones aprobadas y
@@ -214,9 +220,9 @@ La última prueba comprueba estáticamente los eventos admitidos, la condición 
 publicación manual en `master` y sus dependencias. No ejecuta GitHub Actions ni
 sustituye la validación de sintaxis del workflow.
 
-La verificación efectiva de construcción y publicación queda pendiente de la
-primera ejecución del workflow en GitHub. No probarla usando credenciales reales
-desde scripts improvisados en la computadora local.
+La [primera ejecución manual verificada](https://github.com/RampageWallE2/ml-learning-platform/actions/runs/38179107346)
+publicó API y web correctamente. No probar futuras publicaciones usando credenciales
+reales desde scripts improvisados en la computadora local.
 
 Referencias: [publicación de imágenes con Actions](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images),
 [autenticación y permisos de GHCR](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry),
