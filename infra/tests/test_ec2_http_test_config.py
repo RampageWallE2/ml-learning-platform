@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import unittest
 
@@ -12,6 +13,21 @@ SETTING_NAMES = (
     "TLS_DIR", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
     "GOOGLE_CLIENT_ID", "WEB_CONCURRENCY", "HTTP_TEST_ORIGIN",
 )
+
+
+def host_path_creation_disabled(mount, template):
+    # This fixture has one bind mount. Keep its explicit opt-out: a missing
+    # setting in the source is unsafe even if older Compose omits false in JSON.
+    source_values = re.findall(
+        r"(?m)^[ \t]+create_host_path:[ \t]*([^#\n]*?)[ \t]*(?:#.*)?$",
+        template,
+    )
+    bind = mount.get("bind") or {}
+    return (
+        mount.get("type") == "bind"
+        and source_values == ["false"]
+        and bind.get("create_host_path", False) is False
+    )
 
 
 def resolve_config(override=False, origin=TEST_ORIGIN):
@@ -81,7 +97,11 @@ class HttpTestConfigurationTests(unittest.TestCase):
         mount = frontend["volumes"][0]
         self.assertEqual(mount["target"], "/etc/nginx/templates/default.conf.template")
         self.assertTrue(mount["read_only"])
-        self.assertFalse(mount["bind"]["create_host_path"])
+        template = (ROOT / "compose.ec2-http-test.yml").read_text(encoding="utf-8")
+        self.assertTrue(
+            host_path_creation_disabled(mount, template),
+            "The HTTP override must explicitly disable automatic host-path creation.",
+        )
         self.assertEqual(frontend["environment"]["PUBLIC_ORIGIN"], TEST_ORIGIN)
         self.assertEqual(frontend["build"]["args"]["GOOGLE_CLIENT_ID"], "")
         self.assertEqual(frontend["healthcheck"]["test"][-1], "http://127.0.0.1/healthz")
@@ -89,6 +109,28 @@ class HttpTestConfigurationTests(unittest.TestCase):
     def test_override_requires_explicit_origin(self):
         result = resolve_config(True, origin=None)
         self.assertNotEqual(result.returncode, 0)
+
+
+class HostPathSafetyTests(unittest.TestCase):
+    template = "        bind:\n          create_host_path: false\n"
+
+    def test_accepts_explicit_and_omitted_false_with_safe_source(self):
+        for options in ({"create_host_path": False}, {}):
+            with self.subTest(options=options):
+                mount = {"type": "bind", "bind": options}
+                self.assertTrue(host_path_creation_disabled(mount, self.template))
+
+    def test_rejects_missing_or_unsafe_source_setting(self):
+        mount = {"type": "bind", "bind": {"create_host_path": False}}
+        for template in ("", self.template.replace("false", "true")):
+            with self.subTest(template=template):
+                self.assertFalse(host_path_creation_disabled(mount, template))
+
+    def test_rejects_unsafe_or_invalid_resolved_values(self):
+        for value in (True, None, "false", 0):
+            with self.subTest(value=value):
+                mount = {"type": "bind", "bind": {"create_host_path": value}}
+                self.assertFalse(host_path_creation_disabled(mount, self.template))
 
 
 if __name__ == "__main__":

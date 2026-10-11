@@ -60,8 +60,15 @@ jobs:
       - run: python infra/release.py backup
       - name: Restore the test backup in a new database
         run: python infra/release.py restore-test --archive "$(find infra/.local/backups -name '*.dump' -type f | head -n 1)"
-      - if: always()
-        run: python infra/release.py down
+      - name: Clean up local rehearsal
+        if: always()
+        shell: bash
+        run: |
+          if [ -f infra/.local/release.env ]; then
+            python infra/release.py down
+          else
+            printf '%s\n' 'Rehearsal was not prepared; no cleanup is required.'
+          fi
   publish-images:
     name: Publish ${{ matrix.image }} to GHCR
     needs: [frontend, postgresql, https-rehearsal]
