@@ -65,8 +65,8 @@ jobs:
   publish-images:
     name: Publish ${{ matrix.image }} to GHCR
     needs: [frontend, postgresql, https-rehearsal]
-    # PRs, tags and other branches can verify code, but cannot publish images.
-    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    # Only an explicit manual run on master can publish; pushes and PRs only verify.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

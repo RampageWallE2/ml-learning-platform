@@ -126,7 +126,7 @@ La preparación para una demostración en una sola EC2 está en [docs/despliegue
 
 ## Imágenes Docker en GHCR
 
-La publicación de imágenes Docker versionadas en GitHub Container Registry, sin desplegar en AWS, está descrita en [docs/publicacion-ghcr.md](docs/publicacion-ghcr.md). Reutiliza las verificaciones existentes y ofrece un complemento de Compose para consumir las imágenes sin recompilarlas en el servidor.
+La publicación manual de imágenes Docker versionadas en GitHub Container Registry, sin desplegar en AWS, está descrita en [docs/publicacion-ghcr.md](docs/publicacion-ghcr.md). Los push y pull requests solo verifican; publicar requiere ejecutar el workflow manualmente en `master`. Reutiliza las verificaciones existentes y ofrece un complemento de Compose para consumir las imágenes sin recompilarlas en el servidor.
 
 ## Vision
 

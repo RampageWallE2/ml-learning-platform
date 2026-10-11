@@ -2,10 +2,11 @@
 
 ## Alcance de este paso
 
-GitHub Actions verifica el proyecto, construye dos imágenes de producción y las
-publica en GHCR. **No crea una EC2, no entra a AWS, no despliega y no modifica
-usuarios, progreso o bases de datos.** La configuración local `compose.yml` no
-cambia.
+GitHub Actions verifica el proyecto automáticamente al subir cambios o abrir un
+pull request. La construcción destinada a GHCR y su publicación solo se permiten
+en una ejecución manual en `master`. **No crea una EC2, no entra a AWS, no despliega
+y no modifica usuarios, progreso o bases de datos reales.** La configuración local
+`compose.yml` no cambia; las verificaciones utilizan datos de prueba aislados.
 
 El despliegue remoto y la instalación inicial del servidor son pasos posteriores.
 No se ha comprobado una publicación real hasta que el workflow termine con éxito
@@ -23,11 +24,16 @@ Se reutiliza `.github/workflows/verify.yml`, sin un segundo flujo de pruebas:
 5. Cada trabajo muestra la etiqueta de versión y la referencia exacta de su imagen
    en el resumen de GitHub Actions.
 
-La publicación solo se admite en `master`, por un `push` o una ejecución manual.
-Los pull requests, otras ramas y etiquetas Git pueden verificarse, pero no publican
-imágenes. Una ejecución manual también vuelve a verificar el código antes de
-publicar. No se usa `pull_request_target` ni se proporcionan credenciales de
+La publicación solo se admite mediante `workflow_dispatch` en `master`.
+Los push, pull requests y etiquetas Git ejecutan las verificaciones, pero omiten
+el trabajo `publish-images`: **subir código no publica imágenes**. Una ejecución
+manual en otra rama tampoco publica. La ejecución manual en `master` vuelve a
+verificar el código antes de publicar; no reutiliza resultados de una ejecución
+anterior. No se usa `pull_request_target` ni se proporcionan credenciales de
 publicación a código de un pull request.
+
+El ensayo de producción puede seguir construyendo imágenes locales en el runner
+para comprobar la aplicación. Eso no las publica en GHCR ni actualiza un servidor.
 
 Los contextos de construcción son únicamente `backend/` y `frontend/`, no la raíz
 del proyecto. Se conservan sus exclusiones de `.env`, cachés y archivos de edición.
@@ -67,10 +73,17 @@ están fijadas a commits concretos; actualizar esas referencias de forma revisad
 
 1. Subir el commit al repositorio correcto, después de aprobar el destino del push.
 2. Abrir **Actions** y buscar **Verify release and publish GHCR images (no deployment)**.
-3. El push a `master` ejecuta el proceso automáticamente. Para repetirlo, usar
-   **Run workflow** y seleccionar `master`.
-4. Esperar a que pasen las verificaciones y los dos trabajos de publicación.
-5. Revisar las imágenes en **Packages** y sus referencias exactas en los resúmenes.
+3. El push ejecutará solo las verificaciones. Comprobar que los tres trabajos
+   pasan y que `publish-images` aparece omitido (`skipped`).
+4. Cuando se quiera publicar esa versión, usar **Run workflow** y seleccionar
+   `master`. El archivo con `workflow_dispatch` debe estar subido a la rama
+   predeterminada para que aparezca ese botón.
+5. Esperar a que pasen nuevamente las verificaciones y los dos trabajos de publicación.
+6. Revisar las imágenes en **Packages** y sus referencias exactas en los resúmenes.
+
+Esta ejecución manual publica imágenes, no despliega la aplicación. Un nuevo push
+a la misma rama puede cancelar la ejecución en curso por la política de concurrencia;
+evitar subir cambios mientras se publica y no usar una pareja incompleta de imágenes.
 
 La publicación usa el `GITHUB_TOKEN` temporal de esa ejecución, con
 `contents: read` y `packages: write` únicamente en el trabajo de publicación. No
@@ -189,7 +202,12 @@ requieren el daemon de Docker, no se conectan a GHCR y no crean cuentas o datos:
 ```text
 python -B -m unittest discover -s infra/tests -p test_ghcr_config.py -v
 python -B -m unittest discover -s infra/tests -p test_ec2_http_test_config.py -v
+python -B -m unittest discover -s infra/tests -p test_ghcr_workflow.py -v
 ```
+
+La última prueba comprueba estáticamente los eventos admitidos, la condición de
+publicación manual en `master` y sus dependencias. No ejecuta GitHub Actions ni
+sustituye la validación de sintaxis del workflow.
 
 La verificación efectiva de construcción y publicación queda pendiente de la
 primera ejecución del workflow en GitHub. No probarla usando credenciales reales
