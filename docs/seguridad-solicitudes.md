@@ -34,13 +34,20 @@ CSRF_TRUSTED_ORIGINS=http://localhost:4200,http://127.0.0.1:4200
 
 ### Probar desde el celular
 
-Añadir a `backend/.env` el origen LAN exacto con el que se abre Angular. Este ejemplo es ilustrativo: reemplazar la IP por la que realmente se utiliza, no asumir que es la actual.
+Para Docker Compose, añadir al `.env` opcional de la **raíz** el origen LAN exacto
+con el que se abre Angular. El arranque de un clon en localhost no necesita ese archivo.
+Este ejemplo es ilustrativo: reemplazar la IP por la que realmente se utiliza.
 
 ```dotenv
+CORS_ORIGINS=http://localhost:4200,http://127.0.0.1:4200,http://192.168.1.36:4200
 CSRF_TRUSTED_ORIGINS=http://localhost:4200,http://127.0.0.1:4200,http://192.168.1.36:4200
 ```
 
-El Compose de desarrollo existente pasa `backend/.env` al contenedor. No se modificó la configuración privada del usuario ni se autorizó automáticamente la red local. Su valor explícito de `CORS_ORIGINS` sigue siendo `http://localhost:4200`; esto permite la configuración habitual por proxy de Angular (`/api`), pero si el celular llama **directamente** a una API de otro origen, también debe incluirse el origen del frontend en la configuración efectiva de CORS del contenedor. La IP ilustrativa tampoco se añadió a `.env.example` como autorización predeterminada.
+Compose usa valores seguros para localhost/127.0.0.1 cuando no existe `.env`.
+Lee las personalizaciones de la raíz, no `backend/.env`; Flask y python-dotenv
+tienen desactivada la lectura automática de archivos privados dentro del contenedor.
+La API y PostgreSQL se publican solo en loopback: el teléfono usa Angular y su proxy
+`/api`, no una conexión directa al puerto 5000. La IP ilustrativa no se autoriza por defecto.
 
 ### Proxy y futura publicación
 

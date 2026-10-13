@@ -1,59 +1,37 @@
-# Frontend
+# Frontend de ExploraLab
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.2.
-
-## Development server
-
-To start a local development server, run:
+Angular y Phaser. El arranque completo y reproducible está en el [README principal](../README.md):
 
 ```bash
-ng serve
+# Desde la raíz del proyecto, sin .env obligatorio:
+docker compose up --build
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Abrir http://localhost:4200 cuando termine la compilación. Compose usa
+`proxy.docker.json` para enviar `/api` al backend del mismo proyecto.
 
-## Code scaffolding
+## Desarrollo sin Docker (opcional)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Con una versión de Node compatible con Angular 22 (el proyecto usa Node 24):
 
 ```bash
-ng generate component component-name
+# Desde frontend/
+npm ci
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Este modo requiere la API por separado en http://localhost:5000 y utiliza
+`proxy.local.json`. No sustituye el arranque completo con Docker.
+Google está deshabilitado salvo que se defina explícitamente su ID público.
+
+## Comprobaciones
 
 ```bash
-ng generate --help
+npm run lint
+npm run test:ci
+npm run build
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+`dist`, `.angular`, `node_modules` y `tmp` son resultados/cachés locales, no parte
+de un clon ni requisitos previos. Los archivos de `public` y `tiled` son assets
+y fuentes de edición: no deben borrarse para limpiar el código.

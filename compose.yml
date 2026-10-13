@@ -1,3 +1,4 @@
+# Local development only. No .env file is required; never deploy this to AWS.
 services:
   database:
     image: postgres:17-alpine
@@ -8,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ml_password
 
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -27,18 +28,26 @@ services:
       dockerfile: Dockerfile
 
     environment:
+      APP_ENV: development
       DATABASE_URL: postgresql+psycopg://ml_user:ml_password@database:5432/ml_learning
-      CORS_ORIGINS: http://localhost:4200
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-${CORS_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      SESSION_COOKIE_SECURE: "false"
+      SESSION_COOKIE_SAMESITE: Lax
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
       FLASK_DEBUG: "1"
-
-    env_file:
-      - ./backend/.env
+      # Also ignore private files inside the source bind mount.
+      FLASK_SKIP_DOTENV: "1"
+      PYTHON_DOTENV_DISABLED: "1"
 
     ports:
-      - "5000:5000"
+      - "127.0.0.1:${BACKEND_PORT:-5000}:5000"
 
     volumes:
-      - ./backend:/app
+      # Mount code, not private settings, host virtualenvs or temporary databases.
+      - ./backend/app:/app/app
+      - ./backend/migrations:/app/migrations
 
     command: >
       sh -c "flask --app app db upgrade &&
@@ -48,6 +57,13 @@ services:
       database:
         condition: service_healthy
 
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/v1/ready', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      start_period: 20s
+      retries: 12
+
     restart: unless-stopped
 
   frontend:
@@ -56,7 +72,10 @@ services:
       dockerfile: Dockerfile
 
     ports:
-      - "4200:4200"
+      - "${FRONTEND_PORT:-4200}:4200"
+
+    environment:
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
 
     volumes:
       # Mount only live sources/configuration, not Windows caches or QA artifacts.
@@ -74,7 +93,24 @@ services:
       - ./frontend/.prettierrc:/app/.prettierrc
       - /app/node_modules
 
-    command: npm start -- --host 0.0.0.0 --poll 2000 --proxy-config proxy.docker.json
+    command:
+      - sh
+      - -c
+      - >-
+        exec npm start -- --host 0.0.0.0 --poll 2000 --proxy-config proxy.docker.json
+        --define "EXPLORALAB_GOOGLE_CLIENT_ID=\"$${GOOGLE_CLIENT_ID}\""
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4200').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      # A clean clone compiles Angular and optimizes dependencies on first start.
+      start_period: 180s
+      retries: 12
 
     restart: unless-stopped
 

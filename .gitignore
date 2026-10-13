@@ -7,3 +7,11 @@ infra/.local/
 infra/backups/
 .venv-deploy/
 .pytest_cache/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+deconect/
+frontend/tmp/
+# Root editor settings contain no shared configuration.
+/.vscode/

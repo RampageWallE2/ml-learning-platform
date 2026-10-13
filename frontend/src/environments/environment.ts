@@ -1,5 +1,5 @@
 // Production requires an explicit public ID via --define; otherwise Google is disabled.
-// This is not an OAuth client secret. Development retains its existing client.
+// This is not an OAuth client secret. Development also requires an explicit ID.
 declare const EXPLORALAB_GOOGLE_CLIENT_ID: string | undefined;
 
 export const environment = {

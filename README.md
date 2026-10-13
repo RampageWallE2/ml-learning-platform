@@ -1,5 +1,53 @@
 # Gamified Learning Platform for Machine Learning Foundations
 
+## Ejecutar desde un clon limpio
+
+Solo necesitas Git y Docker con Compose (Docker Desktop encendido en Windows).
+Desde la raíz del repositorio:
+
+```bash
+docker compose up --build
+```
+
+Espera a que Angular indique que terminó de compilar y abre **http://localhost:4200**.
+No necesitas instalar Node/Python, copiar archivos `.env`, crear tablas ni ejecutar
+migraciones manualmente. Se crean los contenedores de PostgreSQL, Flask y Angular;
+la API aplica las migraciones y la web espera a que esté saludable.
+
+- Registra una cuenta nueva con correo y contraseña; una instalación nueva no trae usuarios.
+- Los datos se conservan en el volumen `postgres_data` entre reinicios.
+- `docker compose down` detiene el entorno sin borrar ese volumen. No añadas `-v`
+  si quieres mantener las cuentas y el progreso.
+- Este comando es **desarrollo local**, con recarga de código y credenciales locales
+  públicas de ejemplo. No lo uses para desplegar en AWS ni con datos reales.
+- La web publica el puerto 4200; API y PostgreSQL se publican solo en loopback, en 5000
+  y 5432. Si están ocupados, detén el programa correspondiente o configura otros puertos.
+
+### Configuración opcional, no requisito del arranque
+
+El `.env` de la raíz está ignorado por Git y sirve únicamente para personalizaciones.
+Docker no lee `backend/.env` ni otros `.env` dentro de los montajes de código.
+Las plantillas `.env.production.example` y `.env.ec2.example` son para despliegue,
+no deben copiarse para este arranque local.
+
+Para probar desde un celular, añade al `.env` raíz el origen LAN **real** del navegador:
+
+```dotenv
+CORS_ORIGINS=http://localhost:4200,http://127.0.0.1:4200,http://192.168.1.36:4200
+CSRF_TRUSTED_ORIGINS=http://localhost:4200,http://127.0.0.1:4200,http://192.168.1.36:4200
+```
+
+La IP es un ejemplo: reemplázala por la de tu computadora y permite 4200 solo en tu
+red de pruebas. Recrea los contenedores después de cambiar variables. No se autorizan
+orígenes arbitrarios ni se desactiva CSRF para facilitar el acceso.
+
+Google queda deshabilitado por defecto. Para habilitarlo necesitas un cliente OAuth
+configurado para los orígenes utilizados y `GOOGLE_CLIENT_ID` en el `.env` raíz;
+Compose transmite el mismo ID público a frontend y backend. No es un secreto OAuth.
+Los puertos opcionales son `FRONTEND_PORT`, `BACKEND_PORT` y `POSTGRES_PORT`; si cambias
+el puerto web, actualiza también los orígenes CORS/CSRF. Ninguna de estas variables
+es obligatoria para el comando inicial.
+
 ## Overview
 
 This project is a gamified learning platform designed to make the mathematical foundations behind Machine Learning more intuitive, interactive, and engaging.
