@@ -96,6 +96,15 @@ class DevelopmentConfigurationTests(unittest.TestCase):
         self.assertIn("-r requirements-production.lock", requirements)
         self.assertIn("pip install --no-cache-dir -r requirements-production.lock", dockerfile)
 
+    def test_api_builds_tolerate_slow_downloads_without_disabling_tls(self):
+        for name in ("Dockerfile", "Dockerfile.production"):
+            with self.subTest(dockerfile=name):
+                dockerfile = (ROOT / "backend" / name).read_text()
+                self.assertIn("PIP_DEFAULT_TIMEOUT=60", dockerfile)
+                self.assertIn("PIP_RETRIES=10", dockerfile)
+                self.assertNotIn("--trusted-host", dockerfile)
+                self.assertIn("pip check", dockerfile)
+
 
 if __name__ == "__main__":
     unittest.main()

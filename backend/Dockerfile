@@ -1,7 +1,10 @@
 FROM python:3.12-slim
 
+# Más margen para descargas lentas o fallos temporales de conexión a PyPI.
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_DEFAULT_TIMEOUT=60 \
+    PIP_RETRIES=10
 
 WORKDIR /app
 
